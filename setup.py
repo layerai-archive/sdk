@@ -43,6 +43,7 @@ install_requires = (
     "validate-email==1.3",
     "yarl>=1.6.3",
     "wrapt>=1.13.3",
+    "layer-api==0.9.1",
 )
 
 # TODO: leaving extras to conform to Layer `python-project`
