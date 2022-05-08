@@ -1,0 +1,5 @@
+pytest-asyncio==0.18.3
+pytest-xdist==2.5.0
+pytest-timeout==2.1.0
+ddtrace==0.60.0
+scikit-learn==0.24

@@ -1,0 +1,5 @@
+CONDA_xgboost==1.5.1
+CONDA_lightgbm==3.3.2
+CONDA_pyarrow==7.0.0
+CONDA_tensorflow-deps==2.8.0
+CONDA_tokenizers==0.12.1
