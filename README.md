@@ -47,3 +47,7 @@ limitations under the License.
 Layer helps you create production-grade ML pipelines with a seamless local↔cloud transition while enabling collaboration with semantic versioning, extensive artifact logging and dynamic reporting.
 
 [Start for Free!](https://app.layer.ai)
+
+## Getting Started
+
+The simplest way to get started with Layer is to go through the [quickstart guide](https://docs.app.layer.ai/docs/getting-started).
