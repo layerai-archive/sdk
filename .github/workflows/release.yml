@@ -1,0 +1,64 @@
+name: Release
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7, 3.8]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.13
+      - name: Cache poetry virtualenvs
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/.cache/pypoetry/virtualenvs
+          key: poetry-vevns-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+      - name: Run check
+        run: make check
+  publish:
+    needs: [ check ]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: git fetch origin ${{ github.event.before }}
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.13
+      - name: Cache poetry virtualenvs
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/.cache/pypoetry/virtualenvs
+          key: poetry-vevns-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+      - name: Compute package depedencies
+        id: deps
+        run: |
+          make install
+          DEPENDENCIES=$(poetry run python build_scripts/get_package_dependencies.py)
+          echo "::set-output name=paths::${DEPENDENCIES}"
+      - run: |
+          echo "${{ steps.deps.outputs.paths}}"
+      - name: Get changes that will affect the package
+        id: changed-files
+        uses: tj-actions/changed-files@v19.1
+        with:
+          base_sha: ${{ github.event.before }}
+          files: ${{ steps.deps.outputs.paths }}
+          files_separator: ','
+      - name: Publish
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: make publish PYPI_USER=${{ secrets.PYPI_USER }} PYPI_PASSWORD=${{ secrets.PYPI_PASSWORD }} PATCH_VERSION=${GITHUB_RUN_ID}
