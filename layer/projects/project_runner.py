@@ -221,7 +221,7 @@ class ProjectRunner:
             if f.layer.get_asset_type() == AssetType.DATASET:
                 dataset = DatasetDefinition(func=f, project_name=project_name)
                 definitions.append(dataset)
-                derived_datasets.append(dataset.get_entity())
+                derived_datasets.append(dataset.get_remote_entity())
                 _functions.append(
                     Function(
                         name=f.__name__,
@@ -234,7 +234,7 @@ class ProjectRunner:
             elif f.layer.get_asset_type() == AssetType.MODEL:
                 model = ModelDefinition(func=f, project_name=project_name)
                 definitions.append(model)
-                models.append(model.get_entity())
+                models.append(model.get_remote_entity())
                 _functions.append(
                     Function(
                         name=f.__name__,
@@ -270,7 +270,6 @@ class ProjectRunner:
     def run(
         self,
         project: Project,
-        from_decorators: bool = False,
         debug: bool = False,
         printer: Callable[[str], Any] = print,
     ) -> RunId:

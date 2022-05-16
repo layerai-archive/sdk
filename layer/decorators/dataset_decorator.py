@@ -165,7 +165,7 @@ def _build_dataset_locally_and_store_remotely(
         client, get_current_project_name()
     )
 
-    derived_dataset = dataset_definition.get_entity()
+    derived_dataset = dataset_definition.get_local_entity()
     derived_dataset_updated = register_derived_datasets(
         client, current_project_uuid, derived_dataset, tracker
     )

@@ -635,6 +635,7 @@ class User(abc.ABC):
 
 @enum.unique
 class Fabric(enum.Enum):
+    F_LOCAL = "f-local"
     F_XXSMALL = "f-xxsmall"
     F_XSMALL = "f-xsmall"
     F_SMALL = "f-small"
@@ -651,7 +652,7 @@ class Fabric(enum.Enum):
 
     @classmethod
     def default(cls) -> str:
-        return cls.F_SMALL.value
+        return Fabric.F_SMALL.value
 
     def is_gpu(self) -> bool:
         return "gpu" in self.value

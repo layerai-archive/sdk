@@ -58,6 +58,12 @@ class Definition(abc.ABC):
     def _get_pickle_path(self) -> Path:
         return Path(f"{self._get_entity_path()}/{self._get_entrypoint()}")
 
+    def _get_fabric(self, is_local: bool) -> str:
+        if is_local:
+            return Fabric.F_LOCAL.value
+        else:
+            return self.fabric.value if self.fabric else Fabric.default()
+
     def _clean_pickle_folder(self) -> None:
         # Remove directory to clean leftovers from previous runs
         entity_path = self._get_entity_path()
@@ -90,7 +96,11 @@ class Definition(abc.ABC):
         return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)
 
     @abc.abstractmethod
-    def get_entity(self) -> Any:
+    def get_local_entity(self) -> Any:
+        """Retrieve the actual entity defined in this class."""
+
+    @abc.abstractmethod
+    def get_remote_entity(self) -> Any:
         """Retrieve the actual entity defined in this class."""
 
 
@@ -102,7 +112,13 @@ class DatasetDefinition(Definition):
     ) -> None:
         super().__init__(func, project_name)
 
-    def get_entity(self) -> DerivedDataset:
+    def get_local_entity(self) -> DerivedDataset:
+        return self.get_entity(is_local=True)
+
+    def get_remote_entity(self) -> DerivedDataset:
+        return self.get_entity(is_local=False)
+
+    def get_entity(self, is_local: bool) -> DerivedDataset:
         super()._pack()
         asset_path = AssetPath(
             asset_type=AssetType.DATASET,
@@ -112,7 +128,7 @@ class DatasetDefinition(Definition):
 
         return PythonDataset(
             asset_path=asset_path,
-            fabric=self.fabric.value if self.fabric else Fabric.default(),
+            fabric=self._get_fabric(is_local=is_local),
             entrypoint=self._get_entrypoint(),
             entrypoint_content=inspect.getsource(self.func),
             entrypoint_path=self._get_entity_path() / self._get_entrypoint(),
@@ -133,11 +149,17 @@ class ModelDefinition(Definition):
             project_name,
         )
 
-    def get_entity(self) -> Model:
+    def get_local_entity(self) -> Model:
+        return self.get_entity(is_local=True)
+
+    def get_remote_entity(self) -> Model:
+        return self.get_entity(is_local=False)
+
+    def get_entity(self, is_local: bool) -> Model:
         super()._pack()
         train = Train(
             name=f"{self.name}-train",
-            fabric=self.fabric.value if self.fabric else "",
+            fabric=self._get_fabric(is_local=is_local),
             description="",
             entrypoint=self._get_entrypoint(),
             environment=os.path.basename(self.pip_requirements_file_path)

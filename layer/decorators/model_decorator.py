@@ -139,7 +139,7 @@ def _model_wrapper(
                 ModelTrainer,
             )
 
-            model = model_definition.get_entity()
+            model = model_definition.get_local_entity()
             assert model.project_name is not None
             verify_project_exists_and_retrieve_project_id(client, model.project_name)
 

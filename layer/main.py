@@ -573,7 +573,7 @@ def run(functions: List[Any], debug: bool = False) -> Optional[Run]:
         project_progress_tracker_factory=RemoteExecutionProjectProgressTracker,
     )
     project = project_runner.with_functions(project_name, functions)
-    run_id = project_runner.run(project, from_decorators=True, debug=debug)
+    run_id = project_runner.run(project, debug=debug)
 
     _make_notebook_links_open_in_new_tab()
 
