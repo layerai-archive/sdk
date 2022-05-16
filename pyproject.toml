@@ -3,7 +3,7 @@ name = "layer"
 version = "0.9.0"
 description = "Layer AI SDK"
 authors = ["Layer <info@layer.ai>"]
-readme = "DESCRIPTION.md"
+readme = "README.md"
 
 packages = [
     { include = "layer" },
