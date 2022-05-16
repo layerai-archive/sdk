@@ -29,8 +29,9 @@ from layer.api.entity.operations_pb2 import (
     SequentialOperation,
 )
 from layer.api.ids_pb2 import HyperparameterTuningId, ModelVersionId
-from layer.client import DerivedDataset, LayerClientException, Model, RawDataset
+from layer.client import LayerClientException
 from layer.common import LayerClient
+from layer.data_classes import DerivedDataset, Model, RawDataset
 from layer.exceptions.exceptions import (
     ProjectCircularDependenciesException,
     ProjectDependencyNotFoundException,

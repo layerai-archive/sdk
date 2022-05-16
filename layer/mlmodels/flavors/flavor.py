@@ -140,7 +140,33 @@ class ModelFlavor(metaclass=ABCMeta):
             )
 
     def load(
-        self, model_definition: ModelDefinition, s3_endpoint_url: Optional[URL] = None
+        self,
+        model_definition: ModelDefinition,
+        s3_endpoint_url: Optional[URL] = None,
+        state: Optional[ResourceTransferState] = None,
+    ) -> ModelObject:
+        """Loads the given machine learning model definition from the backing store and
+        returns an instance of it
+
+        Args:
+            model_definition: Model metadata object which describes the model instance
+
+        Returns:
+            A machine learning model object
+        """
+        return self._load(model_definition, state, s3_endpoint_url)
+
+    def is_cached(self, model_definition: ModelDefinition) -> bool:
+        cache = Cache(cache_dir=self._cache_dir).initialise()
+        model_train_id = model_definition.model_train_id.value
+        model_cache_dir = cache.get_path_entry(model_train_id)
+        return model_cache_dir is not None
+
+    def _load(
+        self,
+        model_definition: ModelDefinition,
+        state: Optional[ResourceTransferState],
+        s3_endpoint_url: Optional[URL] = None,
     ) -> ModelObject:
         """Loads the given machine learning model definition from the backing store and
         returns an instance of it
@@ -154,11 +180,11 @@ class ModelFlavor(metaclass=ABCMeta):
         cache = Cache(cache_dir=self._cache_dir).initialise()
         model_train_id = model_definition.model_train_id.value
         model_cache_dir = cache.get_path_entry(model_train_id)
-
-        if model_cache_dir is None or self._no_cache:
+        if self._no_cache or not self.is_cached(model_definition):
             self._from_cache = False
             from mlflow.utils.file_utils import TempDir
 
+            assert state
             with TempDir() as tmp:
                 local_path = pathlib.Path((tmp.path("model")))
                 S3Util.download_dir(
@@ -166,6 +192,7 @@ class ModelFlavor(metaclass=ABCMeta):
                     credentials=model_definition.credentials,
                     s3_path=model_definition.s3_path,
                     endpoint_url=s3_endpoint_url,
+                    state=state,
                 )
                 if self._no_cache:
                     return self._load_model(local_path)
@@ -173,7 +200,8 @@ class ModelFlavor(metaclass=ABCMeta):
         else:
             self._from_cache = True
 
-        return self._load_model(model_cache_dir)  # type: ignore
+        assert model_cache_dir
+        return self._load_model(model_cache_dir)
 
     def _load_model(self, model_dir: Path) -> ModelObject:
         import warnings
@@ -240,10 +268,39 @@ class PyTorchModelFlavor(ModelFlavor):
     def module_keyword(self) -> str:
         return "torch"
 
-    def log_model_impl(self) -> Any:
+    def save_model(
+        self,
+        pytorch_model: Any,
+        path: Path,
+    ) -> None:
         import mlflow.pytorch
 
-        return mlflow.pytorch.save_model
+        models_module_path = None
+
+        # Check if the model is a YOLOV5 model
+        if pytorch_model.__class__.__name__ == "AutoShape":
+            try:
+                try:
+                    # This is `models` module created cloning the official YoloV5 repo
+                    import models  # type: ignore
+                    import utils  # type: ignore
+                except ModuleNotFoundError:
+                    # Fallback: This is `models` module created installing the yolov5 from pypi
+                    from yolov5 import models, utils  # type: ignore
+
+                # YOLO models has a wrapper around the pytorch model.
+                # We pack the required wrapper modules with the model.
+                models_module_path = [
+                    Path(models.__file__).parent,
+                    Path(utils.__file__).parent,
+                ]
+            except ModuleNotFoundError:
+                raise Exception("Can't save YOLO model. `models` module not found!")
+
+        mlflow.pytorch.save_model(pytorch_model, path, code_paths=models_module_path)
+
+    def log_model_impl(self) -> Any:
+        return self.save_model
 
     def load_model_impl(self) -> Any:
         import mlflow.pytorch
@@ -440,23 +497,39 @@ class KerasModelFlavor(ModelFlavor):
                 state=state,
             )
 
-    def load(
-        self, model_definition: ModelDefinition, s3_endpoint_url: Optional[URL] = None
+    def _load(
+        self,
+        model_definition: ModelDefinition,
+        state: Optional[ResourceTransferState] = None,
+        s3_endpoint_url: Optional[URL] = None,
     ) -> ModelObject:
         import os
         import warnings
 
         from mlflow.utils.file_utils import TempDir
 
+        cache = Cache(cache_dir=self._cache_dir).initialise()
+        model_train_id = model_definition.model_train_id.value
+        local_path: Optional[Path] = None
         with TempDir() as tmp, warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
-            local_path = pathlib.Path((tmp.path("model")))
-            S3Util.download_dir(
-                local_dir=local_path,
-                credentials=model_definition.credentials,
-                s3_path=model_definition.s3_path,
-                endpoint_url=s3_endpoint_url,
-            )
+            if self._no_cache or not self.is_cached(model_definition):
+                self._from_cache = False
+                assert state
+                warnings.simplefilter("ignore", category=UserWarning)
+                local_path = pathlib.Path((tmp.path("model")))
+                S3Util.download_dir(
+                    local_dir=local_path,
+                    credentials=model_definition.credentials,
+                    s3_path=model_definition.s3_path,
+                    endpoint_url=s3_endpoint_url,
+                    state=state,
+                )
+                if not self._no_cache:
+                    local_path = cache.put_path_entry(model_train_id, local_path)
+            else:
+                local_path = cache.get_path_entry(model_train_id)
+                self._from_cache = True
+            assert local_path
 
             if os.path.exists(local_path / KerasModelFlavor.TOKENIZER_FILE):
                 import cloudpickle
@@ -527,21 +600,37 @@ class HuggingFaceModelFlavor(ModelFlavor):
                 state=state,
             )
 
-    def load(
-        self, model_definition: ModelDefinition, s3_endpoint_url: Optional[URL] = None
+    def _load(
+        self,
+        model_definition: ModelDefinition,
+        state: Optional[ResourceTransferState] = None,
+        s3_endpoint_url: Optional[URL] = None,
     ) -> ModelObject:
         import warnings
 
         from mlflow.utils.file_utils import TempDir
 
+        cache = Cache(cache_dir=self._cache_dir).initialise()
+        model_train_id = model_definition.model_train_id.value
+        local_path: Optional[Path] = None
         with TempDir() as tmp, warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
-            local_path = pathlib.Path((tmp.path("model")))
-            S3Util.download_dir(
-                local_dir=local_path,
-                credentials=model_definition.credentials,
-                s3_path=model_definition.s3_path,
-                endpoint_url=s3_endpoint_url,
-            )
+            if self._no_cache or not self.is_cached(model_definition):
+                self._from_cache = False
+                assert state
+                warnings.simplefilter("ignore", category=UserWarning)
+                local_path = pathlib.Path((tmp.path("model")))
+                S3Util.download_dir(
+                    local_dir=local_path,
+                    credentials=model_definition.credentials,
+                    s3_path=model_definition.s3_path,
+                    endpoint_url=s3_endpoint_url,
+                    state=state,
+                )
+                if not self._no_cache:
+                    local_path = cache.put_path_entry(model_train_id, local_path)
+            else:
+                local_path = cache.get_path_entry(model_train_id)
+                self._from_cache = True
+            assert local_path
 
             return self.load_transformer(local_path)

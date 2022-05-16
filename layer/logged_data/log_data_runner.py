@@ -11,7 +11,7 @@ import requests  # type: ignore
 
 
 if TYPE_CHECKING:
-    import PIL.Image  # type: ignore
+    import PIL.Image
     import matplotlib.figure  # type: ignore
 
 from layer.common.layer_client import LayerClient

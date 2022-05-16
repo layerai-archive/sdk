@@ -1,6 +1,6 @@
 import importlib
 from logging import Logger
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from yarl import URL
 
@@ -9,11 +9,9 @@ from layer.exceptions.exceptions import (
     UnexpectedModelTypeException,
 )
 from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.projects.tracker.resource_transfer_state import ResourceTransferState
 
 from ..api.entity.model_version_pb2 import ModelVersion  # pylint: disable=unused-import
-from ..api.value.schema_column_pb2 import SchemaColumn
-from ..api.value.schema_pb2 import Schema
-from ..api.value.signature_pb2 import Signature
 from .flavors import (
     PROTO_TO_PYTHON_OBJECT_FLAVORS,
     PYTHON_CLASS_NAME_TO_PROTO_FLAVORS,
@@ -24,7 +22,7 @@ from .flavors.model_definition import ModelDefinition
 
 
 if TYPE_CHECKING:
-    from . import MlModelInferableDataset, ModelObject
+    from . import ModelObject
 
 
 class MLModelService:
@@ -74,59 +72,11 @@ class MLModelService:
         except Exception as ex:
             raise LayerClientException(f"Error while storing model, {ex}")
 
-    @staticmethod
-    def get_model_signature(
-        model_input: Optional["MlModelInferableDataset"],
-        model_output: Optional["MlModelInferableDataset"],
-    ) -> Signature:
-        import pandas
-        from mlflow.models.signature import infer_signature
-        from mlflow.types import ColSpec, TensorSpec
-        from mlflow.types.utils import _infer_numpy_dtype
-
-        def map_signature_columns(
-            cols: List[Union[ColSpec, TensorSpec]]
-        ) -> List[SchemaColumn]:
-            return list(
-                map(
-                    lambda col: SchemaColumn(name=col.name, type=col.type.value),
-                    cols,
-                )
-            )
-
-        def map_tensors(
-            tensors: List[Union[ColSpec, TensorSpec]]
-        ) -> List[SchemaColumn]:
-            return list(
-                map(
-                    lambda tensor: SchemaColumn(
-                        name=tensor.name, type=_infer_numpy_dtype(tensor.type).value
-                    ),
-                    tensors,
-                )
-            )
-
-        if model_output is not None and isinstance(
-            model_output, pandas.core.series.Series  # type: ignore
-        ):
-            model_output = model_output.to_frame()  # type: ignore
-        signature = infer_signature(model_input, model_output)
-        if signature.inputs.is_tensor_spec():
-            input_columns = map_tensors(signature.inputs.inputs)
-        else:
-            input_columns = map_signature_columns(signature.inputs.inputs)
-        output_columns = (
-            map_signature_columns(signature.outputs.inputs)
-            if signature.outputs is not None
-            else None
-        )
-        return Signature(
-            input_schema=Schema(columns=input_columns),
-            output_schema=Schema(columns=output_columns),
-        )
-
     def retrieve(
-        self, model_definition: ModelDefinition, no_cache: bool = False
+        self,
+        model_definition: ModelDefinition,
+        no_cache: bool = False,
+        state: Optional[ResourceTransferState] = None,
     ) -> "ModelObject":
         """
         Retrieves the given model definition from the storage and returns the actual
@@ -150,7 +100,9 @@ class MLModelService:
         module = importlib.import_module(flavor.metadata.module_name)
         model_flavor_class = getattr(module, flavor.metadata.class_name)
         return model_flavor_class(no_cache=no_cache).load(
-            model_definition=model_definition, s3_endpoint_url=self._s3_endpoint_url
+            model_definition=model_definition,
+            s3_endpoint_url=self._s3_endpoint_url,
+            state=state,
         )
 
     def delete(self, model_definition: ModelDefinition) -> None:

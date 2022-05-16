@@ -12,10 +12,6 @@ from layer.api.entity.model_train_status_pb2 import (  # pylint: disable=unused-
 )
 from layer.api.ids_pb2 import ModelTrainId
 from layer.client import ModelCatalogClient
-from layer.exceptions.exceptions import (
-    MissingColumnsInDataframeException,
-    NonDataFrameTypeException,
-)
 
 
 def import_function(
@@ -102,16 +98,3 @@ def update_train_status(
         logger.error(
             f"Failure while trying to update the status of train ID {str(train_id)}: {reason}"
         )
-
-
-def check_if_object_is_dataframe(object: Any) -> None:
-    is_pandas_df = "pandas" in sys.modules and isinstance(
-        object, sys.modules["pandas"].DataFrame
-    )
-    is_spark_df = "pyspark" in sys.modules and isinstance(
-        object, sys.modules["pyspark"].sql.DataFrame
-    )
-    if not is_pandas_df and not is_spark_df:
-        raise NonDataFrameTypeException(type(object))
-    if len(object.columns) < 2:
-        raise MissingColumnsInDataframeException()

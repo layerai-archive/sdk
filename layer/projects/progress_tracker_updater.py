@@ -170,7 +170,7 @@ class ProgressTrackerUpdater:
             )
             self.tracker.mark_model_train_failed(
                 name=self._find_model_name_by_hpt_train_id(task_id),
-                reason=f"Error: {exc_hpt.message}",
+                reason=f"{exc_hpt.message}",
             )
             raise exc_hpt
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
@@ -181,7 +181,7 @@ class ProgressTrackerUpdater:
             )
             self.tracker.mark_model_train_failed(
                 name=self._find_model_name_by_version_id(task_id),
-                reason=f"Error: {exc_model.message}",
+                reason=f"{exc_model.message}",
             )
             raise exc_model
         else:

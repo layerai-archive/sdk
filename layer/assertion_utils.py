@@ -16,3 +16,12 @@ class Assertion:
             else:
                 values_str.append(str(value))
         return f"{self.name}({', '.join(values_str)})"
+
+
+class LayerFailedAssertionsException(Exception):
+    def __init__(self, failed_assertions: List[Assertion]) -> None:
+        self._failed_assertions = failed_assertions
+
+    @property
+    def failed_assertions(self) -> List[Assertion]:
+        return self._failed_assertions

@@ -100,3 +100,16 @@ class ProjectServiceClient:
             raise e
         except Exception as err:
             raise generate_client_error_from_grpc_error(err, "internal")
+
+    def set_project_visibility(self, project_name: str, *, is_public: bool) -> None:
+        visibility = (
+            Project.VISIBILITY_PUBLIC if is_public else Project.VISIBILITY_PRIVATE
+        )
+        try:
+            self._service.UpdateProject(
+                UpdateProjectRequest(project_name=project_name, visibility=visibility)
+            )
+        except LayerClientResourceNotFoundException as e:
+            raise e
+        except Exception as err:
+            raise generate_client_error_from_grpc_error(err, "internal")

@@ -1,16 +1,17 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class ResourceTransferState:
-    def __init__(self) -> None:
+    def __init__(self, name: Optional[str] = None) -> None:
+        self._name: Optional[str] = name
         self._total_num_files: int = 0
         self._transferred_num_files: int = 0
         self._total_resource_size_bytes: int = 0
         self._transferred_resource_size_bytes: int = 0
         self._timestamp_to_bytes_sent: Dict[Any, int] = defaultdict(int)
-        self._how_many_previous_seconds = 2
+        self._how_many_previous_seconds = 20
 
     def increment_num_transferred_files(self, increment_with: int) -> None:
         self._transferred_num_files += increment_with
@@ -27,7 +28,7 @@ class ResourceTransferState:
         # within current second after the call of this func
         for i in range(1, self._how_many_previous_seconds + 1):
             look_at = curr_timestamp - i
-            if look_at > 0:
+            if look_at >= 0 and look_at in self._timestamp_to_bytes_sent:
                 valid_seconds += 1
                 bytes_transferred += self._timestamp_to_bytes_sent[look_at]
         if valid_seconds == 0:
@@ -70,6 +71,14 @@ class ResourceTransferState:
     @property
     def transferred_resource_size_bytes(self) -> int:
         return self._transferred_resource_size_bytes
+
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
+
+    @name.setter
+    def name(self, name: str) -> None:
+        self._name = name
 
     def __str__(self) -> str:
         return str(self.__dict__)

@@ -4,8 +4,11 @@ from uuid import UUID
 
 from layer.api.entity.model_train_status_pb2 import ModelTrainStatus
 from layer.api.ids_pb2 import ModelTrainId
+from layer.assertion_utils import LayerFailedAssertionsException
 from layer.client import ModelCatalogClient
 from layer.exceptions.status_report import (
+    AssertionFailureStatusReport,
+    ExecutionStatusReport,
     ExecutionStatusReportFactory,
     PythonExecutionStatusReport,
 )
@@ -36,16 +39,19 @@ class ModelTrainFailureReporter:
         # could be triggered with the outer most exception message overriding inner ones
         existing_status = self._get_train_status()
         if existing_status != ModelTrainStatus.TRAIN_STATUS_FAILED:
+            report: ExecutionStatusReport
+            if isinstance(failure_exc, LayerFailedAssertionsException):
+                report = AssertionFailureStatusReport.from_exception(failure_exc)
+            else:
+                report = PythonExecutionStatusReport.from_exception(
+                    failure_exc, self.source_folder
+                )
             update_train_status(
                 self.model_catalog_client,
                 self.train_id,
                 ModelTrainStatus.TRAIN_STATUS_FAILED,
                 self.logger,
-                info=ExecutionStatusReportFactory.to_json(
-                    PythonExecutionStatusReport.from_exception(
-                        failure_exc, self.source_folder
-                    )
-                ),
+                info=ExecutionStatusReportFactory.to_json(report),
             )
 
     def _get_train_status(self) -> "ModelTrainStatus.TrainStatus.V":

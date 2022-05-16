@@ -19,6 +19,7 @@ class S3Util:
         credentials: AwsCredentials = None,
         *,
         endpoint_url: Optional[URL] = None,
+        state: ResourceTransferState,
     ) -> None:
         import boto3
 
@@ -34,13 +35,32 @@ class S3Util:
             )
         s3 = boto3.resource("s3", **s3_kwargs)
         bucket = s3.Bucket(s3_path.bucket)
+
+        to_download = []
+        total_num_files = 0
+        total_file_bytes = 0
         for obj in bucket.objects.filter(Prefix=s3_path.key):
             target = os.path.join(local_dir, os.path.relpath(obj.key, s3_path.key))
             if not os.path.exists(os.path.dirname(target)):
                 os.makedirs(os.path.dirname(target))
             if obj.key[-1] == "/":
                 continue
-            bucket.download_file(obj.key, target)
+
+            total_num_files += 1
+            total_file_bytes += obj.size
+            to_download.append(
+                {
+                    "args": [obj.key, target],
+                    "kwargs": {
+                        "Callback": state.increment_transferred_resource_size_bytes
+                    },
+                }
+            )
+
+        state.total_num_files = total_num_files
+        state.total_resource_size_bytes = total_file_bytes
+        for function_params in to_download:
+            bucket.download_file(*function_params["args"], **function_params["kwargs"])
 
     @staticmethod
     def upload_dir(

@@ -70,6 +70,8 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         *,
         status: Optional[EntityStatus] = None,
         url: Optional[URL] = None,
+        version: Optional[str] = None,
+        build_idx: Optional[str] = None,
         error_reason: str = "",
         description: Optional[str] = None,
         state: Optional[ResourceTransferState] = None,
@@ -83,7 +85,11 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         if status:
             entity.status = status
         if url:
-            entity.url = url
+            entity.base_url = url
+        if version:
+            entity.version = version
+        if build_idx:
+            entity.build_idx = build_idx
         if error_reason:
             entity.error_reason = error_reason
         if state:
@@ -98,7 +104,7 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
             if not task.started:
                 task.start_time = task.stop_time = None
                 self._progress.start_task(task_id)
-            self._progress.update(task_id, completed=task.total * 0.1)
+                self._progress.update(task_id, completed=task.total * 0.1)
         elif status == EntityStatus.DONE:
             self._progress.update(task_id, completed=task.total)
         elif status == EntityStatus.ERROR:
@@ -161,7 +167,9 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         )
         self._update_entity(EntityType.DERIVED_DATASET, name, url=url, status=status)
 
-    def mark_derived_dataset_building(self, name: str) -> None:
+    def mark_derived_dataset_building(
+        self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
+    ) -> None:
         # For some reason, this function is called even after the dataset is successfully built and
         # it causes a flicker in the progress bar. This is a workaround.
         entity = self._get_entity(EntityType.DERIVED_DATASET, name)
@@ -177,7 +185,12 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         )
 
         self._update_entity(
-            EntityType.DERIVED_DATASET, name, status=EntityStatus.BUILDING, url=url
+            EntityType.DERIVED_DATASET,
+            name,
+            status=EntityStatus.BUILDING,
+            url=url,
+            version=version,
+            build_idx=build_idx,
         )
 
     def mark_derived_dataset_failed(self, name: str, reason: str) -> None:
@@ -185,7 +198,7 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
             EntityType.DERIVED_DATASET,
             name,
             status=EntityStatus.ERROR,
-            error_reason=f"Error: {reason}",
+            error_reason=f"{reason}",
         )
 
     def mark_derived_dataset_built(
@@ -201,11 +214,14 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
             self._project.name,
             self._project.account.name,
             name=name,
-            version=version,
-            build_index=build_index,
         )
         self._update_entity(
-            EntityType.DERIVED_DATASET, name, status=EntityStatus.DONE, url=url
+            EntityType.DERIVED_DATASET,
+            name,
+            status=EntityStatus.DONE,
+            url=url,
+            version=version,
+            build_idx=build_index,
         )
 
     def mark_model_saving(self, name: str) -> None:
@@ -219,7 +235,9 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
             status=status,
         )
 
-    def mark_model_training(self, name: str) -> None:
+    def mark_model_training(
+        self, name: str, version: Optional[str] = None, train_idx: Optional[str] = None
+    ) -> None:
         # For some reason, this function is called even after the model is successfully trained and
         # it causes a flicker in the progress bar. This is a workaround.
         entity = self._get_entity(EntityType.MODEL, name)
@@ -234,7 +252,12 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
             name=name,
         )
         self._update_entity(
-            EntityType.MODEL, name, status=EntityStatus.TRAINING, url=url
+            EntityType.MODEL,
+            name,
+            status=EntityStatus.TRAINING,
+            url=url,
+            version=version,
+            build_idx=train_idx,
         )
 
     def mark_model_trained(
@@ -249,18 +272,23 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
             self._config.url,
             self._project.name,
             self._project.account.name,
-            train_index=train_index,
-            version=version,
             name=name,
         )
-        self._update_entity(EntityType.MODEL, name, url=url, status=EntityStatus.DONE)
+        self._update_entity(
+            EntityType.MODEL,
+            name,
+            url=url,
+            status=EntityStatus.DONE,
+            version=version,
+            build_idx=train_index,
+        )
 
     def mark_model_train_failed(self, name: str, reason: str) -> None:
         self._update_entity(
             EntityType.MODEL,
             name,
             status=EntityStatus.ERROR,
-            error_reason=f"Error: {reason}",
+            error_reason=f"{reason}",
         )
 
     def mark_model_resources_uploading(

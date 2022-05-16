@@ -6,6 +6,8 @@ from pathlib import Path
 from traceback import FrameSummary
 from typing import Any, List, Optional
 
+from layer.assertion_utils import Assertion, LayerFailedAssertionsException
+
 
 class ExecutionStatusReport(ABC):
     @property
@@ -15,25 +17,6 @@ class ExecutionStatusReport(ABC):
     @property
     def cause(self) -> str:
         return ""
-
-
-class SQLExecutionStatusReport(ExecutionStatusReport):
-    def __init__(self, message: str, cause: str):
-        self._message = message
-        self._cause = cause
-
-    @property
-    def message(self) -> str:
-        return self._message
-
-    @property
-    def cause(self) -> str:
-        return self._cause
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, SQLExecutionStatusReport):
-            return False
-        return self.message == other.message and self.cause == other.cause
 
 
 class GenericExecutionStatusReport(ExecutionStatusReport):
@@ -114,6 +97,39 @@ class PythonExecutionStatusReport(ExecutionStatusReport):
         return self.message == other.message and self.frames == other.frames
 
 
+class AssertionFailureStatusReport(ExecutionStatusReport):
+    def __init__(
+        self,
+        failed_assertions: Optional[List[Assertion]] = None,
+        message: Optional[str] = None,
+    ):
+        if failed_assertions:
+            stringified = ", ".join([str(assertion) for assertion in failed_assertions])
+            self._message = f"failed: {stringified}"
+        else:
+            assert message
+            self._message = message
+
+    @property
+    def message(self) -> str:
+        return self._message
+
+    @property
+    def cause(self) -> str:
+        return ""
+
+    @staticmethod
+    def from_exception(
+        exc: LayerFailedAssertionsException,
+    ) -> "AssertionFailureStatusReport":
+        return AssertionFailureStatusReport(failed_assertions=exc.failed_assertions)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, AssertionFailureStatusReport):
+            return False
+        return self._message == other._message
+
+
 class ExecutionStatusReportFactory:
     @staticmethod
     def from_json(json_str: str) -> ExecutionStatusReport:
@@ -122,9 +138,7 @@ class ExecutionStatusReportFactory:
         except json.JSONDecodeError:
             return GenericExecutionStatusReport(json_str)
         report_type = payload["type"].lower()
-        if report_type == "sql":
-            return SQLExecutionStatusReport(payload["message"], payload["cause"])
-        elif report_type == "python":
+        if report_type == "python":
             message: str = payload["message"]
             frames: List[FrameSummary] = [
                 FrameSummary(
@@ -141,15 +155,14 @@ class ExecutionStatusReportFactory:
             )
         elif report_type == "generic":
             return GenericExecutionStatusReport(payload["message"])
+        elif report_type == "assertion":
+            return AssertionFailureStatusReport(message=payload["message"])
         else:
             raise Exception("Invalid status report type")
 
     @staticmethod
     def to_json(report: ExecutionStatusReport) -> str:
-        if isinstance(report, SQLExecutionStatusReport):
-            dic_sql = {"type": "SQL", "message": report.message, "cause": report.cause}
-            return json.dumps(dic_sql)
-        elif isinstance(report, PythonExecutionStatusReport):
+        if isinstance(report, PythonExecutionStatusReport):
             dic_py = {
                 "type": "Python",
                 "message": report.message,
@@ -166,6 +179,9 @@ class ExecutionStatusReportFactory:
             return json.dumps(dic_py)
         elif isinstance(report, GenericExecutionStatusReport):
             dic_generic = {"type": "Generic", "message": report.message}
+            return json.dumps(dic_generic)
+        elif isinstance(report, AssertionFailureStatusReport):
+            dic_generic = {"type": "Assertion", "message": report.message}
             return json.dumps(dic_generic)
         else:
             raise Exception("Unsupported report type")

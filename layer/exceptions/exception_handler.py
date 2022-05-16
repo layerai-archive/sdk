@@ -1,5 +1,4 @@
 import logging
-import re
 import sys
 import traceback
 from logging import Logger
@@ -8,7 +7,7 @@ from typing import Callable
 import grpc
 import wrapt  # type: ignore
 
-from .exceptions import RuntimeMemoryException, SparkRuntimeException
+from .exceptions import RuntimeMemoryException
 
 
 default_logger = logging.getLogger(__name__)
@@ -36,9 +35,7 @@ def exception_handler(stage: str, callback=None, logger: Logger = default_logger
         except Exception as e:
             _log_exception_from_execution(logger)
             failure_exc = e
-            if type(e).__name__ == "Py4JJavaError":
-                failure_exc = _transform_spark_exception(e)
-            elif isinstance(e, MemoryError):
+            if isinstance(e, MemoryError):
                 failure_exc = _transform_memory_error_exception(e)
         except SystemExit as e:
             _log_exception_from_execution(logger)
@@ -56,21 +53,6 @@ def exception_handler(stage: str, callback=None, logger: Logger = default_logger
             sys.exit(1)
 
     return wrapper
-
-
-def _transform_spark_exception(e: Exception) -> Exception:
-    spark_exc = SparkRuntimeException(str(e))
-    regex = re.compile(r"FlightRuntimeException: NOT_FOUND: Dataset .*'(.*)'.*")
-    match = regex.search(str(e))
-    if match:
-        missing_dataset = match.group(1)
-        spark_exc = SparkRuntimeException(f"Missing dataset `{missing_dataset}`")
-    # To populate stacktrace
-    try:
-        raise spark_exc
-    except Exception as ee:
-        failure_exc = ee
-    return failure_exc
 
 
 def _transform_system_exit_error(e: SystemExit) -> Exception:

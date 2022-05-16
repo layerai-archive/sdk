@@ -27,9 +27,13 @@ from .guest_login_client import get_guest_auth_token
 class ConfigManager:
     def __init__(self, path: Optional[Path] = None) -> None:
         if path is None:
-            path = DEFAULT_PATH
+            path = self._get_default_path()
         assert path
         self._store = ConfigStore(path)
+
+    @staticmethod
+    def _get_default_path() -> Path:
+        return DEFAULT_PATH
 
     def load(self) -> Config:
         return self._store.load()

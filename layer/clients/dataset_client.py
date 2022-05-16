@@ -10,11 +10,10 @@ import pyarrow
 from pyarrow import flight as fl
 from pyarrow.lib import ArrowKeyError
 
+from layer.api.service.dataset.dataset_api_pb2 import Command
+from layer.api.value.ticket_pb2 import PartitionTicket
 from layer.cache import Cache
 from layer.grpc_utils import create_grpc_ssl_config
-
-from .api.service.dataset.dataset_api_pb2 import Command
-from .api.value.ticket_pb2 import PartitionTicket
 
 
 class DatasetClientError(Exception):
@@ -154,11 +153,15 @@ class DatasetClient:
                 cache_path = cache.put_path_entry(
                     partition_metadata.checksum, download_path
                 )
-            return Partition(pd.read_parquet(cache_path), from_cache=from_cache)  # type: ignore
+            return Partition(_read_parquet(cache_path), from_cache=from_cache)  # type: ignore
         # read directly from the remote location
-        return Partition(pd.read_parquet(partition_metadata.location))
+        return Partition(_read_parquet(partition_metadata.location))
 
     @_dataset_exception_handler
     def get_dataset_writer(self, command: Command, schema: Any) -> Any:
         descriptor = fl.FlightDescriptor.for_command(command.SerializeToString())
         return self._flight.do_put(descriptor, schema)
+
+
+def _read_parquet(path: Union[str, Path]) -> pd.DataFrame:
+    return pd.read_parquet(path, engine="pyarrow")

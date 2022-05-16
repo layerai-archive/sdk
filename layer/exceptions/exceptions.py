@@ -1,6 +1,6 @@
 from pathlib import Path
 from traceback import FrameSummary
-from typing import Any, List, Optional, Set, Type
+from typing import Any, List, Optional, Type
 
 from yarl import URL
 
@@ -20,10 +20,6 @@ class RuntimeMemoryException(Exception):
 class FunctionParameterException(Exception):
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
-
-
-class SparkRuntimeException(Exception):
-    pass
 
 
 class ConfigError(Exception):
@@ -283,33 +279,6 @@ class ProjectRunnerError(Exception):
         return self._run_id
 
 
-class FunctionDefinitionException(ProjectInitializationException):
-    def __init__(
-        self,
-        param_name: str,
-        func_name: str,
-        script_path: Path,
-        valid_entities: Set[str],
-        package_name: str,
-    ) -> None:
-        msg = f'Parameter "{param_name}" of function "{func_name}" in "{script_path.resolve()}" is not annotated with one of {valid_entities} {package_name} package entities.'
-        super().__init__(
-            msg, "Please, look at the docs for expected function definition."
-        )
-
-
-class MissingFunctionException(ProjectInitializationException):
-    def __init__(
-        self,
-        func_name: str,
-        script_path: Path,
-    ) -> None:
-        msg = f'Function "{func_name}" not defined in {script_path.resolve()}'
-        super().__init__(
-            msg, "Please, look at the docs for expected function definition."
-        )
-
-
 class ProjectRunTerminatedError(ProjectRunnerError):
     pass
 
@@ -337,37 +306,3 @@ class ProjectCircularDependenciesException(ProjectInitializationException):
     def _err_msg(stringified_paths: List[str]) -> str:
         paths_as_str = "\n".join(stringified_paths)
         return f"Detected circular dependencies:\n{paths_as_str}"
-
-
-class ProjectDefinitionError(ProjectInitializationException):
-    pass
-
-
-class ProjectFieldError(ProjectDefinitionError):
-    def __init__(self, message: str, field_chain: List[str], field: str):
-        self.field_chain = field_chain
-        self.field = field
-        self.message = message
-        super().__init__(self.__str__(), "Please, fix the field value and try again.")
-
-    def _get_field_chain(self) -> str:
-        extended = self.field_chain.copy()
-        extended.append(self.field)
-        return ".".join(extended)
-
-    def __str__(self) -> str:
-        return f"{self.message}.\nProperty: {self._get_field_chain()}"
-
-
-class NonDataFrameTypeException(Exception):
-    def __init__(self, object_type: Type[Any]):
-        super().__init__(
-            f"function returned an unsupported object type '{object_type}'"
-        )
-
-
-class MissingColumnsInDataframeException(Exception):
-    def __init__(self) -> None:
-        super().__init__(
-            "Dataframe is required to have at least two columns and must contain the primary key and the value."
-        )

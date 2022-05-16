@@ -1,8 +1,10 @@
 from types import TracebackType
 from typing import Optional
 
-from layer.dataset_build import DatasetBuild
-from layer.train import Train
+from layer.data_classes import DatasetBuild
+from layer.projects.entity import EntityType
+from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.training.base_train import BaseTrain
 
 
 class Context:
@@ -17,13 +19,19 @@ class Context:
 
     def __init__(
         self,
-        train: Optional[Train] = None,
+        train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
+        tracker: Optional[ProjectProgressTracker] = None,
+        entity_name: Optional[str] = None,
+        entity_type: Optional[EntityType] = None,
     ) -> None:
-        self._train: Optional[Train] = train
+        self._train: Optional[BaseTrain] = train
         self._dataset_build: Optional[DatasetBuild] = dataset_build
+        self._tracker: Optional[ProjectProgressTracker] = tracker
+        self._entity_name = entity_name
+        self._entity_type = entity_type
 
-    def train(self) -> Optional[Train]:
+    def train(self) -> Optional[BaseTrain]:
         """
         Retrieves the active Layer train object.
 
@@ -44,11 +52,36 @@ class Context:
         """
         return self._dataset_build
 
-    def with_train(self, train: Optional[Train]) -> None:
+    def with_train(self, train: Optional[BaseTrain]) -> None:
         self._train = train
 
     def with_dataset_build(self, dataset_build: Optional[DatasetBuild]) -> None:
         self._dataset_build = dataset_build
+
+    def with_tracker(self, tracker: ProjectProgressTracker) -> None:
+        self._tracker = tracker
+
+    def with_entity_name(self, entity_name: str) -> None:
+        self._entity_name = entity_name
+
+    def with_entity_type(self, entity_type: EntityType) -> None:
+        self._entity_type = entity_type
+
+    def tracker(self) -> Optional[ProjectProgressTracker]:
+        return self._tracker
+
+    def entity_name(self) -> Optional[str]:
+        return self._entity_name
+
+    def entity_type(self) -> EntityType:
+        if self._entity_type:
+            return self._entity_type
+        elif self.train():
+            return EntityType.MODEL
+        elif self.dataset_build():
+            return EntityType.DERIVED_DATASET
+        else:
+            raise Exception("Unsupported entity type")
 
     def close(self) -> None:
         pass

@@ -1,6 +1,6 @@
 import uuid
 from contextlib import contextmanager
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 from rich.console import Console
 from rich.progress import TaskID
@@ -18,9 +18,9 @@ from layer.projects.tracker.resource_transfer_state import ResourceTransferState
 class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
     def __init__(
         self,
-        project_name: str,
         config: Config,
-        account_name: str,
+        account_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ):
         self._project_name = project_name
         self._account_name = account_name
@@ -53,7 +53,7 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
             self._task_ids[(entity_type, name)] = task_id
         return self._task_ids[(entity_type, name)]
 
-    def _update_entity(
+    def _update_entity(  # noqa: C901
         self,
         type_: EntityType,
         name: str,
@@ -62,10 +62,17 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         cur_step: int = 0,
         total_steps: int = 0,
         url: Optional[URL] = None,
+        version: Optional[str] = None,
+        build_idx: Optional[str] = None,
         error_reason: str = "",
         description: Optional[str] = None,
         model_transfer_state: Optional[ResourceTransferState] = None,
         dataset_transfer_state: Optional[DatasetTransferState] = None,
+        resource_transfer_state: Optional[ResourceTransferState] = None,
+        loading_cache_entity: Optional[str] = None,
+        entity_download_transfer_state: Optional[
+            Union[ResourceTransferState, DatasetTransferState]
+        ] = None,
     ) -> None:
         task_id = self._get_or_create_task(type_, name)
         # noinspection PyProtectedMember
@@ -74,13 +81,23 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         if status:
             entity.status = status
         if url:
-            entity.url = url
+            entity.base_url = url
+        if version:
+            entity.version = version
+        if build_idx:
+            entity.build_idx = build_idx
         if error_reason:
             entity.error_reason = error_reason
         if dataset_transfer_state:
             entity.dataset_transfer_state = dataset_transfer_state
         if model_transfer_state:
             entity.model_transfer_state = model_transfer_state
+        if resource_transfer_state:
+            entity.resource_transfer_state = resource_transfer_state
+        if loading_cache_entity:
+            entity.loading_cache_entity = loading_cache_entity
+        if entity_download_transfer_state:
+            entity.entity_download_transfer_state = entity_download_transfer_state
 
         if description is not None:
             self._progress.update(
@@ -107,15 +124,17 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         elif status == EntityStatus.BUILDING:
             if not task.started:
                 self._progress.start_task(task_id)
-            self._progress.update(
-                task_id, completed=task.total * 0.1, description="building"
-            )
+            self._progress.update(task_id, description="building")
+        elif (
+            status == EntityStatus.ENTITY_DOWNLOADING
+            or status == EntityStatus.ENTITY_FROM_CACHE
+        ):
+            if not task.started:
+                self._progress.start_task(task_id)
         elif status == EntityStatus.TRAINING:
             if not task.started:
                 self._progress.start_task(task_id)
-            self._progress.update(
-                task_id, completed=task.total * 0.1, description="training"
-            )
+            self._progress.update(task_id, description="training")
         elif status == EntityStatus.DONE:
             self._progress.update(task_id, completed=task.total, description="done")
             self._progress.stop_task(task_id)
@@ -124,6 +143,8 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
             self._progress.update(task_id, completed=0, description="error")
 
     def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
+        assert self._project_name
+        assert self._account_name
         url = EntityType.DERIVED_DATASET.get_url(
             self._config.url,
             self._project_name,
@@ -133,7 +154,11 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         )
         self._update_entity(EntityType.DERIVED_DATASET, name, url=url)
 
-    def mark_derived_dataset_building(self, name: str) -> None:
+    def mark_derived_dataset_building(
+        self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
+    ) -> None:
+        assert self._project_name
+        assert self._account_name
         url = EntityType.DERIVED_DATASET.get_url(
             self._config.url,
             self._project_name,
@@ -145,6 +170,8 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
             name,
             status=EntityStatus.BUILDING,
             url=url,
+            version=version,
+            build_idx=build_idx,
         )
 
     def mark_derived_dataset_built(
@@ -154,16 +181,21 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         version: Optional[str] = None,
         build_index: Optional[str] = None,
     ) -> None:
+        assert self._project_name
+        assert self._account_name
         url = EntityType.DERIVED_DATASET.get_url(
             self._config.url,
             self._project_name,
             self._account_name,
             name=name,
-            version=version,
-            build_index=build_index,
         )
         self._update_entity(
-            EntityType.DERIVED_DATASET, name, status=EntityStatus.DONE, url=url
+            EntityType.DERIVED_DATASET,
+            name,
+            status=EntityStatus.DONE,
+            url=url,
+            version=version,
+            build_idx=build_index,
         )
 
     def mark_model_saving(self, name: str) -> None:
@@ -172,7 +204,11 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
     def mark_model_saved(self, name: str) -> None:
         self._update_entity(EntityType.MODEL, name, status=EntityStatus.DONE)
 
-    def mark_model_training(self, name: str) -> None:
+    def mark_model_training(
+        self, name: str, version: Optional[str] = None, train_idx: Optional[str] = None
+    ) -> None:
+        assert self._project_name
+        assert self._account_name
         url = EntityType.MODEL.get_url(
             self._config.url,
             self._project_name,
@@ -180,7 +216,12 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
             name=name,
         )
         self._update_entity(
-            EntityType.MODEL, name, status=EntityStatus.TRAINING, url=url
+            EntityType.MODEL,
+            name,
+            status=EntityStatus.TRAINING,
+            url=url,
+            version=version,
+            build_idx=train_idx,
         )
 
     def mark_model_trained(
@@ -190,15 +231,9 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         version: Optional[str] = None,
         train_index: Optional[str] = None,
     ) -> None:
-        url = EntityType.MODEL.get_url(
-            self._config.url,
-            self._project_name,
-            self._account_name,
-            name=name,
-            version=version,
-            train_index=train_index,
+        self._update_entity(
+            EntityType.MODEL, name, url=None, status=EntityStatus.SAVING
         )
-        self._update_entity(EntityType.MODEL, name, url=url, status=EntityStatus.SAVING)
 
     def mark_model_train_failed(self, name: str, reason: str) -> None:
         self._update_entity(EntityType.MODEL, name, status=EntityStatus.ERROR)
@@ -287,4 +322,78 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
             name,
             model_transfer_state=state,
             status=EntityStatus.RESULT_UPLOADING,
+        )
+
+    def mark_model_getting_model(
+        self,
+        name: str,
+        getting_entity_name: str,
+        state: Optional[ResourceTransferState],
+        from_cache: bool,
+    ) -> None:
+        self._update_entity(
+            EntityType.MODEL,
+            name,
+            entity_download_transfer_state=state,
+            status=EntityStatus.ENTITY_DOWNLOADING
+            if not from_cache
+            else EntityStatus.ENTITY_FROM_CACHE,
+            loading_cache_entity=None if not from_cache else getting_entity_name,
+        )
+
+    def mark_model_getting_dataset(
+        self, name: str, getting_entity_name: str, from_cache: bool
+    ) -> None:
+        self._update_entity(
+            EntityType.MODEL,
+            name,
+            entity_download_transfer_state=DatasetTransferState(0, getting_entity_name),
+            status=EntityStatus.ENTITY_DOWNLOADING
+            if not from_cache
+            else EntityStatus.ENTITY_FROM_CACHE,
+            loading_cache_entity=None if not from_cache else getting_entity_name,
+        )
+
+    def mark_dataset_getting_model(
+        self,
+        name: str,
+        getting_entity_name: str,
+        state: Optional[ResourceTransferState],
+        from_cache: bool,
+    ) -> None:
+        self._update_entity(
+            EntityType.DERIVED_DATASET,
+            name,
+            entity_download_transfer_state=state,
+            status=EntityStatus.ENTITY_DOWNLOADING
+            if not from_cache
+            else EntityStatus.ENTITY_FROM_CACHE,
+            loading_cache_entity=None if not from_cache else getting_entity_name,
+        )
+
+    def mark_dataset_getting_dataset(
+        self, name: str, getting_entity_name: str, from_cache: bool
+    ) -> None:
+        self._update_entity(
+            EntityType.DERIVED_DATASET,
+            name,
+            entity_download_transfer_state=DatasetTransferState(0, getting_entity_name),
+            status=EntityStatus.ENTITY_DOWNLOADING
+            if not from_cache
+            else EntityStatus.ENTITY_FROM_CACHE,
+            loading_cache_entity=None if not from_cache else getting_entity_name,
+        )
+
+    def mark_model_loaded(
+        self,
+        name: str,
+    ) -> None:
+        self._update_entity(EntityType.MODEL, name, status=EntityStatus.ENTITY_LOADED)
+
+    def mark_dataset_loaded(
+        self,
+        name: str,
+    ) -> None:
+        self._update_entity(
+            EntityType.DERIVED_DATASET, name, status=EntityStatus.ENTITY_LOADED
         )

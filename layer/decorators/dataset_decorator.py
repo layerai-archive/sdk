@@ -4,18 +4,18 @@ from uuid import UUID
 
 import wrapt  # type: ignore
 
-from layer import Context
+from layer import Dataset, Model
 from layer.assertion_utils import Assertion
 from layer.async_utils import asyncio_run_in_thread
-from layer.client import Dataset, Model
 from layer.common import LayerClient
 from layer.config import ConfigManager
-from layer.dataset_build import DatasetBuild
+from layer.context import Context
+from layer.data_classes import DatasetBuild, DatasetBuildStatus
 from layer.decorators.assertions import get_assertion_functions_data
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 from layer.decorators.utils import ensure_has_layer_settings
 from layer.definitions import DatasetDefinition
-from layer.global_context import set_active_context
+from layer.global_context import reset_active_context, set_active_context
 from layer.projects.asset import AssetType
 from layer.projects.project_runner import register_derived_datasets
 from layer.projects.tracker.dataset_transfer_state import DatasetTransferState
@@ -128,13 +128,15 @@ def _dataset_wrapper(
             with LayerClient(config.client, logger).init() as client:
                 account_name = client.account.get_my_account().name
                 project_progress_tracker = LocalExecutionProjectProgressTracker(
-                    current_project_name_, config=config, account_name=account_name
+                    project_name=current_project_name_,
+                    config=config,
+                    account_name=account_name,
                 )
                 with project_progress_tracker.track() as tracker:
                     dataset_definition = DatasetDefinition(
                         self.__wrapped__, current_project_name_
                     )
-                    return _build_dataset_locally_and_store_remotely(
+                    result = _build_dataset_locally_and_store_remotely(
                         lambda: super(DatasetFunctionWrapper, self).__call__(
                             *args, **kwargs
                         ),
@@ -144,6 +146,7 @@ def _dataset_wrapper(
                         client,
                         get_assertion_functions_data(self),
                     )
+                    return result
 
     return DatasetFunctionWrapper
 
@@ -199,24 +202,39 @@ def _build_locally_update_remotely(
     tracker: LocalExecutionProjectProgressTracker,
     assertions: List[Assertion],
 ) -> Tuple[Any, UUID]:
-    with Context() as context:
-        initiate_build_response = client.data_catalog.initiate_build(
-            derived_dataset_updated, current_project_uuid
-        )
-        context.with_dataset_build(
-            DatasetBuild(dataset_build_id=UUID(initiate_build_response.id.value))
-        )
-        set_active_context(context)
-        try:
-            result = function_that_builds_dataset()
-            _run_assertions(derived_dataset_updated.name, result, assertions, tracker)
-        except Exception as e:
-            client.data_catalog.complete_build(
-                initiate_build_response.id, derived_dataset_updated, e
+    try:
+        with Context() as context:
+            initiate_build_response = client.data_catalog.initiate_build(
+                derived_dataset_updated, current_project_uuid
             )
-            raise e
+            dataset_build_id = UUID(initiate_build_response.id.value)
+            context.with_dataset_build(
+                DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.STARTED)
+            )
+            context.with_tracker(tracker)
+            context.with_entity_name(derived_dataset_updated.name)
+            set_active_context(context)
+            try:
+                result = function_that_builds_dataset()
+                _run_assertions(
+                    derived_dataset_updated.name, result, assertions, tracker
+                )
+            except Exception as e:
+                client.data_catalog.complete_build(
+                    initiate_build_response.id, derived_dataset_updated, e
+                )
+                context.with_dataset_build(
+                    DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.FAILED)
+                )
+                raise e
+            reset_active_context()
 
-        return result, UUID(str(initiate_build_response.id.value))
+            context.with_dataset_build(
+                DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.COMPLETED)
+            )
+            return result, UUID(str(initiate_build_response.id.value))
+    finally:
+        reset_active_context()
 
 
 def _run_assertions(

@@ -31,7 +31,9 @@ class ProjectProgressTracker:
     def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
         pass
 
-    def mark_derived_dataset_building(self, name: str) -> None:
+    def mark_derived_dataset_building(
+        self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
+    ) -> None:
         pass
 
     def mark_derived_dataset_failed(self, name: str, reason: str) -> None:
@@ -52,7 +54,9 @@ class ProjectProgressTracker:
     def mark_model_saved(self, name: str) -> None:
         pass
 
-    def mark_model_training(self, name: str) -> None:
+    def mark_model_training(
+        self, name: str, version: Optional[str] = None, train_idx: Optional[str] = None
+    ) -> None:
         pass
 
     def mark_model_trained(
@@ -122,4 +126,44 @@ class ProjectProgressTracker:
         pass
 
     def mark_model_saving_result(self, name: str, state: ResourceTransferState) -> None:
+        pass
+
+    def mark_model_getting_model(
+        self,
+        name: str,
+        getting_entity_name: str,
+        state: Optional[ResourceTransferState],
+        from_cache: bool,
+    ) -> None:
+        pass
+
+    def mark_model_getting_dataset(
+        self, name: str, getting_entity_name: str, from_cache: bool
+    ) -> None:
+        pass
+
+    def mark_dataset_getting_model(
+        self,
+        name: str,
+        getting_entity_name: str,
+        state: Optional[ResourceTransferState],
+        from_cache: bool,
+    ) -> None:
+        pass
+
+    def mark_dataset_getting_dataset(
+        self, name: str, getting_entity_name: str, from_cache: bool
+    ) -> None:
+        pass
+
+    def mark_model_loaded(
+        self,
+        name: str,
+    ) -> None:
+        pass
+
+    def mark_dataset_loaded(
+        self,
+        name: str,
+    ) -> None:
         pass

@@ -21,6 +21,7 @@ from yarl import URL
 from layer.cache import Cache
 from layer.common import LayerClient
 from layer.config import DEFAULT_PATH, DEFAULT_URL, ConfigManager
+from layer.context import Context
 from layer.exceptions.exceptions import (
     ConfigError,
     ProjectInitializationException,
@@ -28,28 +29,39 @@ from layer.exceptions.exceptions import (
     UserNotLoggedInException,
     UserWithoutAccountError,
 )
-from layer.fabric import Fabric
 from layer.logged_data.log_data_runner import LogDataRunner
+from layer.mlmodels.flavors.model_definition import ModelDefinition
+from layer.projects.entity import EntityType
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project import Project
 from layer.projects.project_runner import ProjectRunner, Run
+from layer.projects.tracker.local_execution_project_progress_tracker import (
+    LocalExecutionProjectProgressTracker,
+)
 from layer.projects.tracker.remote_execution_project_progress_tracker import (
     RemoteExecutionProjectProgressTracker,
 )
+from layer.projects.tracker.resource_transfer_state import ResourceTransferState
 from layer.projects.util import get_current_project_name
 from layer.settings import LayerSettings
+from layer.training.train import Train
 
+from . import Dataset, Model
 from .async_utils import asyncio_run_in_thread
-from .client import Dataset, Model
-from .global_context import current_project_name, get_active_context
+from .data_classes import Fabric
+from .global_context import (
+    current_project_name,
+    get_active_context,
+    reset_active_context,
+    set_active_context,
+)
 from .projects.asset import AssetPath, AssetType, parse_asset_path
-from .train import Train
 
 
 if TYPE_CHECKING:
     import matplotlib.figure  # type: ignore
     import pandas
-    import PIL.Image  # type: ignore
+    import PIL.Image
 
 
 logger = logging.getLogger(__name__)
@@ -150,6 +162,19 @@ def login_as_guest(url: Union[URL, str] = DEFAULT_URL) -> None:
 
 
 def login_with_api_key(api_key: str, url: Union[URL, str] = DEFAULT_URL) -> None:
+    """
+    :param access_token: A valid API key retrieved from Layer UI.
+    :param url: Not used.
+    :raise AuthException: If the API key is invalid.
+    :raise UserConfigurationError: If Layer user is not configured correctly.
+
+    Log in with an API key.
+
+    .. code-block:: python
+
+        layer.login_with_api_key(API_KEY)
+    """
+
     async def _login(url: URL) -> None:
         manager = ConfigManager(DEFAULT_PATH)
         await manager.login_with_api_key(url, api_key)
@@ -207,15 +232,59 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
     asset_path = _ensure_asset_path_has_project_name(asset_path)
 
     def fetch_dataset() -> "pandas.DataFrame":
+        context = get_active_context()
         with LayerClient(config.client, logger).init() as client:
-            return client.data_catalog.fetch_dataset(
-                asset_path.path(), no_cache=no_cache
+            within_run = (
+                True if context else False
+            )  # if layer.get_dataset is called within a @dataset decorated func of not
+            callback = lambda: client.data_catalog.fetch_dataset(  # noqa: E731
+                asset_path, no_cache=no_cache
             )
+            if not within_run:
+                try:
+                    with Context() as context:
+                        set_active_context(context)
+                        context.with_entity_name(asset_path.entity_name)
+                        context.with_entity_type(EntityType.DERIVED_DATASET)
+                        tracker = LocalExecutionProjectProgressTracker(
+                            project_name=None, config=config
+                        )
+                        context.with_tracker(tracker)
+                        with tracker.track():
+                            dataset = _ui_progress_with_tracker(
+                                callback,
+                                asset_path.entity_name,
+                                False,  # Datasets are fetched per partition, no good way to show caching per partition
+                                within_run,
+                                context,
+                                EntityType.DERIVED_DATASET,
+                            )
+                finally:
+                    reset_active_context()  # Reset only if outside layer func, as the layer func logic will reset it
+            else:
+                assert context
+                dataset = _ui_progress_with_tracker(
+                    callback,
+                    asset_path.entity_name,
+                    False,  # Datasets are fetched per partition, no good way to show caching per partition
+                    within_run,
+                    context,
+                    EntityType.DERIVED_DATASET,
+                )
+
+            return dataset
 
     return Dataset(
         asset_path=asset_path,
         _pandas_df_factory=fetch_dataset,
     )
+
+
+def _is_cached(model_definition: ModelDefinition) -> bool:
+    cache = Cache(cache_dir=None).initialise()
+    model_train_id = model_definition.model_train_id.value
+    model_cache_dir = cache.get_path_entry(model_train_id)
+    return model_cache_dir is not None
 
 
 def get_model(name: str, no_cache: bool = False) -> Model:
@@ -224,7 +293,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
     :param no_cache: if True, force model fetch from the remote location.
     :return: The model object.
 
-    Retrieves a Layer model object from the Discover > Models tab.
+    Retrieves a Layer model object by its name.
 
     Guest users can use this function to access public models without logging in to Layer.
 
@@ -247,26 +316,125 @@ def get_model(name: str, no_cache: bool = False) -> Model:
     config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
     asset_path = parse_asset_path(name, expected_asset_type=AssetType.MODEL)
     asset_path = _ensure_asset_path_has_project_name(asset_path)
+    context = get_active_context()
 
     with LayerClient(config.client, logger).init() as client:
+        within_run = (
+            True if context else False
+        )  # if layer.get_model is called within a @model decorated func of not
         model_definition = client.model_catalog.load_model_definition(
             path=asset_path.path()
         )
-        train_object = client.model_catalog.load_by_model_definition(
-            model_definition, no_cache=no_cache
+        from_cache = not no_cache and _is_cached(model_definition)
+        state = (
+            ResourceTransferState(model_definition.model_raw_name)
+            if not from_cache
+            else None
         )
-        metrics = client.model_catalog.get_model_train_metrics(
-            model_definition.model_train_id
+        callback = lambda: _load_model(  # noqa: E731
+            client, asset_path, model_definition, no_cache, state
         )
-        parameters = client.model_catalog.get_model_train_parameters(
-            model_definition.model_train_id
-        )
-        return Model(
-            asset_path=asset_path,
-            trained_model_object=train_object,
-            metrics=metrics,
-            parameters=parameters,
-        )
+        if not within_run:
+            try:
+                with Context() as context:
+                    set_active_context(context)
+                    context.with_entity_name(asset_path.entity_name)
+                    context.with_entity_type(EntityType.MODEL)
+                    tracker = LocalExecutionProjectProgressTracker(
+                        project_name=None, config=config
+                    )
+                    context.with_tracker(tracker)
+                    with tracker.track():
+                        model = _ui_progress_with_tracker(
+                            callback,
+                            asset_path.entity_name,
+                            from_cache,
+                            within_run,
+                            context,
+                            EntityType.MODEL,
+                            state,
+                        )
+            finally:
+                reset_active_context()  # Reset only if outside layer func, as the layer func logic will reset it
+        else:
+            assert context
+            model = _ui_progress_with_tracker(
+                callback,
+                asset_path.entity_name,
+                from_cache,
+                within_run,
+                context,
+                EntityType.MODEL,
+                state,
+            )
+
+        return model
+
+
+def _load_model(
+    client: LayerClient,
+    asset_path: AssetPath,
+    model_definition: ModelDefinition,
+    no_cache: bool,
+    state: Optional[ResourceTransferState] = None,
+) -> Model:
+    train_object = client.model_catalog.load_by_model_definition(
+        model_definition, no_cache=no_cache, state=state
+    )
+    parameters = client.model_catalog.get_model_train_parameters(
+        model_definition.model_train_id
+    )
+    return Model(
+        asset_path=asset_path,
+        trained_model_object=train_object,
+        parameters=parameters,
+    )
+
+
+def _ui_progress_with_tracker(
+    callback: Callable[[], Any],
+    getting_entity_name: str,
+    from_cache: bool,
+    within_run: bool,
+    context: Context,
+    getting_entity_type: EntityType,
+    state: Optional[ResourceTransferState] = None,
+) -> Any:
+    entity_name = context.entity_name()
+    assert entity_name
+    tracker = context.tracker()
+    assert tracker
+    entity_type = context.entity_type()
+    assert entity_type
+    if entity_type == EntityType.MODEL:
+        if getting_entity_type == EntityType.DERIVED_DATASET:
+            tracker.mark_model_getting_dataset(
+                entity_name, getting_entity_name, from_cache
+            )
+        elif getting_entity_type == EntityType.MODEL:
+            tracker.mark_model_getting_model(
+                entity_name, getting_entity_name, state, from_cache
+            )
+    elif entity_type == EntityType.DERIVED_DATASET:
+        if getting_entity_type == EntityType.DERIVED_DATASET:
+            tracker.mark_dataset_getting_dataset(
+                entity_name, getting_entity_name, from_cache
+            )
+        elif getting_entity_type == EntityType.MODEL:
+            tracker.mark_dataset_getting_model(
+                entity_name, getting_entity_name, state, from_cache
+            )
+    result = callback()
+    if within_run:
+        if entity_type == EntityType.MODEL:
+            tracker.mark_model_training(entity_name)
+        elif entity_type == EntityType.DERIVED_DATASET:
+            tracker.mark_derived_dataset_building(entity_name)
+    elif entity_type == EntityType.MODEL:
+        tracker.mark_model_loaded(entity_name)
+    elif entity_type == EntityType.DERIVED_DATASET:
+        tracker.mark_dataset_loaded(entity_name)
+    return result
 
 
 def _ensure_asset_path_has_project_name(
@@ -581,7 +749,7 @@ def log(
     train = active_context.train()
     train_id = train.get_id() if train is not None else None
     dataset_build = active_context.dataset_build()
-    dataset_build_id = dataset_build.get_id() if dataset_build is not None else None
+    dataset_build_id = dataset_build.id if dataset_build is not None else None
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
     with LayerClient(layer_config.client, logger).init() as client:
         log_data_runner = LogDataRunner(

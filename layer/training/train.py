@@ -2,20 +2,20 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
+from layer.api.entity.model_version_pb2 import ModelVersion
+from layer.api.ids_pb2 import ModelTrainId
 from layer.common import LayerClient
+from layer.mlmodels.flavors.model_definition import ModelDefinition
+from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 
-from .api.entity.model_version_pb2 import ModelVersion
-from .api.ids_pb2 import ModelTrainId
-from .api.value.signature_pb2 import Signature
-from .mlmodels.flavors.model_definition import ModelDefinition
-from .projects.tracker.project_progress_tracker import ProjectProgressTracker
+from .base_train import BaseTrain
 
 
 if TYPE_CHECKING:
-    from .mlmodels import MlModelInferableDataset, ModelObject
+    from layer.mlmodels import ModelObject
 
 
-class Train:
+class Train(BaseTrain):
     """
     Allows the user to control the state of a model training.
 
@@ -50,10 +50,6 @@ class Train:
         self.__train_id: Optional[ModelTrainId] = (
             ModelTrainId(value=str(train_id)) if train_id is not None else None
         )
-        # Populated at register input
-        self.__input_sample: Optional["MlModelInferableDataset"] = None
-        # Populated at register output
-        self.__output_sample: Optional["MlModelInferableDataset"] = None
         self.__start_train_ts: int  # For computing relative to start metric timestamps
         # Populated at the save of a model train
         self.__flavor: Optional["ModelVersion.ModelFlavor.V"] = None
@@ -174,48 +170,6 @@ class Train:
             model_definition, trained_model_obj=trained_model_obj, tracker=tracker
         )
 
-    def register_input(self, data: "MlModelInferableDataset") -> None:
-        """
-        Registers the model input schema that Layer displays in the [Discover > Models](id:discover-models) Signature tab.
-
-        :param data: Dataframe that the schema will be extracted from.
-
-        .. code-block:: python
-
-            def train_model(train: Train, tf: Featureset("transaction_features")):
-                # Register input and target data
-                train.register_input(x_train)
-                train.register_output(y_train)
-
-        """
-        assert self.__train_id
-        self.__input_sample = data
-        signature = self.__infer_signature(self.__input_sample, self.__output_sample)
-        self.__layer_client.model_catalog.update_signature_request(
-            self.__train_id, signature
-        )
-
-    def register_output(self, data: "MlModelInferableDataset") -> None:
-        """
-        Registers the model output schema that Layer displays in the [Discover > Models](id:discover-models) Signature tab.
-
-        :param data: Dataframe that the schema will be extracted from.
-
-        .. code-block:: python
-
-            def train_model(train: Train, tf: Featureset("transaction_features")):
-                # Register input and target data
-                train.register_input(x_train)
-                train.register_output(y_train)
-
-        """
-        assert self.__train_id
-        self.__output_sample = data
-        signature = self.__infer_signature(self.__input_sample, self.__output_sample)
-        self.__layer_client.model_catalog.update_signature_request(
-            self.__train_id, signature
-        )
-
     def __parse_parameter(self, value: str) -> Any:
         try:
             return int(value)
@@ -243,15 +197,6 @@ class Train:
         assert self.__train_id
         self.__layer_client.model_catalog.complete_model_train(
             self.__train_id, self.__flavor
-        )
-
-    def __infer_signature(
-        self,
-        model_input: Optional["MlModelInferableDataset"],
-        model_output: Optional["MlModelInferableDataset"],
-    ) -> Signature:
-        return self.__layer_client.model_catalog.infer_signature(
-            model_input, model_output
         )
 
     def __infer_flavor(self, model_obj: "ModelObject") -> "ModelVersion.ModelFlavor.V":

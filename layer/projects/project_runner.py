@@ -10,9 +10,9 @@ import polling  # type: ignore
 
 from layer.api.entity.operations_pb2 import ExecutionPlan
 from layer.api.ids_pb2 import HyperparameterTuningId, ModelVersionId, RunId
-from layer.client import Dataset, DerivedDataset, PythonDataset, RawDataset
 from layer.common import LayerClient
 from layer.config import Config
+from layer.data_classes import Dataset, DerivedDataset, PythonDataset, RawDataset
 from layer.definitions import DatasetDefinition, ModelDefinition
 from layer.exceptions.exceptions import (
     LayerClientException,

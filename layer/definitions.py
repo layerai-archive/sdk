@@ -9,8 +9,15 @@ from typing import Any, List, Union
 
 import cloudpickle  # type: ignore
 
-from layer.client import Dataset, DerivedDataset, Model, PythonDataset, Train
 from layer.config import DEFAULT_FUNC_PATH
+from layer.data_classes import (
+    Dataset,
+    DerivedDataset,
+    Fabric,
+    Model,
+    PythonDataset,
+    Train,
+)
 from layer.projects.asset import AssetPath, AssetType
 
 
@@ -105,7 +112,7 @@ class DatasetDefinition(Definition):
 
         return PythonDataset(
             asset_path=asset_path,
-            fabric=self.fabric.value if self.fabric else "",
+            fabric=self.fabric.value if self.fabric else Fabric.default(),
             entrypoint=self._get_entrypoint(),
             entrypoint_content=inspect.getsource(self.func),
             entrypoint_path=self._get_entity_path() / self._get_entrypoint(),
@@ -153,7 +160,6 @@ class ModelDefinition(Definition):
             description="",
             training=train,
             training_files_digest=training_files_digest.hexdigest(),
-            metrics={},
             parameters={},
             dependencies=self._get_entity_dependencies(),
         )

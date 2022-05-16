@@ -11,17 +11,20 @@ from layer import Context
 from layer.api.entity.model_train_status_pb2 import (  # pylint: disable=unused-import
     ModelTrainStatus,
 )
-from layer.assertion_utils import Assertion
+from layer.assertion_utils import Assertion, LayerFailedAssertionsException
 from layer.common import LayerClient
 from layer.decorators.assertions import get_assertion_functions_data
 from layer.exceptions.exception_handler import exception_handler
-from layer.global_context import current_project_name, set_active_context
+from layer.global_context import (
+    current_project_name,
+    reset_active_context,
+    set_active_context,
+)
 from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.resource_manager import ResourceManager
-from layer.train import Train
+from layer.training.train import Train
 
 from .common import import_function, update_train_status
-from .dependency_injector import inject_annotated_dependencies
 from .model_train_failure_reporter import ModelTrainFailureReporter
 
 
@@ -33,6 +36,7 @@ class TrainContextDataclassMixin:
     source_entrypoint: str
     source_folder: Path
     logger: Logger
+    train_index: Optional[str] = None
 
 
 class TrainContext(ABC, TrainContextDataclassMixin):
@@ -55,7 +59,7 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
-        pass
+        reset_active_context()
 
 
 @dataclass
@@ -66,6 +70,7 @@ class LocalTrainContext(TrainContext):
         super().init_or_save_context(context)
 
     def __enter__(self) -> None:
+        super().__enter__()
         self.initial_cwd = os.getcwd()
 
     def get_working_directory(self) -> Path:
@@ -78,6 +83,7 @@ class LocalTrainContext(TrainContext):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
+        super().__exit__(exc_type, exc_val, exc_tb)
         assert self.initial_cwd
         os.chdir(
             self.initial_cwd
@@ -94,7 +100,11 @@ class ModelTrainer:
     tracker: ProjectProgressTracker = ProjectProgressTracker()
 
     def train(self) -> Any:
-        self.tracker.mark_model_training(self.train_context.model_name)
+        self.tracker.mark_model_training(
+            self.train_context.model_name,
+            version=self.train_context.model_version,
+            train_idx=self.train_context.train_index,
+        )
         try:
             with self.train_context:
                 return self._train(callback=self.failure_reporter.report_failure)
@@ -124,7 +134,7 @@ class ModelTrainer:
             self.tracker.mark_model_failed_assertions(
                 self.train_context.model_name, failed_assertions
             )
-            raise Exception(f"Failed assertions {failed_assertions}\n")
+            raise LayerFailedAssertionsException(failed_assertions)
         else:
             self.tracker.mark_model_completed_assertions(self.train_context.model_name)
 
@@ -151,21 +161,14 @@ class ModelTrainer:
                 train_id=self.train_context.train_id,
             ) as train:
                 context.with_train(train)
+                context.with_tracker(self.tracker)
+                context.with_entity_name(self.train_context.model_name)
                 self.train_context.init_or_save_context(context)
                 update_train_status(
                     self.client.model_catalog,
                     self.train_context.train_id,
                     ModelTrainStatus.TRAIN_STATUS_FETCHING_FEATURES,
                     self.logger,
-                )
-                self.logger.info("Injecting the dependencies")
-                injected_dependencies = inject_annotated_dependencies(
-                    train_model_func,
-                    context,
-                    self.logger,
-                )
-                self.logger.info(
-                    f"Injected dependencies successfully: {injected_dependencies}"
                 )
 
                 update_train_status(
@@ -183,7 +186,7 @@ class ModelTrainer:
                     train_model_func.__name__,
                     target_dir=str(work_dir),
                 )
-                model = train_model_func(**injected_dependencies)
+                model = train_model_func()
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
                     version=train.get_version(),

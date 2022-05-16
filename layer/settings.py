@@ -1,8 +1,8 @@
 from typing import Any, List, Optional, Union
 
 from layer import Dataset, Model
+from layer.data_classes import Fabric
 from layer.exceptions.exceptions import ConfigError
-from layer.fabric import Fabric
 from layer.global_context import (
     default_fabric,
     get_pip_packages,

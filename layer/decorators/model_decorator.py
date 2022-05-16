@@ -114,7 +114,9 @@ def _model_wrapper(
             with LayerClient(config.client, logger).init() as client:
                 account_name = client.account.get_my_account().name
                 project_progress_tracker = LocalExecutionProjectProgressTracker(
-                    current_project_name_, config=config, account_name=account_name
+                    project_name=current_project_name_,
+                    config=config,
+                    account_name=account_name,
                 )
 
                 with project_progress_tracker.track() as tracker:
@@ -147,6 +149,7 @@ def _model_wrapper(
             train_id = client.model_catalog.create_model_train_from_version_id(
                 model_version.id
             )
+            train = client.model_catalog.get_model_train(train_id)
 
             context = LocalTrainContext(  # noqa: F841
                 logger=logger,
@@ -155,6 +158,7 @@ def _model_wrapper(
                 train_id=UUID(train_id.value),
                 source_folder=model.local_path.parent,
                 source_entrypoint=model.training.entrypoint,
+                train_index=str(train.index),
             )
             failure_reporter = ModelTrainFailureReporter(
                 client.model_catalog,

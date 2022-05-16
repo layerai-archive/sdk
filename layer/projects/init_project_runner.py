@@ -7,7 +7,7 @@ from layer import global_context
 from layer.async_utils import asyncio_run_in_thread
 from layer.common import LayerClient
 from layer.config import ConfigManager
-from layer.fabric import Fabric
+from layer.data_classes import Fabric
 from layer.global_context import (
     set_default_fabric,
     set_pip_packages,

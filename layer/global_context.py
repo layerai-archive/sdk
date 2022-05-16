@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from layer import Context
-from layer.fabric import Fabric
+from .context import Context
+from .data_classes import Fabric
 
 
 @dataclass
@@ -49,6 +49,11 @@ def current_project_name() -> Optional[str]:
 def set_active_context(context: Context) -> None:
     global _global_context
     _global_context.active_context = context
+
+
+def reset_active_context() -> None:
+    global _global_context
+    _global_context.active_context = None
 
 
 def get_active_context() -> Optional[Context]:

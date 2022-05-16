@@ -1,14 +1,15 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class DatasetTransferState:
-    def __init__(self, total_num_rows: int) -> None:
+    def __init__(self, total_num_rows: int, name: Optional[str] = None) -> None:
+        self._name: Optional[str] = name
         self._total_num_rows: int = total_num_rows
         self._transferred_num_rows: int = 0
         self._timestamp_to_rows_sent: Dict[Any, int] = defaultdict(int)
-        self._how_many_previous_seconds = 4
+        self._how_many_previous_seconds = 20
 
     def increment_num_transferred_rows(self, increment_with: int) -> None:
         self._transferred_num_rows += increment_with
@@ -22,7 +23,7 @@ class DatasetTransferState:
         # within current second after the call of this func
         for i in range(1, self._how_many_previous_seconds + 1):
             look_at = curr_timestamp - i
-            if look_at > 0:
+            if look_at >= 0 and look_at in self._timestamp_to_rows_sent:
                 valid_seconds += 1
                 rows_transferred += self._timestamp_to_rows_sent[look_at]
         if valid_seconds == 0:
@@ -46,6 +47,14 @@ class DatasetTransferState:
     @property
     def total_num_rows(self) -> int:
         return self._total_num_rows
+
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self._name = value
 
     def __str__(self) -> str:
         return str(self.__dict__)
