@@ -11,7 +11,7 @@ $(INSTALL_STAMP): pyproject.toml poetry.lock
 
 .PHONY: test
 test: $(INSTALL_STAMP) ## Run unit tests
-	$(POETRY) run pytest test --cov .
+	$(POETRY) run pytest test/unit --cov .
 
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters
