@@ -17,7 +17,8 @@ from layer.api.value.logged_data_type_pb2 import LoggedDataType
 from layer.config import ClientConfig
 from layer.grpc_utils import create_grpc_channel
 
-from .logged_data import LoggedData, LoggedDataType as LDType
+from .logged_data import LoggedData
+from .logged_data import LoggedDataType as LDType
 
 
 @dataclass(frozen=True)
