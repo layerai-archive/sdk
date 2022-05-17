@@ -19,7 +19,7 @@ from typing import (
     Type,
 )
 
-from layer.api.entity.operations_pb2 import (
+from layerapi.api.entity.operations_pb2 import (
     DatasetBuildOperation,
     ExecutionPlan,
     HyperparameterTuningOperation,
@@ -28,7 +28,8 @@ from layer.api.entity.operations_pb2 import (
     ParallelOperation,
     SequentialOperation,
 )
-from layer.api.ids_pb2 import HyperparameterTuningId, ModelVersionId
+from layerapi.api.ids_pb2 import HyperparameterTuningId, ModelVersionId
+
 from layer.client import LayerClientException
 from layer.common import LayerClient
 from layer.data_classes import DerivedDataset, Model, RawDataset

@@ -5,10 +5,10 @@ from datetime import datetime
 from enum import Enum, unique
 from typing import Any, Callable, List, Tuple
 
-from layer.common import LayerClient
+from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
+from layerapi.api.ids_pb2 import RunId
 
-from .api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
-from .api.ids_pb2 import RunId
+from layer.common import LayerClient
 
 
 POLLING_INTERVAL_SEC = 3
@@ -33,7 +33,7 @@ class UserLogLine:
 
 def __convert_log_line(line: PBUserLogLine) -> UserLogLine:
     return UserLogLine(
-        type=__convert_entity(line.type).name,  # type: ignore
+        type=__convert_entity(line.type).name,
         entity_name=line.entity_name,
         host_name=line.host_name,
         time=line.time.ToDatetime(),
@@ -42,11 +42,11 @@ def __convert_log_line(line: PBUserLogLine) -> UserLogLine:
 
 
 def __convert_entity(entity: PBUserLogLine.TaskType) -> EntityType:
-    if entity == PBUserLogLine.TASK_TYPE_MODEL_TRAIN:  # type: ignore
+    if entity == PBUserLogLine.TASK_TYPE_MODEL_TRAIN:
         return EntityType.MODEL_TRAIN
-    elif entity == PBUserLogLine.TASK_TYPE_HYPERPARAMETER_TUNING_TRAIN:  # type: ignore
+    elif entity == PBUserLogLine.TASK_TYPE_HYPERPARAMETER_TUNING_TRAIN:
         return EntityType.HYPERPARAMETER_TUNING_TRAIN
-    elif entity == PBUserLogLine.TASK_TYPE_DATASET_BUILD:  # type: ignore
+    elif entity == PBUserLogLine.TASK_TYPE_DATASET_BUILD:
         return EntityType.DATASET_BUILD
     else:
         raise Exception(f"Unable to convert {entity}")

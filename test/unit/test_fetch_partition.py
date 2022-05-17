@@ -3,8 +3,8 @@ from unittest import mock
 from unittest.mock import patch
 
 import pytest
+from layerapi.api.value.ticket_pb2 import PartitionTicket
 
-from layer.api.value.ticket_pb2 import PartitionTicket
 from layer.clients.dataset_client import (
     DatasetClient,
     DatasetClientError,

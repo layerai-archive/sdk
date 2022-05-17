@@ -7,10 +7,11 @@ from types import TracebackType
 from typing import Any, List, Optional
 from uuid import UUID
 
-from layer import Context
-from layer.api.entity.model_train_status_pb2 import (  # pylint: disable=unused-import
+from layerapi.api.entity.model_train_status_pb2 import (  # pylint: disable=unused-import
     ModelTrainStatus,
 )
+
+from layer import Context
 from layer.assertion_utils import Assertion, LayerFailedAssertionsException
 from layer.common import LayerClient
 from layer.decorators.assertions import get_assertion_functions_data

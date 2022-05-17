@@ -3,14 +3,15 @@ from contextlib import contextmanager
 from logging import Logger
 from typing import Iterator
 
-from layer.api.ids_pb2 import AccountId
-from layer.api.service.account.account_api_pb2 import (
+from layerapi.api.ids_pb2 import AccountId
+from layerapi.api.service.account.account_api_pb2 import (
     GetAccountViewByIdRequest,
     GetAccountViewByIdResponse,
 )
-from layer.api.service.account.account_api_pb2_grpc import AccountAPIStub
-from layer.api.service.account.user_api_pb2 import GetMyOrganizationRequest
-from layer.api.service.account.user_api_pb2_grpc import UserAPIStub
+from layerapi.api.service.account.account_api_pb2_grpc import AccountAPIStub
+from layerapi.api.service.account.user_api_pb2 import GetMyOrganizationRequest
+from layerapi.api.service.account.user_api_pb2_grpc import UserAPIStub
+
 from layer.config import ClientConfig
 from layer.grpc_utils import create_grpc_channel
 from layer.user.account import Account

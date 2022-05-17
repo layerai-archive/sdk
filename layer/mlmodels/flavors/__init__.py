@@ -1,6 +1,7 @@
 from typing import Dict, List
 
-from ...api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.entity.model_version_pb2 import ModelVersion
+
 from .flavor import (
     CatBoostModelFlavor,
     HuggingFaceModelFlavor,

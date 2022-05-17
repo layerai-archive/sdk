@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
-from layer.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.entity.model_version_pb2 import ModelVersion
+
 from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 
 

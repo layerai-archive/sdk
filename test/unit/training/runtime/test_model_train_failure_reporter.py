@@ -3,8 +3,9 @@ import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
-from layer.api.entity.model_train_status_pb2 import ModelTrainStatus
-from layer.api.ids_pb2 import ModelTrainId
+from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
+from layerapi.api.ids_pb2 import ModelTrainId
+
 from layer.client import ModelCatalogClient
 from layer.common import LayerClient
 from layer.exceptions.status_report import (

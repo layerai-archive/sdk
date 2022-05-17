@@ -10,15 +10,15 @@ import grpc
 import pytest
 from google.protobuf.json_format import ParseDict
 from grpc._cython.cygrpc import _Metadatum
-from tests.unit.grpc_test_utils import new_client_call_details, rpc_error
-
-from layer.api.ids_pb2 import RunId
-from layer.api.service.flowmanager.flow_manager_api_pb2 import (
+from layerapi.api.ids_pb2 import RunId
+from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     StartRunV2Request,
     StartRunV2Response,
     TerminateRunRequest,
     TerminateRunResponse,
 )
+from tests.unit.grpc_test_utils import new_client_call_details, rpc_error
+
 from layer.exceptions.exceptions import (
     LayerClientResourceAlreadyExistsException,
     LayerClientResourceNotFoundException,

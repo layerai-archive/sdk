@@ -2,9 +2,8 @@ from pathlib import Path
 from traceback import FrameSummary
 from typing import Any, List, Optional, Type
 
+from layerapi.api.ids_pb2 import RunId
 from yarl import URL
-
-from layer.api.ids_pb2 import RunId
 
 from .status_report import ExecutionStatusReport
 

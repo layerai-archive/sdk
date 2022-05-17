@@ -6,10 +6,10 @@ from uuid import UUID
 
 import pandas as pd
 import pytest
+from layerapi.api.ids_pb2 import DatasetBuildId
+from layerapi.api.service.datacatalog.data_catalog_api_pb2 import InitiateBuildResponse
 from tests.unit.decorators.util import project_client_mock
 
-from layer.api.ids_pb2 import DatasetBuildId
-from layer.api.service.datacatalog.data_catalog_api_pb2 import InitiateBuildResponse
 from layer.client import DataCatalogClient
 from layer.data_classes import Dataset, Fabric, Model
 from layer.decorators import dataset, fabric, pip_requirements

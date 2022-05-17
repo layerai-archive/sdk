@@ -4,14 +4,14 @@ from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
-
-from layer.api.entity.project_pb2 import Project
-from layer.api.ids_pb2 import OrganizationId, ProjectId
-from layer.api.service.flowmanager.project_api_pb2 import (
+from layerapi.api.entity.project_pb2 import Project
+from layerapi.api.ids_pb2 import OrganizationId, ProjectId
+from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
     CreateProjectResponse,
     GetProjectByNameResponse,
 )
+
 from layer.config import ClientConfig, ProjectServiceConfig
 from layer.exceptions.exceptions import (
     LayerClientException,
