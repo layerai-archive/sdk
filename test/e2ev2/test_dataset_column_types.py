@@ -1,6 +1,7 @@
+from test.e2ev2.assertion_utils import E2ETestAsserter
+
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from tests.e2ev2.assertion_utils import E2ETestAsserter
 
 import layer
 from layer.decorators import dataset

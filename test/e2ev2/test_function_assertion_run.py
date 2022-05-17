@@ -1,7 +1,8 @@
+from test.e2ev2.assertion_utils import E2ETestAsserter
+
 import pandas as pd
 import pytest
 from sklearn.svm import SVC
-from tests.e2ev2.assertion_utils import E2ETestAsserter
 
 import layer
 from layer.decorators import dataset, model, pip_requirements
