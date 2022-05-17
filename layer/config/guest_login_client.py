@@ -1,5 +1,6 @@
-from layer.api.service.account.user_api_pb2 import GetGuestAuthTokenRequest
-from layer.api.service.account.user_api_pb2_grpc import UserAPIStub
+from layerapi.api.service.account.user_api_pb2 import GetGuestAuthTokenRequest
+from layerapi.api.service.account.user_api_pb2_grpc import UserAPIStub
+
 from layer.config import LogsConfig
 from layer.grpc_utils import create_grpc_channel
 

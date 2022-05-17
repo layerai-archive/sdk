@@ -2,7 +2,8 @@ import uuid
 from contextlib import contextmanager
 from typing import Iterator, List, Optional, Union
 
-from layer.api.ids_pb2 import RunId
+from layerapi.api.ids_pb2 import RunId
+
 from layer.assertion_utils import Assertion
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 from layer.projects.tracker.dataset_transfer_state import DatasetTransferState

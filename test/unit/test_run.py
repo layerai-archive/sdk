@@ -1,26 +1,28 @@
 import os
 import uuid
+from test.unit.grpc_test_utils import new_client_call_details, rpc_error
 from typing import Any, Optional
 from unittest.mock import MagicMock
 
 import grpc
 import pytest
-from tests.unit.grpc_test_utils import new_client_call_details, rpc_error
-
-from layer.api.entity.operations_pb2 import ExecutionPlan
-from layer.api.entity.run_metadata_pb2 import RunMetadata
-from layer.api.ids_pb2 import RunId
-from layer.api.service.flowmanager.flow_manager_api_pb2 import (
+from layerapi.api.entity.operations_pb2 import ExecutionPlan
+from layerapi.api.entity.run_metadata_pb2 import RunMetadata
+from layerapi.api.ids_pb2 import RunId
+from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     GetRunHistoryAndMetadataRequest,
     GetRunHistoryAndMetadataResponse,
     StartRunV2Request,
     StartRunV2Response,
 )
+
 from layer.exceptions.exceptions import ProjectRunnerError
 from layer.grpc_utils.interceptors import (
     GRPCErrorClientInterceptor,
     RequestIdInterceptor,
 )
+from layer.projects.asset import AssetType
+from layer.projects.project import Asset, Function
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.tracker.remote_execution_project_progress_tracker import (
     RemoteExecutionProjectProgressTracker,
@@ -205,7 +207,31 @@ class TestProjectRun:
         project = MagicMock()
         project.name.return_value = "test"
         with pytest.raises(ProjectRunnerError, match=".*RESOURCE_EXHAUSTED.*"):
-            runner._run(client=client, project=project, execution_plan=ExecutionPlan())
+            runner._run(
+                client=client,
+                project=project,
+                execution_plan=ExecutionPlan(),
+                user_command="",
+            )
+
+    def test_get_user_command_returns_the_command_correctly(self) -> None:
+        runner = ProjectRunner(
+            config=MagicMock(),
+            project_progress_tracker_factory=RemoteExecutionProjectProgressTracker,
+        )
+        functions = [
+            Function(
+                "create_my_dataset",
+                Asset(name="my_dataset", type=AssetType.DATASET),
+            ),
+            Function(
+                "create_my_model",
+                Asset(name="my_model", type=AssetType.MODEL),
+            ),
+        ]
+        user_command = runner._get_user_command(runner.run, functions)
+
+        assert user_command == "run([create_my_dataset, create_my_model])"
 
 
 def _get_request_id_from(client_call_details: grpc.ClientCallDetails) -> Optional[str]:

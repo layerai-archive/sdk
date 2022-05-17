@@ -3,6 +3,7 @@ from typing import List, Optional
 
 import humanize  # type: ignore
 import polling  # type: ignore
+from layerapi.api.entity.run_pb2 import Run
 from rich.console import Console, RenderableType
 from rich.progress import Progress, ProgressColumn, Task
 from rich.spinner import Spinner
@@ -10,7 +11,6 @@ from rich.style import StyleType
 from rich.table import Column
 from rich.text import Text, TextType
 
-from layer.api.entity.run_pb2 import Run
 from layer.client import GetRunsFunction
 
 from .entity_column import EntityColumn

@@ -1,8 +1,9 @@
 from typing import Optional, Union
 from uuid import UUID
 
-from layer.api.entity.run_pb2 import Run
-from layer.api.ids_pb2 import RunId
+from layerapi.api.entity.run_pb2 import Run
+from layerapi.api.ids_pb2 import RunId
+
 from layer.common import LayerClient
 from layer.exceptions.exceptions import LayerClientException
 

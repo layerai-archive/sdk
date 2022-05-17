@@ -1,15 +1,16 @@
 import uuid
 from unittest.mock import MagicMock
 
-from layer.api.entity.logged_model_metric_pb2 import LoggedModelMetric
-from layer.api.ids_pb2 import LoggedDataId, ModelMetricId, ModelTrainId
-from layer.api.service.logged_data.logged_data_api_pb2 import (
+from layerapi.api.entity.logged_model_metric_pb2 import LoggedModelMetric
+from layerapi.api.ids_pb2 import LoggedDataId, ModelMetricId, ModelTrainId
+from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     LogDataRequest,
     LogDataResponse,
     LogModelMetricRequest,
     LogModelMetricResponse,
 )
-from layer.api.value.logged_data_type_pb2 import LoggedDataType
+from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
+
 from layer.logged_data.client import ModelMetricPoint
 
 from .util import get_logged_data_service_client_with_mocks

@@ -1,5 +1,6 @@
+from test.e2ev2.assertion_utils import E2ETestAsserter
+
 from sklearn.svm import SVC
-from tests.e2ev2.assertion_utils import E2ETestAsserter
 
 import layer
 from layer import global_context

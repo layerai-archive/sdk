@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Dict, List
 
 import pytest
+from layerapi.api.ids_pb2 import HyperparameterTuningId, ModelVersionId
 
-from layer.api.ids_pb2 import HyperparameterTuningId, ModelVersionId
 from layer.data_classes import (
     Dataset,
     DerivedDataset,

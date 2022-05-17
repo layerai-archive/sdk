@@ -2,6 +2,9 @@ import importlib
 from logging import Logger
 from typing import TYPE_CHECKING, Optional, Tuple
 
+from layerapi.api.entity.model_version_pb2 import (
+    ModelVersion,  # pylint: disable=unused-import
+)
 from yarl import URL
 
 from layer.exceptions.exceptions import (
@@ -11,7 +14,6 @@ from layer.exceptions.exceptions import (
 from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.projects.tracker.resource_transfer_state import ResourceTransferState
 
-from ..api.entity.model_version_pb2 import ModelVersion  # pylint: disable=unused-import
 from .flavors import (
     PROTO_TO_PYTHON_OBJECT_FLAVORS,
     PYTHON_CLASS_NAME_TO_PROTO_FLAVORS,

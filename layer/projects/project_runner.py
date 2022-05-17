@@ -4,12 +4,12 @@ import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import polling  # type: ignore
+from layerapi.api.entity.operations_pb2 import ExecutionPlan
+from layerapi.api.ids_pb2 import HyperparameterTuningId, ModelVersionId, RunId
 
-from layer.api.entity.operations_pb2 import ExecutionPlan
-from layer.api.ids_pb2 import HyperparameterTuningId, ModelVersionId, RunId
 from layer.common import LayerClient
 from layer.config import Config
 from layer.data_classes import Dataset, DerivedDataset, PythonDataset, RawDataset
@@ -283,7 +283,12 @@ class ProjectRunner:
                 try:
                     metadata = self._apply(client, project)
                     ResourceManager(client).wait_resource_upload(project, tracker)
-                    run_id = self._run(client, project, metadata.execution_plan)
+                    user_command = self._get_user_command(
+                        execute_function=ProjectRunner.run, functions=project.functions
+                    )
+                    run_id = self._run(
+                        client, project, metadata.execution_plan, user_command
+                    )
                 except LayerClientServiceUnavailableException as e:
                     raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
                 try:
@@ -313,6 +318,13 @@ class ProjectRunner:
                     )
 
         return run_id
+
+    @staticmethod
+    def _get_user_command(
+        execute_function: Callable[..., Any], functions: Sequence[Function]
+    ) -> str:
+        functions_string = ", ".join(function.name for function in functions)
+        return f"{execute_function.__name__}([{functions_string}])"
 
     @staticmethod
     def _finish_checking_user_logs(
@@ -348,11 +360,14 @@ class ProjectRunner:
 
     @staticmethod
     def _run(
-        client: LayerClient, project: Project, execution_plan: ExecutionPlan
+        client: LayerClient,
+        project: Project,
+        execution_plan: ExecutionPlan,
+        user_command: str,
     ) -> RunId:
         try:
             run_id = client.flow_manager.start_run(
-                project.name, execution_plan, project.project_files_hash
+                project.name, execution_plan, project.project_files_hash, user_command
             )
         except LayerResourceExhaustedException as e:
             raise ProjectRunnerError(f"{e}")

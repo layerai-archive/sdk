@@ -11,6 +11,7 @@ import tensorflow.python.keras
 import xgboost as xgb
 from catboost import CatBoost, CatBoostClassifier, CatBoostRegressor, Pool
 from keras.layers import Dense
+from layerapi.api.ids_pb2 import ModelTrainId
 from sklearn import datasets, svm
 from transformers import (
     BertConfig,
@@ -20,7 +21,6 @@ from transformers import (
     TFGPT2LMHeadModel,
 )
 
-from layer.api.ids_pb2 import ModelTrainId
 from layer.mlmodels.flavors import (
     CatBoostModelFlavor,
     HuggingFaceModelFlavor,
