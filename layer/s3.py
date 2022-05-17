@@ -4,10 +4,10 @@ from mimetypes import guess_type
 from pathlib import Path
 from typing import Optional
 
+from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
+from layerapi.api.value.s3_path_pb2 import S3Path
 from yarl import URL
 
-from .api.value.aws_credentials_pb2 import AwsCredentials
-from .api.value.s3_path_pb2 import S3Path
 from .projects.tracker.resource_transfer_state import ResourceTransferState
 
 

@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, patch
 
 import pandas
 import torch
+from layerapi.api.service.dataset.dataset_api_pb2 import Command, DatasetQuery
+from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket, PartitionTicket
 from pyarrow.flight import FlightStreamReader
 
 from layer import get_dataset
-from layer.api.service.dataset.dataset_api_pb2 import Command, DatasetQuery
-from layer.api.value.ticket_pb2 import DatasetPathTicket, DataTicket, PartitionTicket
 from layer.client import DataCatalogClient
 from layer.clients.dataset_client import DatasetClient, Partition, PartitionMetadata
 from layer.common import LayerClient

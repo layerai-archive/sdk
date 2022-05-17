@@ -1,9 +1,9 @@
 import pickle
+from test.unit.decorators.util import project_client_mock
 from unittest.mock import ANY, patch
 
 import pytest
 from sklearn.ensemble import RandomForestClassifier
-from tests.unit.decorators.util import project_client_mock
 
 from layer import Dataset, Model
 from layer.decorators.model_decorator import model

@@ -1,8 +1,8 @@
 from datetime import datetime
 
 from google.protobuf.timestamp_pb2 import Timestamp
+from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
 
-from layer.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
 from layer.user_logs import EntityType, __convert_log_line
 
 

@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import pandas
+from layerapi.api.ids_pb2 import ModelTrainId
+from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
+from layerapi.api.value.s3_path_pb2 import S3Path
 
-from layer.api.ids_pb2 import ModelTrainId
-from layer.api.value.aws_credentials_pb2 import AwsCredentials
-from layer.api.value.s3_path_pb2 import S3Path
 from layer.projects.asset import AssetPath, AssetType, BaseAsset
 
 

@@ -5,15 +5,16 @@ from logging import Logger
 from typing import Iterator, Optional
 from uuid import UUID
 
-from layer.api.entity.project_pb2 import Project
-from layer.api.ids_pb2 import ProjectId
-from layer.api.service.flowmanager.project_api_pb2 import (
+from layerapi.api.entity.project_pb2 import Project
+from layerapi.api.ids_pb2 import ProjectId
+from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
     GetProjectByNameRequest,
     RemoveProjectByIdRequest,
     UpdateProjectRequest,
 )
-from layer.api.service.flowmanager.project_api_pb2_grpc import ProjectAPIStub
+from layerapi.api.service.flowmanager.project_api_pb2_grpc import ProjectAPIStub
+
 from layer.config import ClientConfig
 from layer.exceptions.exceptions import (
     LayerClientResourceAlreadyExistsException,

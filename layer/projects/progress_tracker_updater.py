@@ -2,11 +2,12 @@ import typing
 import uuid
 from typing import Dict, List, Tuple
 
-from layer.api.entity.history_event_pb2 import HistoryEvent
-from layer.api.entity.run_metadata_pb2 import RunMetadata
-from layer.api.entity.run_pb2 import Run
-from layer.api.entity.task_pb2 import Task as PBTask
-from layer.api.ids_pb2 import ModelTrainId, ModelVersionId, RunId
+from layerapi.api.entity.history_event_pb2 import HistoryEvent
+from layerapi.api.entity.run_metadata_pb2 import RunMetadata
+from layerapi.api.entity.run_pb2 import Run
+from layerapi.api.entity.task_pb2 import Task as PBTask
+from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId, RunId
+
 from layer.common import LayerClient
 from layer.exceptions.exceptions import (
     LayerClientTimeoutException,

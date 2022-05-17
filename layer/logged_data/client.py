@@ -4,16 +4,17 @@ from logging import Logger
 from typing import Iterator, List, Optional, cast
 from uuid import UUID
 
-from layer.api.entity.logged_model_metric_pb2 import LoggedModelMetric
-from layer.api.ids_pb2 import DatasetBuildId, ModelMetricId, ModelTrainId
-from layer.api.service.logged_data.logged_data_api_pb2 import (
+from layerapi.api.entity.logged_model_metric_pb2 import LoggedModelMetric
+from layerapi.api.ids_pb2 import DatasetBuildId, ModelMetricId, ModelTrainId
+from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     GetLoggedDataRequest,
     LogDataRequest,
     LogDataResponse,
     LogModelMetricRequest,
 )
-from layer.api.service.logged_data.logged_data_api_pb2_grpc import LoggedDataAPIStub
-from layer.api.value.logged_data_type_pb2 import LoggedDataType
+from layerapi.api.service.logged_data.logged_data_api_pb2_grpc import LoggedDataAPIStub
+from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
+
 from layer.config import ClientConfig
 from layer.grpc_utils import create_grpc_channel
 

@@ -2,8 +2,9 @@ from logging import Logger
 from pathlib import Path
 from uuid import UUID
 
-from layer.api.entity.model_train_status_pb2 import ModelTrainStatus
-from layer.api.ids_pb2 import ModelTrainId
+from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
+from layerapi.api.ids_pb2 import ModelTrainId
+
 from layer.assertion_utils import LayerFailedAssertionsException
 from layer.client import ModelCatalogClient
 from layer.exceptions.status_report import (

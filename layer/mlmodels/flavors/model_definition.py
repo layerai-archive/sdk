@@ -1,12 +1,12 @@
 import re
 import unicodedata
 
-from ...api.entity.model_version_pb2 import (  # pylint: disable=unused-import
+from layerapi.api.entity.model_version_pb2 import (  # pylint: disable=unused-import
     ModelVersion,
 )
-from ...api.ids_pb2 import ModelTrainId
-from ...api.value.aws_credentials_pb2 import AwsCredentials
-from ...api.value.s3_path_pb2 import S3Path
+from layerapi.api.ids_pb2 import ModelTrainId
+from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
+from layerapi.api.value.s3_path_pb2 import S3Path
 
 
 class ModelDefinition:

@@ -22,39 +22,30 @@ import pandas
 import polling  # type: ignore
 import pyarrow
 from google.protobuf.timestamp_pb2 import Timestamp
-from pyarrow import flight
-
-from layer.api.entity.run_metadata_pb2 import RunMetadata
-from layer.api.service.modelcatalog.model_catalog_api_pb2 import (
-    CreateModelTrainFromVersionIdRequest,
+from layerapi.api.entity.dataset_build_pb2 import DatasetBuild as PBDatasetBuild
+from layerapi.api.entity.dataset_list_options_pb2 import (
+    DatasetListOptions,
+    DatasetSortField,
 )
-from layer.clients.dataset_client import DatasetClient, DatasetClientError
-from layer.config import ClientConfig
-from layer.exceptions.exceptions import LayerClientException
-from layer.grpc_utils import create_grpc_channel, generate_client_error_from_grpc_error
-from layer.projects.asset import AssetPath, AssetType
-from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
-from layer.projects.tracker.resource_transfer_state import ResourceTransferState
-
-from . import Dataset, Model
-from .api.entity.dataset_build_pb2 import DatasetBuild as PBDatasetBuild
-from .api.entity.dataset_list_options_pb2 import DatasetListOptions, DatasetSortField
-from .api.entity.dataset_pb2 import Dataset as PBDataset
-from .api.entity.dataset_version_pb2 import DatasetVersion as PBDatasetVersion
-from .api.entity.history_event_pb2 import HistoryEvent
-from .api.entity.hyperparameter_tuning_pb2 import (
+from layerapi.api.entity.dataset_pb2 import Dataset as PBDataset
+from layerapi.api.entity.dataset_version_pb2 import DatasetVersion as PBDatasetVersion
+from layerapi.api.entity.history_event_pb2 import HistoryEvent
+from layerapi.api.entity.hyperparameter_tuning_pb2 import (
     HyperparameterTuning as PBHyperparameterTuning,
 )
-from .api.entity.model_pb2 import Model as PBModel
-from .api.entity.model_train_pb2 import ModelTrain as PBModelTrain
-from .api.entity.model_train_status_pb2 import ModelTrainStatus as PBModelTrainStatus
-from .api.entity.model_version_pb2 import ModelVersion
-from .api.entity.operations_pb2 import ExecutionPlan
-from .api.entity.run_filter_pb2 import RunFilter
-from .api.entity.run_pb2 import Run
-from .api.entity.source_code_environment_pb2 import SourceCodeEnvironment
-from .api.entity.user_log_line_pb2 import UserLogLine
-from .api.ids_pb2 import (
+from layerapi.api.entity.model_pb2 import Model as PBModel
+from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
+from layerapi.api.entity.model_train_status_pb2 import (
+    ModelTrainStatus as PBModelTrainStatus,
+)
+from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.entity.operations_pb2 import ExecutionPlan
+from layerapi.api.entity.run_filter_pb2 import RunFilter
+from layerapi.api.entity.run_metadata_pb2 import RunMetadata
+from layerapi.api.entity.run_pb2 import Run
+from layerapi.api.entity.source_code_environment_pb2 import SourceCodeEnvironment
+from layerapi.api.entity.user_log_line_pb2 import UserLogLine
+from layerapi.api.ids_pb2 import (
     DatasetBuildId,
     DatasetId,
     DatasetVersionId,
@@ -64,7 +55,7 @@ from .api.ids_pb2 import (
     ProjectId,
     RunId,
 )
-from .api.service.datacatalog.data_catalog_api_pb2 import (
+from layerapi.api.service.datacatalog.data_catalog_api_pb2 import (
     CompleteBuildRequest,
     CompleteBuildResponse,
     GetBuildRequest,
@@ -81,18 +72,27 @@ from .api.service.datacatalog.data_catalog_api_pb2 import (
     RegisterRawDatasetRequest,
     UpdateResourcePathsIndexRequest,
 )
-from .api.service.datacatalog.data_catalog_api_pb2_grpc import DataCatalogAPIStub
-from .api.service.dataset.dataset_api_pb2 import Command, DatasetQuery, DatasetSnapshot
-from .api.service.flowmanager.flow_manager_api_pb2 import (
+from layerapi.api.service.datacatalog.data_catalog_api_pb2_grpc import (
+    DataCatalogAPIStub,
+)
+from layerapi.api.service.dataset.dataset_api_pb2 import (
+    Command,
+    DatasetQuery,
+    DatasetSnapshot,
+)
+from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     GetRunByIdRequest,
     GetRunHistoryAndMetadataRequest,
     GetRunsRequest,
     StartRunV2Request,
     TerminateRunRequest,
 )
-from .api.service.flowmanager.flow_manager_api_pb2_grpc import FlowManagerAPIStub
-from .api.service.modelcatalog.model_catalog_api_pb2 import (
+from layerapi.api.service.flowmanager.flow_manager_api_pb2_grpc import (
+    FlowManagerAPIStub,
+)
+from layerapi.api.service.modelcatalog.model_catalog_api_pb2 import (
     CompleteModelTrainRequest,
+    CreateModelTrainFromVersionIdRequest,
     CreateModelTrainRequest,
     CreateModelVersionRequest,
     CreateModelVersionResponse,
@@ -112,8 +112,10 @@ from .api.service.modelcatalog.model_catalog_api_pb2 import (
     StoreTrainingMetadataRequest,
     UpdateModelTrainStatusRequest,
 )
-from .api.service.modelcatalog.model_catalog_api_pb2_grpc import ModelCatalogAPIStub
-from .api.service.modeltraining.model_training_api_pb2 import (
+from layerapi.api.service.modelcatalog.model_catalog_api_pb2_grpc import (
+    ModelCatalogAPIStub,
+)
+from layerapi.api.service.modeltraining.model_training_api_pb2 import (
     CreateHyperparameterTuningRequest,
     GetHyperparameterTuningRequest,
     GetHyperparameterTuningStatusRequest,
@@ -125,23 +127,38 @@ from .api.service.modeltraining.model_training_api_pb2 import (
     StoreHyperparameterTuningMetadataRequest,
     UpdateHyperparameterTuningRequest,
 )
-from .api.service.modeltraining.model_training_api_pb2_grpc import ModelTrainingAPIStub
-from .api.service.user_logs.user_logs_api_pb2 import (
+from layerapi.api.service.modeltraining.model_training_api_pb2_grpc import (
+    ModelTrainingAPIStub,
+)
+from layerapi.api.service.user_logs.user_logs_api_pb2 import (
     GetPipelineRunLogsRequest,
     GetPipelineRunLogsResponse,
 )
-from .api.service.user_logs.user_logs_api_pb2_grpc import UserLogsAPIStub
-from .api.value.dependency_pb2 import DependencyFile
-from .api.value.hyperparameter_tuning_metadata_pb2 import HyperparameterTuningMetadata
-from .api.value.language_version_pb2 import LanguageVersion
-from .api.value.metadata_pb2 import Metadata
-from .api.value.python_dataset_pb2 import PythonDataset as PBPythonDataset
-from .api.value.python_source_pb2 import PythonSource
-from .api.value.s3_path_pb2 import S3Path
-from .api.value.sha256_pb2 import Sha256
-from .api.value.source_code_pb2 import RemoteFileLocation, SourceCode
-from .api.value.storage_location_pb2 import StorageLocation
-from .api.value.ticket_pb2 import DatasetPathTicket, DataTicket
+from layerapi.api.service.user_logs.user_logs_api_pb2_grpc import UserLogsAPIStub
+from layerapi.api.value.dependency_pb2 import DependencyFile
+from layerapi.api.value.hyperparameter_tuning_metadata_pb2 import (
+    HyperparameterTuningMetadata,
+)
+from layerapi.api.value.language_version_pb2 import LanguageVersion
+from layerapi.api.value.metadata_pb2 import Metadata
+from layerapi.api.value.python_dataset_pb2 import PythonDataset as PBPythonDataset
+from layerapi.api.value.python_source_pb2 import PythonSource
+from layerapi.api.value.s3_path_pb2 import S3Path
+from layerapi.api.value.sha256_pb2 import Sha256
+from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
+from layerapi.api.value.storage_location_pb2 import StorageLocation
+from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket
+from pyarrow import flight
+
+from layer.clients.dataset_client import DatasetClient, DatasetClientError
+from layer.config import ClientConfig
+from layer.exceptions.exceptions import LayerClientException
+from layer.grpc_utils import create_grpc_channel, generate_client_error_from_grpc_error
+from layer.projects.asset import AssetPath, AssetType
+from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.projects.tracker.resource_transfer_state import ResourceTransferState
+
+from . import Dataset, Model
 from .data_classes import (
     BayesianSearch,
     DatasetBuild,
@@ -1262,13 +1279,18 @@ class FlowManagerClient:
             yield self
 
     def start_run(
-        self, name: str, execution_plan: ExecutionPlan, project_files_hash: str
+        self,
+        name: str,
+        execution_plan: ExecutionPlan,
+        project_files_hash: str,
+        user_command: str,
     ) -> RunId:
         response = self._service.StartRunV2(
             request=StartRunV2Request(
                 project_name=name,
                 plan=execution_plan,
                 project_files_hash=Sha256(value=project_files_hash),
+                user_command=user_command,
             )
         )
         return response.run_id

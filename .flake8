@@ -1,2 +1,5 @@
 [flake8]
 max-line-length = 120
+
+# TODO: remove these once we stop syncing with monorepo
+ignore = NIC002, E501, W503, E203

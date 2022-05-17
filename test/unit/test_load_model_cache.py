@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import Any, Optional
 from unittest.mock import Mock, patch
 
+from layerapi.api.ids_pb2 import ModelTrainId
 from yarl import URL
 
-from layer.api.ids_pb2 import ModelTrainId
 from layer.mlmodels.flavors.flavor import ModelFlavor
 from layer.mlmodels.flavors.model_definition import ModelDefinition
 from layer.projects.tracker.resource_transfer_state import ResourceTransferState
