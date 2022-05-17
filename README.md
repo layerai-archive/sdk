@@ -28,11 +28,8 @@ limitations under the License.
     <a href="https://docs.app.layer.ai">
         <img alt="Documentation" src="https://img.shields.io/badge/docs-online-success">
     </a>
-    <a href="https://circleci.com/gh/huggingface/transformers">
+    <a href="https://github.com/layerai/sdk/actions/workflows/check.yml">
         <img alt="Build" src="https://img.shields.io/github/workflow/status/layerai/sdk/check/main">
-    </a>
-    <a href="https://github.com/layer/sdk/releases">
-        <img alt="Release" src="https://img.shields.io/github/v/release/layer/sdk.svg">
     </a>
     <a href="https://pypi.python.org/pypi/layer">
         <img alt="PyPI" src="https://img.shields.io/pypi/v/layer.svg">
