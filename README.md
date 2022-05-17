@@ -1,61 +1,50 @@
-# Layer base python repo
+<!---
+Copyright 2022 Layer. All rights reserved.
 
-Use this as a starting point for standalone python projects
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-# Development
+    http://www.apache.org/licenses/LICENSE-2.0
 
-## Prerequisites
-- `pyenv`
-- `poetry`
-- `make`
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 
-## Setup
-Run `pyenv install` in the root of this repo to ensure you have the preferred Python version setup
+<p align="center">
+    <br>
+    <a href="https://layer.ai">
+        <img src="https://app.layer.ai/assets/logo.svg" width="200" alt="Layer"/>
+    </a>
+    <br>
+<p>
+<p align="center">
+    <a href="https://github.com/layerai/sdk/blob/main/LICENSE">
+        <img alt="License" src="https://img.shields.io/github/license/layer/sdk.svg?color=blue">
+    </a>
+    <a href="https://docs.app.layer.ai">
+        <img alt="Documentation" src="https://img.shields.io/badge/docs-online-success">
+    </a>
+    <a href="https://github.com/layerai/sdk/actions/workflows/check.yml">
+        <img alt="Build" src="https://img.shields.io/github/workflow/status/layerai/sdk/check/main">
+    </a>
+    <a href="https://pypi.python.org/pypi/layer">
+        <img alt="PyPI" src="https://img.shields.io/pypi/v/layer.svg">
+    </a>
+    <a href="https://github.com/layer/sdk/blob/main/CODE_OF_CONDUCT.md">
+        <img alt="Contributor Covenant" src="https://img.shields.io/badge/contributor%20covenant-v2.1%20adopted-blueviolet.svg">
+    </a>
+</p>
 
-## Makefile
-We use `make` as our build system.
+# Layer
 
-Targets:
-- `install` - prepares the `poetry` virtual environment. Most of the other tasks will do that automatically for you
-- `format` - formats the code
-- `test` - runs unit tests
-- `lint` - runs linters
-- `check` - runs `test` and `lint`
-- `publish` - publishes the project to PyPi. This is intended to be used in CI only.
-- `clean` - cleans the repo, including the `poetry` virtual environment
-- `help` - prints all targets
+Layer helps you create production-grade ML pipelines with a seamless local↔cloud transition while enabling collaboration with semantic versioning, extensive artifact logging and dynamic reporting.
 
-## Dependency management
-The `poetry` documentation about dependency management is [here](https://python-poetry.org/docs/dependency-specification/)
+[Start for Free!](https://app.layer.ai)
 
-Every time you change dependencies, you should expect a corresponding change to `poetry.lock`. If you use `poetry` directly, it will be done automatically for you. If you manually edit `pyproject.toml`, you need to run `poetry lock` after
+## Getting Started
 
-### A few tips:
-#### How to add a new dependency
-```
-    poetry add foo
-    # or
-    poetry add foo=="1.2.3"
-```
-
-#### How to add a new dev dependency
-```
-    poetry add foo --dev
-    # or
-    poetry add foo=="1.2.3" --dev
-```
-
-#### How to get an environment with this package and all dependencies
-```
-    poetry shell
-```
-
-#### How to run something inside the poetry environment
-```
-    poetry run <...>
-```
-
-#### How to update a dependency
-```
-    poetry update foo
-```
+The simplest way to get started with Layer is to go through the [quickstart guide](https://docs.app.layer.ai/docs/getting-started).
