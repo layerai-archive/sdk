@@ -83,7 +83,7 @@ Enhancement suggestions are tracked as [GitHub issues](https://guides.github.com
 * **Include screenshots and animated GIFs** which help you demonstrate the steps or point out the part of Layer which the suggestion is related to. You can use [this tool](https://www.cockos.com/licecap/) to record GIFs on macOS and Windows, and [this tool](https://github.com/colinkeenan/silentcast) or [this tool](https://github.com/GNOME/byzanz) on Linux.
 * **Explain why this enhancement would be useful** to most Layer users and isn't something that can or should be implemented separately.
 * **List some other tools where this enhancement exists.**
-* **Specify which version of Layer you're using.** You can get the exact version by running `pip show layer` in your terminal, or by starting Atom and running the `Application: About` command from the [Command Palette](https://github.com/atom/command-palette).
+* **Specify which version of Layer you're using.** You can get the exact version by running `pip show layer` in your terminal.
 * **Specify the name and version of the OS you're using.**
 
 
@@ -109,7 +109,7 @@ This repo uses `make` as the build system. The following targets can be used thr
 
 - `install` - prepares the `poetry` virtual environment. Most of the other tasks will do that automatically for you
 - `format` - formats the code
-- `test` - runs unit tests
+- `test` - runs unit testsru
 - `lint` - runs linters
 - `check` - runs `test` and `lint`
 - `publish` - publishes the project to PyPi. This is intended to be used in CI only.
@@ -118,20 +118,20 @@ This repo uses `make` as the build system. The following targets can be used thr
 
 #### Installation
 
-You can install `layer/sdk` from the root of this repository with:
+You can install `layerai/sdk` from the root of this repository with:
 
 ```shell
 make install
 ```
 
-Once this step completes successfully, you will be able to run layer locally by opening a python prompt from the poetry virtual environment:
+Once this step completes successfully, you will be able to run Layer locally by opening a Python prompt from the Poetry virtual environment:
 
 ```shell
 poetry shell
 python
 ```
 
-And importing layer from a python shell within this virtual environment:
+And importing Layer from a Python shell within this virtual environment:
 
 ```python
 import layer
@@ -213,9 +213,9 @@ Set these up with your IDE to have a smoother development experience and fewer f
 
 ### Submitting a pull request
 
-The final step after developing and testing your changes locally is to submit a pull request and get your contribution merged back into `layer/sdk`. Please follow the instructions in the GitHub template when creating your PR and fix any status checks that are failing.
+The final step after developing and testing your changes locally is to submit a pull request and get your contribution merged back into `layerai/sdk`. Please follow the instructions in the GitHub template when creating your PR and fix any status checks that are failing.
 
-When the PR passes all checks, a `layer/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests.
+When the PR passes all checks, a `layerai/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests.
 
 #### Merge Queue
 

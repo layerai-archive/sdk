@@ -4,6 +4,7 @@ version = "0.9.0"
 description = "Layer AI SDK"
 authors = ["Layer <info@layer.ai>"]
 readme = "README.md"
+license = "Apache-2.0"
 
 packages = [
     { include = "layer" },
