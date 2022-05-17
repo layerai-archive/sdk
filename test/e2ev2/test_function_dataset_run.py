@@ -1,7 +1,8 @@
+from test.e2ev2.assertion_utils import E2ETestAsserter
+from test.e2ev2.conftest import _cleanup_project
+
 import pandas as pd
 import pytest
-from tests.e2ev2.assertion_utils import E2ETestAsserter
-from tests.e2ev2.conftest import _cleanup_project
 
 import layer
 from layer import Dataset, global_context

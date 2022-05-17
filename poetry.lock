@@ -2208,6 +2208,14 @@ python-versions = "*"
 types-cryptography = "*"
 
 [[package]]
+name = "types-pillow"
+version = "9.0.15"
+description = "Typing stubs for Pillow"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "types-protobuf"
 version = "3.19.4"
 description = "Typing stubs for protobuf"
@@ -2222,6 +2230,14 @@ types-futures = "*"
 name = "types-setuptools"
 version = "57.4.0"
 description = "Typing stubs for setuptools"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "types-toml"
+version = "0.10.7"
+description = "Typing stubs for toml"
 category = "dev"
 optional = false
 python-versions = "*"
@@ -2384,7 +2400,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "892188f7973bd164b1ba47bb16802725af61e3ca06a49b318fa20003414feba2"
+content-hash = "1a945f743383af65a8cdeb1bbaea19b9a6d0f38bd93e5d8e4d0a638ba8055b63"
 
 [metadata.files]
 absl-py = [
@@ -4242,6 +4258,10 @@ types-futures = [
 types-jwt = [
     {file = "types_jwt-0.1.3-py2.py3-none-any.whl", hash = "sha256:36a1d5f99b349428f9ca5695e5caf3378398ae31d7aaed1c668c81451ba79b08"},
 ]
+types-pillow = [
+    {file = "types-Pillow-9.0.15.tar.gz", hash = "sha256:d2e385fe5c192e75970f18accce69f5c2a9f186f3feb578a9b91cd6fdf64211d"},
+    {file = "types_Pillow-9.0.15-py3-none-any.whl", hash = "sha256:c9646595dfafdf8b63d4b1443292ead17ee0fc7b18a143e497b68e0ea2dc1eb6"},
+]
 types-protobuf = [
     {file = "types-protobuf-3.19.4.tar.gz", hash = "sha256:0ce47cb2f10eab66c436e2e14c19bb6a78c329a7e603ec8d9aadbd1e9ea33820"},
     {file = "types_protobuf-3.19.4-py3-none-any.whl", hash = "sha256:65b124026d018c5239eac59d0dc247dd6147462df1afe55e91c472d5c9fabf0a"},
@@ -4249,6 +4269,10 @@ types-protobuf = [
 types-setuptools = [
     {file = "types-setuptools-57.4.0.tar.gz", hash = "sha256:5034f81b237429c1dc0ad84d3e9015e74730400c4db2b4db40daba216d39289b"},
     {file = "types_setuptools-57.4.0-py3-none-any.whl", hash = "sha256:986630532705e8c77740b6d3cd86aaafd1e0ba6b04119c73c39dc4a67ceae579"},
+]
+types-toml = [
+    {file = "types-toml-0.10.7.tar.gz", hash = "sha256:a567fe2614b177d537ad99a661adc9bfc8c55a46f95e66370a4ed2dd171335f9"},
+    {file = "types_toml-0.10.7-py3-none-any.whl", hash = "sha256:05a8da4bfde2f1ee60e90c7071c063b461f74c63a9c3c1099470c08d6fa58615"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.10.0.2-py2-none-any.whl", hash = "sha256:d8226d10bc02a29bcc81df19a26e56a9647f8b0a6d4a83924139f4a8b01f17b7"},

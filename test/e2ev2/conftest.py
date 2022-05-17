@@ -3,11 +3,11 @@ import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
+from test.e2ev2.assertion_utils import E2ETestAsserter
 from typing import Any, Callable, Iterator
 
 import ddtrace
 import pytest
-from tests.e2ev2.assertion_utils import E2ETestAsserter
 
 import layer
 from layer.common import LayerClient
