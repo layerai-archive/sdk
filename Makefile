@@ -1,4 +1,7 @@
+ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 INSTALL_STAMP := .install.stamp
+E2E_TEST_HOME := $(ROOT_DIR)/build/e2e-home
+TEST_TOKEN_FILE := .test-token
 POETRY := $(shell command -v poetry 2> /dev/null)
 
 .DEFAULT_GOAL:=help
@@ -13,11 +16,23 @@ $(INSTALL_STAMP): pyproject.toml poetry.lock
 test: $(INSTALL_STAMP) ## Run unit tests
 	$(POETRY) run pytest test/unit --cov .
 
+test-login: $(TEST_TOKEN_FILE)
+$(TEST_TOKEN_FILE):
+	@stty -echo
+	@printf "Enter test user token for https://app.layer.ai: "
+	@read TOKEN && echo $$TOKEN > $(TEST_TOKEN_FILE)
+	@stty echo
+
+.PHONY: e2e-test
+e2e-test: $(INSTALL_STAMP) $(TEST_TOKEN_FILE)
+	@rm -rf $(E2E_TEST_HOME)
+	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run python build_scripts/sdk_login.py $(TEST_TOKEN_FILE)
+	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run pytest test/e2ev2 -n 16 -vv
+
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters
 	$(POETRY) run isort --profile=black --lines-after-imports=2 .
 	$(POETRY) run black .
-
 
 .PHONY: lint
 lint: $(INSTALL_STAMP) ## Run all linters
@@ -44,17 +59,21 @@ publish: ## Publish to PyPi - should only run in CI
 .PHONY: clean
 clean: ## Resets development environment.
 	@echo 'cleaning repo...'
-	@rm -rf `poetry env info -p`
 	@rm -rf .mypy_cache
 	@rm -rf .pytest_cache
 	@rm -f .coverage
 	@find . -type d -name '*.egg-info' | xargs rm -rf {};
 	@find . -depth -type d -name '*.egg-info' -delete
 	@rm -rf dist/
-	@rm -f .install.stamp
+	@rm -f $(INSTALL_STAMP)
 	@find . -type f -name '*.pyc' -delete
 	@find . -type d -name "__pycache__" | xargs rm -rf {};
 	@echo 'done.'
+
+.PHONY: deepclean
+deepclean: clean ## Resets development environment including test credentials and venv
+	@rm -rf `poetry env info -p`
+	@rm -f $(TEST_TOKEN_FILE)
 
 .PHONY: help
 help: ## Show this help message.
