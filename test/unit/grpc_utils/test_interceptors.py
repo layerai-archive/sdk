@@ -3,6 +3,7 @@ import os
 import uuid
 from collections import namedtuple
 from pathlib import Path
+from test.unit.grpc_test_utils import new_client_call_details, rpc_error
 from typing import Any, Optional, Tuple
 from unittest.mock import MagicMock
 
@@ -17,7 +18,6 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     TerminateRunRequest,
     TerminateRunResponse,
 )
-from tests.unit.grpc_test_utils import new_client_call_details, rpc_error
 
 from layer.exceptions.exceptions import (
     LayerClientResourceAlreadyExistsException,
