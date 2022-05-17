@@ -97,3 +97,5 @@ venv/
 
 # make outputs
 .install.stamp
+
+catboost_info/
