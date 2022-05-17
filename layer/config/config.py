@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from dataclasses import dataclass, field, replace
 from datetime import datetime
@@ -16,7 +17,7 @@ from layer.exceptions.exceptions import (
 from layer.run import UserSessionId
 
 
-DEFAULT_LAYER_PATH = Path.home() / ".layer"
+DEFAULT_LAYER_PATH = Path(os.getenv("LAYER_DEFAULT_PATH", Path.home() / ".layer"))
 DEFAULT_PATH = DEFAULT_LAYER_PATH / "config.json"
 DEFAULT_LOGS_DIR = DEFAULT_LAYER_PATH / "logs"
 DEFAULT_FUNC_PATH = DEFAULT_LAYER_PATH / "functions"
