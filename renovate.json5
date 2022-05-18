@@ -4,6 +4,9 @@
       matchPackagePatterns: ["*"],
       excludePackageNames: ["layer-api"],
       enabled: false,
+    },
+    {
+      matchPackagePatterns: ["layer-api"],
       automerge: true,
     },
   ],
