@@ -1,7 +1,6 @@
 name: Check
 on:
-  push:
-    branches-ignore: ['main']
+  pull_request
 
 jobs:
   check:
@@ -26,3 +25,44 @@ jobs:
           key: poetry-vevns-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
       - name: Run check
         run: make check
+  e2e-test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: git fetch origin ${{ github.event.pull_request.base.sha }}
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.13
+      - name: Cache poetry virtualenvs
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/.cache/pypoetry/virtualenvs
+          key: poetry-vevns-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
+      - name: Compute dependencies that require e2e-tests to run
+        id: deps
+        run: |
+          make install
+          DEPENDENCIES=$(poetry run python build_scripts/get_package_dependencies.py)
+          echo "::set-output name=paths::${DEPENDENCIES},test/e2ev2/**"
+      - name: Get changes that will affect the package
+        id: changed-files
+        uses: tj-actions/changed-files@v19.1
+        with:
+          base_sha: ${{ github.event.pull_request.base.sha }}
+          files: ${{ steps.deps.outputs.paths }}
+          files_separator: ','
+      - name: Fail fast if on a fork as forks cannot run e2e-tests directly
+        if: |
+          github.event.pull_request.head.repo.full_name != github.repository &&
+          steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          exit 1
+      - name: Run e2e tests
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          echo ${{ secrets.APP_API_KEY }} > .test-token
+          make e2e-test
