@@ -3,6 +3,27 @@ on:
   pull_request
 
 jobs:
+  check-lockfile:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.13
+      - name: Cache poetry virtualenvs
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/.cache/pypoetry/virtualenvs
+          key: poetry-vevns-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
+      - name: Check lockfile
+        run: |
+          make install
+          poetry lock --no-update
+          [ -z "$(git status --porcelain=v1 2>/dev/null)" ] || (echo "Lock file is not up to date, please run 'poetry lock --no-update'" && exit 1)
   check:
     strategy:
       fail-fast: false

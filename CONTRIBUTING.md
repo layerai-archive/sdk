@@ -156,7 +156,7 @@ import layer
 
 The `poetry` documentation about dependency management is [here](https://python-poetry.org/docs/dependency-specification/)
 
-Every time you change dependencies, you should expect a corresponding change to `poetry.lock`. If you use `poetry` directly, it will be done automatically for you. If you manually edit `pyproject.toml`, you need to run `poetry lock` after.
+Every time you change dependencies, you should expect a corresponding change to `poetry.lock`. If you use `poetry` directly, it will be done automatically for you. If you manually edit `pyproject.toml`, you need to run `poetry lock --no-update` after.
 
 #### Poetry tips
 
