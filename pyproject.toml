@@ -56,7 +56,8 @@ pytest = "^7.1.2"
 pytest-dotenv = "^0.5.2"
 flake8-no-implicit-concat = "^0.3.3"
 data-science-types = "0.2.23"
-tensorflow = "2.8.0"
+tensorflow = { version = "^2.8.0", markers = "platform_machine != 'arm64'" }
+tensorflow-macos = { version = "^2.8.0", markers = "platform_machine == 'arm64'" }
 catboost = "1.0.5"
 keras = "2.8.0"
 lightgbm = "3.3.2"
