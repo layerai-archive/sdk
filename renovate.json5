@@ -1,0 +1,10 @@
+{
+  packageRules: [
+    {
+      matchPackagePatterns: ["*"],
+      excludePackageNames: ["layer-api"],
+      enabled: false,
+      automerge: true,
+    },
+  ],
+}
