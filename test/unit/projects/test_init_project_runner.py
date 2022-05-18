@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, Mock
 from layer import current_project_name
 from layer.common import LayerClient
 from layer.config import ConfigManager
-from layer.data_classes import Fabric
+from layer.contracts.fabrics import Fabric
 from layer.global_context import (
     default_fabric,
     get_pip_packages,

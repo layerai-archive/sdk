@@ -1,14 +1,14 @@
 from typing import Any, List, Optional, Union
 
 from layer import Dataset, Model
-from layer.data_classes import Fabric
+from layer.contracts.asset import AssetType
+from layer.contracts.fabrics import Fabric
 from layer.exceptions.exceptions import ConfigError
 from layer.global_context import (
     default_fabric,
     get_pip_packages,
     get_pip_requirements_file,
 )
-from layer.projects.asset import AssetType
 
 
 def _resolve_settings(

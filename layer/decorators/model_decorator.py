@@ -8,10 +8,10 @@ from layer import Dataset, Model
 from layer.async_utils import asyncio_run_in_thread
 from layer.common import LayerClient
 from layer.config import ConfigManager
+from layer.contracts.asset import AssetType
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 from layer.decorators.utils import ensure_has_layer_settings
 from layer.definitions import ModelDefinition
-from layer.projects.asset import AssetType
 from layer.projects.tracker.local_execution_project_progress_tracker import (
     LocalExecutionProjectProgressTracker,
 )

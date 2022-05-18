@@ -13,8 +13,8 @@ from layerapi.api.service.account.user_api_pb2 import GetMyOrganizationRequest
 from layerapi.api.service.account.user_api_pb2_grpc import UserAPIStub
 
 from layer.config import ClientConfig
+from layer.contracts.accounts import Account
 from layer.grpc_utils import create_grpc_channel
-from layer.user.account import Account
 
 
 class AccountClient:

@@ -6,11 +6,11 @@ import pytest
 from sklearn.ensemble import RandomForestClassifier
 
 from layer import Dataset, Model
+from layer.contracts.asset import AssetType
 from layer.decorators.model_decorator import model
 from layer.decorators.pip_requirements_decorator import pip_requirements
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import set_current_project_name
-from layer.projects.asset import AssetType
 
 
 @model("model1", dependencies=[Dataset("bar"), Model("zoo")])

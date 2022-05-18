@@ -152,26 +152,28 @@ from pyarrow import flight
 
 from layer.clients.dataset_client import DatasetClient, DatasetClientError
 from layer.config import ClientConfig
+from layer.contracts.asset import AssetPath, AssetType
 from layer.exceptions.exceptions import LayerClientException
 from layer.grpc_utils import create_grpc_channel, generate_client_error_from_grpc_error
-from layer.projects.asset import AssetPath, AssetType
 from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.projects.tracker.resource_transfer_state import ResourceTransferState
 
 from . import Dataset, Model
-from .data_classes import (
-    BayesianSearch,
+from .contracts.datasets import (
     DatasetBuild,
     DatasetBuildStatus,
+    PythonDataset,
+    RawDataset,
+    SortField,
+)
+from .contracts.models import (
+    BayesianSearch,
     GridSearch,
     HyperparameterTuning,
     ManualSearch,
     ParameterType,
     ParameterValue,
-    PythonDataset,
     RandomSearch,
-    RawDataset,
-    SortField,
     TrainStorageConfiguration,
 )
 from .mlmodels.flavors import ModelFlavor

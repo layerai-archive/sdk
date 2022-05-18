@@ -5,20 +5,13 @@ from typing import Dict, List
 import pytest
 from layerapi.api.ids_pb2 import HyperparameterTuningId, ModelVersionId
 
-from layer.data_classes import (
-    Dataset,
-    DerivedDataset,
-    Model,
-    Parameter,
-    PythonDataset,
-    RawDataset,
-    Train,
-)
+from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.datasets import Dataset, DerivedDataset, PythonDataset, RawDataset
+from layer.contracts.models import Model, Parameter, Train
 from layer.exceptions.exceptions import (
     ProjectCircularDependenciesException,
     ProjectException,
 )
-from layer.projects.asset import AssetPath, AssetType
 from layer.projects.entity import EntityType
 from layer.projects.project import Project
 

@@ -12,7 +12,8 @@ from layerapi.api.ids_pb2 import HyperparameterTuningId, ModelVersionId, RunId
 
 from layer.common import LayerClient
 from layer.config import Config
-from layer.data_classes import Dataset, DerivedDataset, PythonDataset, RawDataset
+from layer.contracts.asset import AssetType
+from layer.contracts.datasets import Dataset, DerivedDataset, PythonDataset, RawDataset
 from layer.definitions import DatasetDefinition, ModelDefinition
 from layer.exceptions.exceptions import (
     LayerClientException,
@@ -25,7 +26,6 @@ from layer.exceptions.exceptions import (
     ProjectInitializationException,
     ProjectRunnerError,
 )
-from layer.projects.asset import AssetType
 from layer.projects.progress_tracker_updater import (
     PollingStepFunction,
     ProgressTrackerUpdater,

@@ -6,8 +6,8 @@ from test.e2ev2.assertion_utils import E2ETestAsserter
 import pandas as pd
 
 import layer
+from layer.contracts.asset import AssetType
 from layer.decorators import dataset, model, pip_requirements, resources
-from layer.projects.asset import AssetType
 from layer.projects.project import Asset, Function, Project, ResourcePath
 from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.resource_manager import ResourceManager

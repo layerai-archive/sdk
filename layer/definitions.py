@@ -10,15 +10,10 @@ from typing import Any, List, Union
 import cloudpickle  # type: ignore
 
 from layer.config import DEFAULT_FUNC_PATH
-from layer.data_classes import (
-    Dataset,
-    DerivedDataset,
-    Fabric,
-    Model,
-    PythonDataset,
-    Train,
-)
-from layer.projects.asset import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.datasets import Dataset, DerivedDataset, PythonDataset
+from layer.contracts.fabrics import Fabric
+from layer.contracts.models import Model, Train
 
 
 class Definition(abc.ABC):

@@ -32,15 +32,16 @@ from layerapi.api.ids_pb2 import HyperparameterTuningId, ModelVersionId
 
 from layer.client import LayerClientException
 from layer.common import LayerClient
-from layer.data_classes import DerivedDataset, Model, RawDataset
+from layer.contracts.accounts import Account
+from layer.contracts.asset import AssetType, BaseAsset
+from layer.contracts.datasets import DerivedDataset, RawDataset
+from layer.contracts.models import Model
 from layer.exceptions.exceptions import (
     ProjectCircularDependenciesException,
     ProjectDependencyNotFoundException,
     ProjectException,
 )
-from layer.projects.asset import AssetType, BaseAsset
 from layer.projects.entity import EntityType
-from layer.user.account import Account
 
 
 if TYPE_CHECKING:

@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 import aiohttp
 
 from layer.common import LayerClient
-from layer.projects.asset import AssetType
+from layer.contracts.asset import AssetType
 from layer.projects.project import Function, Project, ResourcePath
 from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.projects.tracker.resource_transfer_state import ResourceTransferState

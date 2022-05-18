@@ -10,13 +10,13 @@ from layer.async_utils import asyncio_run_in_thread
 from layer.common import LayerClient
 from layer.config import ConfigManager
 from layer.context import Context
-from layer.data_classes import DatasetBuild, DatasetBuildStatus
+from layer.contracts.asset import AssetType
+from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.decorators.assertions import get_assertion_functions_data
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 from layer.decorators.utils import ensure_has_layer_settings
 from layer.definitions import DatasetDefinition
 from layer.global_context import reset_active_context, set_active_context
-from layer.projects.asset import AssetType
 from layer.projects.project_runner import register_derived_datasets
 from layer.projects.tracker.dataset_transfer_state import DatasetTransferState
 from layer.projects.tracker.local_execution_project_progress_tracker import (
