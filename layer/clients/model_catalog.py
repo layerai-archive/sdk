@@ -45,8 +45,8 @@ from layer.config import ClientConfig
 from layer.contracts.models import Model, TrainStorageConfiguration
 from layer.contracts.runs import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
-from layer.mlmodels.flavors import ModelFlavor
-from layer.mlmodels.flavors.model_definition import ModelDefinition
+from layer.flavors import ModelFlavor
+from layer.flavors.model_definition import ModelDefinition
 from layer.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.utils.grpc import create_grpc_channel
 
@@ -259,11 +259,11 @@ class ModelCatalogClient:
     def infer_flavor(
         self, model_obj: "TrainedModelObject"
     ) -> "ModelVersion.ModelFlavor.V":
-        tup: Tuple[Any, ModelFlavor] = self._ml_model_service.get_model_flavor(
+        flavor: ModelFlavor = self._ml_model_service.get_model_flavor(
             model_obj,
             logger=self._logger,
         )
-        return tup[0]
+        return flavor.PROTO_FLAVOR
 
     def complete_model_train(
         self, train_id: ModelTrainId, flavor: Optional["ModelVersion.ModelFlavor.V"]

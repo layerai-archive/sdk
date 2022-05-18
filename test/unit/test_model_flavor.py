@@ -1,6 +1,7 @@
 # type: ignore
 import logging
 import uuid
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import keras
@@ -23,7 +24,7 @@ from transformers import (
 
 from layer.clients.model_service import MLModelService
 from layer.contracts.runs import ResourceTransferState
-from layer.mlmodels.flavors import (
+from layer.flavors import (
     CatBoostModelFlavor,
     HuggingFaceModelFlavor,
     KerasModelFlavor,
@@ -45,7 +46,7 @@ class TestModelFlavors:
         train_data = lgb.Dataset(data, label=label)
         model = lgb.train({}, train_data, 2)
 
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == LightGBMModelFlavor.__name__
 
     def test_xgboost_flavor(self):
@@ -54,7 +55,7 @@ class TestModelFlavors:
         dtrain = xgb.DMatrix(X_train, label=y_train)
         model = xgb.train({}, dtrain, num_boost_round=2)
 
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == XGBoostModelFlavor.__name__
 
     def test_sklearn_flavor(self):
@@ -62,7 +63,7 @@ class TestModelFlavors:
         iris = datasets.load_iris()
         model = clf.fit(iris.data, iris.target_names[iris.target])
 
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == ScikitLearnModelFlavor.__name__
 
     def test_tensorflow_flavor(self):
@@ -73,7 +74,7 @@ class TestModelFlavors:
 
         model = Adder()
 
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == TensorFlowModelFlavor.__name__
 
     def test_catboost_classifier_flavor(self):
@@ -81,7 +82,7 @@ class TestModelFlavors:
         iris = datasets.load_iris()
         model.fit(iris.data, iris.target_names[iris.target], verbose=False)
 
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == CatBoostModelFlavor.__name__
 
     def test_catboost_regressor_flavor(self):
@@ -91,7 +92,7 @@ class TestModelFlavors:
         model = CatBoostRegressor(iterations=2, learning_rate=1, depth=2)
         model.fit(train_data, train_labels)
 
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == CatBoostModelFlavor.__name__
 
     def test_catboost_flavor(self):
@@ -107,23 +108,23 @@ class TestModelFlavors:
         cb = CatBoost({"iterations": 10})
         model = cb.fit(train_dataset)
 
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == CatBoostModelFlavor.__name__
 
     def test_keras_flavor(self):
         keras_model = keras.models.Sequential()
         keras_model.add(Dense(2, activation="relu", input_dim=2))
-        _, flavor = MLModelService.get_model_flavor(keras_model, logger)
+        flavor = MLModelService.get_model_flavor(keras_model, logger)
         assert type(flavor).__name__ == KerasModelFlavor.__name__
 
         keras_model = tensorflow.keras.Sequential()
         keras_model.add(Dense(2, activation="relu", input_dim=2))
-        _, flavor = MLModelService.get_model_flavor(keras_model, logger)
+        flavor = MLModelService.get_model_flavor(keras_model, logger)
         assert type(flavor).__name__ == KerasModelFlavor.__name__
 
         keras_model = tensorflow.keras.Sequential()
         keras_model.add(Dense(2, activation="relu", input_dim=2))
-        _, flavor = MLModelService.get_model_flavor(keras_model, logger)
+        flavor = MLModelService.get_model_flavor(keras_model, logger)
         assert type(flavor).__name__ == KerasModelFlavor.__name__
 
         from keras.preprocessing.text import Tokenizer
@@ -131,24 +132,27 @@ class TestModelFlavors:
         tokenizer = Tokenizer()
         fit_text = "The earth is an awesome place live"
         tokenizer.fit_on_texts(fit_text)
-        _, flavor = MLModelService.get_model_flavor(tokenizer, logger)
+        flavor = MLModelService.get_model_flavor(tokenizer, logger)
         assert type(flavor).__name__ == KerasModelFlavor.__name__
 
-    @patch("layer.mlmodels.flavors.flavor.S3Util", autospec=True)
-    def test_keras_save_load(self, mock_s3_util, tmp_path):
+    @patch("layer.flavors.base.S3Util", autospec=True)
+    def test_keras_save_load(self, mock_s3_util, tmp_path: Path):
         # Move the pickled model to tmp_path of pytest
-        def mock_upload_dir(local_dir, credentials, s3_path, endpoint_url, state):
-            import os
+        def mock_upload_dir(local_dir: Path, credentials, s3_path, endpoint_url, state):
             import shutil
 
-            if os.path.exists(tmp_path):
+            if tmp_path.exists():
                 shutil.rmtree(tmp_path)
             shutil.copytree(local_dir, tmp_path)
 
         # Move the copied pickled model from tmp_path to local_dir
-        def mock_download_dir(local_dir, credentials, s3_path, endpoint_url, state):
+        def mock_download_dir(
+            local_dir: Path, credentials, s3_path, endpoint_url, state
+        ):
             import shutil
 
+            if local_dir.exists():
+                shutil.rmtree(local_dir)
             shutil.copytree(tmp_path, local_dir)
             shutil.rmtree(tmp_path)
 
@@ -163,8 +167,8 @@ class TestModelFlavors:
         model_definition.model_train_id = ModelTrainId(value=str(uuid.uuid4()))
         keras_model = tensorflow.keras.Sequential()
         keras_model.add(Dense(2, activation="relu", input_dim=2))
-        keras_flavor.save(model_definition, keras_model)
-        loaded_model = keras_flavor.load(
+        keras_flavor.save_to_s3(model_definition, keras_model)
+        loaded_model = keras_flavor.load_from_s3(
             model_definition, state=ResourceTransferState()
         )
         assert isinstance(loaded_model, tensorflow.keras.Sequential)
@@ -173,8 +177,8 @@ class TestModelFlavors:
         model_definition.model_train_id = ModelTrainId(value=str(uuid.uuid4()))
         keras_model = keras.models.Sequential()
         keras_model.add(Dense(2, activation="relu", input_dim=2))
-        keras_flavor.save(model_definition, keras_model)
-        loaded_model = keras_flavor.load(
+        keras_flavor.save_to_s3(model_definition, keras_model)
+        loaded_model = keras_flavor.load_from_s3(
             model_definition, state=ResourceTransferState()
         )
         assert isinstance(loaded_model, keras.models.Sequential)
@@ -186,19 +190,19 @@ class TestModelFlavors:
         tokenizer = Tokenizer()
         fit_text = "The earth is an awesome place live"
         tokenizer.fit_on_texts(fit_text)
-        keras_flavor.save(model_definition, tokenizer)
-        loaded_tokenizer = keras_flavor.load(
+        keras_flavor.save_to_s3(model_definition, tokenizer)
+        loaded_tokenizer = keras_flavor.load_from_s3(
             model_definition, state=ResourceTransferState()
         )
         assert isinstance(loaded_tokenizer, keras.preprocessing.text.Tokenizer)
 
     def test_transformers_package(self):
         model = TFBertForSequenceClassification(BertConfig())
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == HuggingFaceModelFlavor.__name__
 
         model = BertForSequenceClassification(BertConfig())
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == HuggingFaceModelFlavor.__name__
 
     def test_transformers_type_detection(self, tmp_path):
@@ -207,22 +211,22 @@ class TestModelFlavors:
         # Bert Tensorflow Model
         tmp_path = tmp_path / "model1"
         model = TFBertForSequenceClassification(BertConfig())
-        hf_flavor.save_transformer(model, tmp_path)
-        loaded_model = hf_flavor.load_transformer(tmp_path)
+        hf_flavor.save_model_to_directory(model, tmp_path)
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
         assert isinstance(loaded_model, TFBertForSequenceClassification)
 
         # Bert Pytorch Model
         tmp_path = tmp_path / "model2"
         model = BertForSequenceClassification(BertConfig())
-        hf_flavor.save_transformer(model, tmp_path)
-        loaded_model = hf_flavor.load_transformer(tmp_path)
+        hf_flavor.save_model_to_directory(model, tmp_path)
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
         assert isinstance(loaded_model, BertForSequenceClassification)
 
         # GPT2 LMHEad Tensorflow Model
         tmp_path = tmp_path / "model3"
         model = TFGPT2LMHeadModel(GPT2Config())
-        hf_flavor.save_transformer(model, tmp_path)
-        loaded_model = hf_flavor.load_transformer(tmp_path)
+        hf_flavor.save_model_to_directory(model, tmp_path)
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
 
         assert isinstance(loaded_model, TFGPT2LMHeadModel)
 
@@ -231,7 +235,7 @@ class TestModelFlavors:
 
         model = torch.nn.Sequential(torch.nn.Linear(3, 1), torch.nn.Flatten(0, 1))
 
-        _, flavor = MLModelService.get_model_flavor(model, logger)
+        flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == PyTorchModelFlavor.__name__
 
     def test_pytorch_save_load(self, tmp_path):
@@ -239,8 +243,8 @@ class TestModelFlavors:
 
         pt_flavor = PyTorchModelFlavor()
         pt_model = torch.nn.Sequential()
-        pt_flavor.save_model(pt_model, tmp_path)
-        loaded_model = pt_flavor.load_model_impl()(tmp_path)
+        pt_flavor.save_model_to_directory(pt_model, tmp_path)
+        loaded_model = pt_flavor.load_model_from_directory(tmp_path)
         assert isinstance(loaded_model, torch.nn.Module)
 
     def test_yolo_save_load(self, tmp_path):
@@ -253,7 +257,7 @@ class TestModelFlavors:
 
         # Save model
         pt_flavor = PyTorchModelFlavor()
-        pt_flavor.save_model(model, tmp_path)
+        pt_flavor.save_model_to_directory(model, tmp_path)
 
         # Check if we have the necessary files to load the model
         from pathlib import Path
@@ -273,5 +277,5 @@ class TestModelFlavors:
             del sys.modules["yolov5"]
 
         # Load and check the type of the model
-        model = pt_flavor.load_model_impl()(tmp_path)
+        model = pt_flavor.load_model_from_directory(tmp_path)
         assert model.__class__.__name__ == "AutoShape"

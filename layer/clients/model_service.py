@@ -1,6 +1,6 @@
 import importlib
 from logging import Logger
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from layerapi.api.entity.model_version_pb2 import (  # pylint: disable=unused-import
     ModelVersion,
@@ -12,13 +12,9 @@ from layer.exceptions.exceptions import (
     LayerClientException,
     UnexpectedModelTypeException,
 )
-from layer.mlmodels.flavors import (
-    PROTO_TO_PYTHON_OBJECT_FLAVORS,
-    PYTHON_CLASS_NAME_TO_PROTO_FLAVORS,
-    PYTHON_FLAVORS,
-    ModelFlavor,
-)
-from layer.mlmodels.flavors.model_definition import ModelDefinition
+from layer.flavors import ModelFlavor
+from layer.flavors.model_definition import ModelDefinition
+from layer.flavors.utils import get_flavor_for_model, get_flavor_for_proto
 from layer.tracker.project_progress_tracker import ProjectProgressTracker
 
 
@@ -61,7 +57,7 @@ class MLModelService:
         )
         try:
             self.logger.debug(f"Writing model {model_definition}")
-            flavor.save(
+            flavor.save_to_s3(
                 model_definition,
                 model_object,
                 s3_endpoint_url=self._s3_endpoint_url,
@@ -100,7 +96,7 @@ class MLModelService:
         self.logger.debug(f"Loading model {model_definition.model_name}")
         module = importlib.import_module(flavor.metadata.module_name)
         model_flavor_class = getattr(module, flavor.metadata.class_name)
-        return model_flavor_class(no_cache=no_cache).load(
+        return model_flavor_class(no_cache=no_cache).load_from_s3(
             model_definition=model_definition,
             s3_endpoint_url=self._s3_endpoint_url,
             state=state,
@@ -121,7 +117,7 @@ class MLModelService:
     def get_model_flavor(
         model_object: "TrainedModelObject",
         logger: Logger,
-    ) -> Tuple["ModelVersion.ModelFlavor.V", ModelFlavor]:
+    ) -> ModelFlavor:
         """
         Checks if given model objects has a known model flavor and returns
         the flavor if there is a match.
@@ -136,7 +132,7 @@ class MLModelService:
             LayerException if user provided object does not have a known flavor.
 
         """
-        flavor = MLModelService.__check_and_get_flavor(model_object, logger)
+        flavor = get_flavor_for_model(model_object)
         if flavor is None:
             raise UnexpectedModelTypeException(type(model_object))
         return flavor
@@ -145,24 +141,7 @@ class MLModelService:
     def get_model_flavor_from_proto(
         proto_flavor: "ModelVersion.ModelFlavor.V",
     ) -> ModelFlavor:
-        if proto_flavor not in PROTO_TO_PYTHON_OBJECT_FLAVORS:
+        flavor = get_flavor_for_proto(proto_flavor)
+        if flavor is None:
             raise LayerClientException(f"Unexpected model flavor {type(proto_flavor)}")
-        return PROTO_TO_PYTHON_OBJECT_FLAVORS[proto_flavor]
-
-    @staticmethod
-    def __check_and_get_flavor(
-        model_object: "TrainedModelObject",
-        logger: Logger,
-    ) -> Optional[Tuple["ModelVersion.ModelFlavor.V", ModelFlavor]]:
-        matching_flavor: Optional[ModelFlavor] = None
-        for flavor in PYTHON_FLAVORS:
-            if flavor.can_interpret_object(model_object):
-                matching_flavor = flavor
-                break
-        logger.info(f"Matching flavor: {matching_flavor}")
-        if matching_flavor is None:
-            return None
-        flavor_name = type(matching_flavor).__name__
-        proto_flavor = PYTHON_CLASS_NAME_TO_PROTO_FLAVORS[flavor_name]
-        logger.info(f"flavor name: {flavor_name}, proto flavor: {proto_flavor}")
-        return proto_flavor, matching_flavor
+        return flavor

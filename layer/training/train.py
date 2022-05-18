@@ -6,7 +6,7 @@ from layerapi.api.entity.model_version_pb2 import ModelVersion
 from layerapi.api.ids_pb2 import ModelTrainId
 
 from layer.clients.layer import LayerClient
-from layer.mlmodels.flavors.model_definition import ModelDefinition
+from layer.flavors.model_definition import ModelDefinition
 from layer.tracker.project_progress_tracker import ProjectProgressTracker
 
 from .base_train import BaseTrain

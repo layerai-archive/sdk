@@ -21,7 +21,7 @@ class S3Util:
         endpoint_url: Optional[URL] = None,
         state: ResourceTransferState,
     ) -> None:
-        import boto3  # type: ignore
+        import boto3
 
         s3_kwargs = {"endpoint_url": endpoint_url and str(endpoint_url)}
 

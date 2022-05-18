@@ -32,8 +32,8 @@ from layer.exceptions.exceptions import (
     UserNotLoggedInException,
     UserWithoutAccountError,
 )
+from layer.flavors.model_definition import ModelDefinition
 from layer.logged_data.log_data_runner import LogDataRunner
-from layer.mlmodels.flavors.model_definition import ModelDefinition
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.util import get_current_project_name
