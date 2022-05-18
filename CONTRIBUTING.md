@@ -116,6 +116,20 @@ This repo uses `make` as the build system. The following targets can be used thr
 - `clean` - cleans the repo, including the `poetry` virtual environment
 - `help` - prints all targets
 
+### Python setup
+We recommend using `pyenv`
+
+Please run `pyenv install` in the root of this repository to setup the recommended python version.
+
+If you are using an M1 machine, we recommend using `conda`. Please run
+
+```
+conda create -yq -n sdk python=3.8 tokenizers==0.12.1 xgboost==1.5.1 lightgbm==3.3.2 poetry h5py==3.6.0 pyarrow==7.0.0
+conda activate sdk
+```
+
+After that you should be able to run the rest of the `make` targets as normal
+
 #### Installation
 
 You can install `layerai/sdk` from the root of this repository with:
