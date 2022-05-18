@@ -97,5 +97,6 @@ venv/
 
 # make outputs
 .install.stamp
+.test-token
 
 catboost_info/

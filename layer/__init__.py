@@ -15,6 +15,9 @@ from .main import login_with_api_key  # noqa
 from .main import logout  # noqa
 from .main import run  # noqa
 from .main import show_api_key  # noqa
-from .pandas_extensions import Images  # noqa
+from .pandas_extensions import Images, _register_type_extensions  # noqa
 from .projects.project import Project  # noqa
 from .projects.project_runner import Run  # noqa
+
+
+_register_type_extensions()

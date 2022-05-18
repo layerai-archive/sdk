@@ -17,7 +17,7 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
     function = Function(
         name="function",
         asset=Asset(name="my_model", type=AssetType.MODEL),
-        resource_paths={ResourcePath(path="tests/e2ev2/assets/data/test.csv")},
+        resource_paths={ResourcePath(path="test/e2ev2/assets/data/test.csv")},
     )
     project = initialized_project.with_functions([function])
     resource_manager = ResourceManager(asserter.client)
@@ -28,16 +28,16 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
             project.name, function.name, target_dir=resource_dir
         )
         assert filecmp.cmp(
-            "tests/e2ev2/assets/data/test.csv",
-            os.path.join(resource_dir, "tests", "e2ev2", "assets", "data", "test.csv"),
+            "test/e2ev2/assets/data/test.csv",
+            os.path.join(resource_dir, "test", "e2ev2", "assets", "data", "test.csv"),
         )
 
 
 def test_resources(initialized_project: Project, asserter: E2ETestAsserter):
     @dataset("test_resources")
-    @resources("tests/e2ev2/assets/data")
+    @resources("test/e2ev2/assets/data")
     def resources_func():
-        return pd.read_csv("tests/e2ev2/assets/data/test.csv")
+        return pd.read_csv("test/e2ev2/assets/data/test.csv")
 
     run = layer.run([resources_func])
     asserter.assert_run_succeeded(run.run_id)
@@ -45,9 +45,9 @@ def test_resources(initialized_project: Project, asserter: E2ETestAsserter):
 
 def test_titanic_resources(initialized_project: Project, asserter: E2ETestAsserter):
     @dataset("titanic")
-    @resources("tests/e2ev2/assets/titanic/titanic.csv")
+    @resources("test/e2ev2/assets/titanic/titanic.csv")
     def titanic():
-        return pd.read_csv("tests/e2ev2/assets/titanic/titanic.csv")
+        return pd.read_csv("test/e2ev2/assets/titanic/titanic.csv")
 
     run = layer.run([titanic])
     asserter.assert_run_succeeded(run.run_id)
@@ -56,12 +56,12 @@ def test_titanic_resources(initialized_project: Project, asserter: E2ETestAssert
 def test_model_resources(initialized_project: Project, asserter: E2ETestAsserter):
     @model("foo-model")
     @pip_requirements(packages=["scikit-learn==0.23.2"])
-    @resources("tests/e2ev2/assets/titanic/titanic.csv")
+    @resources("test/e2ev2/assets/titanic/titanic.csv")
     def train_model():
         from sklearn.svm import SVC
 
         svc = SVC(kernel="linear")
-        pd.read_csv("tests/e2ev2/assets/titanic/titanic.csv")
+        pd.read_csv("test/e2ev2/assets/titanic/titanic.csv")
         return svc.fit([[1], [2], [3]], [[1], [2], [3]])
 
     run = layer.run([train_model])
@@ -75,12 +75,12 @@ def test_local_model_train_with_resources(
 
     @model(model_name)
     @pip_requirements(packages=["scikit-learn==0.23.2"])
-    @resources("tests/e2ev2/assets/titanic/titanic.csv")
+    @resources("test/e2ev2/assets/titanic/titanic.csv")
     def train_model():
         from sklearn.svm import SVC
 
         svc = SVC(kernel="linear")
-        pd.read_csv("tests/e2ev2/assets/titanic/titanic.csv")
+        pd.read_csv("test/e2ev2/assets/titanic/titanic.csv")
         return svc.fit([[1], [2], [3]], [[1], [2], [3]])
 
     train_model()
@@ -101,7 +101,7 @@ def test_no_resource_decorator(initialized_project: Project, asserter: E2ETestAs
 def test_add_remove_resource_decorator(
     initialized_project: Project, asserter: E2ETestAsserter
 ):
-    resource_file = "tests/e2ev2/assets/titanic/titanic.csv"
+    resource_file = "test/e2ev2/assets/titanic/titanic.csv"
 
     def first_run():
         @dataset("titanic")
@@ -129,7 +129,7 @@ def test_add_remove_resource_decorator(
 def test_resource_path_contains_spaces(
     initialized_project: Project, asserter: E2ETestAsserter
 ):
-    resource_path = "tests/e2ev2/assets/titanic/ti ta nic.csv"
+    resource_path = "test/e2ev2/assets/titanic/ti ta nic.csv"
 
     @dataset("titanic-with-spaces-in-the-resource-path")
     @resources(resource_path)
