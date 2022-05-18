@@ -61,6 +61,12 @@ jobs:
           steps.changed-files.outputs.any_changed == 'true'
         run: |
           exit 1
+      - name: Start the Datadog Agent
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: datadog/agent-github-action@v1
+        with:
+          api_key: ${{ secrets.DD_API_KEY }}
+          datadog_site: datadoghq.eu
       - name: Run e2e tests
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |

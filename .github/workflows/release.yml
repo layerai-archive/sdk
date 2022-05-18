@@ -44,6 +44,11 @@ jobs:
         with:
           path: /home/runner/.cache/pypoetry/virtualenvs
           key: poetry-vevns-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
+      - name: Start the Datadog Agent
+        uses: datadog/agent-github-action@v1
+        with:
+          api_key: ${{ secrets.DD_API_KEY }}
+          datadog_site: datadoghq.eu
       - name: Run e2e tests
         run: |
           echo ${{ secrets.APP_API_KEY }} > .test-token
