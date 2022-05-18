@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List
 import numpy
 import wrapt  # type: ignore
 
-from layer.assertion_utils import Assertion
+from layer.contracts.assertions import Assertion
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 from layer.decorators.utils import ensure_has_layer_settings
 

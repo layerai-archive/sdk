@@ -8,9 +8,9 @@ from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket, Partiti
 from pyarrow.flight import FlightStreamReader
 
 from layer import get_dataset
-from layer.client import DataCatalogClient
-from layer.clients.dataset_client import DatasetClient, Partition, PartitionMetadata
-from layer.common import LayerClient
+from layer.clients.data_catalog import DataCatalogClient
+from layer.clients.dataset_service import DatasetClient, Partition, PartitionMetadata
+from layer.clients.layer import LayerClient
 from layer.config import ClientConfig, Config
 
 
@@ -51,7 +51,7 @@ def test_get_dataset_to_pytorch_returns_pytorch_dataloader():
         return row.x, row.y + "!"
 
     df = pandas.DataFrame({"x": [1, 2], "y": ["a", "b"]})
-    with patch("layer.client.Dataset.to_pandas", return_value=df):
+    with patch("layer.contracts.datasets.Dataset.to_pandas", return_value=df):
         with _dataset_client_mock():
             ds = get_dataset("dummy").to_pytorch(transform)
             item, (x, y) = next(enumerate(ds))

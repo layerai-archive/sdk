@@ -3,11 +3,11 @@ from uuid import UUID
 
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.tracker.project_progress_tracker import ProjectProgressTracker
 
 
 if TYPE_CHECKING:
-    from layer.mlmodels import ModelObject
+    from layer.contracts.models import TrainedModelObject
 
 
 class BaseTrain:
@@ -103,7 +103,7 @@ class BaseTrain:
 
     def save_model(
         self,
-        trained_model_obj: "ModelObject",
+        trained_model_obj: "TrainedModelObject",
         tracker: Optional[ProjectProgressTracker] = None,
     ) -> Any:
         pass
@@ -117,7 +117,9 @@ class BaseTrain:
     def __complete_train(self) -> None:
         pass
 
-    def __infer_flavor(self, model_obj: "ModelObject") -> "ModelVersion.ModelFlavor.V":
+    def __infer_flavor(
+        self, model_obj: "TrainedModelObject"
+    ) -> "ModelVersion.ModelFlavor.V":
         pass
 
     def __enter__(self) -> Any:

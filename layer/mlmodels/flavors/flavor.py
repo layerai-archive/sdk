@@ -7,12 +7,12 @@ from typing import Any, Dict, NamedTuple, Optional
 import mlflow.keras
 from yarl import URL
 
-from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
-from layer.projects.tracker.resource_transfer_state import ResourceTransferState
+from layer.cache import Cache
+from layer.contracts.models import TrainedModelObject
+from layer.contracts.runs import ResourceTransferState
+from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.utils.s3 import S3Util
 
-from ...cache import Cache
-from ...s3 import S3Util
-from .. import ModelObject
 from .model_definition import ModelDefinition
 
 
@@ -85,7 +85,7 @@ class ModelFlavor(metaclass=ABCMeta):
         """
         return {}
 
-    def can_interpret_object(self, model_object: ModelObject) -> bool:
+    def can_interpret_object(self, model_object: TrainedModelObject) -> bool:
         """Checks whether supplied model object has flavor of this class.
 
         Args:
@@ -107,7 +107,7 @@ class ModelFlavor(metaclass=ABCMeta):
     def save(
         self,
         model_definition: ModelDefinition,
-        model_object: ModelObject,
+        model_object: TrainedModelObject,
         s3_endpoint_url: Optional[URL] = None,
         tracker: Optional[ProjectProgressTracker] = None,
     ) -> None:
@@ -144,7 +144,7 @@ class ModelFlavor(metaclass=ABCMeta):
         model_definition: ModelDefinition,
         s3_endpoint_url: Optional[URL] = None,
         state: Optional[ResourceTransferState] = None,
-    ) -> ModelObject:
+    ) -> TrainedModelObject:
         """Loads the given machine learning model definition from the backing store and
         returns an instance of it
 
@@ -167,7 +167,7 @@ class ModelFlavor(metaclass=ABCMeta):
         model_definition: ModelDefinition,
         state: Optional[ResourceTransferState],
         s3_endpoint_url: Optional[URL] = None,
-    ) -> ModelObject:
+    ) -> TrainedModelObject:
         """Loads the given machine learning model definition from the backing store and
         returns an instance of it
 
@@ -203,7 +203,7 @@ class ModelFlavor(metaclass=ABCMeta):
         assert model_cache_dir
         return self._load_model(model_cache_dir)
 
-    def _load_model(self, model_dir: Path) -> ModelObject:
+    def _load_model(self, model_dir: Path) -> TrainedModelObject:
         import warnings
 
         with warnings.catch_warnings():
@@ -362,7 +362,7 @@ class TensorFlowModelFlavor(ModelFlavor):
     def save(
         self,
         model_definition: ModelDefinition,
-        model_object: ModelObject,
+        model_object: TrainedModelObject,
         s3_endpoint_url: Optional[URL] = None,
         tracker: Optional[ProjectProgressTracker] = None,
     ) -> None:
@@ -430,7 +430,7 @@ class KerasModelFlavor(ModelFlavor):
     def load_model_impl(self) -> Any:
         raise NotImplementedError("Use Keras specific `load` method")
 
-    def can_interpret_object(self, model_object: ModelObject) -> bool:
+    def can_interpret_object(self, model_object: TrainedModelObject) -> bool:
         # Check if model is a tensorflow keras
         try:
             import tensorflow.keras.models  # type: ignore
@@ -463,7 +463,7 @@ class KerasModelFlavor(ModelFlavor):
     def save(
         self,
         model_definition: ModelDefinition,
-        model_object: ModelObject,
+        model_object: TrainedModelObject,
         s3_endpoint_url: Optional[URL] = None,
         tracker: Optional[ProjectProgressTracker] = None,
     ) -> None:
@@ -502,7 +502,7 @@ class KerasModelFlavor(ModelFlavor):
         model_definition: ModelDefinition,
         state: Optional[ResourceTransferState] = None,
         s3_endpoint_url: Optional[URL] = None,
-    ) -> ModelObject:
+    ) -> TrainedModelObject:
         import os
         import warnings
 
@@ -605,7 +605,7 @@ class HuggingFaceModelFlavor(ModelFlavor):
         model_definition: ModelDefinition,
         state: Optional[ResourceTransferState] = None,
         s3_endpoint_url: Optional[URL] = None,
-    ) -> ModelObject:
+    ) -> TrainedModelObject:
         import warnings
 
         from mlflow.utils.file_utils import TempDir

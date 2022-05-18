@@ -4,16 +4,17 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from layer import global_context
-from layer.async_utils import asyncio_run_in_thread
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.contracts.fabrics import Fabric
+from layer.contracts.projects import Project, ProjectLoader
 from layer.global_context import (
     set_default_fabric,
     set_pip_packages,
     set_pip_requirements_file,
 )
-from layer.projects.project import Project, ProjectLoader, get_or_create_remote_project
+from layer.projects.util import get_or_create_remote_project
+from layer.utils.async_utils import asyncio_run_in_thread
 
 
 class InitProjectRunner:

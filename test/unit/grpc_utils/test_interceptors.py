@@ -25,12 +25,12 @@ from layer.exceptions.exceptions import (
     LayerClientTimeoutException,
     LayerResourceExhaustedException,
 )
-from layer.grpc_utils.interceptors import (
+from layer.utils.grpc.interceptors import (
     _OBFUSCATED_VALUE,
     GRPCErrorClientInterceptor,
     LogRpcCallsInterceptor,
 )
-from layer.run import _ENV_KEY_LAYER_DEBUG
+from layer.utils.session import _ENV_KEY_LAYER_DEBUG
 
 
 class TestLogRpcCallsInterceptor:

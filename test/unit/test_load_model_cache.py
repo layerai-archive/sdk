@@ -5,9 +5,9 @@ from unittest.mock import Mock, patch
 from layerapi.api.ids_pb2 import ModelTrainId
 from yarl import URL
 
+from layer.contracts.runs import ResourceTransferState
 from layer.mlmodels.flavors.flavor import ModelFlavor
 from layer.mlmodels.flavors.model_definition import ModelDefinition
-from layer.projects.tracker.resource_transfer_state import ResourceTransferState
 
 
 def test_model_load_from_cache(tmp_path):
@@ -16,7 +16,7 @@ def test_model_load_from_cache(tmp_path):
     model_def.model_train_id = model_train_id
     s3_endpoint = URL("https://model.catalog")
 
-    with patch("layer.s3.S3Util.download_dir") as s3_download:
+    with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
         model_flavor = DummyModelFlavor(cache_dir=tmp_path)
         s3_download.side_effect = download_model_files_from_s3
         model_flavor.load(
@@ -28,7 +28,7 @@ def test_model_load_from_cache(tmp_path):
         model_flavor.model_impl.assert_called_once_with(model_cache_dir.as_uri())
         assert not model_flavor.from_cache
 
-    with patch("layer.s3.S3Util.download_dir") as s3_download:
+    with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
         model_flavor = DummyModelFlavor(cache_dir=tmp_path)
         model_flavor.load(model_def, s3_endpoint_url=s3_endpoint)
         # assert model was loaded from the cache dir without downloading
@@ -44,7 +44,7 @@ def test_model_load_from_cache_does_not_cache_if_no_cache_true(tmp_path):
     model_def.model_train_id = model_train_id
     s3_endpoint = URL("https://model.catalog")
 
-    with patch("layer.s3.S3Util.download_dir") as s3_download:
+    with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
         model_flavor = DummyModelFlavor(cache_dir=tmp_path, no_cache=True)
         s3_download.side_effect = download_model_files_from_s3
         model_flavor.load(

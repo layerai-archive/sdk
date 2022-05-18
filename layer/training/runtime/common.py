@@ -12,7 +12,7 @@ from layerapi.api.entity.model_train_status_pb2 import (  # pylint: disable=unus
 )
 from layerapi.api.ids_pb2 import ModelTrainId
 
-from layer.client import ModelCatalogClient
+from layer.clients.model_catalog import ModelCatalogClient
 
 
 def import_function(

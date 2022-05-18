@@ -6,7 +6,7 @@ from pathlib import Path
 from traceback import FrameSummary
 from typing import Any, List, Optional
 
-from layer.assertion_utils import Assertion, LayerFailedAssertionsException
+from layer.contracts.assertions import Assertion
 
 
 class ExecutionStatusReport(ABC):
@@ -117,12 +117,6 @@ class AssertionFailureStatusReport(ExecutionStatusReport):
     @property
     def cause(self) -> str:
         return ""
-
-    @staticmethod
-    def from_exception(
-        exc: LayerFailedAssertionsException,
-    ) -> "AssertionFailureStatusReport":
-        return AssertionFailureStatusReport(failed_assertions=exc.failed_assertions)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, AssertionFailureStatusReport):

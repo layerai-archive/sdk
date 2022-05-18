@@ -3,13 +3,16 @@ import uuid
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, NewType, Optional, Sequence, Tuple, Union
 
 from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
 
 from .asset import AssetPath, AssetType, BaseAsset
+
+
+TrainedModelObject = NewType("TrainedModelObject", object)
 
 
 @dataclass(frozen=True)

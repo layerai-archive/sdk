@@ -5,28 +5,28 @@ from uuid import UUID
 import wrapt  # type: ignore
 
 from layer import Dataset, Model
-from layer.assertion_utils import Assertion
-from layer.async_utils import asyncio_run_in_thread
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.context import Context
+from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
+from layer.contracts.runs import DatasetTransferState
 from layer.decorators.assertions import get_assertion_functions_data
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 from layer.decorators.utils import ensure_has_layer_settings
 from layer.definitions import DatasetDefinition
 from layer.global_context import reset_active_context, set_active_context
 from layer.projects.project_runner import register_derived_datasets
-from layer.projects.tracker.dataset_transfer_state import DatasetTransferState
-from layer.projects.tracker.local_execution_project_progress_tracker import (
-    LocalExecutionProjectProgressTracker,
-)
 from layer.projects.util import (
     get_current_project_name,
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
+from layer.tracker.local_execution_project_progress_tracker import (
+    LocalExecutionProjectProgressTracker,
+)
+from layer.utils.async_utils import asyncio_run_in_thread
 
 
 logger = logging.getLogger(__name__)
@@ -90,9 +90,8 @@ def dataset(
         import pandas as pd
         from layer
         from layer.decorators import dataset
-        from layer.client import Dataset
 
-        @dataset("raw_spam_dataset", dependencies=[Dataset('layer/spam-detection/datasets/spam_messages')])
+        @dataset("raw_spam_dataset", dependencies=[layer.Dataset('layer/spam-detection/datasets/spam_messages')])
         def raw_spam_dataset():
             # Get the spam_messages dataset and convert to Pandas dataframe.
             df = layer.get_dataset("spam-detection/datasets/spam_messages").to_pandas()

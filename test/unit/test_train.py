@@ -5,11 +5,11 @@ from unittest.mock import MagicMock, create_autospec
 
 import pytest
 
-from layer.client import ModelCatalogClient
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
+from layer.clients.model_catalog import ModelCatalogClient
+from layer.clients.model_service import MLModelService
 from layer.config import ClientConfig
 from layer.exceptions.exceptions import UnexpectedModelTypeException
-from layer.mlmodels.service import MLModelService
 from layer.training.train import Train
 
 

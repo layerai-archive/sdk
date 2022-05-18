@@ -21,6 +21,8 @@ from transformers import (
     TFGPT2LMHeadModel,
 )
 
+from layer.clients.model_service import MLModelService
+from layer.contracts.runs import ResourceTransferState
 from layer.mlmodels.flavors import (
     CatBoostModelFlavor,
     HuggingFaceModelFlavor,
@@ -31,8 +33,6 @@ from layer.mlmodels.flavors import (
     TensorFlowModelFlavor,
     XGBoostModelFlavor,
 )
-from layer.mlmodels.service import MLModelService
-from layer.projects.tracker.resource_transfer_state import ResourceTransferState
 
 
 logger = logging.getLogger(__name__)

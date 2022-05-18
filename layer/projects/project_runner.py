@@ -2,7 +2,6 @@ import logging
 import sys
 import threading
 import uuid
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
 
@@ -10,10 +9,11 @@ import polling  # type: ignore
 from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layerapi.api.ids_pb2 import HyperparameterTuningId, ModelVersionId, RunId
 
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
 from layer.config import Config
 from layer.contracts.asset import AssetType
 from layer.contracts.datasets import Dataset, DerivedDataset, PythonDataset, RawDataset
+from layer.contracts.projects import ApplyResult, Asset, Function, Project, ResourcePath
 from layer.definitions import DatasetDefinition, ModelDefinition
 from layer.exceptions.exceptions import (
     LayerClientException,
@@ -26,49 +26,28 @@ from layer.exceptions.exceptions import (
     ProjectInitializationException,
     ProjectRunnerError,
 )
+from layer.projects.execution_planner import (
+    build_execution_plan,
+    check_entity_dependencies,
+)
 from layer.projects.progress_tracker_updater import (
     PollingStepFunction,
     ProgressTrackerUpdater,
 )
-from layer.projects.project import (
-    ApplyResult,
-    Asset,
-    Function,
-    Project,
-    ResourcePath,
-    get_or_create_remote_project,
-)
 from layer.projects.project_hash_calculator import calculate_project_hash_by_definitions
-from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
-from layer.projects.tracker.remote_execution_project_progress_tracker import (
+from layer.projects.util import (
+    get_or_create_remote_project,
+    verify_project_exists_and_retrieve_project_id,
+)
+from layer.resource_manager import ResourceManager
+from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.tracker.remote_execution_project_progress_tracker import (
     RemoteExecutionProjectProgressTracker,
 )
-from layer.projects.util import verify_project_exists_and_retrieve_project_id
-from layer.resource_manager import ResourceManager
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
 
 
 logger = logging.getLogger()
-
-
-@dataclass(frozen=True)
-class Run:
-    """
-    Provides access to project runs stored in Layer.
-
-    You can retrieve an instance of this object with :code:`layer.run()`.
-
-    This class should not be initialized by end-users.
-
-    .. code-block:: python
-
-        # Runs the current project with the given functions
-        layer.run([build_dataset, train_model])
-
-    """
-
-    project_name: str
-    run_id: uuid.UUID = field(repr=False)
 
 
 class RunContext:
@@ -182,8 +161,8 @@ class ProjectRunner:
             hyperparameter_tuning_metadata,
         ) = self._create_entities_and_upload_user_code(client, project)
 
-        execution_plan = project.build_execution_plan(
-            models_metadata, hyperparameter_tuning_metadata
+        execution_plan = build_execution_plan(
+            project, models_metadata, hyperparameter_tuning_metadata
         )
         client.project_service_client.update_project_readme(
             project.name, project.readme
@@ -273,7 +252,7 @@ class ProjectRunner:
         debug: bool = False,
         printer: Callable[[str], Any] = print,
     ) -> RunId:
-        project.check_entity_dependencies()
+        check_entity_dependencies(project)
         with LayerClient(self._config.client, logger).init() as client:
             project = get_or_create_remote_project(client, project)
             with self._project_progress_tracker_factory(

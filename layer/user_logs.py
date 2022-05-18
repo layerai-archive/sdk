@@ -8,7 +8,7 @@ from typing import Any, Callable, List, Tuple
 from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
 from layerapi.api.ids_pb2 import RunId
 
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
 
 
 POLLING_INTERVAL_SEC = 3

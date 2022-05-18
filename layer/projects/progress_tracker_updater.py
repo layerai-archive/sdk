@@ -8,7 +8,8 @@ from layerapi.api.entity.run_pb2 import Run
 from layerapi.api.entity.task_pb2 import Task as PBTask
 from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId, RunId
 
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
+from layer.contracts.projects import ApplyResult
 from layer.exceptions.exceptions import (
     LayerClientTimeoutException,
     ProjectDatasetBuildExecutionException,
@@ -18,10 +19,9 @@ from layer.exceptions.exceptions import (
     ProjectRunTerminatedError,
 )
 from layer.exceptions.status_report import ExecutionStatusReportFactory
-from layer.projects.project import ApplyResult
-from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.projects.util import get_current_project_name
-from layer.run import is_layer_debug_on
+from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.utils.session import is_layer_debug_on
 
 
 class PollingStepFunction:

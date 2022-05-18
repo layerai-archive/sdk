@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, PropertyMock
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 from layerapi.api.ids_pb2 import ModelTrainId
 
-from layer.client import ModelCatalogClient
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
+from layer.clients.model_catalog import ModelCatalogClient
 from layer.exceptions.status_report import (
     ExecutionStatusReportFactory,
     PythonExecutionStatusReport,

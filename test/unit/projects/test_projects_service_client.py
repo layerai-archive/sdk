@@ -12,12 +12,12 @@ from layerapi.api.service.flowmanager.project_api_pb2 import (
     GetProjectByNameResponse,
 )
 
+from layer.clients.project_service import ProjectServiceClient
 from layer.config import ClientConfig, ProjectServiceConfig
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientResourceNotFoundException,
 )
-from layer.projects import ProjectServiceClient
 
 
 def _get_project_service_client_with_mocks(

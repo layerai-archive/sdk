@@ -5,23 +5,23 @@ from uuid import UUID
 import wrapt  # type: ignore
 
 from layer import Dataset, Model
-from layer.async_utils import asyncio_run_in_thread
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.contracts.asset import AssetType
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 from layer.decorators.utils import ensure_has_layer_settings
 from layer.definitions import ModelDefinition
-from layer.projects.tracker.local_execution_project_progress_tracker import (
-    LocalExecutionProjectProgressTracker,
-)
 from layer.projects.util import (
     get_current_project_name,
     verify_project_exists_and_retrieve_project_id,
 )
+from layer.tracker.local_execution_project_progress_tracker import (
+    LocalExecutionProjectProgressTracker,
+)
 from layer.training.runtime.model_train_failure_reporter import (
     ModelTrainFailureReporter,
 )
+from layer.utils.async_utils import asyncio_run_in_thread
 
 
 logger = logging.getLogger(__name__)
@@ -70,9 +70,8 @@ def model(
         import pandas as pd
         from layer
         from layer.decorators import dataset, model
-        from layer.client import Dataset
 
-        @model(name='survival_model', dependencies=[Dataset('layer/titanic/datasets/features')])
+        @model(name='survival_model', dependencies=[layer.Dataset('layer/titanic/datasets/features')])
         @assert_true(test_survival_probability)
         def train():
             df = layer.get_dataset("layer/titanic/datasets/features").to_pandas()

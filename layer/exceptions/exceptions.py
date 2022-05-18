@@ -5,7 +5,9 @@ from typing import Any, List, Optional, Type
 from layerapi.api.ids_pb2 import RunId
 from yarl import URL
 
-from .status_report import ExecutionStatusReport
+from layer.contracts.assertions import Assertion
+
+from .status_report import AssertionFailureStatusReport, ExecutionStatusReport
 
 
 RICH_ERROR_COLOR = "rgb(251,147,60)"
@@ -305,3 +307,15 @@ class ProjectCircularDependenciesException(ProjectInitializationException):
     def _err_msg(stringified_paths: List[str]) -> str:
         paths_as_str = "\n".join(stringified_paths)
         return f"Detected circular dependencies:\n{paths_as_str}"
+
+
+class LayerFailedAssertionsException(Exception):
+    def __init__(self, failed_assertions: List[Assertion]) -> None:
+        self._failed_assertions = failed_assertions
+
+    @property
+    def failed_assertions(self) -> List[Assertion]:
+        return self._failed_assertions
+
+    def to_status_report(self) -> AssertionFailureStatusReport:
+        return AssertionFailureStatusReport(failed_assertions=self.failed_assertions)

@@ -2,7 +2,7 @@ from layerapi.api.service.account.user_api_pb2 import GetGuestAuthTokenRequest
 from layerapi.api.service.account.user_api_pb2_grpc import UserAPIStub
 
 from layer.config import LogsConfig
-from layer.grpc_utils import create_grpc_channel
+from layer.utils.grpc import create_grpc_channel
 
 
 def get_guest_auth_token(url: str) -> str:

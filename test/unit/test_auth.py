@@ -20,7 +20,6 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from layer.async_utils import asyncio_run_in_thread
 from layer.auth import (
     AuthException,
     Code,
@@ -33,6 +32,7 @@ from layer.auth import (
     create_auth_code_app,
 )
 from layer.config import AuthConfig, Credentials
+from layer.utils.async_utils import asyncio_run_in_thread
 
 
 pytestmark = pytest.mark.asyncio

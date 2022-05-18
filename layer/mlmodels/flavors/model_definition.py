@@ -1,12 +1,11 @@
-import re
-import unicodedata
-
 from layerapi.api.entity.model_version_pb2 import (  # pylint: disable=unused-import
     ModelVersion,
 )
 from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
+
+from layer.utils.string_utils import slugify
 
 
 class ModelDefinition:
@@ -90,24 +89,3 @@ class ModelDefinition:
             f"s3_path:{self.s3_path}"
             f"}}"
         )
-
-
-def slugify(value: str, allow_unicode: bool = False) -> str:
-    """
-    Convert to ASCII if 'allow_unicode' is False. Convert spaces to hyphens.
-    Remove characters that aren't alphanumerics, underscores, or hyphens.
-    Convert to lowercase. Also strip leading and trailing whitespace.
-
-    Taken unchanged from django/utils/text.py
-    """
-    value = str(value)
-    if allow_unicode:
-        value = unicodedata.normalize("NFKC", value)
-    else:
-        value = (
-            unicodedata.normalize("NFKD", value)
-            .encode("ascii", "ignore")
-            .decode("ascii")
-        )
-    value = re.sub(r"[^\w\s-]", "", value).strip().lower()
-    return re.sub(r"[-\s]+", "-", value)
