@@ -4,13 +4,13 @@ from unittest.mock import patch
 import pytest
 
 import layer
-from layer.data_classes import Fabric
+from layer.contracts.fabrics import Fabric
 from layer.decorators import fabric
 from layer.exceptions.exceptions import ConfigError
 from layer.main import init
 
 
-def test_when_both_packages_and_requirements_file_provided_on_init_then_throws_error():
+def test_when_both_packages_and_requirements_file_provided_on_init_then_throws_error() -> None:
     # given
     pip_packages = ["sklearn==0.0"]
     pip_requirements_file_name = "req.txt"
@@ -27,9 +27,9 @@ def test_when_both_packages_and_requirements_file_provided_on_init_then_throws_e
 
 
 class TestRunValidation:
-    def test_when_no_top_level_decorator_config_error_is_raised(self):
+    def test_when_no_top_level_decorator_config_error_is_raised(self) -> None:
         @fabric(Fabric.F_MEDIUM.value)
-        def sample_function():
+        def sample_function() -> None:
             pass
 
         with pytest.raises(
@@ -42,8 +42,8 @@ class TestRunValidation:
         ):
             layer.run([sample_function])
 
-    def test_when_not_decorated_function_config_error_is_raised(self):
-        def test():
+    def test_when_not_decorated_function_config_error_is_raised(self) -> None:
+        def test() -> None:
             pass
 
         with pytest.raises(
@@ -56,7 +56,7 @@ class TestRunValidation:
             layer.run([test])
 
 
-def test_clear_cache():
+def test_clear_cache() -> None:
     with patch("layer.cache.Cache.clear") as cache:
         layer.clear_cache()
         cache.assert_called_once_with()

@@ -4,7 +4,8 @@ from typing import Any, Optional, Type, Union
 
 from yarl import URL
 
-from layer.data_classes import DerivedDataset, Model
+from layer.contracts.datasets import DerivedDataset
+from layer.contracts.models import Model
 from layer.projects.tracker.dataset_transfer_state import DatasetTransferState
 from layer.projects.tracker.resource_transfer_state import ResourceTransferState
 

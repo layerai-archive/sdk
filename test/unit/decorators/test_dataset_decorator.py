@@ -11,7 +11,10 @@ from layerapi.api.ids_pb2 import DatasetBuildId
 from layerapi.api.service.datacatalog.data_catalog_api_pb2 import InitiateBuildResponse
 
 from layer.client import DataCatalogClient
-from layer.data_classes import Dataset, Fabric, Model
+from layer.contracts.asset import AssetType
+from layer.contracts.datasets import Dataset
+from layer.contracts.fabrics import Fabric
+from layer.contracts.models import Model
 from layer.decorators import dataset, fabric, pip_requirements
 from layer.definitions import DatasetDefinition
 from layer.exceptions.exceptions import (
@@ -20,7 +23,6 @@ from layer.exceptions.exceptions import (
     ProjectInitializationException,
 )
 from layer.global_context import set_current_project_name, set_default_fabric
-from layer.projects.asset import AssetType
 
 
 @dataset("foo1", dependencies=[Dataset("bar"), Model("zoo")])

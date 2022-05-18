@@ -1,5 +1,5 @@
 from layer import Context
-from layer.data_classes import Fabric
+from layer.contracts.fabrics import Fabric
 from layer.global_context import (
     current_project_name,
     default_fabric,
@@ -65,5 +65,7 @@ class TestGlobalContext:
         assert get_pip_packages() is None
         set_pip_packages(["numpy=1.22.1"])
         set_pip_packages(["numpy=1.22.2"])
-        assert len(get_pip_packages()) == 1
-        assert get_pip_packages()[0] == "numpy=1.22.2"
+        pip_packages = get_pip_packages()
+        assert pip_packages is not None
+        assert len(pip_packages) == 1
+        assert pip_packages[0] == "numpy=1.22.2"

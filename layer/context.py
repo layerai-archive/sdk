@@ -1,7 +1,7 @@
 from types import TracebackType
 from typing import Optional
 
-from layer.data_classes import DatasetBuild
+from layer.contracts.datasets import DatasetBuild
 from layer.projects.entity import EntityType
 from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.training.base_train import BaseTrain

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from .context import Context
-from .data_classes import Fabric
+from .contracts.fabrics import Fabric
 
 
 @dataclass

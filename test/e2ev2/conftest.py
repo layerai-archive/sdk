@@ -12,7 +12,7 @@ import pytest
 import layer
 from layer.common import LayerClient
 from layer.config import ClientConfig, Config, ConfigManager
-from layer.data_classes import Fabric
+from layer.contracts.fabrics import Fabric
 from layer.projects.project import Project
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.tracker.remote_execution_project_progress_tracker import (

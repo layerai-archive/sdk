@@ -1,9 +1,9 @@
 import pytest
 
-from layer.data_classes import Fabric
+from layer.contracts.asset import AssetType
+from layer.contracts.fabrics import Fabric
 from layer.decorators import dataset, fabric, pip_requirements
 from layer.exceptions.exceptions import ConfigError
-from layer.projects.asset import AssetType
 from layer.settings import LayerSettings
 
 

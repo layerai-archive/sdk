@@ -1,6 +1,6 @@
 import logging
 
-from layer.data_classes import Dataset
+from layer.contracts.datasets import Dataset
 
 
 logger = logging.getLogger(__name__)

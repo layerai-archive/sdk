@@ -48,14 +48,14 @@ from layer.training.train import Train
 
 from . import Dataset, Model
 from .async_utils import asyncio_run_in_thread
-from .data_classes import Fabric
+from .contracts.asset import AssetPath, AssetType, parse_asset_path
+from .contracts.fabrics import Fabric
 from .global_context import (
     current_project_name,
     get_active_context,
     reset_active_context,
     set_active_context,
 )
-from .projects.asset import AssetPath, AssetType, parse_asset_path
 
 
 if TYPE_CHECKING:

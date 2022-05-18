@@ -7,7 +7,7 @@ import pytest
 import layer
 from layer import Dataset, global_context
 from layer.common import LayerClient
-from layer.data_classes import Fabric
+from layer.contracts.fabrics import Fabric
 from layer.decorators import dataset, pip_requirements
 from layer.exceptions.exceptions import LayerClientException
 from layer.projects.project import Project

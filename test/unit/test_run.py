@@ -16,12 +16,12 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     StartRunV2Response,
 )
 
+from layer.contracts.asset import AssetType
 from layer.exceptions.exceptions import ProjectRunnerError
 from layer.grpc_utils.interceptors import (
     GRPCErrorClientInterceptor,
     RequestIdInterceptor,
 )
-from layer.projects.asset import AssetType
 from layer.projects.project import Asset, Function
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.tracker.remote_execution_project_progress_tracker import (
