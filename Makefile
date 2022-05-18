@@ -27,7 +27,7 @@ $(TEST_TOKEN_FILE):
 e2e-test: $(INSTALL_STAMP) $(TEST_TOKEN_FILE)
 	@rm -rf $(E2E_TEST_HOME)
 	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run python build_scripts/sdk_login.py $(TEST_TOKEN_FILE)
-	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run pytest test/e2ev2 -n 16 -vv
+	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run pytest test/e2e -n 16 -vv
 
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters

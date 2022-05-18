@@ -201,7 +201,7 @@ make lint
 All unit tests live under `test/unit`. Please add unit tests for any new code that you contribute.
 
 #### E2E tests against the layer platform
-All e2e tests live under `test/e2ev2`. Running these might incur cost so use sparingly
+All e2e tests live under `test/e2e`. Running these might incur cost so use sparingly
 
 In order to run the  tests, first you need to [create an api key](https://docs.app.layer.ai/docs/getting-started/log-in#log-in-with-an-api-key) from `https://app.layer.ai`. Then run:
 

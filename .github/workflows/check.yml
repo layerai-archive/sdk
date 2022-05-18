@@ -47,7 +47,7 @@ jobs:
         run: |
           make install
           DEPENDENCIES=$(poetry run python build_scripts/get_package_dependencies.py)
-          echo "::set-output name=paths::${DEPENDENCIES},test/e2ev2/**"
+          echo "::set-output name=paths::${DEPENDENCIES},test/e2e/**"
       - name: Get changes that will affect the package
         id: changed-files
         uses: tj-actions/changed-files@v19.1
