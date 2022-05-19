@@ -38,7 +38,7 @@ def create_grpc_channel(
                     "retryPolicy": {
                         "maxAttempts": 5,
                         "initialBackoff": "0.1s",
-                        "maxBackoff": "5s",
+                        "maxBackoff": "30s",
                         "backoffMultiplier": 2,
                         "retryableStatusCodes": ["UNAVAILABLE"],
                     },
