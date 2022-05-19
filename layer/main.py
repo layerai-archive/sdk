@@ -19,9 +19,12 @@ from uuid import UUID
 from yarl import URL
 
 from layer.cache import Cache
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
 from layer.config import DEFAULT_PATH, DEFAULT_URL, ConfigManager
 from layer.context import Context
+from layer.contracts.entities import EntityType
+from layer.contracts.projects import Project
+from layer.contracts.runs import ResourceTransferState, Run
 from layer.exceptions.exceptions import (
     ConfigError,
     ProjectInitializationException,
@@ -29,25 +32,21 @@ from layer.exceptions.exceptions import (
     UserNotLoggedInException,
     UserWithoutAccountError,
 )
+from layer.flavors.model_definition import ModelDefinition
 from layer.logged_data.log_data_runner import LogDataRunner
-from layer.mlmodels.flavors.model_definition import ModelDefinition
-from layer.projects.entity import EntityType
 from layer.projects.init_project_runner import InitProjectRunner
-from layer.projects.project import Project
-from layer.projects.project_runner import ProjectRunner, Run
-from layer.projects.tracker.local_execution_project_progress_tracker import (
-    LocalExecutionProjectProgressTracker,
-)
-from layer.projects.tracker.remote_execution_project_progress_tracker import (
-    RemoteExecutionProjectProgressTracker,
-)
-from layer.projects.tracker.resource_transfer_state import ResourceTransferState
+from layer.projects.project_runner import ProjectRunner
 from layer.projects.util import get_current_project_name
 from layer.settings import LayerSettings
+from layer.tracker.local_execution_project_progress_tracker import (
+    LocalExecutionProjectProgressTracker,
+)
+from layer.tracker.remote_execution_project_progress_tracker import (
+    RemoteExecutionProjectProgressTracker,
+)
 from layer.training.train import Train
 
 from . import Dataset, Model
-from .async_utils import asyncio_run_in_thread
 from .contracts.asset import AssetPath, AssetType, parse_asset_path
 from .contracts.fabrics import Fabric
 from .global_context import (
@@ -56,6 +55,7 @@ from .global_context import (
     reset_active_context,
     set_active_context,
 )
+from .utils.async_utils import asyncio_run_in_thread
 
 
 if TYPE_CHECKING:

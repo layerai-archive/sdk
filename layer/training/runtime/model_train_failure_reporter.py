@@ -5,10 +5,9 @@ from uuid import UUID
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 from layerapi.api.ids_pb2 import ModelTrainId
 
-from layer.assertion_utils import LayerFailedAssertionsException
-from layer.client import ModelCatalogClient
+from layer.clients.model_catalog import ModelCatalogClient
+from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.exceptions.status_report import (
-    AssertionFailureStatusReport,
     ExecutionStatusReport,
     ExecutionStatusReportFactory,
     PythonExecutionStatusReport,
@@ -42,7 +41,7 @@ class ModelTrainFailureReporter:
         if existing_status != ModelTrainStatus.TRAIN_STATUS_FAILED:
             report: ExecutionStatusReport
             if isinstance(failure_exc, LayerFailedAssertionsException):
-                report = AssertionFailureStatusReport.from_exception(failure_exc)
+                report = failure_exc.to_status_report()
             else:
                 report = PythonExecutionStatusReport.from_exception(
                     failure_exc, self.source_folder

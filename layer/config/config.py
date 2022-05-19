@@ -14,7 +14,7 @@ from layer.exceptions.exceptions import (
     InvalidConfigurationError,
     MissingConfigurationError,
 )
-from layer.run import UserSessionId
+from layer.utils.session import UserSessionId
 
 
 DEFAULT_LAYER_PATH = Path(os.getenv("LAYER_DEFAULT_PATH", Path.home() / ".layer"))

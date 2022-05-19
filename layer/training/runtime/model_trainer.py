@@ -12,17 +12,18 @@ from layerapi.api.entity.model_train_status_pb2 import (  # pylint: disable=unus
 )
 
 from layer import Context
-from layer.assertion_utils import Assertion, LayerFailedAssertionsException
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
+from layer.contracts.assertions import Assertion
 from layer.decorators.assertions import get_assertion_functions_data
 from layer.exceptions.exception_handler import exception_handler
+from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.global_context import (
     current_project_name,
     reset_active_context,
     set_active_context,
 )
-from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.resource_manager import ResourceManager
+from layer.tracker.project_progress_tracker import ProjectProgressTracker
 from layer.training.train import Train
 
 from .common import import_function, update_train_status

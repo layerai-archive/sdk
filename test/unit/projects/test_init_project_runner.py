@@ -4,7 +4,8 @@ from typing import Optional
 from unittest.mock import MagicMock, Mock
 
 from layer import current_project_name
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
+from layer.clients.project_service import ProjectIdWithAccountId, ProjectServiceClient
 from layer.config import ConfigManager
 from layer.contracts.fabrics import Fabric
 from layer.global_context import (
@@ -12,8 +13,6 @@ from layer.global_context import (
     get_pip_packages,
     get_pip_requirements_file,
 )
-from layer.projects import ProjectServiceClient
-from layer.projects.client import ProjectIdWithAccountId
 from layer.projects.init_project_runner import InitProjectRunner
 
 

@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from layerapi.api.value.ticket_pb2 import PartitionTicket
 
-from layer.clients.dataset_client import (
+from layer.clients.dataset_service import (
     DatasetClient,
     DatasetClientError,
     PartitionMetadata,

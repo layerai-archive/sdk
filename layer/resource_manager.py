@@ -10,11 +10,11 @@ from urllib.parse import urlparse
 
 import aiohttp
 
-from layer.common import LayerClient
+from layer.clients.layer import LayerClient
 from layer.contracts.asset import AssetType
-from layer.projects.project import Function, Project, ResourcePath
-from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
-from layer.projects.tracker.resource_transfer_state import ResourceTransferState
+from layer.contracts.projects import Function, Project, ResourcePath
+from layer.contracts.runs import ResourceTransferState
+from layer.tracker.project_progress_tracker import ProjectProgressTracker
 
 
 def _strip_resource_root_path(path: str) -> str:

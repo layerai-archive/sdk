@@ -4,11 +4,10 @@ from typing import Optional
 from unittest.mock import MagicMock, patch
 from uuid import UUID
 
-from layer.client import DataCatalogClient
-from layer.common import LayerClient
+from layer.clients.data_catalog import DataCatalogClient
+from layer.clients.layer import LayerClient
+from layer.clients.project_service import ProjectIdWithAccountId, ProjectServiceClient
 from layer.config import ClientConfig, Config, ProjectServiceConfig
-from layer.projects import ProjectServiceClient
-from layer.projects.client import ProjectIdWithAccountId
 
 
 @contextlib.contextmanager
@@ -38,7 +37,7 @@ def project_client_mock(
     async def config_refresh():
         return config
 
-    with patch("layer.common.LayerClient.init", return_value=client), patch(
+    with patch("layer.clients.LayerClient.init", return_value=client), patch(
         "layer.config.ConfigManager.refresh", side_effect=config_refresh
     ):
         yield

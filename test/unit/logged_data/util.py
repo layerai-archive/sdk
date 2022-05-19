@@ -2,8 +2,8 @@ import logging
 from typing import Optional
 from unittest.mock import MagicMock
 
+from layer.clients.logged_data_service import LoggedDataClient
 from layer.config import ClientConfig
-from layer.logged_data.client import LoggedDataClient
 
 
 def get_logged_data_service_client_with_mocks(

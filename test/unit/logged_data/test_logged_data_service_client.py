@@ -11,7 +11,7 @@ from layerapi.api.service.logged_data.logged_data_api_pb2 import (
 )
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
-from layer.logged_data.client import ModelMetricPoint
+from layer.clients.logged_data_service import ModelMetricPoint
 
 from .util import get_logged_data_service_client_with_mocks
 

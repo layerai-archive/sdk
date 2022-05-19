@@ -126,12 +126,21 @@ class Images(ExtensionArray):
 
     def _images_byte_arr(self) -> Generator[bytes, None, None]:
         for image in self._images:
-            with io.BytesIO() as buf:
-                image.save(buf, format="PNG")
-                yield buf.getvalue()
+            yield _image_bytes(image)
 
     def _reduce(self, name: str, *, skipna: bool = True, **kwargs: Any) -> int:
         return 0
+
+    def __eq__(self, other: Any) -> np.ndarray:  # type: ignore
+        size = len(self._images)
+        eq_arr = np.empty(size, dtype=bool)
+        eq_arr.fill(False)
+        if not isinstance(other, Images):
+            return eq_arr
+        for i in range(min(size, len(other))):
+            if _image_bytes(self._images[i]) == _image_bytes(other._images[i]):
+                eq_arr[i] = True
+        return eq_arr
 
     @property
     def nbytes(self) -> int:
@@ -139,6 +148,12 @@ class Images(ExtensionArray):
         for buf in self._images_byte_arr():
             total_bytes += len(buf)
         return total_bytes
+
+
+def _image_bytes(image: Image) -> bytes:
+    with io.BytesIO() as buf:
+        image.save(buf, format="PNG")
+        return buf.getvalue()
 
 
 def _register_type_extensions() -> None:

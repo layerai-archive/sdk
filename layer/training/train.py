@@ -5,15 +5,15 @@ from uuid import UUID
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 from layerapi.api.ids_pb2 import ModelTrainId
 
-from layer.common import LayerClient
-from layer.mlmodels.flavors.model_definition import ModelDefinition
-from layer.projects.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.clients.layer import LayerClient
+from layer.flavors.model_definition import ModelDefinition
+from layer.tracker.project_progress_tracker import ProjectProgressTracker
 
 from .base_train import BaseTrain
 
 
 if TYPE_CHECKING:
-    from layer.mlmodels import ModelObject
+    from layer.contracts.models import TrainedModelObject
 
 
 class Train(BaseTrain):
@@ -148,7 +148,7 @@ class Train(BaseTrain):
 
     def save_model(
         self,
-        trained_model_obj: "ModelObject",
+        trained_model_obj: "TrainedModelObject",
         tracker: Optional[ProjectProgressTracker] = None,
     ) -> Any:
         if not tracker:
@@ -200,7 +200,9 @@ class Train(BaseTrain):
             self.__train_id, self.__flavor
         )
 
-    def __infer_flavor(self, model_obj: "ModelObject") -> "ModelVersion.ModelFlavor.V":
+    def __infer_flavor(
+        self, model_obj: "TrainedModelObject"
+    ) -> "ModelVersion.ModelFlavor.V":
         return self.__layer_client.model_catalog.infer_flavor(model_obj)
 
     def __enter__(self) -> Any:

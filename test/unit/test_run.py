@@ -17,17 +17,17 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
 )
 
 from layer.contracts.asset import AssetType
+from layer.contracts.projects import Asset, Function
 from layer.exceptions.exceptions import ProjectRunnerError
-from layer.grpc_utils.interceptors import (
+from layer.projects.project_runner import ProjectRunner
+from layer.tracker.remote_execution_project_progress_tracker import (
+    RemoteExecutionProjectProgressTracker,
+)
+from layer.utils.grpc.interceptors import (
     GRPCErrorClientInterceptor,
     RequestIdInterceptor,
 )
-from layer.projects.project import Asset, Function
-from layer.projects.project_runner import ProjectRunner
-from layer.projects.tracker.remote_execution_project_progress_tracker import (
-    RemoteExecutionProjectProgressTracker,
-)
-from layer.run import (
+from layer.utils.session import (
     _ENV_KEY_LAYER_DEBUG,
     _ENV_KEY_REQUEST_ID,
     UserSessionId,

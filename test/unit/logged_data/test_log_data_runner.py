@@ -11,8 +11,8 @@ import PIL.Image
 import pytest
 from requests import Session
 
-from layer.common.layer_client import LayerClient
-from layer.logged_data.client import LoggedDataClient, ModelMetricPoint
+from layer.clients.layer import LayerClient
+from layer.clients.logged_data_service import LoggedDataClient, ModelMetricPoint
 from layer.logged_data.log_data_runner import LogDataRunner
 
 

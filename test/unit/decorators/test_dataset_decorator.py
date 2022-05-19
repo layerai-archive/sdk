@@ -10,7 +10,7 @@ import pytest
 from layerapi.api.ids_pb2 import DatasetBuildId
 from layerapi.api.service.datacatalog.data_catalog_api_pb2 import InitiateBuildResponse
 
-from layer.client import DataCatalogClient
+from layer.clients.data_catalog import DataCatalogClient
 from layer.contracts.asset import AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.fabrics import Fabric

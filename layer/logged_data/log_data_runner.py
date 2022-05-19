@@ -9,13 +9,13 @@ from uuid import UUID
 import pandas as pd
 import requests  # type: ignore
 
+from layer.clients.layer import LayerClient
+from layer.contracts.logged_data import ModelMetricPoint
+
 
 if TYPE_CHECKING:
-    import PIL.Image
     import matplotlib.figure  # type: ignore
-
-from layer.common.layer_client import LayerClient
-from layer.logged_data.client import ModelMetricPoint
+    import PIL.Image
 
 
 class LogDataRunner:
