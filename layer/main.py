@@ -16,9 +16,11 @@ from typing import (
 )
 from uuid import UUID
 
+from layerapi.api.ids_pb2 import ModelTrainId
 from yarl import URL
 
-from layer.cache import Cache
+from layer.cache.cache import Cache
+from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
 from layer.config import DEFAULT_PATH, DEFAULT_URL, ConfigManager
 from layer.context import Context
@@ -32,22 +34,21 @@ from layer.exceptions.exceptions import (
     UserNotLoggedInException,
     UserWithoutAccountError,
 )
-from layer.flavors.model_definition import ModelDefinition
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
-from layer.projects.util import get_current_project_name
+from layer.projects.utils import get_current_project_name
 from layer.settings import LayerSettings
 from layer.tracker.local_execution_project_progress_tracker import (
-    LocalExecutionProjectProgressTracker,
+    LocalExecutionRunProgressTracker,
 )
 from layer.tracker.remote_execution_project_progress_tracker import (
-    RemoteExecutionProjectProgressTracker,
+    RemoteExecutionRunProgressTracker,
 )
 from layer.training.train import Train
 
 from . import Dataset, Model
-from .contracts.asset import AssetPath, AssetType, parse_asset_path
+from .contracts.asset import AssetPath, AssetType
 from .contracts.fabrics import Fabric
 from .global_context import (
     current_project_name,
@@ -228,7 +229,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
         layer.get_dataset("the-project/datasets/titanic")
     """
     config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
-    asset_path = parse_asset_path(name, expected_asset_type=AssetType.DATASET)
+    asset_path = AssetPath.parse(name, expected_asset_type=AssetType.DATASET)
     asset_path = _ensure_asset_path_has_project_name(asset_path)
 
     def fetch_dataset() -> "pandas.DataFrame":
@@ -246,7 +247,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                         set_active_context(context)
                         context.with_entity_name(asset_path.entity_name)
                         context.with_entity_type(EntityType.DERIVED_DATASET)
-                        tracker = LocalExecutionProjectProgressTracker(
+                        tracker = LocalExecutionRunProgressTracker(
                             project_name=None, config=config
                         )
                         context.with_tracker(tracker)
@@ -280,13 +281,6 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
     )
 
 
-def _is_cached(model_definition: ModelDefinition) -> bool:
-    cache = Cache(cache_dir=None).initialise()
-    model_train_id = model_definition.model_train_id.value
-    model_cache_dir = cache.get_path_entry(model_train_id)
-    return model_cache_dir is not None
-
-
 def get_model(name: str, no_cache: bool = False) -> Model:
     """
     :param name: Name or path of the model. You can pass additional parameters in the name to retrieve a specific version of the model with format: ``model_name:major_version.minor_version``
@@ -314,7 +308,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         layer.get_model("the-project/models/churn_model")
     """
     config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
-    asset_path = parse_asset_path(name, expected_asset_type=AssetType.MODEL)
+    asset_path = AssetPath.parse(name, expected_asset_type=AssetType.MODEL)
     asset_path = _ensure_asset_path_has_project_name(asset_path)
     context = get_active_context()
 
@@ -322,25 +316,20 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         within_run = (
             True if context else False
         )  # if layer.get_model is called within a @model decorated func of not
-        model_definition = client.model_catalog.load_model_definition(
-            path=asset_path.path()
-        )
-        from_cache = not no_cache and _is_cached(model_definition)
-        state = (
-            ResourceTransferState(model_definition.model_raw_name)
-            if not from_cache
-            else None
-        )
-        callback = lambda: _load_model(  # noqa: E731
-            client, asset_path, model_definition, no_cache, state
-        )
+        model = client.model_catalog.load_model_by_path(path=asset_path.path())
+        from_cache = not no_cache and is_cached(model)
+        state = ResourceTransferState(model.name)
+
+        def callback() -> None:
+            _load_model_artifact(client, model, state, no_cache)
+
         if not within_run:
             try:
                 with Context() as context:
                     set_active_context(context)
                     context.with_entity_name(asset_path.entity_name)
                     context.with_entity_type(EntityType.MODEL)
-                    tracker = LocalExecutionProjectProgressTracker(
+                    tracker = LocalExecutionRunProgressTracker(
                         project_name=None, config=config
                     )
                     context.with_tracker(tracker)
@@ -371,24 +360,22 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         return model
 
 
-def _load_model(
+def _load_model_artifact(
     client: LayerClient,
-    asset_path: AssetPath,
-    model_definition: ModelDefinition,
+    model: Model,
+    state: ResourceTransferState,
     no_cache: bool,
-    state: Optional[ResourceTransferState] = None,
-) -> Model:
-    train_object = client.model_catalog.load_by_model_definition(
-        model_definition, no_cache=no_cache, state=state
+) -> None:
+    model_artifact = client.model_catalog.load_model_artifact(
+        model,
+        state=state,
+        no_cache=no_cache,
     )
+    model.set_artifact(model_artifact)
     parameters = client.model_catalog.get_model_train_parameters(
-        model_definition.model_train_id
+        ModelTrainId(str(model.id)),
     )
-    return Model(
-        asset_path=asset_path,
-        trained_model_object=train_object,
-        parameters=parameters,
-    )
+    model.set_parameters(parameters)
 
 
 def _ui_progress_with_tracker(
@@ -532,7 +519,7 @@ def init(
     )
 
 
-def run(functions: List[Any], debug: bool = False) -> Optional[Run]:
+def run(functions: List[Any], debug: bool = False) -> Run:
     """
     :param functions: List of decorated functions to run in the Layer backend.
     :param debug: Stream logs to console from infra executing the project remotely.
@@ -570,14 +557,14 @@ def run(functions: List[Any], debug: bool = False) -> Optional[Run]:
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
     project_runner = ProjectRunner(
         config=layer_config,
-        project_progress_tracker_factory=RemoteExecutionProjectProgressTracker,
+        project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
     )
-    project = project_runner.with_functions(project_name, functions)
-    run_id = project_runner.run(project, debug=debug)
+    run = project_runner.with_functions(project_name, functions)
+    run = project_runner.run(run, debug=debug)
 
     _make_notebook_links_open_in_new_tab()
 
-    return Run(project_name, UUID(run_id.value))
+    return run
 
 
 # Normally, Colab/IPython opens links as an IFrame. One can open them as new tabs through the right-click menu or using shift+click.
@@ -764,7 +751,6 @@ def log(
 def clear_cache() -> None:
     """
     Clear all cached objects fetched by the Layer SDK on this machine.
-
     The Layer SDK locally stores all datasets and models by default on your computer.
     When you fetch a dataset with :func:``layer.get_dataset``, or load the model with ``layer.get_model``,
     the first call will fetch the artifact from remote storage,

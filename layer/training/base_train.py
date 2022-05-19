@@ -1,13 +1,11 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
-from layerapi.api.entity.model_version_pb2 import ModelVersion
-
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.tracker.project_progress_tracker import RunProgressTracker
 
 
 if TYPE_CHECKING:
-    from layer.contracts.models import TrainedModelObject
+    from layer.types import ModelArtifact
 
 
 class BaseTrain:
@@ -69,7 +67,7 @@ class BaseTrain:
 
     def get_parameter(self, name: str) -> Optional[Any]:
         """
-        Retrieves a hyperparameter or a training parameter to use during model training.
+        Retrieves a training parameter to use during model training.
 
         :param name: Name of the parameter
         :return: Layer attempts to parse the stored stringified parameter value as a number first, otherwise returned as a string.
@@ -85,7 +83,7 @@ class BaseTrain:
 
     def get_parameters(self) -> Dict[str, Any]:
         """
-        Retrieves all the hyperparameters and training parameters to use during model training.
+        Retrieves all the training parameters to use during model training.
 
         :return: A dictionary containing all the parameter keys and values.
 
@@ -99,8 +97,8 @@ class BaseTrain:
 
     def save_model(
         self,
-        trained_model_obj: "TrainedModelObject",
-        tracker: Optional[ProjectProgressTracker] = None,
+        trained_model_obj: "ModelArtifact",
+        tracker: Optional[RunProgressTracker] = None,
     ) -> Any:
         pass
 
@@ -111,11 +109,6 @@ class BaseTrain:
         pass
 
     def __complete_train(self) -> None:
-        pass
-
-    def __infer_flavor(
-        self, model_obj: "TrainedModelObject"
-    ) -> ModelVersion.ModelFlavor:
         pass
 
     def __enter__(self) -> Any:

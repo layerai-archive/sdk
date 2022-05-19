@@ -4,8 +4,8 @@ from layerapi.api.entity.model_version_pb2 import (  # pylint: disable=unused-im
     ModelVersion,
 )
 
-from layer.contracts.models import TrainedModelObject
 from layer.flavors.base import ModelFlavor
+from layer.types import ModelArtifact
 
 from .base import ModelFlavor  # noqa
 from .catboost import CatBoostModelFlavor  # noqa
@@ -41,7 +41,7 @@ PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict["ModelVersion.ModelFlavor", ModelFlavor] = 
 }
 
 
-def get_flavor_for_model(model_object: TrainedModelObject) -> Optional[ModelFlavor]:
+def get_flavor_for_model(model_object: ModelArtifact) -> Optional[ModelFlavor]:
     matching_flavor: Optional[ModelFlavor] = None
     for flavor in PYTHON_FLAVORS:
         if flavor.can_interpret_object(model_object):

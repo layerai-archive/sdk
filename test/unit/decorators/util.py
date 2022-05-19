@@ -4,6 +4,7 @@ from typing import Optional
 from unittest.mock import MagicMock, patch
 from uuid import UUID
 
+from layer.clients.account_service import AccountServiceClient
 from layer.clients.data_catalog import DataCatalogClient
 from layer.clients.layer import LayerClient
 from layer.clients.project_service import ProjectIdWithAccountId, ProjectServiceClient
@@ -21,12 +22,18 @@ def project_client_mock(
         if data_catalog_client is None
         else data_catalog_client
     )
+    account = MagicMock()
+    account.name = "account-name"
+    account_service_client = MagicMock(
+        spec=AccountServiceClient, **{"get_my_account.return_value": account}
+    )
 
     client = MagicMock()
     client.__enter__.return_value = MagicMock(
         set_spec=LayerClient,
         data_catalog=data_catalog_client,
         project_service_client=project_client,
+        account=account_service_client,
     )
 
     config = MagicMock(

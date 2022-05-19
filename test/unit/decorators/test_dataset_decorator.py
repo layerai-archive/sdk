@@ -1,7 +1,7 @@
 import pickle
 import uuid
-from pathlib import Path
 from test.unit.decorators.util import project_client_mock
+from typing import Any, Callable
 from unittest.mock import ANY, MagicMock, patch
 from uuid import UUID
 
@@ -16,7 +16,6 @@ from layer.contracts.datasets import Dataset
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
 from layer.decorators import dataset, fabric, pip_requirements
-from layer.definitions import DatasetDefinition
 from layer.exceptions.exceptions import (
     ConfigError,
     LayerClientResourceNotFoundException,
@@ -25,35 +24,32 @@ from layer.exceptions.exceptions import (
 from layer.global_context import set_current_project_name, set_default_fabric
 
 
-@dataset("foo1", dependencies=[Dataset("bar"), Model("zoo")])
-@pip_requirements(packages=["sklearn==0.0"])
-def f1():
-    return pd.DataFrame()
+def _make_test_dataset_function(name: str) -> Callable[..., Any]:
+    @dataset(
+        name, dependencies=["datasets/bar", "models/foo", Dataset("baz"), Model("zoo")]
+    )
+    @pip_requirements(packages=["sklearn==0.0"])
+    def func() -> pd.DataFrame:
+        return pd.DataFrame()
 
-
-@dataset("foo2", dependencies=[Dataset("bar"), Model("zoo")])
-@pip_requirements(packages=["sklearn==0.0"])
-def f2():
-    return pd.DataFrame()
+    return func
 
 
 class TestDatasetDecorator:
     def test_dataset_decorator_assigns_attributes_to_function_before_calling_function(
         self,
-    ):
-        @dataset("foo")
-        def create_my_dataset():
-            return pd.DataFrame()
+    ) -> None:
+        func = _make_test_dataset_function("foo")
 
-        assert create_my_dataset.layer.get_entity_name() == "foo"
-        assert create_my_dataset.layer.get_asset_type() == AssetType.DATASET
+        assert func.layer.get_entity_name() == "foo"
+        assert func.layer.get_asset_type() == AssetType.DATASET
 
     def test_dataset_decorator_assigns_attributes_to_function_before_calling_bound_function(
         self,
-    ):
+    ) -> None:
         class MyClass:
             @dataset("foo")
-            def create_my_dataset(self):
+            def create_my_dataset(self) -> pd.DataFrame:
                 return pd.DataFrame()
 
         assert MyClass.create_my_dataset.layer.get_entity_name() == "foo"
@@ -63,11 +59,13 @@ class TestDatasetDecorator:
         assert my_class.create_my_dataset.layer.get_entity_name() == "foo"
         assert my_class.create_my_dataset.layer.get_asset_type() == AssetType.DATASET
 
-    def test_dataset_decorator_given_no_current_project_set_raise_exception(self):
+    def test_dataset_decorator_given_no_current_project_set_raise_exception(
+        self,
+    ) -> None:
         set_current_project_name(None)
 
         @dataset("foo1")
-        def create_my_dataset():
+        def create_my_dataset() -> pd.DataFrame:
             return pd.DataFrame()
 
         with pytest.raises(
@@ -76,7 +74,9 @@ class TestDatasetDecorator:
         ):
             create_my_dataset()
 
-    def test_dataset_decorator_given_set_project_does_not_exist_raise_exception(self):
+    def test_dataset_decorator_given_set_project_does_not_exist_raise_exception(
+        self,
+    ) -> None:
         mock_project_api = MagicMock()
         mock_project_api.GetProjectByName.side_effect = (
             LayerClientResourceNotFoundException()
@@ -85,7 +85,7 @@ class TestDatasetDecorator:
         with project_client_mock(project_api_stub=mock_project_api):
 
             @dataset("foo2")
-            def create_my_dataset():
+            def create_my_dataset() -> pd.DataFrame:
                 return pd.DataFrame()
 
             with pytest.raises(
@@ -95,65 +95,64 @@ class TestDatasetDecorator:
                 set_current_project_name("foo-test")
                 create_my_dataset()
 
-    @pytest.mark.parametrize(
-        ("name", "function"),
-        [
-            ("foo1", f1),
-            ("foo2", f2),
-        ],
-    )
-    def test_dataset_definition_created_correctly(self, name, function):
-        set_current_project_name("foo-test")
+    @pytest.mark.parametrize(("name",), [("foo1",), ("foo2",)])
+    def test_dataset_definition_created_correctly(
+        self, name: str, test_project_name: str
+    ) -> None:
+
+        func = _make_test_dataset_function(name)
 
         with project_client_mock(), patch(
             "layer.decorators.dataset_decorator._build_locally_update_remotely",
             return_value=("", UUID(int=0x12345678123456781234567812345678)),
         ), patch(
-            "layer.decorators.dataset_decorator.register_derived_datasets"
+            "layer.decorators.dataset_decorator.register_dataset_function"
         ) as mock_register_datasets:
-            func = function
             func()
 
-            mock_register_datasets.assert_called_with(ANY, ANY, ANY, ANY)
+            mock_register_datasets.assert_called_with(ANY, ANY, ANY, ANY, ANY)
             (
                 unused_client,
                 unused_current_project_uuid,
-                python_definition,
+                dataset_definition,
+                unused_is_local,
                 unused_tracker,
             ) = mock_register_datasets.call_args[0]
 
-            assert python_definition.name == name
-            assert python_definition.project_name == "foo-test"
-            assert python_definition.entrypoint_path.exists()
-            assert python_definition.environment_path.exists()
-            assert (
-                Path(python_definition.environment_path).read_text() == "sklearn==0.0\n"
-            )
-            assert len(python_definition.dependencies) == 2
-            assert python_definition.dependencies[0].name == "bar"
-            assert isinstance(python_definition.dependencies[0], Dataset)
-            assert python_definition.dependencies[1].name == "zoo"
-            assert isinstance(python_definition.dependencies[1], Model)
+            assert dataset_definition.name == name
+            assert dataset_definition.project_name == test_project_name
+            assert len(dataset_definition.dependencies) == 4
+            assert dataset_definition.dependencies[0].entity_name == "bar"
+            assert dataset_definition.dependencies[0].asset_type == AssetType.DATASET
+            assert dataset_definition.dependencies[1].entity_name == "foo"
+            assert dataset_definition.dependencies[1].asset_type == AssetType.MODEL
+            assert dataset_definition.dependencies[2].entity_name == "baz"
+            assert dataset_definition.dependencies[2].asset_type == AssetType.DATASET
+            assert dataset_definition.dependencies[3].entity_name == "zoo"
+            assert dataset_definition.dependencies[3].asset_type == AssetType.MODEL
 
+            assert dataset_definition.environment_path.exists()
+            assert dataset_definition.environment_path.read_text() == "sklearn==0.0\n"
             # Check if the unpickled file contains the correct function
-            loaded = pickle.load(open(python_definition.entrypoint_path, "rb"))
+            assert dataset_definition.pickle_path.exists()
+            loaded = pickle.load(open(dataset_definition.pickle_path, "rb"))
             assert loaded.layer.get_entity_name() == name
             assert loaded.layer.get_asset_type() == AssetType.DATASET
             assert loaded.layer.get_pip_packages() == ["sklearn==0.0"]
 
-    def test_should_complete_remote_build_when_failed(self):
+    def test_should_complete_remote_build_when_failed(self) -> None:
         data_catalog_client = MagicMock(spec=DataCatalogClient)
         data_catalog_client.initiate_build.return_value = InitiateBuildResponse(
             id=DatasetBuildId(value=str(uuid.uuid4()))
         )
 
         with patch(
-            "layer.decorators.dataset_decorator.register_derived_datasets",
+            "layer.decorators.dataset_decorator.register_dataset_function",
             return_value=Dataset(asset_path="test"),
         ), project_client_mock(data_catalog_client=data_catalog_client):
 
             @dataset("foo")
-            def create_my_dataset():
+            def create_my_dataset() -> None:
                 raise RuntimeError()
 
             with pytest.raises(RuntimeError):
@@ -162,25 +161,20 @@ class TestDatasetDecorator:
             data_catalog_client.initiate_build.assert_called_once()
             data_catalog_client.complete_build.assert_called_once()
 
-    def test_given_fabric_override_uses_it_over_default(self):
+    def test_given_fabric_override_uses_it_over_default(self) -> None:
         set_default_fabric(Fabric.F_SMALL)
-        set_current_project_name("test-project")
 
-        dataset_def = MagicMock(spec=DatasetDefinition)
-
-        with patch(
-            "layer.definitions.DatasetDefinition.__new__", return_value=dataset_def
-        ), project_client_mock(), patch(
+        with project_client_mock(), patch(
             "layer.decorators.dataset_decorator._build_dataset_locally_and_store_remotely"
         ) as mock_build_locally:
 
             @dataset("test")
             @fabric(Fabric.F_MEDIUM.value)
-            def create_my_dataset():
+            def create_my_dataset() -> pd.DataFrame:
                 return pd.DataFrame()
 
             @dataset("test-2")
-            def create_another_dataset():
+            def create_another_dataset() -> pd.DataFrame:
                 return pd.DataFrame()
 
             create_my_dataset()
@@ -206,9 +200,9 @@ class TestDatasetDecorator:
             ) = mock_build_locally.call_args_list[1][0]
             assert settings.get_fabric() == Fabric.F_SMALL
 
-    def test_not_named_dataset_cannot_be_run_even_locally(self):
+    def test_not_named_dataset_cannot_be_run_even_locally(self) -> None:
         @dataset("")
-        def func():
+        def func() -> None:
             pass
 
         with pytest.raises(

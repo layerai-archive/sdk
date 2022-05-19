@@ -10,7 +10,7 @@ from layer.contracts.asset import AssetType
 from layer.contracts.projects import Asset, Function, Project, ResourcePath
 from layer.decorators import dataset, model, pip_requirements, resources
 from layer.resource_manager import ResourceManager
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.tracker.project_progress_tracker import RunProgressTracker
 
 
 def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserter):
@@ -22,7 +22,7 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
     project = initialized_project.with_functions([function])
     resource_manager = ResourceManager(asserter.client)
 
-    resource_manager.wait_resource_upload(project, ProjectProgressTracker())
+    resource_manager.wait_resource_upload(project, RunProgressTracker())
     with tempfile.TemporaryDirectory(prefix="test_resource_manager") as resource_dir:
         resource_manager.wait_resource_download(
             project.name, function.name, target_dir=resource_dir

@@ -5,7 +5,6 @@ import wrapt  # type: ignore
 
 from layer.contracts.assertions import Assertion
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
-from layer.decorators.utils import ensure_has_layer_settings
 
 
 def assert_true(assert_function: Callable[..., bool]) -> Callable[..., Any]:
@@ -43,7 +42,6 @@ def _assert_true_wrapper(assert_function: Callable[..., bool]) -> Any:
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            ensure_has_layer_settings(self.__wrapped__)
             self.__wrapped__.layer.append_assertions(
                 [assert_true.__name__, assert_function]
             )
@@ -106,7 +104,6 @@ def _assert_valid_values_wrapper(column_name: str, valid_values: List[Any]) -> A
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            ensure_has_layer_settings(self.__wrapped__)
             if not isinstance(valid_values, list):
                 raise AssertionError(
                     "Test FAILED: assert_valid_values only accepts list type valid_values."
@@ -175,7 +172,6 @@ def _assert_not_null_wrapper(column_names: List[str]) -> Any:
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            ensure_has_layer_settings(self.__wrapped__)
             self.__wrapped__.layer.append_assertions(
                 [assert_not_null.__name__, column_names]
             )
@@ -243,7 +239,6 @@ def _assert_unique_wrapper(column_subset: List[str]) -> Any:
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            ensure_has_layer_settings(self.__wrapped__)
             self.__wrapped__.layer.append_assertions(
                 [assert_unique.__name__, column_subset]
             )
@@ -314,7 +309,6 @@ def _assert_skewness_wrapper(
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            ensure_has_layer_settings(self.__wrapped__)
             self.__wrapped__.layer.append_assertions(
                 [assert_skewness.__name__, column_name, min_skewness, max_skewness]
             )

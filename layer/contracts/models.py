@@ -1,18 +1,17 @@
 import copy
 import uuid
-from dataclasses import dataclass, field, replace
-from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, NewType, Optional, Sequence, Tuple, Union
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Sequence, Union
 
 from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
 
+from layer.exceptions.exceptions import LayerClientException
+from layer.flavors.base import ModelFlavor
+from layer.types import ModelArtifact
+
 from .asset import AssetPath, AssetType, BaseAsset
-
-
-TrainedModelObject = NewType("TrainedModelObject", object)
 
 
 @dataclass(frozen=True)
@@ -20,113 +19,6 @@ class TrainStorageConfiguration:
     train_id: ModelTrainId
     s3_path: S3Path
     credentials: AwsCredentials
-
-
-@dataclass(frozen=True)
-class Parameter:
-    name: str
-    value: str
-
-
-class ParameterType(Enum):
-    INT = 1
-    FLOAT = 2
-    STRING = 3
-
-
-@dataclass(frozen=True)
-class ParameterValue:
-    string_value: Optional[str] = None
-    float_value: Optional[float] = None
-    int_value: Optional[int] = None
-
-    def with_string(self, string: str) -> "ParameterValue":
-        return replace(self, string_value=string)
-
-    def with_float(self, float: float) -> "ParameterValue":
-        return replace(self, float_value=float)
-
-    def with_int(self, int: int) -> "ParameterValue":
-        return replace(self, int_value=int)
-
-
-@dataclass(frozen=True)
-class TypedParameter:
-    name: str
-    value: ParameterValue
-    type: ParameterType
-
-
-@dataclass(frozen=True)
-class ParameterRange:
-    name: str
-    min: ParameterValue
-    max: ParameterValue
-    type: ParameterType
-
-
-@dataclass(frozen=True)
-class ParameterCategoricalRange:
-    name: str
-    values: List[ParameterValue]
-    type: ParameterType
-
-
-@dataclass(frozen=True)
-class ParameterStepRange:
-    name: str
-    min: ParameterValue
-    max: ParameterValue
-    step: ParameterValue
-    type: ParameterType
-
-
-@dataclass(frozen=True)
-class ManualSearch:
-    parameters: List[List[TypedParameter]]
-
-
-@dataclass(frozen=True)
-class RandomSearch:
-    max_jobs: int
-    parameters: List[ParameterRange]
-    parameters_categorical: List[ParameterCategoricalRange]
-
-
-@dataclass(frozen=True)
-class GridSearch:
-    parameters: List[ParameterStepRange]
-
-
-@dataclass(frozen=True)
-class BayesianSearch:
-    max_jobs: int
-    parameters: List[ParameterRange]
-
-
-@dataclass(frozen=True)
-class HyperparameterTuning:
-    strategy: str
-    max_parallel_jobs: Optional[int]
-    maximize: Optional[str]
-    minimize: Optional[str]
-    early_stop: Optional[bool]
-    fixed_parameters: Dict[str, float]
-    manual_search: Optional[ManualSearch]
-    random_search: Optional[RandomSearch]
-    grid_search: Optional[GridSearch]
-    bayesian_search: Optional[BayesianSearch]
-
-
-@dataclass(frozen=True)
-class Train:
-    name: str = ""
-    description: str = ""
-    entrypoint: str = ""
-    environment: str = ""
-    parameters: List[Parameter] = field(default_factory=list)
-    hyperparameter_tuning: Optional[HyperparameterTuning] = None
-    fabric: str = ""
 
 
 class Model(BaseAsset):
@@ -144,54 +36,70 @@ class Model(BaseAsset):
 
     """
 
-    local_path: Path
-    description: str
-    training: Train
-    trained_model_object: Any
-    training_files_digest: str
-    parameters: Dict[str, Any]
-    language_version: Tuple[int, int, int]
-
     def __init__(
         self,
         asset_path: Union[str, AssetPath],
         id: Optional[uuid.UUID] = None,
         dependencies: Optional[Sequence[BaseAsset]] = None,
+        version_id: Optional[uuid.UUID] = None,
         description: str = "",
-        local_path: Optional[Path] = None,
-        training: Optional[Train] = None,
-        trained_model_object: Any = None,
-        training_files_digest: str = "",
+        flavor: Optional[ModelFlavor] = None,
+        storage_config: Optional[TrainStorageConfiguration] = None,
         parameters: Optional[Dict[str, Any]] = None,
-        language_version: Tuple[int, int, int] = (0, 0, 0),
+        model_artifact: Optional[ModelArtifact] = None,
     ):
         super().__init__(
-            path=asset_path,
             asset_type=AssetType.MODEL,
+            path=asset_path,
             id=id,
             dependencies=dependencies,
         )
-        if parameters is None:
-            parameters = {}
-        self.description = description
-        if local_path is None:
-            local_path = Path()
-        self.local_path = local_path
-        if training is None:
-            training = Train()
-        self.training = training
-        self.trained_model_object = trained_model_object
-        self.training_files_digest = training_files_digest
+        self._version_id = version_id
+        self._description = description
+        self._flavor = flavor
+        self._storage_config = storage_config
+        self.parameters = parameters or {}
+        self._model_artifact = model_artifact
+
+    def set_parameters(self, parameters: Dict[str, Any]) -> "Model":
         self.parameters = parameters
+        return self
 
-    def get_train(self) -> Any:
+    def set_artifact(self, model_artifact: ModelArtifact) -> "Model":
+        self._model_artifact = model_artifact
+        return self
+
+    @property
+    def version_id(self) -> uuid.UUID:
+        if self._version_id is None:
+            raise LayerClientException("Model version id is not initialized")
+        return self._version_id
+
+    @property
+    def flavor(self) -> ModelFlavor:
+        if self._flavor is None:
+            raise LayerClientException("Model flavor is not initialized")
+        return self._flavor
+
+    @property
+    def storage_config(self) -> TrainStorageConfiguration:
+        if self._storage_config is None:
+            raise LayerClientException("Model storage config is not initialized")
+        return self._storage_config
+
+    @property
+    def artifact(self) -> ModelArtifact:
+        if self._model_artifact is None:
+            raise LayerClientException("Model artifact is not yet fetched from storage")
+        return self._model_artifact
+
+    def get_train(self) -> ModelArtifact:
         """
-        Returns the trained and saved model object. For example, a scikit-learn or PyTorch model object.
+        Returns the trained and saved model artifact. For example, a scikit-learn or PyTorch model object.
 
-        :return: The trained model object.
-
+        :return: The trained model artifact.
         """
-        return self.trained_model_object
+        return self.artifact
 
     def get_parameters(self) -> Dict[str, Any]:
         """
@@ -223,11 +131,6 @@ class Model(BaseAsset):
         new_asset = super().with_project_name(project_name=project_name)
         new_model = copy.deepcopy(self)
         new_model._update_with(new_asset)  # pylint: disable=protected-access
-        return new_model
-
-    def with_language_version(self, language_version: Tuple[int, int, int]) -> "Model":
-        new_model = copy.deepcopy(self)
-        new_model.language_version = language_version
         return new_model
 
     def drop_dependencies(self) -> "Model":

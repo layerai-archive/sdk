@@ -11,20 +11,18 @@ from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
-from layer.contracts.runs import DatasetTransferState
+from layer.contracts.runs import DatasetFunctionDefinition, DatasetTransferState
 from layer.decorators.assertions import get_assertion_functions_data
-from layer.decorators.layer_wrapper import LayerFunctionWrapper
-from layer.decorators.utils import ensure_has_layer_settings
-from layer.definitions import DatasetDefinition
+from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
-from layer.projects.project_runner import register_derived_datasets
-from layer.projects.util import (
+from layer.projects.project_runner import register_dataset_function
+from layer.projects.utils import (
     get_current_project_name,
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
 from layer.tracker.local_execution_project_progress_tracker import (
-    LocalExecutionProjectProgressTracker,
+    LocalExecutionRunProgressTracker,
 )
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -33,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def dataset(
-    name: str, dependencies: Optional[List[Union[Dataset, Model]]] = None
+    name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
 ) -> Callable[..., Any]:
     """
     Decorator function that wraps a dataset function. The wrapped function must output a Pandas dataframe.
@@ -108,15 +106,18 @@ def dataset(
 
 
 def _dataset_wrapper(
-    name: str, dependencies: Optional[List[Union[Dataset, Model]]] = None
+    name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
 ) -> Any:
-    class DatasetFunctionWrapper(LayerFunctionWrapper):
+    class DatasetFunctionWrapper(LayerAssetFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
-            super().__init__(wrapped, wrapper, enabled)
-            ensure_has_layer_settings(self.__wrapped__)
-            self.__wrapped__.layer.set_asset_type(AssetType.DATASET)
-            self.__wrapped__.layer.set_entity_name(name)
-            self.__wrapped__.layer.set_dependencies(dependencies)
+            super().__init__(
+                wrapped,
+                wrapper,
+                enabled,
+                AssetType.DATASET,
+                name,
+                dependencies,
+            )
 
         # This is not serialized with cloudpickle, so it will only be run locally.
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
@@ -126,13 +127,13 @@ def _dataset_wrapper(
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
                 account_name = client.account.get_my_account().name
-                project_progress_tracker = LocalExecutionProjectProgressTracker(
-                    project_name=current_project_name_,
+                project_progress_tracker = LocalExecutionRunProgressTracker(
                     config=config,
+                    project_name=current_project_name_,
                     account_name=account_name,
                 )
                 with project_progress_tracker.track() as tracker:
-                    dataset_definition = DatasetDefinition(
+                    dataset_definition = DatasetFunctionDefinition(
                         self.__wrapped__, current_project_name_
                     )
                     result = _build_dataset_locally_and_store_remotely(
@@ -153,8 +154,8 @@ def _dataset_wrapper(
 def _build_dataset_locally_and_store_remotely(
     building_func: Callable[..., Any],
     layer: LayerSettings,
-    dataset_definition: DatasetDefinition,
-    tracker: LocalExecutionProjectProgressTracker,
+    dataset_definition: DatasetFunctionDefinition,
+    tracker: LocalExecutionRunProgressTracker,
     client: LayerClient,
     assertions: List[Assertion],
 ) -> Any:
@@ -164,23 +165,22 @@ def _build_dataset_locally_and_store_remotely(
         client, get_current_project_name()
     )
 
-    derived_dataset = dataset_definition.get_local_entity()
-    derived_dataset_updated = register_derived_datasets(
-        client, current_project_uuid, derived_dataset, tracker
+    dataset_updated = register_dataset_function(
+        client, current_project_uuid, dataset_definition, True, tracker
     )
     tracker.mark_derived_dataset_building(layer.get_entity_name())  # type: ignore
 
     (result, build_uuid) = _build_locally_update_remotely(
         client,
         building_func,
-        derived_dataset_updated,
+        dataset_updated,
         current_project_uuid,
         tracker,
         assertions,
     )
 
     transfer_state = DatasetTransferState(len(result))
-    tracker.mark_dataset_saving_result(derived_dataset.name, transfer_state)
+    tracker.mark_dataset_saving_result(dataset_definition.name, transfer_state)
 
     # this call would store the resulting dataset, extract the schema and complete the build from remote
     client.data_catalog.store_dataset(
@@ -189,7 +189,7 @@ def _build_dataset_locally_and_store_remotely(
         build_id=build_uuid,
         progress_callback=transfer_state.increment_num_transferred_rows,
     )
-    tracker.mark_derived_dataset_built(derived_dataset.name)
+    tracker.mark_derived_dataset_built(dataset_definition.name)
     return result
 
 
@@ -198,7 +198,7 @@ def _build_locally_update_remotely(
     function_that_builds_dataset: Callable[..., Any],
     derived_dataset_updated: Dataset,
     current_project_uuid: UUID,
-    tracker: LocalExecutionProjectProgressTracker,
+    tracker: LocalExecutionRunProgressTracker,
     assertions: List[Assertion],
 ) -> Tuple[Any, UUID]:
     try:
@@ -240,7 +240,7 @@ def _run_assertions(
     entity_name: str,
     result: Any,
     assertions: List[Assertion],
-    tracker: LocalExecutionProjectProgressTracker,
+    tracker: LocalExecutionRunProgressTracker,
 ) -> None:
     failed_assertions = []
     tracker.mark_dataset_running_assertions(entity_name)

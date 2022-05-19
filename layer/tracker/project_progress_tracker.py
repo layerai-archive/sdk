@@ -9,9 +9,9 @@ from layer.contracts.runs import DatasetTransferState, ResourceTransferState
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 
 
-class ProjectProgressTracker:
+class RunProgressTracker:
     @contextmanager
-    def track(self) -> Iterator["ProjectProgressTracker"]:
+    def track(self) -> Iterator["RunProgressTracker"]:
         yield self
 
     def mark_error_messages(
@@ -20,12 +20,6 @@ class ProjectProgressTracker:
         pass
 
     def mark_start_running(self, run_id: RunId) -> None:
-        pass
-
-    def mark_raw_dataset_saved(self, name: str) -> None:
-        pass
-
-    def mark_raw_dataset_save_failed(self, name: str, reason: str) -> None:
         pass
 
     def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:

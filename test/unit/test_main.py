@@ -57,6 +57,6 @@ class TestRunValidation:
 
 
 def test_clear_cache() -> None:
-    with patch("layer.cache.Cache.clear") as cache:
+    with patch("layer.cache.cache.Cache.clear") as cache:
         layer.clear_cache()
         cache.assert_called_once_with()

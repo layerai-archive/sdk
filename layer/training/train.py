@@ -1,19 +1,18 @@
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 from layerapi.api.ids_pb2 import ModelTrainId
 
 from layer.clients.layer import LayerClient
-from layer.flavors.model_definition import ModelDefinition
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.contracts.models import Model
+from layer.exceptions.exceptions import UnexpectedModelTypeException
+from layer.flavors.utils import get_flavor_for_model
+from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.types import ModelArtifact
 
 from .base_train import BaseTrain
-
-
-if TYPE_CHECKING:
-    from layer.contracts.models import TrainedModelObject
 
 
 class Train(BaseTrain):
@@ -108,7 +107,7 @@ class Train(BaseTrain):
 
     def get_parameter(self, name: str) -> Optional[Any]:
         """
-        Retrieves a hyperparameter or a training parameter to use during model training.
+        Retrieves a training parameter to use during model training.
 
         :param name: Name of the parameter
         :return: Layer attempts to parse the stored stringified parameter value as a number first, otherwise returned as a string.
@@ -126,7 +125,7 @@ class Train(BaseTrain):
 
     def get_parameters(self) -> Dict[str, Any]:
         """
-        Retrieves all the hyperparameters and training parameters to use during model training.
+        Retrieves all the training parameters to use during model training.
 
         :return: A dictionary containing all the parameter keys and values.
 
@@ -148,27 +147,26 @@ class Train(BaseTrain):
 
     def save_model(
         self,
-        trained_model_obj: "TrainedModelObject",
-        tracker: Optional[ProjectProgressTracker] = None,
+        model_artifact: ModelArtifact,
+        tracker: Optional[RunProgressTracker] = None,
     ) -> Any:
         if not tracker:
-            tracker = ProjectProgressTracker()
+            tracker = RunProgressTracker()
         assert self.__train_id
-        self.__flavor = self.__infer_flavor(trained_model_obj)
-        train_storage_config = (
+
+        flavor = get_flavor_for_model(model_artifact)
+        if flavor is None:
+            raise UnexpectedModelTypeException(type(model_artifact))
+        storage_config = (
             self.__layer_client.model_catalog.get_model_train_storage_configuration(
                 self.__train_id
             )
         )
-        model_definition = ModelDefinition(
-            name=self.__name,
-            train_id=self.__train_id,
-            PROTO_FLAVOR=self.__flavor,
-            s3_path=train_storage_config.s3_path,
-            credentials=train_storage_config.credentials,
+        model = Model(
+            self.__name, self.__train_id, flavor=flavor, storage_config=storage_config
         )
-        self.__layer_client.model_catalog.save_model(
-            model_definition, trained_model_obj=trained_model_obj, tracker=tracker
+        self.__layer_client.model_catalog.save_model_artifact(
+            model, model_artifact, tracker=tracker
         )
 
     def __parse_parameter(self, value: str) -> Any:
@@ -199,11 +197,6 @@ class Train(BaseTrain):
         self.__layer_client.model_catalog.complete_model_train(
             self.__train_id, self.__flavor
         )
-
-    def __infer_flavor(
-        self, model_obj: "TrainedModelObject"
-    ) -> ModelVersion.ModelFlavor:
-        return self.__layer_client.model_catalog.infer_flavor(model_obj)
 
     def __enter__(self) -> Any:
         self.__start_train()

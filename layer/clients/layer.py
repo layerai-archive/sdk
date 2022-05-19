@@ -9,7 +9,6 @@ from .data_catalog import DataCatalogClient
 from .flow_manager import FlowManagerClient
 from .logged_data_service import LoggedDataClient
 from .model_catalog import ModelCatalogClient
-from .model_service import MLModelService
 from .model_training_service import ModelTrainingClient
 from .project_service import ProjectServiceClient
 from .user_logs_service import UserLogsClient
@@ -19,11 +18,7 @@ class LayerClient:
     def __init__(self, config: ClientConfig, logger: Logger):
         self._config = config
         self._data_catalog = DataCatalogClient(config, logger)
-        self._model_catalog = ModelCatalogClient(
-            config,
-            MLModelService(logger, s3_endpoint_url=config.s3.endpoint_url),
-            logger,
-        )
+        self._model_catalog = ModelCatalogClient(config, logger)
         self._model_training = ModelTrainingClient(config, logger)
         self._account = AccountServiceClient(config, logger)
         self._flow_manager = FlowManagerClient(config, logger)

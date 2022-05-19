@@ -2,7 +2,7 @@ from pathlib import Path
 
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.contracts.models import TrainedModelObject
+from layer.types import ModelArtifact
 
 from .base import ModelFlavor
 
@@ -15,7 +15,7 @@ class KerasModelFlavor(ModelFlavor):
 
     TOKENIZER_FILE = "tokenizer.pickle"
 
-    def can_interpret_object(self, model_object: TrainedModelObject) -> bool:
+    def can_interpret_object(self, model_object: ModelArtifact) -> bool:
         # Check if model is a tensorflow keras
         try:
             import tensorflow.keras.models  # type: ignore
@@ -46,7 +46,7 @@ class KerasModelFlavor(ModelFlavor):
         return False
 
     def save_model_to_directory(
-        self, model_object: TrainedModelObject, directory: Path
+        self, model_object: ModelArtifact, directory: Path
     ) -> None:
         import cloudpickle  # type: ignore
         import keras
@@ -59,7 +59,7 @@ class KerasModelFlavor(ModelFlavor):
         else:
             mlflow.keras.save_model(model_object, path=directory.as_posix())
 
-    def load_model_from_directory(self, directory: Path) -> TrainedModelObject:
+    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
         import mlflow.keras
 
         tokenizer_file = directory / KerasModelFlavor.TOKENIZER_FILE

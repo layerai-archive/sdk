@@ -2,7 +2,7 @@ from typing import Optional
 
 import pytest
 
-from layer.contracts.asset import AssetPath, AssetType, parse_asset_path
+from layer.contracts.asset import AssetPath, AssetType
 
 
 class TestCompositeEntityName:
@@ -19,7 +19,7 @@ class TestCompositeEntityName:
             ValueError,
             match="(Please specify full path or specify entity type|Entity path does not match expected pattern)",
         ):
-            parse_asset_path(bad_format)
+            AssetPath.parse(bad_format)
 
     @pytest.mark.parametrize(
         ("composite_name", "optional_asset_type", "expected"),
@@ -128,7 +128,7 @@ class TestCompositeEntityName:
         optional_asset_type: Optional[AssetType],
         expected: AssetPath,
     ) -> None:
-        result = parse_asset_path(
+        result = AssetPath.parse(
             composite_name, expected_asset_type=optional_asset_type
         )
 
@@ -138,7 +138,7 @@ class TestCompositeEntityName:
         with pytest.raises(
             ValueError, match="Please specify full path or specify entity type"
         ):
-            parse_asset_path("the-model:1.21")
+            AssetPath.parse("the-model:1.21")
 
     @pytest.mark.parametrize(
         ("composite", "expected"),
