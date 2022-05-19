@@ -30,10 +30,6 @@ def create_grpc_channel(
     ssl_config = create_grpc_ssl_config(address, do_verify_ssl=do_verify_ssl)
     if ssl_config.hostname_override:
         options.append(("grpc.ssl_target_name_override", ssl_config.hostname_override))
-    # retry policy configuration is documented here:
-    # https://github.com/grpc/proposal/blob/master/A6-client-retries.md
-    # our policy is to wait up to 30s, making sure that the last attempt
-    # happens at least 25s later
     json_config = json.dumps(
         {
             "methodConfig": [
@@ -41,9 +37,9 @@ def create_grpc_channel(
                     "name": [{}],
                     "retryPolicy": {
                         "maxAttempts": 5,
-                        "initialBackoff": "0.3s",
-                        "maxBackoff": "30s",
-                        "backoffMultiplier": 3,
+                        "initialBackoff": "0.1s",
+                        "maxBackoff": "5s",
+                        "backoffMultiplier": 2,
                         "retryableStatusCodes": ["UNAVAILABLE"],
                     },
                 }
