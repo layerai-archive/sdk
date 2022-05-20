@@ -66,10 +66,15 @@ class LogDataRunner:
             elif isinstance(value, Path):
                 self._log_image_from_path(tag=tag, path=value)
             elif self._is_pil_image(value):
+                if TYPE_CHECKING:
+                    assert isinstance(value, PIL.Image.Image)
                 self._log_image(tag=tag, image=value)
             elif self._is_plot_figure(value):
+                if TYPE_CHECKING:
+                    assert isinstance(value, matplotlib.figure.Figure)
                 self._log_plot_figure(tag=tag, figure=value)
             elif self._is_pyplot(value):
+                assert isinstance(value, ModuleType)
                 self._log_current_plot_figure(tag=tag, plt=value)
             else:
                 raise ValueError(f"Unsupported value type -> {type(value)}")
