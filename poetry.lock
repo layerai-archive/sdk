@@ -164,7 +164,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 name = "boto3-stubs"
 version = "1.23.4"
 description = "Type annotations for boto3 1.23.4 generated with mypy-boto3-builder 7.6.0"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -501,7 +501,7 @@ crt = ["awscrt (==0.13.8)"]
 name = "botocore-stubs"
 version = "1.26.4"
 description = "Type annotations for botocore 1.26.4 generated with mypy-boto3-builder 7.6.0"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -1560,7 +1560,7 @@ test = ["hypothesis (>=3.58)", "pytest (>=6.0)", "pytest-xdist"]
 name = "pandas-stubs"
 version = "1.2.0.58"
 description = "Type annotations for Pandas"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -2792,7 +2792,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "54e8461bae7efb50f4d7a06bfa681fd47af9c36ae3946248fb60ccb0fc61bbc9"
+content-hash = "9140e2bcfd99f10e17dae5d8ca109dbb54bcf7ebdc23adbe9e3b79e04d35fc85"
 
 [metadata.files]
 absl-py = [
