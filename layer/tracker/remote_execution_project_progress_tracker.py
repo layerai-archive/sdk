@@ -104,6 +104,7 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
             if not task.started:
                 task.start_time = task.stop_time = None
                 self._progress.start_task(task_id)
+                assert task.total is not None
                 self._progress.update(task_id, completed=task.total * 0.1)
         elif status == EntityStatus.DONE:
             self._progress.update(task_id, completed=task.total)

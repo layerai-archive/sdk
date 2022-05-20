@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, List
 
 import humanize  # type: ignore
-from rich.console import RenderableType, RenderGroup
+from rich.console import Group, RenderableType
 from rich.markup import escape
 from rich.progress import ProgressColumn, Task
 from rich.progress_bar import ProgressBar
@@ -76,7 +76,7 @@ class EntityColumn(ProgressColumn):
             table.add_row(Text("Aborting...", style="bold"))
             renderables.append(table)
 
-        return RenderGroup(*renderables)
+        return Group(*renderables)
 
     @staticmethod
     def _render_state(state: ResourceTransferState, show_num_files: bool = True) -> str:
@@ -149,6 +149,7 @@ class EntityColumn(ProgressColumn):
         ):
             pulse = True  # Pulsing bar as we currently cannot closely track the downloading of a dataset
 
+        assert task.total is not None
         if (
             entity.status == EntityStatus.TRAINING
             or entity.status == EntityStatus.BUILDING
@@ -343,7 +344,7 @@ class EntityColumn(ProgressColumn):
             if (entity.version and entity.build_idx)
             else entity.base_url
         )
-        return RenderGroup(
+        return Group(
             *[
                 Text.from_markup(
                     f"↳ [link={str(link)}]{str(link)}[/link]",

@@ -21,7 +21,7 @@ class S3Util:
         endpoint_url: Optional[URL] = None,
         state: ResourceTransferState,
     ) -> None:
-        import boto3  # type: ignore
+        import boto3
 
         s3_kwargs = {"endpoint_url": endpoint_url and str(endpoint_url)}
 
@@ -33,7 +33,7 @@ class S3Util:
                     "aws_session_token": credentials.session_token,
                 }
             )
-        s3 = boto3.resource("s3", **s3_kwargs)
+        s3 = boto3.resource("s3", **s3_kwargs)  # type: ignore
         bucket = s3.Bucket(s3_path.bucket)
 
         to_download = []
@@ -88,7 +88,7 @@ class S3Util:
                 }
             )
 
-        s3_client = boto3.client("s3", **s3_kwargs)
+        s3_client = boto3.client("s3", **s3_kwargs)  # type: ignore
         dest_path = s3_path.key
         absolute_path = os.path.abspath(local_dir)
         total_file_bytes = 0
@@ -148,5 +148,5 @@ class S3Util:
                 }
             )
 
-        s3_client = boto3.client("s3", **s3_kwargs)
+        s3_client = boto3.client("s3", **s3_kwargs)  # type: ignore
         s3_client.put_object(Bucket=bucket, Body="", Key=key)
