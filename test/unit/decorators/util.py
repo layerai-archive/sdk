@@ -63,5 +63,5 @@ def _get_mock_project_service_client(
         )
     else:
         # can't use spec_set as it does not recognise methods as defined by protocompiler
-        project_client._service = project_api_stub
+        project_client._service = project_api_stub  # pylint: disable=protected-access
     return project_client

@@ -41,7 +41,7 @@ class ModelFlavor(metaclass=ABCMeta):
         self._from_cache = False
 
     @abstractproperty
-    def MODULE_KEYWORD(self) -> str:
+    def MODULE_KEYWORD(self) -> str:  # pylint: disable=invalid-name
         """Defines a keyword as part of an object's module name that matches this flavor.
 
         Returns:
@@ -49,7 +49,9 @@ class ModelFlavor(metaclass=ABCMeta):
         """
 
     @abstractproperty
-    def PROTO_FLAVOR(self) -> "ModelVersion.ModelFlavor.V":
+    def PROTO_FLAVOR(  # pylint: disable=invalid-name
+        self,
+    ) -> "ModelVersion.ModelFlavor":
         """Defines the proto flavor that this Model Flavor uses.
 
         Returns:

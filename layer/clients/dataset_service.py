@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 import pandas
-import pandas as pd
 import pyarrow
 from layerapi.api.service.dataset.dataset_api_pb2 import Command
 from layerapi.api.value.ticket_pb2 import PartitionTicket
@@ -48,7 +47,7 @@ class PartitionMetadata:
 class Partition:
     def __init__(
         self,
-        reader: Union[fl.FlightStreamReader, pd.DataFrame],
+        reader: Union[fl.FlightStreamReader, pandas.DataFrame],
         from_cache: bool = False,
     ):
         self._reader = reader
@@ -163,5 +162,5 @@ class DatasetClient:
         return self._flight.do_put(descriptor, schema)
 
 
-def _read_parquet(path: Union[str, Path]) -> pd.DataFrame:
-    return pd.read_parquet(path, engine="pyarrow")
+def _read_parquet(path: Union[str, Path]) -> pandas.DataFrame:
+    return pandas.read_parquet(path, engine="pyarrow")

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Tuple
 from layerapi.api.entity.model_pb2 import Model as PBModel
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
 from layerapi.api.entity.model_train_status_pb2 import (
-    ModelTrainStatus as PBModelTrainStatus,  # pylint: disable=unused-import
+    ModelTrainStatus as PBModelTrainStatus,
 )
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 from layerapi.api.entity.source_code_environment_pb2 import SourceCodeEnvironment
@@ -154,7 +154,7 @@ class ModelCatalogClient:
         return ModelDefinition(
             name=path,
             train_id=load_response.id,
-            proto_flavor=load_response.flavor,
+            PROTO_FLAVOR=load_response.flavor,
             s3_path=load_response.s3_path,
             credentials=load_response.credentials,
         )
@@ -196,7 +196,7 @@ class ModelCatalogClient:
         if not tracker:
             tracker = ProjectProgressTracker()
         flavor = self._ml_model_service.get_model_flavor_from_proto(
-            model_definition.proto_flavor
+            model_definition.PROTO_FLAVOR
         )
         if not flavor:
             raise LayerClientException("Model flavor not found")
@@ -258,7 +258,7 @@ class ModelCatalogClient:
 
     def infer_flavor(
         self, model_obj: "TrainedModelObject"
-    ) -> "ModelVersion.ModelFlavor.V":
+    ) -> "ModelVersion.ModelFlavor":
         flavor: ModelFlavor = self._ml_model_service.get_model_flavor(
             model_obj,
             logger=self._logger,
@@ -266,7 +266,7 @@ class ModelCatalogClient:
         return flavor.PROTO_FLAVOR
 
     def complete_model_train(
-        self, train_id: ModelTrainId, flavor: Optional["ModelVersion.ModelFlavor.V"]
+        self, train_id: ModelTrainId, flavor: Optional["ModelVersion.ModelFlavor"]
     ) -> None:
         self._service.CompleteModelTrain(
             CompleteModelTrainRequest(id=train_id, flavor=flavor),
@@ -326,7 +326,7 @@ class ModelCatalogClient:
         return response.version
 
     def update_model_train_status(
-        self, train_id: ModelTrainId, train_status: "PBModelTrainStatus"
+        self, train_id: ModelTrainId, train_status: PBModelTrainStatus
     ) -> None:
         self._service.UpdateModelTrainStatus(
             UpdateModelTrainStatusRequest(

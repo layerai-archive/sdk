@@ -56,7 +56,7 @@ class SpinnerColumn(ProgressColumn):
         """
         self.spinner = Spinner(spinner_name, style=spinner_style, speed=speed)
 
-    def render(self, task: "Task") -> RenderableType:
+    def render(self, task: Task) -> RenderableType:
         text = (
             self.finished_text
             if task.finished
@@ -77,7 +77,7 @@ def watch_get_runs(console: Console, get_runs_fn: GetRunsFunction) -> None:
         print_runs(get_runs_fn())
 
     polling.poll(
-        lambda: clean_get_print(),
+        clean_get_print,
         step=5,
         poll_forever=True,
     )

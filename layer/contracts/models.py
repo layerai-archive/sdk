@@ -216,13 +216,13 @@ class Model(BaseAsset):
 
     def with_dependencies(self, dependencies: Sequence[BaseAsset]) -> "Model":
         new_model = copy.deepcopy(self)
-        new_model._set_dependencies(dependencies)
+        new_model._set_dependencies(dependencies)  # pylint: disable=protected-access
         return new_model
 
     def with_project_name(self, project_name: str) -> "Model":
         new_asset = super().with_project_name(project_name=project_name)
         new_model = copy.deepcopy(self)
-        new_model._update_with(new_asset)
+        new_model._update_with(new_asset)  # pylint: disable=protected-access
         return new_model
 
     def with_language_version(self, language_version: Tuple[int, int, int]) -> "Model":

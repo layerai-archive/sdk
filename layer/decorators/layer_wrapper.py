@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, Tuple, Union
 
 import wrapt  # type: ignore
 
@@ -12,3 +12,12 @@ class LayerFunctionWrapper(wrapt.FunctionWrapper):
     # we give it a shot and it seems to be working
     def __reduce_ex__(self, protocol: Any) -> Any:
         return type(self), (self.__wrapped__, self._self_wrapper, self._self_enabled)
+
+    def __copy__(self) -> None:
+        pass
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> None:
+        pass
+
+    def __reduce__(self) -> Union[str, Tuple[Any, ...]]:
+        pass

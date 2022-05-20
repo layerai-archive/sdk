@@ -7,9 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 from uuid import UUID
 
-from layerapi.api.entity.model_train_status_pb2 import (  # pylint: disable=unused-import
-    ModelTrainStatus,
-)
+from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 from layerapi.api.ids_pb2 import ModelTrainId
 
 from layer.clients.model_catalog import ModelCatalogClient

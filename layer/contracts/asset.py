@@ -139,9 +139,9 @@ class BaseAsset:
         return self._path.path()
 
     def _update_with(self, asset: "BaseAsset") -> None:
-        self._path = asset._path
-        self._id = asset._id
-        self._dependencies = asset._dependencies
+        self._path = asset._path  # pylint: disable=protected-access
+        self._id = asset.id
+        self._dependencies = asset.dependencies
 
     def _set_id(self, id: uuid.UUID) -> None:
         self._id = id

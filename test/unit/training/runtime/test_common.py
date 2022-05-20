@@ -45,10 +45,12 @@ class TestCommon:
             [[35, 1, 0], [36, 2, 1], [37, 3, 2]],
             columns=["AgeBand", "EmbarkStatus", "IsAlone"],
         )
-        X = df.drop(["IsAlone"], axis=1)
+        x = df.drop(["IsAlone"], axis=1)
         y = df["IsAlone"]
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5)
-        random_forest.fit(X_train, y_train)
+        x_train, unused_x_test, y_train, unused_y_test = train_test_split(
+            x, y, test_size=0.5
+        )
+        random_forest.fit(x_train, y_train)
         return random_forest
 
     @staticmethod

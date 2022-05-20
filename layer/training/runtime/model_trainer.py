@@ -4,12 +4,10 @@ from dataclasses import dataclass
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 from uuid import UUID
 
-from layerapi.api.entity.model_train_status_pb2 import (  # pylint: disable=unused-import
-    ModelTrainStatus,
-)
+from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 
 from layer import Context
 from layer.clients.layer import LayerClient
@@ -42,7 +40,6 @@ class TrainContextDataclassMixin:
 
 
 class TrainContext(ABC, TrainContextDataclassMixin):
-    @abstractmethod
     def init_or_save_context(self, context: Context) -> None:
         set_active_context(context)
 
@@ -54,7 +51,6 @@ class TrainContext(ABC, TrainContextDataclassMixin):
     def get_working_directory(self) -> Path:
         pass
 
-    @abstractmethod
     def __exit__(
         self,
         exc_type: Optional[BaseException],
@@ -67,9 +63,6 @@ class TrainContext(ABC, TrainContextDataclassMixin):
 @dataclass
 class LocalTrainContext(TrainContext):
     initial_cwd: Optional[str] = None
-
-    def init_or_save_context(self, context: Context) -> None:
-        super().init_or_save_context(context)
 
     def __enter__(self) -> None:
         super().__enter__()
@@ -141,7 +134,9 @@ class ModelTrainer:
             self.tracker.mark_model_completed_assertions(self.train_context.model_name)
 
     @exception_handler(stage="Training run")
-    def _train(self) -> Any:
+    def _train(
+        self, callback: Optional[Callable[[str, Exception], None]] = None
+    ) -> Any:
         self.logger.info(
             f"Importing user code({self.train_context.source_entrypoint}) from {self.train_context.source_folder}"
         )

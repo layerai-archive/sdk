@@ -39,7 +39,7 @@ class _ImageType(pa.ExtensionType):
 
     @classmethod
     def __arrow_ext_deserialize__(
-        self, storage_type: pa.DataType, serialized: bytes
+        cls, storage_type: pa.DataType, serialized: bytes
     ) -> pa.ExtensionType:
         return _ImageType()
 
@@ -150,6 +150,11 @@ class Images(ExtensionArray):
             if _image_bytes(self._images[i]) == _image_bytes(other._images[i]):
                 eq_arr[i] = True
         return eq_arr
+
+    def __setitem__(
+        self, key: Union[int, slice, "np.ndarray[Any, Any]"], value: Any
+    ) -> None:
+        raise NotImplementedError()
 
     @property
     def nbytes(self) -> int:

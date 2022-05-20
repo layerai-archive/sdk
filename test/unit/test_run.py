@@ -76,7 +76,7 @@ class TestRequestIdInterceptor:
     @pytest.fixture()
     def _cleanup_after(self) -> None:
         yield
-        RequestIdInterceptor._clear_instance()
+        RequestIdInterceptor._clear_instance()  # pylint: disable=protected-access
         if _ENV_KEY_REQUEST_ID in os.environ:
             del os.environ[_ENV_KEY_REQUEST_ID]
 
@@ -198,8 +198,8 @@ class TestProjectRun:
             metadata=(),
             code=grpc.StatusCode.RESOURCE_EXHAUSTED,
         )
-        layer_client_exception = (
-            GRPCErrorClientInterceptor._convert_rpc_error_to_client_exception(error)
+        layer_client_exception = GRPCErrorClientInterceptor._convert_rpc_error_to_client_exception(  # pylint: disable=protected-access
+            error
         )
 
         client = MagicMock()
@@ -207,7 +207,7 @@ class TestProjectRun:
         project = MagicMock()
         project.name.return_value = "test"
         with pytest.raises(ProjectRunnerError, match=".*RESOURCE_EXHAUSTED.*"):
-            runner._run(
+            runner._run(  # pylint: disable=protected-access
                 client=client,
                 project=project,
                 execution_plan=ExecutionPlan(),
@@ -229,7 +229,9 @@ class TestProjectRun:
                 Asset(name="my_model", type=AssetType.MODEL),
             ),
         ]
-        user_command = runner._get_user_command(runner.run, functions)
+        user_command = runner._get_user_command(  # pylint: disable=protected-access
+            runner.run, functions
+        )
 
         assert user_command == "run([create_my_dataset, create_my_model])"
 

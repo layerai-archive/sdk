@@ -256,7 +256,7 @@ class TestConfigClient:
             },
             "domain": "xyz.eu.auth0.com",
         }
-        result = client._create_auth_config(
+        result = client._create_auth_config(  # pylint: disable=protected-access
             url=URL("https://foo.layer.co/"), payload=payload
         )
         assert "https://foo.layer.co" == result.audience

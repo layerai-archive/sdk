@@ -29,7 +29,7 @@ def _get_project_service_client_with_mocks(
         config=config_mock, logger=MagicMock(spec_set=logging.getLogger())
     )
     # can"t use spec_set as it does not recognise methods as defined by protocompiler
-    project_service_client._service = (
+    project_service_client._service = (  # pylint: disable=protected-access
         project_api_stub if project_api_stub is not None else MagicMock()
     )
     return project_service_client

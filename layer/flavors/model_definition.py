@@ -19,13 +19,13 @@ class ModelDefinition:
         self,
         name: str,
         train_id: ModelTrainId,
-        proto_flavor: "ModelVersion.ModelFlavor.V",
+        PROTO_FLAVOR: "ModelVersion.ModelFlavor",
         s3_path: S3Path,
         credentials: AwsCredentials,
     ):
         self.__model_name: str = slugify(name).replace("-", "")
         self.__train_id: ModelTrainId = train_id
-        self.__proto_flavor: "ModelVersion.ModelFlavor.V" = proto_flavor
+        self.__PROTO_FLAVOR: "ModelVersion.ModelFlavor" = PROTO_FLAVOR
         self.__s3_path: S3Path = s3_path
         self.__credentials: AwsCredentials = credentials
         self.__raw_name: str = name
@@ -54,13 +54,13 @@ class ModelDefinition:
         return self.__train_id
 
     @property
-    def proto_flavor(self) -> "ModelVersion.ModelFlavor.V":
+    def PROTO_FLAVOR(self) -> "ModelVersion.ModelFlavor":
         """Returns the proto flavor
 
         Returns:
             A string - the proto flavor, used to infer the type of the model obj to instantiate
         """
-        return self.__proto_flavor
+        return self.__PROTO_FLAVOR
 
     @property
     def s3_path(self) -> S3Path:
@@ -85,7 +85,7 @@ class ModelDefinition:
             f"ModelDefinition{{"
             f"model_name:{self.model_name}"
             f"model_train_id:{self.model_train_id.value}"
-            f"proto_flavor:{self.proto_flavor}"
+            f"PROTO_FLAVOR:{self.PROTO_FLAVOR}"
             f"s3_path:{self.s3_path}"
             f"}}"
         )

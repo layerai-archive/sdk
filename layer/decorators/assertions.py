@@ -48,10 +48,6 @@ def _assert_true_wrapper(assert_function: Callable[..., bool]) -> Any:
                 [assert_true.__name__, assert_function]
             )
 
-        def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            result = super(FunctionWrapper, self).__call__(*args, **kwargs)
-            return result
-
     return FunctionWrapper
 
 
@@ -118,9 +114,6 @@ def _assert_valid_values_wrapper(column_name: str, valid_values: List[Any]) -> A
             self.__wrapped__.layer.append_assertions(
                 [assert_valid_values.__name__, column_name, valid_values]
             )
-
-        def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            return super(FunctionWrapper, self).__call__(*args, **kwargs)
 
     return FunctionWrapper
 
@@ -193,9 +186,6 @@ def _assert_not_null_wrapper(column_names: List[str]) -> Any:
                     "Test FAILED: assert_not_null only accepts string list type column_names."
                 )
 
-        def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            return super(FunctionWrapper, self).__call__(*args, **kwargs)
-
     return FunctionWrapper
 
 
@@ -263,9 +253,6 @@ def _assert_unique_wrapper(column_subset: List[str]) -> Any:
                 raise AssertionError(
                     "Test FAILED: assert_unique only accepts string list type column_subset."
                 )
-
-        def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            return super(FunctionWrapper, self).__call__(*args, **kwargs)
 
     return FunctionWrapper
 
@@ -340,9 +327,6 @@ def _assert_skewness_wrapper(
                     "assert_skewness only accepts string type column_name and "
                     "numeric type min_skewness and max_skewness values."
                 )
-
-        def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            return super(FunctionWrapper, self).__call__(*args, **kwargs)
 
     return FunctionWrapper
 

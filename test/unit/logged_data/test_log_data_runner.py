@@ -343,7 +343,7 @@ def test_given_runner_when_log_matplotlib_module_then_calls_log_binary(
     t = np.arange(0.0, 2.0, 0.01)
     s = 1 + np.sin(2 * np.pi * t)
 
-    fig, ax = plt.subplots()
+    unused_fig, ax = plt.subplots()
     ax.plot(t, s)
 
     ax.set(

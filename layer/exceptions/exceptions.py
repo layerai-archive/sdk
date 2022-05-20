@@ -19,8 +19,7 @@ class RuntimeMemoryException(Exception):
 
 
 class FunctionParameterException(Exception):
-    def __init__(self, msg: str) -> None:
-        super().__init__(msg)
+    pass
 
 
 class ConfigError(Exception):
@@ -311,6 +310,7 @@ class ProjectCircularDependenciesException(ProjectInitializationException):
 
 class LayerFailedAssertionsException(Exception):
     def __init__(self, failed_assertions: List[Assertion]) -> None:
+        super().__init__()
         self._failed_assertions = failed_assertions
 
     @property
