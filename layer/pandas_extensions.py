@@ -5,7 +5,7 @@ from typing import Any, Generator, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 import PIL.Image
 import pyarrow as pa
-from pandas._typing import PositionalIndexer
+from pandas._typing import PositionalIndexer  # type: ignore
 from pandas.core.arrays.base import ExtensionArray  # type: ignore
 from pandas.core.dtypes.base import register_extension_dtype  # type: ignore
 from pandas.core.dtypes.base import ExtensionDtype
