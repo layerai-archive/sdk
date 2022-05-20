@@ -9,7 +9,7 @@ from PIL import ImageDraw
 from PIL.Image import Image
 
 import layer
-from layer.pandas_extensions import Images
+from layer.pandas_extensions import Images, _ImageDtype
 
 
 _PARQUET_ENGINE = "pyarrow"
@@ -169,6 +169,23 @@ def test_concat_same_type():
     comp = Images((image0, image1, image2)).__eq__(images)
 
     assert comp.tolist() == [True, True, True]
+
+
+def test_dropna_does_not_raise():
+    # repro a bug where Images type is returned for every pandas type name
+    df = pd.DataFrame({"col1": (1, 2, 3, 4)})
+    df.dropna(how="all", inplace=True)
+
+
+def test_construct_from_string_returns_imagedtype():
+    assert isinstance(_ImageDtype.construct_from_string("layer.image"), _ImageDtype)
+
+
+def test_construct_from_string_raises_type_error_for_other_types():
+    with pytest.raises(
+        TypeError, match=r"cannot construct a '_ImageDtype' from 'int64'"
+    ):
+        _ImageDtype.construct_from_string("int64")
 
 
 def _image_data_frame(num_images: int) -> pd.DataFrame:
