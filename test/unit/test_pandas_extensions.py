@@ -57,7 +57,7 @@ def test_pandas_images_head():
     ],
 )
 def test_pandas_images_reduce(reduce_func, result):
-    images = layer.Images(tuple(_generate_image(n) for n in range(0, 3)))
+    images = layer.Images([_generate_image(n) for n in range(0, 3)])
     assert images._reduce(reduce_func) == result
 
 
@@ -154,7 +154,7 @@ def test_images_eq_length_do_not_match_self():
 
 def _image_data_frame(num_images: int) -> pd.DataFrame:
     return pd.DataFrame(
-        {"image": layer.Images(tuple(_generate_image(n) for n in range(num_images)))}
+        {"image": layer.Images([_generate_image(n) for n in range(num_images)])}
     )
 
 

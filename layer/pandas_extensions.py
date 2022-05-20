@@ -1,6 +1,6 @@
 import io
 import warnings
-from typing import Any, Generator, Iterable, Optional, Sequence, Tuple, Union
+from typing import Any, Generator, Iterable, Optional, Sequence, Union
 
 import numpy as np
 import PIL.Image
@@ -75,7 +75,7 @@ def _load_image(binary: Union[pa.BinaryScalar, pa.ExtensionScalar]) -> Image:
 
 
 class Images(ExtensionArray):
-    def __init__(self, images: Tuple[Image, ...]):
+    def __init__(self, images: Sequence[Image]):
         self._images = images
         self._dtype = _ImageDtype()
 
@@ -87,7 +87,7 @@ class Images(ExtensionArray):
         dtype: Optional[ExtensionDtype] = None,
         copy: bool = False,
     ) -> "Images":
-        return Images(tuple(scalars))
+        return Images(scalars)
 
     @property
     def dtype(self) -> ExtensionDtype:
@@ -132,12 +132,11 @@ class Images(ExtensionArray):
         return 0
 
     def __eq__(self, other: Any) -> np.ndarray:  # type: ignore
-        size = len(self._images)
-        eq_arr = np.empty(size, dtype=bool)
+        eq_arr = np.empty(len(self), dtype=bool)
         eq_arr.fill(False)
         if not isinstance(other, Images):
             return eq_arr
-        for i in range(min(size, len(other))):
+        for i in range(min(len(self), len(other))):
             if _image_bytes(self._images[i]) == _image_bytes(other._images[i]):
                 eq_arr[i] = True
         return eq_arr
