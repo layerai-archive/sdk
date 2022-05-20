@@ -1,6 +1,6 @@
 import io
 import warnings
-from typing import Any, Generator, Iterable, Optional, Sequence, Tuple, Union
+from typing import Any, Generator, Iterable, Optional, Sequence, Tuple, Type, Union
 
 import numpy as np
 import PIL.Image
@@ -54,7 +54,7 @@ class _ImageDtype(ExtensionDtype):
         return Images
 
     @property
-    def type(self) -> Image:
+    def type(self) -> Type[Image]:
         return Image
 
     def __from_arrow__(self, array: Union[pa.Array, pa.ChunkedArray]) -> "Images":

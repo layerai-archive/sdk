@@ -43,7 +43,7 @@ layer-api = "0.9.358961"
 
 [tool.poetry.dev-dependencies]
 black = "22.3.0"
-mypy = "0.942"
+mypy = "0.950"
 isort = "^5.10.1"
 bandit = "^1.7.4"
 pytest-cov = "^3.0.0"
