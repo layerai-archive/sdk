@@ -23,13 +23,16 @@ warnings.filterwarnings(
 )
 
 
+_TYPE_IMAGE_NAME = "layer.image"
+
+
 class _ImageType(pa.ExtensionType):
     """Arrow type extension https://arrow.apache.org/docs/python/extending_types.html#defining-extension-types-user-defined-types
     Provides addtional metadata for arrow schema about the image format.
     """
 
     def __init__(self) -> None:
-        pa.ExtensionType.__init__(self, pa.binary(), "layer.image")
+        pa.ExtensionType.__init__(self, pa.binary(), _TYPE_IMAGE_NAME)
 
     def __arrow_ext_serialize__(self) -> bytes:
         return b"png"  # always store as png
@@ -44,11 +47,13 @@ class _ImageType(pa.ExtensionType):
 class _ImageDtype(ExtensionDtype):
     @property
     def name(self) -> str:
-        return "layer.image"
+        return _TYPE_IMAGE_NAME
 
     @classmethod
     def construct_from_string(cls, string: str) -> ExtensionDtype:
-        return _ImageDtype()
+        if string == _TYPE_IMAGE_NAME:
+            return _ImageDtype()
+        raise TypeError(f"cannot construct a '{cls.__name__}' from '{string}'")
 
     @classmethod
     def construct_array_type(cls) -> ExtensionArray:
