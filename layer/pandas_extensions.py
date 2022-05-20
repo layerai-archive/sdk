@@ -1,4 +1,5 @@
 import io
+import itertools
 import warnings
 from typing import Any, Generator, Iterable, Optional, Sequence, Union
 
@@ -88,6 +89,10 @@ class Images(ExtensionArray):
         copy: bool = False,
     ) -> "Images":
         return Images(scalars)
+
+    @classmethod
+    def _concat_same_type(cls, to_concat: Sequence["Images"]) -> "Images":
+        return Images(tuple(itertools.chain(*to_concat)))
 
     @property
     def dtype(self) -> ExtensionDtype:
