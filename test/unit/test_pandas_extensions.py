@@ -152,6 +152,25 @@ def test_images_eq_length_do_not_match_self():
     assert comp.tolist() == [True]
 
 
+def test_concat_same_type():
+    image0 = _generate_image(0)
+    image1 = _generate_image(1)
+    image2 = _generate_image(2)
+
+    images = Images._concat_same_type(
+        [
+            (image0,),
+            (
+                image1,
+                image2,
+            ),
+        ]
+    )
+    comp = Images((image0, image1, image2)).__eq__(images)
+
+    assert comp.tolist() == [True, True, True]
+
+
 def _image_data_frame(num_images: int) -> pd.DataFrame:
     return pd.DataFrame(
         {"image": layer.Images([_generate_image(n) for n in range(num_images)])}
