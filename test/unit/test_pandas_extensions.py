@@ -58,7 +58,7 @@ def test_pandas_images_head():
 )
 def test_pandas_images_reduce(reduce_func, result):
     images = layer.Images([_generate_image(n) for n in range(0, 3)])
-    assert images._reduce(reduce_func) == result
+    assert images._reduce(reduce_func) == result  # pylint: disable=protected-access
 
 
 def test_pandas_images_info():
@@ -157,7 +157,7 @@ def test_concat_same_type():
     image1 = _generate_image(1)
     image2 = _generate_image(2)
 
-    images = Images._concat_same_type(
+    images = Images._concat_same_type(  # pylint: disable=protected-access
         [
             (image0,),
             (

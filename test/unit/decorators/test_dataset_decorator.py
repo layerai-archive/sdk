@@ -116,10 +116,10 @@ class TestDatasetDecorator:
 
             mock_register_datasets.assert_called_with(ANY, ANY, ANY, ANY)
             (
-                client,
-                current_project_uuid,
+                unused_client,
+                unused_current_project_uuid,
                 python_definition,
-                tracker,
+                unused_tracker,
             ) = mock_register_datasets.call_args[0]
 
             assert python_definition.name == name
@@ -187,22 +187,22 @@ class TestDatasetDecorator:
             create_another_dataset()
 
             (
-                func,
+                unused_func,
                 settings,
-                ds,
-                tracker,
-                client,
-                assertions,
+                unused_ds,
+                unused_tracker,
+                unused_client,
+                unused_assertions,
             ) = mock_build_locally.call_args_list[0][0]
             assert settings.get_fabric() == Fabric.F_MEDIUM
 
             (
-                func,
+                unused_func,
                 settings,
-                ds,
-                tracker,
-                client,
-                assertions,
+                unused_ds,
+                unused_tracker,
+                unused_client,
+                unused_assertions,
             ) = mock_build_locally.call_args_list[1][0]
             assert settings.get_fabric() == Fabric.F_SMALL
 

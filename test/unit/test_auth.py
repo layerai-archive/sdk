@@ -55,8 +55,9 @@ class _TestAuthHandler:
         raise HTTPFound(url)
 
     async def handle_token(self, request: Request) -> Response:
-        if self.raise_on_token:
-            raise self.raise_on_token
+        if self.raise_on_token is not None:
+            # Pylint doesn't undestand flow control :(
+            raise self.raise_on_token  # pylint: disable=raising-bad-type
         assert request.headers["accept"] == "application/json"
         assert request.headers["content-type"] == "application/x-www-form-urlencoded"
         payload = dict(parse_qsl(await request.text()))

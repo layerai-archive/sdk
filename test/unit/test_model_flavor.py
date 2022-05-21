@@ -50,9 +50,9 @@ class TestModelFlavors:
         assert type(flavor).__name__ == LightGBMModelFlavor.__name__
 
     def test_xgboost_flavor(self):
-        X_train = np.random.random(size=(10, 5))
+        x_train = np.random.random(size=(10, 5))
         y_train = np.random.random(size=(10, 1))
-        dtrain = xgb.DMatrix(X_train, label=y_train)
+        dtrain = xgb.DMatrix(x_train, label=y_train)
         model = xgb.train({}, dtrain, num_boost_round=2)
 
         flavor = MLModelService.get_model_flavor(model, logger)
@@ -260,8 +260,6 @@ class TestModelFlavors:
         pt_flavor.save_model_to_directory(model, tmp_path)
 
         # Check if we have the necessary files to load the model
-        from pathlib import Path
-
         p = Path(str(tmp_path)).rglob("*.*")
         files = [x.name for x in p if x.is_file()]
         assert model_def in files

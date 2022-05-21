@@ -54,7 +54,7 @@ def test_get_dataset_to_pytorch_returns_pytorch_dataloader():
     with patch("layer.contracts.datasets.Dataset.to_pandas", return_value=df):
         with _dataset_client_mock():
             ds = get_dataset("dummy").to_pytorch(transform)
-            item, (x, y) = next(enumerate(ds))
+            unused_item, (x, y) = next(enumerate(ds))
             assert x == torch.tensor([1])
             assert y == ("a!",)
             assert len(ds) == 2

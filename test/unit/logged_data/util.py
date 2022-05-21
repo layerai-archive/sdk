@@ -13,7 +13,7 @@ def get_logged_data_service_client_with_mocks(
     logged_data_client = LoggedDataClient(
         config=config_mock, logger=MagicMock(spec_set=logging.getLogger())
     )
-    logged_data_client._service = (
+    logged_data_client._service = (  # pylint: disable=protected-access
         logged_data_api_stub if logged_data_api_stub is not None else MagicMock()
     )
     return logged_data_client

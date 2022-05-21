@@ -136,9 +136,9 @@ def _dataset_wrapper(
                         self.__wrapped__, current_project_name_
                     )
                     result = _build_dataset_locally_and_store_remotely(
-                        lambda: super(DatasetFunctionWrapper, self).__call__(
-                            *args, **kwargs
-                        ),
+                        lambda: super(  # pylint: disable=super-with-arguments
+                            DatasetFunctionWrapper, self
+                        ).__call__(*args, **kwargs),
                         self.layer,
                         dataset_definition,
                         tracker,

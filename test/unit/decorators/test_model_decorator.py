@@ -84,7 +84,12 @@ class TestModelDecorator:
             # Check if the unpickled file contains the correct function
             model_definition.get_local_entity()
             # needed to create the pickled file on disk.
-            loaded = pickle.load(open(model_definition._get_pickle_path(), "rb"))
+            loaded = pickle.load(
+                open(
+                    model_definition._get_pickle_path(),  # pylint: disable=protected-access
+                    "rb",
+                )
+            )
             assert loaded.layer.get_entity_name() == name
             assert loaded.layer.get_asset_type() == AssetType.MODEL
             assert loaded.layer.get_pip_packages() == ["scikit-learn==0.23.2"]

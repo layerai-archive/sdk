@@ -228,7 +228,7 @@ def check_entity_dependencies(project: Project) -> None:
 
 def drop_independent_entities(
     project: Project,
-    type_: "EntityType",
+    type_: EntityType,
     name: str,
     *,
     keep_dependencies: bool = True,
@@ -238,7 +238,6 @@ def drop_independent_entities(
     target_entity_id = type_.get_factory(), name
     graph = _build_dependency_graph(project)
     try:
-        # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
         entity_ids: Set[Tuple[Type[BaseAsset], str]] = set.union(
             set(), *shortest_path(graph, target=target_entity_id).values()
         )

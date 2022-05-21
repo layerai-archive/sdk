@@ -53,7 +53,7 @@ class Train(BaseTrain):
         )
         self.__start_train_ts: int  # For computing relative to start metric timestamps
         # Populated at the save of a model train
-        self.__flavor: Optional["ModelVersion.ModelFlavor.V"] = None
+        self.__flavor: Optional[ModelVersion.ModelFlavor.V] = None
 
     def get_id(self) -> UUID:
         assert self.__train_id
@@ -163,7 +163,7 @@ class Train(BaseTrain):
         model_definition = ModelDefinition(
             name=self.__name,
             train_id=self.__train_id,
-            proto_flavor=self.__flavor,
+            PROTO_FLAVOR=self.__flavor,
             s3_path=train_storage_config.s3_path,
             credentials=train_storage_config.credentials,
         )
@@ -202,7 +202,7 @@ class Train(BaseTrain):
 
     def __infer_flavor(
         self, model_obj: "TrainedModelObject"
-    ) -> "ModelVersion.ModelFlavor.V":
+    ) -> ModelVersion.ModelFlavor:
         return self.__layer_client.model_catalog.infer_flavor(model_obj)
 
     def __enter__(self) -> Any:

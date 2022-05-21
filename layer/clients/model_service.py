@@ -2,9 +2,7 @@ import importlib
 from logging import Logger
 from typing import TYPE_CHECKING, Optional
 
-from layerapi.api.entity.model_version_pb2 import (  # pylint: disable=unused-import
-    ModelVersion,
-)
+from layerapi.api.entity.model_version_pb2 import ModelVersion
 from yarl import URL
 
 from layer.contracts.runs import ResourceTransferState
@@ -90,7 +88,7 @@ class MLModelService:
             f"User requested to load model {model_definition.model_name} "
         )
         flavor: ModelFlavor = self.get_model_flavor_from_proto(
-            model_definition.proto_flavor
+            model_definition.PROTO_FLAVOR
         )
 
         self.logger.debug(f"Loading model {model_definition.model_name}")
@@ -139,7 +137,7 @@ class MLModelService:
 
     @staticmethod
     def get_model_flavor_from_proto(
-        proto_flavor: "ModelVersion.ModelFlavor.V",
+        proto_flavor: ModelVersion.ModelFlavor,
     ) -> ModelFlavor:
         flavor = get_flavor_for_proto(proto_flavor)
         if flavor is None:

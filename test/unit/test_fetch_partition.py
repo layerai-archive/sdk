@@ -76,7 +76,7 @@ def test_fetch_partition_fetches_and_caches(dataset_client: DatasetClient, tmp_p
         "urllib.request.urlretrieve",
     ) as urlretrieve:
         partition = dataset_client.fetch_partition(part_meta, cache_dir=tmp_path)
-        urlretrieve.assert_not_called
+        urlretrieve.assert_not_called()
         read_parquet.assert_called_once_with(part_cache_path, engine="pyarrow")
         assert (
             partition.from_cache
@@ -113,7 +113,7 @@ def test_fetch_partition_ignores_cache_when_no_cache_set(
         partition = dataset_client.fetch_partition(
             part_meta, cache_dir=tmp_path, no_cache=True
         )
-        urlretrieve.assert_not_called
+        urlretrieve.assert_not_called()
         read_parquet.assert_called_once_with(
             "http://localhost/datasets/1", engine="pyarrow"
         )

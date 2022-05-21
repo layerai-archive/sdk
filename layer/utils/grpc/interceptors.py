@@ -268,6 +268,7 @@ class RequestIdInterceptor(grpc.UnaryUnaryClientInterceptor):  # type: ignore
         return cls._instance
 
     def __init__(self) -> None:
+        super().__init__()
         # REQUEST_ID set by invoker if wants to use same request id for all requests
         request_id_candidate = os.getenv(_ENV_KEY_REQUEST_ID, default=None)
         if request_id_candidate is None:

@@ -116,7 +116,7 @@ class Dataset(BaseDataset, metaclass=abc.ABCMeta):
 
     def with_id(self, id: uuid.UUID) -> "Dataset":
         new_ds = copy.deepcopy(self)
-        new_ds._set_id(id)
+        new_ds._set_id(id)  # pylint: disable=protected-access
         return new_ds
 
     def _pandas_df_factory(self) -> "pandas.DataFrame":
@@ -279,7 +279,7 @@ class RawDataset(Dataset):
     def with_project_name(self, project_name: str) -> "RawDataset":
         new_asset_path = self._path.with_project_name(project_name=project_name)
         new_ds = copy.deepcopy(self)
-        new_ds._path = new_asset_path
+        new_ds._path = new_asset_path  # pylint: disable=protected-access
         return new_ds
 
 
@@ -322,7 +322,7 @@ class DerivedDataset(Dataset):
 
     def with_dependencies(self, dependencies: Sequence[BaseAsset]) -> "DerivedDataset":
         new_ds = copy.deepcopy(self)
-        new_ds._set_dependencies(dependencies)
+        new_ds._set_dependencies(dependencies)  # pylint: disable=protected-access
         return new_ds
 
     def drop_dependencies(self) -> "DerivedDataset":
@@ -331,7 +331,7 @@ class DerivedDataset(Dataset):
     def with_project_name(self, project_name: str) -> "DerivedDataset":
         new_asset_path = self._path.with_project_name(project_name=project_name)
         new_ds = copy.deepcopy(self)
-        new_ds._path = new_asset_path
+        new_ds._path = new_asset_path  # pylint: disable=protected-access
         return new_ds
 
 

@@ -52,7 +52,6 @@ class BaseTrain:
                 train.log_parameter("test_size", test_size)
 
         """
-        pass
 
     def log_parameters(self, parameters: Dict[str, Any]) -> None:
         """
@@ -67,7 +66,6 @@ class BaseTrain:
                 train.log_parameters(parameters)
 
         """
-        pass
 
     def get_parameter(self, name: str) -> Optional[Any]:
         """
@@ -84,7 +82,6 @@ class BaseTrain:
                 max_samples = train.get_parameter("max_samples")
 
         """
-        pass
 
     def get_parameters(self) -> Dict[str, Any]:
         """
@@ -99,7 +96,6 @@ class BaseTrain:
                 parameters = train.get_parameters()
 
         """
-        pass
 
     def save_model(
         self,
@@ -119,7 +115,7 @@ class BaseTrain:
 
     def __infer_flavor(
         self, model_obj: "TrainedModelObject"
-    ) -> "ModelVersion.ModelFlavor.V":
+    ) -> ModelVersion.ModelFlavor:
         pass
 
     def __enter__(self) -> Any:

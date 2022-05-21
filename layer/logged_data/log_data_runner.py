@@ -67,10 +67,14 @@ class LogDataRunner:
                 self._log_image_from_path(tag=tag, path=value)
             elif self._is_pil_image(value):
                 if TYPE_CHECKING:
+                    import PIL.Image
+
                     assert isinstance(value, PIL.Image.Image)
                 self._log_image(tag=tag, image=value)
             elif self._is_plot_figure(value):
                 if TYPE_CHECKING:
+                    import matplotlib.figure
+
                     assert isinstance(value, matplotlib.figure.Figure)
                 self._log_plot_figure(tag=tag, figure=value)
             elif self._is_pyplot(value):
@@ -184,7 +188,7 @@ class LogDataRunner:
         return (
             hasattr(value, "__name__")
             and "matplotlib.pyplot" == value.__name__
-            and type(value) is ModuleType
+            and isinstance(value, ModuleType)
         )
 
     def _get_base_module_list(self, value: Any) -> List[str]:

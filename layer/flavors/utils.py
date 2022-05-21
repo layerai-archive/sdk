@@ -32,11 +32,11 @@ PYTHON_FLAVORS: List[ModelFlavor] = [
 ]
 
 # mypy proto enum typing issue https://github.com/protocolbuffers/protobuf/issues/8175
-PYTHON_CLASS_NAME_TO_PROTO_FLAVORS: Dict[str, "ModelVersion.ModelFlavor.V"] = {
+PYTHON_CLASS_NAME_TO_PROTO_FLAVORS: Dict[str, "ModelVersion.ModelFlavor"] = {
     flavor.__class__.__name__: flavor.PROTO_FLAVOR for flavor in PYTHON_FLAVORS
 }
 
-PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict["ModelVersion.ModelFlavor.V", ModelFlavor] = {
+PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict["ModelVersion.ModelFlavor", ModelFlavor] = {
     flavor.PROTO_FLAVOR: flavor for flavor in PYTHON_FLAVORS
 }
 
@@ -51,6 +51,6 @@ def get_flavor_for_model(model_object: TrainedModelObject) -> Optional[ModelFlav
 
 
 def get_flavor_for_proto(
-    proto_flavor: "ModelVersion.ModelFlavor.V",
+    proto_flavor: "ModelVersion.ModelFlavor",
 ) -> Optional[ModelFlavor]:
     return PROTO_TO_PYTHON_OBJECT_FLAVORS.get(proto_flavor)

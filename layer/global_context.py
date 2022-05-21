@@ -16,7 +16,7 @@ class GlobalContext:
 
 # We store project name, fabric, active context and requirements
 # at the process level for use in subsequent calls in the same Python process.
-_global_context = GlobalContext(
+_GLOBAL_CONTEXT = GlobalContext(
     project_name=None,
     fabric=None,
     active_context=None,
@@ -27,8 +27,8 @@ _global_context = GlobalContext(
 
 def reset_to(project_name: str) -> None:
     if current_project_name() != project_name:
-        global _global_context
-        _global_context = GlobalContext(
+        global _GLOBAL_CONTEXT
+        _GLOBAL_CONTEXT = GlobalContext(
             project_name=project_name,
             fabric=None,
             active_context=None,
@@ -38,22 +38,19 @@ def reset_to(project_name: str) -> None:
 
 
 def set_current_project_name(name: str) -> None:
-    global _global_context
-    _global_context.project_name = name
+    _GLOBAL_CONTEXT.project_name = name
 
 
 def current_project_name() -> Optional[str]:
-    return _global_context.project_name
+    return _GLOBAL_CONTEXT.project_name
 
 
 def set_active_context(context: Context) -> None:
-    global _global_context
-    _global_context.active_context = context
+    _GLOBAL_CONTEXT.active_context = context
 
 
 def reset_active_context() -> None:
-    global _global_context
-    _global_context.active_context = None
+    _GLOBAL_CONTEXT.active_context = None
 
 
 def get_active_context() -> Optional[Context]:
@@ -63,31 +60,28 @@ def get_active_context() -> Optional[Context]:
 
     @return:  active context object
     """
-    return _global_context.active_context
+    return _GLOBAL_CONTEXT.active_context
 
 
 def set_default_fabric(fabric: Fabric) -> None:
-    global _global_context
-    _global_context.fabric = fabric
+    _GLOBAL_CONTEXT.fabric = fabric
 
 
 def default_fabric() -> Optional[Fabric]:
-    return _global_context.fabric
+    return _GLOBAL_CONTEXT.fabric
 
 
 def set_pip_requirements_file(pip_requirements_file: str) -> None:
-    global _global_context
-    _global_context.pip_requirements_file = pip_requirements_file
+    _GLOBAL_CONTEXT.pip_requirements_file = pip_requirements_file
 
 
 def get_pip_requirements_file() -> Optional[str]:
-    return _global_context.pip_requirements_file
+    return _GLOBAL_CONTEXT.pip_requirements_file
 
 
 def set_pip_packages(packages: List[str]) -> None:
-    global _global_context
-    _global_context.pip_packages = packages
+    _GLOBAL_CONTEXT.pip_packages = packages
 
 
 def get_pip_packages() -> Optional[List[str]]:
-    return _global_context.pip_packages
+    return _GLOBAL_CONTEXT.pip_packages
