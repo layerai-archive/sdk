@@ -92,6 +92,7 @@ ignore-patterns=[ ".*pb2.py" , ".*pb2_grpc.p", ".*egg-info.*", ".*ini", ".*.grad
 max-line-length=120
 load-plugins="pylint_django"
 known-third-party="layer_client"
+fail-on="I"
 disable="all"
 good-names-rgxs="^[_a-z][_a-z0-9]?$" # allow 1 or 2 character variables
 # Taken from https://github.com/edx/edx-lint/blob/master/pylintrc with some modifications
