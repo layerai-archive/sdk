@@ -42,6 +42,7 @@ lint: $(INSTALL_STAMP) ## Run all linters
 	$(POETRY) run isort --profile=black --lines-after-imports=2 --check-only .
 	$(POETRY) run black --check . --diff
 	$(POETRY) run flake8 .
+	$(POETRY) run pylint  --recursive yes .
 	$(POETRY) run mypy .
 	$(POETRY) run bandit -x "./test/*" -r .
 
