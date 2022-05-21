@@ -305,3 +305,18 @@ enable = [
     "deprecated-pragma",
     "invalid-name"
 ]
+
+[tool.bandit]
+exclude_dirs = [
+    "test",
+    ".eggs"
+]
+skips = [
+    "B101",
+    "B102",
+    "B105",
+    "B106",
+    "B301",
+    "B310",
+    "B403"
+]
