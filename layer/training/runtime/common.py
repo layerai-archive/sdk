@@ -1,6 +1,6 @@
 import importlib.util
 import os
-import pickle
+import pickle  # nosec blacklist
 import sys
 from logging import Logger
 from pathlib import Path
@@ -43,7 +43,7 @@ def _get_user_function_from_pickle_file(
     expanded = os.path.expanduser(source_folder)
     full_entrypoint_path = os.path.join(expanded, source_entrypoint)
     with open(full_entrypoint_path, "rb") as f:
-        return pickle.load(f)
+        return pickle.load(f)  # nosec pickle
 
 
 def _get_user_function_from_python_source(

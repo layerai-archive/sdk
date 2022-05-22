@@ -2,7 +2,7 @@ import abc
 import hashlib
 import inspect
 import os
-import pickle
+import pickle  # nosec blacklist
 import shutil
 from pathlib import Path
 from typing import Any, List, Union

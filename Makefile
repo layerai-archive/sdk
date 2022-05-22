@@ -44,7 +44,7 @@ lint: $(INSTALL_STAMP) ## Run all linters
 	$(POETRY) run flake8 .
 	$(POETRY) run pylint  --recursive yes .
 	$(POETRY) run mypy .
-	$(POETRY) run bandit -x "./test/*" -r .
+	$(POETRY) run bandit -c pyproject.toml -r .
 
 .PHONY: check
 check: test lint ## Run test and lint

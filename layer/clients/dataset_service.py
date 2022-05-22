@@ -146,7 +146,7 @@ class DatasetClient:
             from_cache = cache_path is not None
             if not from_cache:
                 download_path = cache.cache_dir.joinpath(str(uuid.uuid4()))
-                urllib.request.urlretrieve(
+                urllib.request.urlretrieve(  # nosec urllib_urlopen
                     partition_metadata.location, filename=download_path
                 )
                 cache_path = cache.put_path_entry(
