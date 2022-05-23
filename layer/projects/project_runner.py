@@ -11,7 +11,6 @@ from layerapi.api.ids_pb2 import RunId
 from layer.clients.layer import LayerClient
 from layer.config import Config
 from layer.contracts.asset import AssetType
-from layer.contracts.datasets import Dataset
 from layer.contracts.projects import ApplyResult
 from layer.contracts.runs import (
     DatasetFunctionDefinition,
@@ -109,7 +108,7 @@ class ProjectRunner:
         updated_definitions: List[FunctionDefinition] = []
         for definition in run.definitions:
             if isinstance(definition, DatasetFunctionDefinition):
-                register_dataset_function(
+                definition = register_dataset_function(
                     client, run.project_id, definition, False, self._tracker
                 )
             elif isinstance(definition, ModelFunctionDefinition):
@@ -129,19 +128,16 @@ class ProjectRunner:
         definitions: List[FunctionDefinition] = []
         for f in functions:
             layer_settings: LayerSettings = f.layer
-            resource_paths = layer_settings.get_paths() or []
             if layer_settings.get_asset_type() == AssetType.DATASET:
                 dataset = DatasetFunctionDefinition(
                     func=f,
                     project_name=project_name,
-                    resource_paths={ResourcePath(path=path) for path in resource_paths},
                 )
                 definitions.append(dataset)
             elif layer_settings.get_asset_type() == AssetType.MODEL:
                 model = ModelFunctionDefinition(
                     func=f,
                     project_name=project_name,
-                    resource_paths={ResourcePath(path=path) for path in resource_paths},
                 )
                 definitions.append(model)
         try:
@@ -169,7 +165,9 @@ class ProjectRunner:
     ) -> Run:
         check_entity_dependencies(run.definitions)
         with LayerClient(self._config.client, logger).init() as client:
-            get_or_create_remote_project(client, run.project_name)
+            project = get_or_create_remote_project(client, run.project_name)
+            assert project.account
+            run = run.with_account(project.account)
             with self._project_progress_tracker_factory(
                 self._config, run
             ).track() as tracker:
@@ -218,7 +216,7 @@ class ProjectRunner:
     def _get_user_command(
         execute_function: Callable[..., Any], functions: Sequence[FunctionDefinition]
     ) -> str:
-        functions_string = ", ".join(function.name for function in functions)
+        functions_string = ", ".join(function.func_name for function in functions)
         return f"{execute_function.__name__}([{functions_string}])"
 
     @staticmethod
@@ -281,13 +279,14 @@ def register_dataset_function(
     dataset: DatasetFunctionDefinition,
     is_local: bool,
     tracker: Optional[RunProgressTracker] = None,
-) -> Dataset:
+) -> DatasetFunctionDefinition:
     if not tracker:
         tracker = RunProgressTracker()
     try:
-        resp = client.data_catalog.add_dataset(project_id, dataset, is_local)
-        tracker.mark_derived_dataset_saved(dataset.name, id_=resp.id)
-        return resp
+        dataset = client.data_catalog.add_dataset(project_id, dataset, is_local)
+        assert dataset.repository_id
+        tracker.mark_derived_dataset_saved(dataset.name, id_=dataset.repository_id)
+        return dataset
     except LayerClientServiceUnavailableException as e:
         tracker.mark_derived_dataset_failed(dataset.name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
@@ -328,7 +327,7 @@ def register_model_function(
             )
 
         tracker.mark_model_saved(model.name)
-        return model.with_version_id(version.id)
+        return model.with_version_id(version.id.value)
     except LayerClientServiceUnavailableException as e:
         tracker.mark_model_train_failed(model.name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))

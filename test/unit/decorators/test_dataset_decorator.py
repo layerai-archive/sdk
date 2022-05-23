@@ -1,7 +1,8 @@
 import pickle
 import uuid
 from test.unit.decorators.util import project_client_mock
-from typing import Any, Callable
+from typing import Any, Callable, Optional
+from unittest import mock
 from unittest.mock import ANY, MagicMock, patch
 from uuid import UUID
 
@@ -15,6 +16,7 @@ from layer.contracts.asset import AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
+from layer.contracts.runs import DatasetFunctionDefinition
 from layer.decorators import dataset, fabric, pip_requirements
 from layer.exceptions.exceptions import (
     ConfigError,
@@ -106,36 +108,46 @@ class TestDatasetDecorator:
             "layer.decorators.dataset_decorator._build_locally_update_remotely",
             return_value=("", UUID(int=0x12345678123456781234567812345678)),
         ), patch(
-            "layer.decorators.dataset_decorator.register_dataset_function"
+            "layer.decorators.dataset_decorator.register_dataset_function",
         ) as mock_register_datasets:
-            func()
 
-            mock_register_datasets.assert_called_with(ANY, ANY, ANY, ANY, ANY)
-            (
+            dataset: Optional[DatasetFunctionDefinition] = None
+
+            def side_effect(
                 unused_client,
                 unused_current_project_uuid,
                 dataset_definition,
                 unused_is_local,
                 unused_tracker,
-            ) = mock_register_datasets.call_args[0]
+            ):
+                nonlocal dataset
+                dataset = dataset_definition
+                return dataset_definition
 
-            assert dataset_definition.name == name
-            assert dataset_definition.project_name == test_project_name
-            assert len(dataset_definition.dependencies) == 4
-            assert dataset_definition.dependencies[0].entity_name == "bar"
-            assert dataset_definition.dependencies[0].asset_type == AssetType.DATASET
-            assert dataset_definition.dependencies[1].entity_name == "foo"
-            assert dataset_definition.dependencies[1].asset_type == AssetType.MODEL
-            assert dataset_definition.dependencies[2].entity_name == "baz"
-            assert dataset_definition.dependencies[2].asset_type == AssetType.DATASET
-            assert dataset_definition.dependencies[3].entity_name == "zoo"
-            assert dataset_definition.dependencies[3].asset_type == AssetType.MODEL
+            mock_register_datasets.side_effect = side_effect
 
-            assert dataset_definition.environment_path.exists()
-            assert dataset_definition.environment_path.read_text() == "sklearn==0.0\n"
+            func()
+
+            mock_register_datasets.assert_called_with(ANY, ANY, ANY, ANY, ANY)
+
+            assert dataset
+            assert dataset.name == name
+            assert dataset.project_name == test_project_name
+            assert len(dataset.dependencies) == 4
+            assert dataset.dependencies[0].entity_name == "bar"
+            assert dataset.dependencies[0].asset_type == AssetType.DATASET
+            assert dataset.dependencies[1].entity_name == "foo"
+            assert dataset.dependencies[1].asset_type == AssetType.MODEL
+            assert dataset.dependencies[2].entity_name == "baz"
+            assert dataset.dependencies[2].asset_type == AssetType.DATASET
+            assert dataset.dependencies[3].entity_name == "zoo"
+            assert dataset.dependencies[3].asset_type == AssetType.MODEL
+
+            assert dataset.environment_path.exists()
+            assert dataset.environment_path.read_text() == "sklearn==0.0\n"
             # Check if the unpickled file contains the correct function
-            assert dataset_definition.pickle_path.exists()
-            loaded = pickle.load(open(dataset_definition.pickle_path, "rb"))
+            assert dataset.pickle_path.exists()
+            loaded = pickle.load(open(dataset.pickle_path, "rb"))
             assert loaded.layer.get_entity_name() == name
             assert loaded.layer.get_asset_type() == AssetType.DATASET
             assert loaded.layer.get_pip_packages() == ["sklearn==0.0"]

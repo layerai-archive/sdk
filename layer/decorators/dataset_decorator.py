@@ -154,7 +154,7 @@ def _dataset_wrapper(
 def _build_dataset_locally_and_store_remotely(
     building_func: Callable[..., Any],
     layer: LayerSettings,
-    dataset_definition: DatasetFunctionDefinition,
+    dataset: DatasetFunctionDefinition,
     tracker: LocalExecutionRunProgressTracker,
     client: LayerClient,
     assertions: List[Assertion],
@@ -165,22 +165,22 @@ def _build_dataset_locally_and_store_remotely(
         client, get_current_project_name()
     )
 
-    dataset_updated = register_dataset_function(
-        client, current_project_uuid, dataset_definition, True, tracker
+    dataset = register_dataset_function(
+        client, current_project_uuid, dataset, True, tracker
     )
     tracker.mark_derived_dataset_building(layer.get_entity_name())  # type: ignore
 
     (result, build_uuid) = _build_locally_update_remotely(
         client,
         building_func,
-        dataset_updated,
+        dataset,
         current_project_uuid,
         tracker,
         assertions,
     )
 
     transfer_state = DatasetTransferState(len(result))
-    tracker.mark_dataset_saving_result(dataset_definition.name, transfer_state)
+    tracker.mark_dataset_saving_result(dataset.name, transfer_state)
 
     # this call would store the resulting dataset, extract the schema and complete the build from remote
     client.data_catalog.store_dataset(
@@ -189,14 +189,14 @@ def _build_dataset_locally_and_store_remotely(
         build_id=build_uuid,
         progress_callback=transfer_state.increment_num_transferred_rows,
     )
-    tracker.mark_derived_dataset_built(dataset_definition.name)
+    tracker.mark_derived_dataset_built(dataset.name)
     return result
 
 
 def _build_locally_update_remotely(
     client: LayerClient,
     function_that_builds_dataset: Callable[..., Any],
-    derived_dataset_updated: Dataset,
+    dataset: DatasetFunctionDefinition,
     current_project_uuid: UUID,
     tracker: LocalExecutionRunProgressTracker,
     assertions: List[Assertion],
@@ -204,23 +204,23 @@ def _build_locally_update_remotely(
     try:
         with Context() as context:
             initiate_build_response = client.data_catalog.initiate_build(
-                derived_dataset_updated, current_project_uuid
+                dataset,
+                current_project_uuid,
+                True,
             )
             dataset_build_id = UUID(initiate_build_response.id.value)
             context.with_dataset_build(
                 DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.STARTED)
             )
             context.with_tracker(tracker)
-            context.with_entity_name(derived_dataset_updated.name)
+            context.with_entity_name(dataset.name)
             set_active_context(context)
             try:
                 result = function_that_builds_dataset()
-                _run_assertions(
-                    derived_dataset_updated.name, result, assertions, tracker
-                )
+                _run_assertions(dataset.name, result, assertions, tracker)
             except Exception as e:
                 client.data_catalog.complete_build(
-                    initiate_build_response.id, derived_dataset_updated, e
+                    initiate_build_response.id, dataset, e
                 )
                 context.with_dataset_build(
                     DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.FAILED)

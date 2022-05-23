@@ -76,7 +76,7 @@ class ResourceManager:
         for function in run.definitions:
             self._client.data_catalog.update_resource_paths_index(
                 project_name=run.project_name,
-                function_name=function.name,
+                function_name=function.func_name,
                 paths=[
                     local_path
                     for resource_path in function.resource_paths
@@ -126,7 +126,7 @@ class ResourceManager:
                 total_files_size_bytes += os.path.getsize(os.path.abspath(local_path))
                 upload_task = self._upload_resource(
                     project_name=run.project_name,
-                    function_name=function.name,
+                    function_name=function.func_name,
                     resource_path=ResourcePath(path=local_path),
                     file_path=os.path.abspath(local_path),
                     session=session,

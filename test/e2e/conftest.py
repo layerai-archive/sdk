@@ -152,12 +152,14 @@ def asserter(client: LayerClient) -> E2ETestAsserter:
 
 
 @pytest.fixture()
-async def guest_context(config: Config, tmp_path: Path, monkeypatch) -> Callable:
+async def guest_context(
+    config: Config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Callable[..., Any]:
     guest_config_path = tmp_path / "guest_config.json"
     await ConfigManager(guest_config_path).login_as_guest(config.url)
 
     @contextmanager
-    def manager():
+    def manager() -> Iterator[None]:
         with monkeypatch.context() as m:
             m.setattr(
                 layer.config.ConfigManager,

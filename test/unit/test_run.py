@@ -220,9 +220,9 @@ class TestProjectRun:
         )
 
         func1: DatasetFunctionDefinition = MagicMock()
-        func1.name = "create_my_dataset"
+        func1.func_name = "create_my_dataset"
         func2: ModelFunctionDefinition = MagicMock()
-        func2.name = "create_my_model"
+        func2.func_name = "create_my_model"
 
         functions = [func1, func2]
         user_command = runner._get_user_command(runner.run, functions)

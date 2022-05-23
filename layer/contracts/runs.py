@@ -18,7 +18,6 @@ from typing import (
     List,
     Optional,
     Sequence,
-    Set,
     Tuple,
     TypeVar,
 )
@@ -78,16 +77,19 @@ class FunctionDefinition(abc.ABC):
         project_name: str,
         account_name: Optional[str] = None,
         version_id: Optional[uuid.UUID] = None,
+        repository_id: Optional[uuid.UUID] = None,
         description: str = "",
-        resource_paths: Optional[Set[ResourcePath]] = None,
+        uri: str = "",
         language_version: Tuple[int, int, int] = _language_version(),
     ) -> None:
         self.func = func
-        self.version_id = version_id
+        self.func_name: str = func.__name__
         self.project_name = project_name
         self.account_name = account_name
-        self.resource_paths: Set[ResourcePath] = resource_paths or set()
+        self.version_id = version_id
+        self.repository_id = repository_id
         self.description = description
+        self.uri = uri
         self.language_version = language_version
 
         layer_settings = func.layer
@@ -95,9 +97,12 @@ class FunctionDefinition(abc.ABC):
         if name is None:
             raise LayerClientException("Name cannot be empty")
         self.name = name
+        self.resource_paths = {
+            ResourcePath(path=path) for path in layer_settings.get_paths() or []
+        }
         fabric = layer_settings.get_fabric()
         if fabric is None:
-            fabric = Fabric.F_LOCAL.value
+            fabric = Fabric.default()
         self._fabric = fabric
         self._dependencies = layer_settings.get_dependencies()
         self.pip_packages = layer_settings.get_pip_packages()
@@ -189,6 +194,12 @@ class FunctionDefinition(abc.ABC):
         self: FunctionDefinitionType, version_id: uuid.UUID
     ) -> FunctionDefinitionType:
         self.version_id = version_id
+        return self
+
+    def with_repository_id(
+        self: FunctionDefinitionType, repository_id: uuid.UUID
+    ) -> FunctionDefinitionType:
+        self.repository_id = repository_id
         return self
 
     def set_account_name(

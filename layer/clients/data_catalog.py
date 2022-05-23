@@ -54,7 +54,6 @@ from layer.contracts.datasets import (
     Dataset,
     DatasetBuild,
     DatasetBuildStatus,
-    RawDataset,
     SortField,
 )
 from layer.contracts.runs import DatasetFunctionDefinition
@@ -193,7 +192,10 @@ class DataCatalogClient:
             )
 
     def initiate_build(
-        self, dataset: Dataset, project_id: uuid.UUID
+        self,
+        dataset: DatasetFunctionDefinition,
+        project_id: uuid.UUID,
+        is_local: bool,
     ) -> InitiateBuildResponse:
         self._logger.debug(
             "Initiating build for the dataset %r",
@@ -206,7 +208,7 @@ class DataCatalogClient:
                 format="python",
                 build_entity_type=PBDatasetBuild.BUILD_ENTITY_TYPE_DATASET,
                 project_id=ProjectId(value=str(project_id)),
-                fabric=dataset.fabric,
+                fabric=dataset.get_fabric(is_local),
             )
         )
 
@@ -215,7 +217,7 @@ class DataCatalogClient:
     def complete_build(
         self,
         dataset_build_id: DatasetBuildId,
-        dataset: Dataset,
+        dataset: DatasetFunctionDefinition,
         error: Optional[Exception] = None,
     ) -> CompleteBuildResponse:
         self._logger.debug(
@@ -257,7 +259,7 @@ class DataCatalogClient:
         project_id: uuid.UUID,
         dataset_definition: DatasetFunctionDefinition,
         is_local: bool,
-    ) -> Dataset:
+    ) -> DatasetFunctionDefinition:
         self._logger.debug(
             "Adding or updating a dataset with name %r",
             dataset_definition.name,
@@ -272,10 +274,7 @@ class DataCatalogClient:
                 project_id=ProjectId(value=str(project_id)),
             ),
         )
-        return Dataset(
-            id=resp.dataset_id.value,
-            asset_path=dataset_definition.asset_path,
-        )
+        return dataset_definition.with_repository_id(resp.dataset_id.value)
 
     def _get_pb_python_dataset(
         self,
@@ -380,7 +379,7 @@ class DataCatalogClient:
             entity_version=version.name,
             project_name=dataset.project_name,
         )
-        return RawDataset(
+        return Dataset(
             id=uuid.UUID(dataset.id.value),
             asset_path=asset_path,
             description=dataset.description,
