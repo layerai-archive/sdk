@@ -1,6 +1,7 @@
 import io
 from uuid import uuid4
 
+import numpy as np
 import pandas as pd
 import PIL
 import pytest
@@ -9,7 +10,7 @@ from PIL import ImageDraw
 from PIL.Image import Image
 
 import layer
-from layer.pandas_extensions import Images, _ImageDtype
+from layer.pandas_extensions import Images, _ArrayDtype, _ImageDtype
 
 
 _PARQUET_ENGINE = "pyarrow"
@@ -79,7 +80,7 @@ def test_seaborn_plot():
     seaborn.histplot(data=data, x="col", color="green")
 
 
-def test_images_eq_types_do_not_match():
+def test_pandas_images_eq_types_do_not_match():
     image0 = _generate_image(0)
     image1 = _generate_image(1)
     comp = Images(
@@ -91,7 +92,7 @@ def test_images_eq_types_do_not_match():
     assert comp.tolist() == [False, False]
 
 
-def test_images_eq_equals():
+def test_pandas_images_eq_equals():
     image0 = _generate_image(0)
     image1 = _generate_image(1)
     image2 = _generate_image(0)
@@ -108,7 +109,7 @@ def test_images_eq_equals():
     assert comp.tolist() == [True, True]
 
 
-def test_images_eq_does_not_match():
+def test_pandas_images_eq_does_not_match():
     image0 = _generate_image(0)
     image1 = _generate_image(1)
     image2 = _generate_image(0)
@@ -124,7 +125,7 @@ def test_images_eq_does_not_match():
     assert comp.tolist() == [True, False]
 
 
-def test_images_eq_length_do_not_match_other():
+def test_pandas_images_eq_length_do_not_match_other():
     image0 = _generate_image(0)
     image1 = _generate_image(1)
     image2 = _generate_image(0)
@@ -137,7 +138,7 @@ def test_images_eq_length_do_not_match_other():
     assert comp.tolist() == [True, False]
 
 
-def test_images_eq_length_do_not_match_self():
+def test_pandas_images_eq_length_do_not_match_self():
     image0 = _generate_image(0)
     image1 = _generate_image(0)
     image2 = _generate_image(1)
@@ -152,7 +153,7 @@ def test_images_eq_length_do_not_match_self():
     assert comp.tolist() == [True]
 
 
-def test_concat_same_type():
+def test_pandas_images_concat_same_type():
     image0 = _generate_image(0)
     image1 = _generate_image(1)
     image2 = _generate_image(2)
@@ -171,17 +172,17 @@ def test_concat_same_type():
     assert comp.tolist() == [True, True, True]
 
 
-def test_dropna_does_not_raise():
+def test_pandas_dropna_does_not_raise():
     # repro a bug where Images type is returned for every pandas type name
     df = pd.DataFrame({"col1": (1, 2, 3, 4)})
     df.dropna(how="all", inplace=True)
 
 
-def test_construct_from_string_returns_imagedtype():
+def test_pandas_images_construct_from_string_returns_imagedtype():
     assert isinstance(_ImageDtype.construct_from_string("layer.image"), _ImageDtype)
 
 
-def test_construct_from_string_raises_type_error_for_other_types():
+def test_pandas_images_construct_from_string_raises_type_error_for_other_types():
     with pytest.raises(
         TypeError, match=r"cannot construct a '_ImageDtype' from 'int64'"
     ):
@@ -199,3 +200,55 @@ def _generate_image(n: int) -> Image:
     draw = ImageDraw.Draw(image)
     draw.text((11, 10), f"Test #{n}", fill=(255, 255, 0))
     return image
+
+
+def test_pandas_arrays_read_write(tmp_path):
+    data = _array_data_frame()
+
+    parquet_path = tmp_path / str(uuid4())
+
+    data.to_parquet(parquet_path, engine=_PARQUET_ENGINE)
+    data_parquet = pd.read_parquet(parquet_path, engine=_PARQUET_ENGINE)
+
+    assert_frame_equal(data, data_parquet)
+    assert data_parquet["array"].dtype.name == "layer.ndarray"
+
+
+def test_pandas_arrays_head():
+    data = _array_data_frame()
+    assert_frame_equal(data.head(), _array_data_frame())
+    assert_frame_equal(data.head(n=3), _array_data_frame())
+
+
+def test_pandas_arrays_info():
+    data = _array_data_frame()
+    with io.StringIO() as buf:
+        data.info(buf=buf)
+        info_str = buf.getvalue()
+        # assert total bytes for each array is computed correctly
+        assert "memory usage: 272.0 bytes" in info_str, f"actual: {info_str}"
+
+
+def test_pandas_arrays_construct_from_string_returns_imagedtype():
+    assert isinstance(_ArrayDtype.construct_from_string("layer.ndarray"), _ArrayDtype)
+
+
+def test_pandas_arrays_construct_from_string_raises_type_error_for_other_types():
+    with pytest.raises(
+        TypeError, match=r"cannot construct a '_ArrayDtype' from 'int64'"
+    ):
+        _ArrayDtype.construct_from_string("int64")
+
+
+def _array_data_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "array": layer.Arrays(
+                (
+                    np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int64),
+                    np.array([[7, 8, 9], [10, 11, 12]], dtype=np.int64),
+                    np.array([[13, 14, 15], [16, 17, 18]], dtype=np.int64),
+                )
+            )
+        }
+    )
