@@ -23,13 +23,13 @@ limitations under the License.
 <p>
 <p align="center">
     <a href="https://github.com/layerai/sdk/blob/main/LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/layer/sdk.svg?color=blue">
+        <img alt="License" src="https://img.shields.io/github/license/layerai/sdk.svg?color=blue">
     </a>
     <a href="https://docs.app.layer.ai">
         <img alt="Documentation" src="https://img.shields.io/badge/docs-online-success">
     </a>
     <a href="https://github.com/layerai/sdk/actions/workflows/check.yml">
-        <img alt="Build" src="https://img.shields.io/github/workflow/status/layerai/sdk/check/main">
+        <img alt="Build" src="https://img.shields.io/github/workflow/status/layerai/sdk/Check">
     </a>
     <a href="https://pypi.python.org/pypi/layer">
         <img alt="PyPI" src="https://img.shields.io/pypi/v/layer.svg">
