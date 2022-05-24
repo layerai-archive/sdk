@@ -18,7 +18,7 @@ from .main import login_with_api_key  # noqa
 from .main import logout  # noqa
 from .main import run  # noqa
 from .main import show_api_key  # noqa
-from .pandas_extensions import Images, _register_type_extensions  # noqa
+from .pandas_extensions import Arrays, Images, _register_type_extensions  # noqa
 
 
 _register_type_extensions()

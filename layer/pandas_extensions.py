@@ -170,8 +170,137 @@ def _image_bytes(image: Image) -> bytes:
         return buf.getvalue()
 
 
+_TYPE_NDARRAY_NAME = "layer.ndarray"
+
+
+class _ArrayType(pa.ExtensionType):
+    """Arrow type extension https://arrow.apache.org/docs/python/extending_types.html#defining-extension-types-user-defined-types
+    Provides addtional metadata for arrow schema about the ndarray format.
+    """
+
+    def __init__(self) -> None:
+        pa.ExtensionType.__init__(self, pa.binary(), _TYPE_NDARRAY_NAME)
+
+    def __arrow_ext_serialize__(self) -> bytes:
+        return b""
+
+    @classmethod
+    def __arrow_ext_deserialize__(
+        cls, storage_type: pa.DataType, serialized: bytes
+    ) -> pa.ExtensionType:
+        return _ArrayType()
+
+
+class _ArrayDtype(ExtensionDtype):
+    @property
+    def name(self) -> str:
+        return _TYPE_NDARRAY_NAME
+
+    @classmethod
+    def construct_from_string(cls, string: str) -> ExtensionDtype:
+        if string == _TYPE_NDARRAY_NAME:
+            return _ArrayDtype()
+        raise TypeError(f"cannot construct a '{cls.__name__}' from '{string}'")
+
+    @classmethod
+    def construct_array_type(cls) -> ExtensionArray:
+        return Arrays
+
+    @property
+    def type(self) -> Type[np.ndarray]:  # type: ignore
+        return np.ndarray
+
+    def __from_arrow__(self, array: Union[pa.Array, pa.ChunkedArray]) -> "Arrays":
+        if isinstance(array, pa.Array):
+            chunks = array
+        else:
+            chunks = array.chunks
+        arrays = (_load_array(binary) for chunk in chunks for binary in chunk)
+        return Arrays(tuple(arrays))
+
+
+def _load_array(binary: Union[pa.BinaryScalar, pa.ExtensionScalar]) -> np.ndarray:  # type: ignore
+    storage_array = binary.value if isinstance(binary, pa.ExtensionScalar) else binary
+    with io.BytesIO(storage_array.as_buffer().to_pybytes()) as buf:
+        return np.load(buf, allow_pickle=False, fix_imports=False)  # type: ignore
+
+
+class Arrays(ExtensionArray):
+    def __init__(self, arrays: Sequence[np.ndarray]):  # type: ignore
+        self._arrays = arrays
+        self._dtype = _ArrayDtype()
+
+    @classmethod
+    def _from_sequence(
+        cls,
+        scalars: Sequence[Any],
+        *,
+        dtype: Optional[ExtensionDtype] = None,
+        copy: bool = False,
+    ) -> "Arrays":
+        return Arrays(scalars)
+
+    @property
+    def dtype(self) -> ExtensionDtype:
+        return self._dtype
+
+    def copy(self) -> "Arrays":
+        return Arrays(tuple(arr.copy() for arr in self._arrays))
+
+    def isna(self) -> np.ndarray:  # type: ignore
+        return np.array([arr is not None for arr in self._arrays], dtype=bool)
+
+    def __len__(self) -> int:
+        return len(self._arrays)
+
+    def __getitem__(self, item: PositionalIndexer) -> Union["Arrays", np.ndarray]:  # type: ignore
+        if isinstance(item, int):
+            # for scalar item, return a scalar value suitable for the array's type
+            return self._arrays[item]
+        if isinstance(item, np.ndarray):
+            # a boolean mask, filtered to the values where item is True
+            return Arrays(tuple(self._get_arrays_by_mask(item)))
+        if isinstance(item, slice):
+            return Arrays(self._arrays[item.start : item.stop : item.step])
+        raise NotImplementedError(f"item type {type(item)}")
+
+    def _get_arrays_by_mask(
+        self, mask: Iterable[bool]
+    ) -> Generator[np.ndarray, None, None]:  # type: ignore
+        for i, include in enumerate(mask):
+            if include:
+                yield self._arrays[i]
+
+    def __arrow_array__(self, type: Any = None) -> pa.ExtensionArray:
+        storage_array = pa.array(
+            (_array_bytes(arr) for arr in self._arrays), pa.binary()
+        )
+        return pa.ExtensionArray.from_storage(_ArrayType(), storage_array)
+
+    def __setitem__(
+        self, key: Union[int, slice, "np.ndarray[Any, Any]"], value: Any
+    ) -> None:
+        raise NotImplementedError()
+
+    @property
+    def nbytes(self) -> int:
+        total_bytes = 0
+        for arr in self._arrays:
+            total_bytes += arr.nbytes
+        return total_bytes
+
+
+def _array_bytes(arr: np.ndarray) -> bytes:  # type: ignore
+    with io.BytesIO() as buf:
+        np.save(buf, arr, allow_pickle=False, fix_imports=False)  # type: ignore
+        return buf.getvalue()
+
+
 def _register_type_extensions() -> None:
     # register arrow extension types
     pa.register_extension_type(_ImageType())
+    pa.register_extension_type(_ArrayType())
+
     # register pandas extension types
     register_extension_dtype(_ImageDtype)
+    register_extension_dtype(_ArrayDtype)
