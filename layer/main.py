@@ -378,7 +378,7 @@ def _load_model(
     no_cache: bool,
     state: Optional[ResourceTransferState] = None,
 ) -> Model:
-    train_object = client.model_catalog.load_by_model_definition(
+    train_object, predict_func = client.model_catalog.load_by_model_definition(
         model_definition, no_cache=no_cache, state=state
     )
     parameters = client.model_catalog.get_model_train_parameters(
@@ -388,6 +388,7 @@ def _load_model(
         asset_path=asset_path,
         trained_model_object=train_object,
         parameters=parameters,
+        predict_function=predict_func,
     )
 
 

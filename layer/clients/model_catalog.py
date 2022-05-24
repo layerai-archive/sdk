@@ -1,7 +1,8 @@
 from contextlib import contextmanager
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, Optional, Tuple
 
+import pandas as pd
 from layerapi.api.entity.model_pb2 import Model as PBModel
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
 from layerapi.api.entity.model_train_status_pb2 import (
@@ -175,7 +176,7 @@ class ModelCatalogClient:
         model_definition: ModelDefinition,
         no_cache: bool = False,
         state: Optional[ResourceTransferState] = None,
-    ) -> Any:
+    ) -> Tuple[Any, Callable[[pd.DataFrame], pd.DataFrame]]:
         """
         Loads a model from the model catalog
 

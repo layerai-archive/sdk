@@ -168,7 +168,7 @@ class TestModelFlavors:
         keras_model = tensorflow.keras.Sequential()
         keras_model.add(Dense(2, activation="relu", input_dim=2))
         keras_flavor.save_to_s3(model_definition, keras_model)
-        loaded_model = keras_flavor.load_from_s3(
+        loaded_model, _ = keras_flavor.load_from_s3(
             model_definition, state=ResourceTransferState()
         )
         assert isinstance(loaded_model, tensorflow.keras.Sequential)
@@ -178,7 +178,7 @@ class TestModelFlavors:
         keras_model = keras.models.Sequential()
         keras_model.add(Dense(2, activation="relu", input_dim=2))
         keras_flavor.save_to_s3(model_definition, keras_model)
-        loaded_model = keras_flavor.load_from_s3(
+        loaded_model, _ = keras_flavor.load_from_s3(
             model_definition, state=ResourceTransferState()
         )
         assert isinstance(loaded_model, keras.models.Sequential)
@@ -191,7 +191,7 @@ class TestModelFlavors:
         fit_text = "The earth is an awesome place live"
         tokenizer.fit_on_texts(fit_text)
         keras_flavor.save_to_s3(model_definition, tokenizer)
-        loaded_tokenizer = keras_flavor.load_from_s3(
+        loaded_tokenizer, _ = keras_flavor.load_from_s3(
             model_definition, state=ResourceTransferState()
         )
         assert isinstance(loaded_tokenizer, keras.preprocessing.text.Tokenizer)
@@ -212,21 +212,21 @@ class TestModelFlavors:
         tmp_path = tmp_path / "model1"
         model = TFBertForSequenceClassification(BertConfig())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
+        loaded_model, _ = hf_flavor.load_model_from_directory(tmp_path)
         assert isinstance(loaded_model, TFBertForSequenceClassification)
 
         # Bert Pytorch Model
         tmp_path = tmp_path / "model2"
         model = BertForSequenceClassification(BertConfig())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
+        loaded_model, _ = hf_flavor.load_model_from_directory(tmp_path)
         assert isinstance(loaded_model, BertForSequenceClassification)
 
         # GPT2 LMHEad Tensorflow Model
         tmp_path = tmp_path / "model3"
         model = TFGPT2LMHeadModel(GPT2Config())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
+        loaded_model, _ = hf_flavor.load_model_from_directory(tmp_path)
 
         assert isinstance(loaded_model, TFGPT2LMHeadModel)
 
@@ -244,7 +244,7 @@ class TestModelFlavors:
         pt_flavor = PyTorchModelFlavor()
         pt_model = torch.nn.Sequential()
         pt_flavor.save_model_to_directory(pt_model, tmp_path)
-        loaded_model = pt_flavor.load_model_from_directory(tmp_path)
+        loaded_model, _ = pt_flavor.load_model_from_directory(tmp_path)
         assert isinstance(loaded_model, torch.nn.Module)
 
     def test_yolo_save_load(self, tmp_path):
@@ -275,5 +275,5 @@ class TestModelFlavors:
             del sys.modules["yolov5"]
 
         # Load and check the type of the model
-        model = pt_flavor.load_model_from_directory(tmp_path)
+        model, _ = pt_flavor.load_model_from_directory(tmp_path)
         assert model.__class__.__name__ == "AutoShape"

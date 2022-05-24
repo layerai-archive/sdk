@@ -3,8 +3,9 @@ import uuid
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, NewType, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, NewType, Optional, Sequence, Tuple, Union
 
+import pandas as pd
 from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
@@ -151,6 +152,7 @@ class Model(BaseAsset):
     training_files_digest: str
     parameters: Dict[str, Any]
     language_version: Tuple[int, int, int]
+    predict_function: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None
 
     def __init__(
         self,
@@ -164,6 +166,7 @@ class Model(BaseAsset):
         training_files_digest: str = "",
         parameters: Optional[Dict[str, Any]] = None,
         language_version: Tuple[int, int, int] = (0, 0, 0),
+        predict_function: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
     ):
         super().__init__(
             path=asset_path,
@@ -183,6 +186,7 @@ class Model(BaseAsset):
         self.trained_model_object = trained_model_object
         self.training_files_digest = training_files_digest
         self.parameters = parameters
+        self.predict_function = predict_function
 
     def get_train(self) -> Any:
         """
@@ -192,6 +196,17 @@ class Model(BaseAsset):
 
         """
         return self.trained_model_object
+
+    def predict(self, input_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns the trained and saved model object. For example, a scikit-learn or PyTorch model object.
+
+        :return: The trained model object.
+
+        """
+        if self.predict_function is None:
+            raise Exception("No predict function provided")
+        return self.predict_function(input_df)
 
     def get_parameters(self) -> Dict[str, Any]:
         """

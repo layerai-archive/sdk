@@ -1,7 +1,8 @@
 import importlib
 from logging import Logger
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Tuple
 
+import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 from yarl import URL
 
@@ -72,7 +73,7 @@ class MLModelService:
         model_definition: ModelDefinition,
         no_cache: bool = False,
         state: Optional[ResourceTransferState] = None,
-    ) -> "TrainedModelObject":
+    ) -> Tuple["TrainedModelObject", Callable[[pd.DataFrame], pd.DataFrame]]:
         """
         Retrieves the given model definition from the storage and returns the actual
         model object

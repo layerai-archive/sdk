@@ -3,8 +3,9 @@ import tempfile
 import warnings
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pathlib import Path
-from typing import NamedTuple, Optional
+from typing import Callable, NamedTuple, Optional, Tuple
 
+import pandas as pd
 from layerapi.api.entity.model_version_pb2 import (  # pylint: disable=unused-import
     ModelVersion,
 )
@@ -109,7 +110,9 @@ class ModelFlavor(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def load_model_from_directory(self, directory: Path) -> TrainedModelObject:
+    def load_model_from_directory(
+        self, directory: Path
+    ) -> Tuple[TrainedModelObject, Callable[[pd.DataFrame], pd.DataFrame]]:
         """Defines the method that this Model Flavor uses to load a model from a directory.
 
         Returns:
@@ -152,7 +155,7 @@ class ModelFlavor(metaclass=ABCMeta):
         model_definition: ModelDefinition,
         state: Optional[ResourceTransferState],
         s3_endpoint_url: Optional[URL] = None,
-    ) -> TrainedModelObject:
+    ) -> Tuple[TrainedModelObject, Callable[[pd.DataFrame], pd.DataFrame]]:
         """Loads the given machine learning model definition from the backing store and
         returns an instance of it
 
@@ -189,7 +192,9 @@ class ModelFlavor(metaclass=ABCMeta):
         assert model_cache_dir
         return self._load_model(model_cache_dir)
 
-    def _load_model(self, model_dir: Path) -> TrainedModelObject:
+    def _load_model(
+        self, model_dir: Path
+    ) -> Tuple[TrainedModelObject, Callable[[pd.DataFrame], pd.DataFrame]]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             return self.load_model_from_directory(model_dir)
