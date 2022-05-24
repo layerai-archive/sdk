@@ -132,6 +132,14 @@ class Project:
     def with_functions(self, functions: Sequence[Function]) -> "Project":
         return replace(self, functions=functions)
 
+    def __str__(self):
+        from layer.config.config import DEFAULT_URL
+
+        return f"Your Layer project is here: {DEFAULT_URL}/{self.account.name}/{self.name}"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 @dataclass(frozen=True)
 class ApplyResult:
