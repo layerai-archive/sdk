@@ -132,13 +132,16 @@ class Project:
     def with_functions(self, functions: Sequence[Function]) -> "Project":
         return replace(self, functions=functions)
 
-    def __str__(self):
+    def __str__(self) -> str:
         from layer.config import DEFAULT_PATH, ConfigManager
+
         config = ConfigManager(DEFAULT_PATH).load()
+        if self.account:
+            return f"Your Layer project is here: {config.url}/{self.account.name}/{self.name}"
+        else:
+            return f"Project({self.name})"
 
-        return f"Your Layer project is here: {config.url}/{self.account.name}/{self.name}"
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
