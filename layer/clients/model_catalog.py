@@ -42,7 +42,6 @@ from layerapi.api.value.dependency_pb2 import DependencyFile
 from layerapi.api.value.s3_path_pb2 import S3Path
 from layerapi.api.value.sha256_pb2 import Sha256
 from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
-from yarl import URL
 
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
@@ -62,7 +61,7 @@ class ModelCatalogClient:
         self, config: ClientConfig, logger: Logger, cache_dir: Optional[Path] = None
     ):
         self._config = config.model_catalog
-        self._s3_endpoint_url = config.s3.endpoint_url or URL()
+        self._s3_endpoint_url = config.s3.endpoint_url
         self._logger = logger
         self._access_token = config.access_token
         self._do_verify_ssl = config.grpc_do_verify_ssl
@@ -150,6 +149,7 @@ class ModelCatalogClient:
         load_response = self._service.LoadModelTrainDataByPath(
             LoadModelTrainDataByPathRequest(path=path),
         )
+
         flavor = get_flavor_for_proto(load_response.flavor)
         if flavor is None:
             raise LayerClientException(

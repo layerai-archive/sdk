@@ -320,8 +320,8 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         from_cache = not no_cache and is_cached(model)
         state = ResourceTransferState(model.name)
 
-        def callback() -> None:
-            _load_model_artifact(client, model, state, no_cache)
+        def callback() -> Model:
+            return _load_model_artifact(client, model, state, no_cache)
 
         if not within_run:
             try:
@@ -365,7 +365,7 @@ def _load_model_artifact(
     model: Model,
     state: ResourceTransferState,
     no_cache: bool,
-) -> None:
+) -> Model:
     model_artifact = client.model_catalog.load_model_artifact(
         model,
         state=state,
@@ -373,9 +373,10 @@ def _load_model_artifact(
     )
     model.set_artifact(model_artifact)
     parameters = client.model_catalog.get_model_train_parameters(
-        ModelTrainId(str(model.id)),
+        ModelTrainId(value=str(model.id)),
     )
     model.set_parameters(parameters)
+    return model
 
 
 def _ui_progress_with_tracker(

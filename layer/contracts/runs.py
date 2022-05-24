@@ -2,7 +2,7 @@ import abc
 import hashlib
 import inspect
 import os
-import pickle
+import pickle  # nosec import_pickle
 import shutil
 import sys
 import time
@@ -67,7 +67,9 @@ class ResourcePath:
                     yield os.path.relpath(dir_file_path)
 
 
-FunctionDefinitionType = TypeVar("FunctionDefinitionType", bound="FunctionDefinition")
+FunctionDefinitionType = TypeVar(  # pylint: disable=invalid-name
+    "FunctionDefinitionType", bound="FunctionDefinition"
+)
 
 
 class FunctionDefinition(abc.ABC):

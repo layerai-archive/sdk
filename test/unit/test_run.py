@@ -225,7 +225,9 @@ class TestProjectRun:
         func2.func_name = "create_my_model"
 
         functions = [func1, func2]
-        user_command = runner._get_user_command(runner.run, functions)
+        user_command = runner._get_user_command(  # pylint: disable=protected-access
+            runner.run, functions
+        )
 
         assert user_command == "run([create_my_dataset, create_my_model])"
 

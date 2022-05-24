@@ -77,7 +77,7 @@ class Dataset(BaseAsset):
     def with_project_name(self: "Dataset", project_name: str) -> "Dataset":
         new_asset = super().with_project_name(project_name=project_name)
         new_dataset = copy.deepcopy(self)
-        new_dataset._update_with(new_asset)
+        new_dataset._update_with(new_asset)  # pylint: disable=protected-access
         return new_dataset
 
     def with_id(self, id: uuid.UUID) -> "Dataset":
@@ -145,7 +145,7 @@ class Dataset(BaseAsset):
 
         # Check if `torch` is installed
         try:
-            import torch  # noqa: F401
+            import torch
         except ImportError:
             raise Exception(
                 "PyTorch needs to be installed to run `to_pytorch()`. Try `pip install torch`"

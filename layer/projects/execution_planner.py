@@ -115,7 +115,6 @@ def drop_independent_entities(
     if keep_dependencies:
         graph = _build_directed_acyclic_graph(definitions)
         try:
-            # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
             entity_ids: Set[str] = set.union(
                 set(), *shortest_path(graph, target=target_entity_id).values()
             )

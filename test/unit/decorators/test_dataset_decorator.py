@@ -2,7 +2,6 @@ import pickle
 import uuid
 from test.unit.decorators.util import project_client_mock
 from typing import Any, Callable, Optional
-from unittest import mock
 from unittest.mock import ANY, MagicMock, patch
 from uuid import UUID
 

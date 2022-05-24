@@ -16,7 +16,6 @@ from layer.contracts.runs import (
     DatasetFunctionDefinition,
     FunctionDefinition,
     ModelFunctionDefinition,
-    ResourcePath,
     Run,
 )
 from layer.exceptions.exceptions import (
