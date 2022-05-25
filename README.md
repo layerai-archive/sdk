@@ -17,8 +17,7 @@ limitations under the License.
 <p align="center">
     <br>
     <a href="https://layer.ai">
-          <img src=".github/assets/layer_logo_light.png#gh-light-mode-only" width="512" alt="Layer"/>
-          <img src=".github/assets/layer_logo_light.png#gh-dark-mode-only" width="512" alt="Layer"/>
+          <img src=".github/assets/layer_logo_light.png" width="512" alt="Layer"/>
     </a>
     <br>
 <p>
