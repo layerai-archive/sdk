@@ -133,10 +133,10 @@ class Project:
         return replace(self, functions=functions)
 
     def __str__(self) -> str:
-        from layer.config import DEFAULT_PATH, ConfigManager
-
-        config = ConfigManager(DEFAULT_PATH).load()
         if self.account:
+            from layer.config import DEFAULT_PATH, ConfigManager
+
+            config = ConfigManager(DEFAULT_PATH).load()
             return f"Your Layer project is here: {config.url}/{self.account.name}/{self.name}"
         else:
             return f"Project({self.name})"
