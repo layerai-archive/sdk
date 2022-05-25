@@ -97,6 +97,6 @@ Do you want to help us build the best metadata store? Check out the [Contributin
 - Join our [Slack Community ](https://bit.ly/layercommunityslack) to connect with other Layer users
 - Visit [Layer Examples Repo](https://github.com/layerai/examples) for more examples
 - Browse [Community Projects](https://layer.ai/community) to see more use cases
-- Check out [Layer Documentation](https://docs.layer.ai)
+- Check out the [Documentation](https://docs.app.layer.ai)
 - [Contact us](https://layer.ai/contact-us?interest=notebook) for your questions
 
