@@ -74,9 +74,6 @@ class Project:
     def with_readme(self, readme: Optional[str]) -> "Project":
         return replace(self, readme=readme)
 
-    def with_functions(self, functions: Sequence[Function]) -> "Project":
-        return replace(self, functions=functions)
-
     def __str__(self) -> str:
         if self.account:
             from layer.config import DEFAULT_PATH, ConfigManager
