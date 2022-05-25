@@ -1,393 +1,247 @@
-from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+import uuid
+from typing import Optional, Sequence, Type
 
 import pytest
-from layerapi.api.ids_pb2 import HyperparameterTuningId, ModelVersionId
 
-from layer.contracts.asset import AssetPath, AssetType, BaseAsset
-from layer.contracts.datasets import Dataset, DerivedDataset, PythonDataset, RawDataset
-from layer.contracts.entities import EntityType
-from layer.contracts.models import Model, Parameter, Train
-from layer.contracts.projects import Project
+from layer.contracts.asset import AssetPath
+from layer.contracts.fabrics import Fabric
+from layer.contracts.runs import (
+    DatasetFunctionDefinition,
+    FunctionDefinition,
+    ModelFunctionDefinition,
+    Run,
+)
 from layer.exceptions.exceptions import ProjectCircularDependenciesException
 from layer.projects.execution_planner import (
+    _build_graph,
+    _find_cycles,
     build_execution_plan,
     check_entity_dependencies,
     drop_independent_entities,
-    find_cycles,
 )
+from layer.settings import LayerSettings
 
 
 class TestProjectExecutionPlanner:
     def test_check_entity_external_dependency(self) -> None:
-        fs1 = self._create_mock_derived_dataset("fs1", project_name="another-project-x")
+        ds1 = self._create_mock_dataset("ds1", project_name="another-project-x")
+        m1 = self._create_mock_model("m1", ["another-project-x/datasets/ds1"])
 
-        m1 = self._create_mock_model("m1", [fs1])
-
-        project = Project(
-            name="test",
-            raw_datasets=[],
-            derived_datasets=[],
-            models=[m1],
-        )
-
-        check_entity_dependencies(project)
+        check_entity_dependencies([m1, ds1])
 
     def test_external_entity_dependencies_is_not_checked(self) -> None:
-        fs1 = self._create_mock_derived_dataset("external_project/datasets/fs1")
-
-        m1 = self._create_mock_model("m1", [fs1])
-
-        project = Project(
-            name="test",
-            raw_datasets=[],
-            derived_datasets=[],
-            models=[m1],
-        )
+        m1 = self._create_mock_model("m1", ["external_project/datasets/ds1"])
 
         try:
-            check_entity_dependencies(project)
+            check_entity_dependencies([m1])
         except Exception as e:
             pytest.fail(f"External entity dependency raised an exception: {e}")
 
-    def test_build_graph_fails_if_project_contains_cycle(self):
-        fs1 = self._create_mock_derived_dataset("fs1")
-        m1 = self._create_mock_model("m1", [fs1])
-        fs1 = self._create_mock_derived_dataset("fs1", [m1])
-
-        project = Project(
-            name="test",
-            raw_datasets=[],
-            derived_datasets=[fs1],
-            models=[m1],
-        )
+    def test_build_graph_fails_if_project_contains_cycle(self) -> None:
+        m1 = self._create_mock_model("m1", ["datasets/ds1"])
+        ds1 = self._create_mock_dataset("ds1", ["models/m1"])
 
         with pytest.raises(
             ProjectCircularDependenciesException,
         ):
-            check_entity_dependencies(project)
+            check_entity_dependencies([ds1, m1])
 
     def test_project_find_cycles_returns_correct_cycles(self) -> None:
-        from networkx import DiGraph
+        m = self._create_mock_model("m", ["datasets/a", "datasets/e"])
+        a = self._create_mock_dataset("a", ["models/m", "datasets/e"])
+        e = self._create_mock_dataset("e", ["datasets/s"])
+        s = self._create_mock_dataset("s", ["datasets/a", "models/m"])
 
-        graph = DiGraph()
-        m = self._create_mock_model("m")
-        a = self._create_mock_derived_dataset("a")
-        e = self._create_mock_derived_dataset("e")
-        s = self._create_mock_derived_dataset("s")
-        m = m.with_dependencies([a, e])
-        a = a.with_dependencies([m, e])
-        e = e.with_dependencies([s])
-        s = s.with_dependencies([a, m])
-        entities = [m, a, e, s]
-
-        for entity in entities:
-            graph.add_node(str(entity), entity=entity)
-        for entity in entities:
-            entity_id = str(entity)
-            for dependency in entity.dependencies:
-                dependency_id = str(dependency)
-                graph.add_edge(dependency_id, entity_id)
-
-        cycle_paths = find_cycles(graph)
+        graph = _build_graph([m, a, e, s])
+        cycle_paths = _find_cycles(graph)
         assert len(cycle_paths) == 5
 
     def test_drop_independent_entities(self) -> None:
-        ds1 = self._create_mock_raw_dataset("ds1")
-
-        fs2 = self._create_mock_derived_dataset("fs2")
-        fs1 = self._create_mock_derived_dataset("fs1")
-        fs3 = self._create_mock_derived_dataset("fs3", [fs2])
+        ds2 = self._create_mock_dataset("ds2")
+        ds1 = self._create_mock_dataset("ds1")
+        ds3 = self._create_mock_dataset("ds3", ["datasets/ds2"])
 
         m3 = self._create_mock_model("m3")
-        m2 = self._create_mock_model("m2", [fs1, m3])
-        m1 = self._create_mock_model("m1", [m2, fs2])
-        m4 = self._create_mock_model("m4", [m3])
+        m2 = self._create_mock_model("m2", ["datasets/ds1", "models/m3"])
+        m1 = self._create_mock_model("m1", ["datasets/ds2", "models/m2"])
+        m4 = self._create_mock_model("m4", ["models/m3"])
 
-        project = Project(
-            name="test",
-            raw_datasets=[ds1],
-            derived_datasets=[fs2, fs3, fs1],
-            models=[m2, m3, m1, m4],
-        )
+        funcs = [ds2, ds3, ds1, m2, m3, m1, m4]
 
         assert drop_independent_entities(
-            project, EntityType.DERIVED_DATASET, "fs1"
-        ) == Project(
-            name="test",
-            raw_datasets=[ds1],
-            derived_datasets=[fs1],
-            models=[],
-        )
+            funcs,
+            AssetPath.parse("test/datasets/ds1"),
+        ) == [ds1]
         assert drop_independent_entities(
-            project, EntityType.DERIVED_DATASET, "fs3"
-        ) == Project(
-            name="test",
-            raw_datasets=[ds1],
-            derived_datasets=[fs2, fs3],
-            models=[],
-        )
-        assert drop_independent_entities(project, EntityType.MODEL, "m3") == Project(
-            name="test",
-            raw_datasets=[ds1],
-            derived_datasets=[],
-            models=[m3],
-        )
-        assert drop_independent_entities(project, EntityType.MODEL, "m2") == Project(
-            name="test",
-            raw_datasets=[ds1],
-            derived_datasets=[fs1],
-            models=[m2, m3],
-        )
-        assert drop_independent_entities(project, EntityType.MODEL, "m1") == Project(
-            name="test",
-            raw_datasets=[ds1],
-            derived_datasets=[fs2, fs1],
-            models=[m2, m3, m1],
-        )
-        assert drop_independent_entities(project, EntityType.MODEL, "m4") == Project(
-            name="test",
-            raw_datasets=[ds1],
-            derived_datasets=[],
-            models=[m3, m4],
-        )
+            funcs,
+            AssetPath.parse("test/datasets/ds3"),
+        ) == [ds2, ds3]
+        assert drop_independent_entities(
+            funcs,
+            AssetPath.parse("test/models/m3"),
+        ) == [m3]
+        assert drop_independent_entities(
+            funcs,
+            AssetPath.parse("test/models/m2"),
+        ) == [ds1, m2, m3]
+        assert drop_independent_entities(
+            funcs,
+            AssetPath.parse("test/models/m1"),
+        ) == [ds2, ds1, m2, m3, m1]
+        assert drop_independent_entities(
+            funcs,
+            AssetPath.parse("test/models/m4"),
+        ) == [m3, m4]
 
     def test_drop_independent_entities_no_dependencies(self) -> None:
-        ds1 = self._create_mock_raw_dataset("ds1")
+        ds1 = self._create_mock_dataset("ds1")
+        m1 = self._create_mock_model("m1", ["datasets/ds1"])
 
-        fs1 = self._create_mock_derived_dataset("fs1")
-
-        m1 = self._create_mock_model("m1", [fs1])
-
-        project = Project(
-            name="test",
-            raw_datasets=[ds1],
-            derived_datasets=[fs1],
-            models=[m1],
-        )
+        funcs = [ds1, m1]
 
         assert drop_independent_entities(
-            project, EntityType.DERIVED_DATASET, "fs1", keep_dependencies=False
-        ) == Project(
-            name="test",
-            raw_datasets=[],
-            derived_datasets=[fs1.drop_dependencies()],
-            models=[],
-        )
+            funcs, AssetPath.parse("test/datasets/ds1"), keep_dependencies=False
+        ) == [ds1.drop_dependencies()]
 
         assert drop_independent_entities(
-            project, EntityType.MODEL, "m1", keep_dependencies=False
-        ) == Project(
-            name="test",
-            raw_datasets=[],
-            derived_datasets=[],
-            models=[m1.drop_dependencies()],
-        )
+            funcs, AssetPath.parse("test/models/m1"), keep_dependencies=False
+        ) == [m1.drop_dependencies()]
 
     def test_build_execution_plan_linear(self) -> None:
-        p1 = self._create_mock_project_linear()
-        execution_plan = build_execution_plan(
-            p1,
-            self._create_mock_model_metadata(["m1"]),
-            self._create_mock_hpt_model_metadata(["hpt1"]),
-        )
+        r1 = self._create_mock_run_linear()
+
+        execution_plan = build_execution_plan(r1)
         assert execution_plan is not None
-        assert len(execution_plan.operations) == 5
-        assert (
-            execution_plan.operations[0].sequential.dataset_build.dataset_name == "fs1"
-        )
-        assert (
-            execution_plan.operations[1].sequential.dataset_build.dataset_name == "fs2"
-        )
-        assert (
-            execution_plan.operations[2].sequential.dataset_build.dataset_name == "fs3"
-        )
-        assert (
-            execution_plan.operations[3].sequential.model_train.model_version_id.value
-            == "dummy-version-id"
-        )
-        assert (
-            execution_plan.operations[
-                4
-            ].sequential.hyperparameter_tuning.hyperparameter_tuning_id.value
-            == "dummy_hpt_id"
-        )
+        ops = execution_plan.operations
 
-    def test_build_execution_plan_with_deps_linear(self) -> None:
-        asset_path = AssetPath(
-            asset_type=AssetType.DATASET,
-            entity_name="d1",
-            project_name="test",
+        assert len(ops) == 5
+        assert ops[0].sequential.dataset_build.dataset_name == "ds1"
+        assert ops[1].sequential.dataset_build.dataset_name == "ds2"
+        assert ops[2].sequential.dataset_build.dataset_name == "ds3"
+        assert ops[3].sequential.model_train.model_version_id.value == str(
+            r1.definitions[3].version_id
         )
-        derived_ds = PythonDataset(asset_path=asset_path)
-        d1 = Dataset("d1")
-
-        m1 = self._create_mock_model("m1", [d1])
-        p1 = (
-            Project(name="test")
-            .with_derived_datasets(derived_datasets=[derived_ds])
-            .with_models(models=[m1])
-            .with_files_hash("")
+        assert ops[4].sequential.model_train.model_version_id.value == str(
+            r1.definitions[4].version_id
         )
-
-        execution_plan = build_execution_plan(
-            p1, self._create_mock_model_metadata(["m1"]), {}
-        )
-
-        assert execution_plan is not None
-        assert len(execution_plan.operations) == 2
-        assert (
-            execution_plan.operations[0].sequential.dataset_build.dataset_name == "d1"
-        )
-        assert execution_plan.operations[1].sequential.model_train.dependency == [
-            "datasets/d1"
-        ]
+        assert ops[1].sequential.dataset_build.dependency == ["test/datasets/ds1"]
+        assert ops[3].sequential.model_train.dependency == ["test/datasets/ds3"]
+        assert ops[4].sequential.model_train.dependency == ["test/models/m1"]
 
     def test_build_execution_plan_parallel(self) -> None:
-        p1 = self._create_mock_project_parallel()
-        execution_plan = build_execution_plan(
-            p1,
-            self._create_mock_model_metadata(["m1"]),
-            self._create_mock_hpt_model_metadata(["hpt1"]),
-        )
+        r1 = self._create_mock_run_parallel()
+
+        execution_plan = build_execution_plan(r1)
         assert execution_plan is not None
-        assert len(execution_plan.operations) == 1
-        assert len(execution_plan.operations[0].parallel.dataset_build) == 3
-        assert len(execution_plan.operations[0].parallel.model_train) == 1
-        assert len(execution_plan.operations[0].parallel.hyperparameter_tuning) == 1
+        ops = execution_plan.operations
+
+        assert len(ops) == 1
+        assert len(ops[0].parallel.dataset_build) == 3
+        assert len(ops[0].parallel.model_train) == 2
 
     def test_build_execution_plan_mixed(self) -> None:
-        p1 = self._create_mock_project_mixed()
-        execution_plan = build_execution_plan(
-            p1, self._create_mock_model_metadata(["m1"]), {}
-        )
+        r1 = self._create_mock_run_mixed()
+        execution_plan = build_execution_plan(r1)
         assert execution_plan is not None
-        assert len(execution_plan.operations) == 3
-        assert execution_plan.operations
+        ops = execution_plan.operations
+
+        assert len(ops) == 3
+        assert ops
 
     def test_drop_independent_entities_execution_plan(self) -> None:
-        project = self._create_mock_project_mixed()
-
-        p1 = drop_independent_entities(
-            project, EntityType.DERIVED_DATASET, "fs1", keep_dependencies=False
+        r1 = self._create_mock_run_mixed()
+        r2 = r1.with_definitions(
+            drop_independent_entities(
+                r1.definitions,
+                AssetPath.parse("test/datasets/ds2"),
+                keep_dependencies=False,
+            )
         )
-        execution_plan = build_execution_plan(
-            p1, self._create_mock_model_metadata(["m1"]), {}
-        )
+        execution_plan = build_execution_plan(r2)
 
         assert execution_plan is not None
-        assert len(execution_plan.operations) == 1
-        assert (
-            execution_plan.operations[0].sequential.dataset_build.dataset_name == "fs1"
-        )
+        ops = execution_plan.operations
 
-    def _create_mock_project_linear(self) -> Project:
-        fs1 = self._create_mock_derived_dataset("fs1")
-        fs2 = self._create_mock_derived_dataset("fs2", [fs1])
-        fs3 = self._create_mock_derived_dataset("fs3", [fs2])
-        m1 = self._create_mock_model("m1", [fs3])
-        hpt1 = self._create_mock_model("hpt1", [m1])
-        return Project(
-            name="test",
-            raw_datasets=[],
-            derived_datasets=[fs1, fs2, fs3],
-            models=[m1, hpt1],
-        )
+        assert len(ops) == 1
+        assert ops[0].sequential.dataset_build.dataset_name == "ds2"
 
-    def _create_mock_project_parallel(self) -> Project:
-        fs1 = self._create_mock_derived_dataset("fs1")
-        fs2 = self._create_mock_derived_dataset("fs2")
-        fs3 = self._create_mock_derived_dataset("fs3")
+    def _create_mock_run_linear(self) -> Run:
+        ds1 = self._create_mock_dataset("ds1")
+        m1 = self._create_mock_model("m1", ["datasets/ds1"])
+
+        ds1 = self._create_mock_dataset("ds1")
+        ds2 = self._create_mock_dataset("ds2", ["datasets/ds1"])
+        ds3 = self._create_mock_dataset("ds3", ["datasets/ds2"])
+        m1 = self._create_mock_model("m1", ["datasets/ds3"])
+        m2 = self._create_mock_model("m2", ["models/m1"])
+
+        return Run(uuid.uuid4(), "test", definitions=[ds1, ds2, ds3, m1, m2])
+
+    def _create_mock_run_parallel(self) -> Run:
+        ds1 = self._create_mock_dataset("ds1")
+        ds2 = self._create_mock_dataset("ds2")
+        ds3 = self._create_mock_dataset("ds3")
         m1 = self._create_mock_model("m1")
-        hpt1 = self._create_mock_model("hpt1")
-        return Project(
-            name="test",
-            raw_datasets=[],
-            derived_datasets=[fs1, fs2, fs3],
-            models=[m1, hpt1],
-        )
+        m2 = self._create_mock_model("m2")
 
-    def _create_mock_project_mixed(self) -> Project:
-        fs1 = self._create_mock_derived_dataset("fs1", project_name="other-project")
-        fs2 = self._create_mock_derived_dataset("fs2")
-        fs3 = self._create_mock_derived_dataset(
-            "fs3", [fs1], project_name="other-project"
+        return Run(uuid.uuid4(), "test", definitions=[ds1, ds2, ds3, m1, m2])
+
+    def _create_mock_run_mixed(self) -> Run:
+        ds1 = self._create_mock_dataset("ds1", project_name="other-project")
+        ds2 = self._create_mock_dataset("ds2")
+        ds3 = self._create_mock_dataset(
+            "ds3", ["other-project/datasets/ds1"], project_name="other-project"
         )
-        fs4 = self._create_mock_derived_dataset("fs4", [fs2])
-        m1 = self._create_mock_model("m1", [fs3, fs4])
-        return Project(
-            name="test",
-            raw_datasets=[],
-            derived_datasets=[fs1, fs2, fs3, fs4],
-            models=[m1],
-        )
+        ds4 = self._create_mock_dataset("ds4", ["datasets/ds2"])
+        m1 = self._create_mock_model("m1", ["datasets/ds3", "datasets/ds4"])
+
+        return Run(uuid.uuid4(), "test", definitions=[ds1, ds2, ds3, ds4, m1])
 
     @staticmethod
-    def _create_mock_hpt_model_metadata(
-        hpt_model_names: List[str],
-    ) -> Dict[str, HyperparameterTuningId]:
-        hpt_models_metadata = {}
-        for name in hpt_model_names:
-            hpt_models_metadata[name] = HyperparameterTuningId(value="dummy_hpt_id")
-        return hpt_models_metadata
-
-    @staticmethod
-    def _create_mock_model_metadata(
-        model_names: List[str],
-    ) -> Dict[str, ModelVersionId]:
-        models_metadata = {}
-        for name in model_names:
-            models_metadata[name] = ModelVersionId(value="dummy-version-id")
-        return models_metadata
+    def _create_mock_dataset(
+        name: str,
+        dependencies: Optional[Sequence[str]] = None,
+        project_name: str = "test",
+    ) -> FunctionDefinition:
+        return TestProjectExecutionPlanner._create_mock_entity(
+            DatasetFunctionDefinition, name, dependencies, project_name
+        )
 
     @staticmethod
     def _create_mock_model(
         name: str,
-        dependencies: Optional[Sequence[BaseAsset]] = None,
+        dependencies: Optional[Sequence[str]] = None,
         project_name: str = "test",
-    ) -> Model:
+    ) -> FunctionDefinition:
+        return TestProjectExecutionPlanner._create_mock_entity(
+            ModelFunctionDefinition, name, dependencies, project_name
+        )
+
+    @staticmethod
+    def _create_mock_entity(
+        entity_type: Type[FunctionDefinition],
+        name: str,
+        dependencies: Optional[Sequence[str]] = None,
+        project_name: str = "test",
+    ) -> FunctionDefinition:
         if dependencies is None:
             dependencies = []
-        asset_path = AssetPath(
-            entity_name=name,
-            asset_type=AssetType.MODEL,
-            project_name=project_name,
-        )
-        return Model(
-            asset_path=asset_path,
-            dependencies=dependencies,
-            description="",
-            local_path=Path.cwd(),
-            training=Train(
-                name="test",
-                description="foo",
-                entrypoint="car_model.py",
-                environment="requirements.txt",
-                parameters=[
-                    Parameter(name="first", value="1"),
-                ],
-            ),
-            training_files_digest="bar",
-        )
 
-    @staticmethod
-    def _create_mock_derived_dataset(
-        name: str, dependencies=None, project_name: str = "test-project"
-    ) -> DerivedDataset:
-        asset_path = AssetPath(
-            asset_type=AssetType.DATASET,
-            entity_name=name,
-            project_name=project_name,
-        )
-        return DerivedDataset(asset_path=asset_path, dependencies=dependencies)
+        dependency_paths = []
+        for dependency in dependencies:
+            path = AssetPath.parse(dependency)
+            if path.project_name is None:
+                path = path.with_project_name(project_name)
+            dependency_paths.append(path)
 
-    @staticmethod
-    def _create_mock_raw_dataset(
-        name: str, project_name: str = "test-project"
-    ) -> RawDataset:
-        asset_path = AssetPath(
-            asset_type=AssetType.DATASET,
-            entity_name=name,
-            project_name=project_name,
-        )
-        return RawDataset(asset_path=asset_path)
+        def func() -> None:
+            pass
+
+        settings = LayerSettings()
+        settings.set_entity_name(name)
+        settings.set_dependencies(dependency_paths)
+        settings.set_fabric(Fabric.F_LOCAL.value)
+
+        func.layer = settings  # type: ignore
+
+        return entity_type(func, project_name, version_id=uuid.uuid4())

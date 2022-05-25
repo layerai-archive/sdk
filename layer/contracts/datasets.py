@@ -1,10 +1,8 @@
-import abc
 import copy
 import enum
 import uuid
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, List, Mapping, Optional, Sequence, Union
 
 import pandas
 
@@ -13,34 +11,6 @@ from .asset import AssetPath, AssetType, BaseAsset
 
 def _create_empty_data_frame() -> "pandas.DataFrame":
     return pandas.DataFrame()
-
-
-class BaseDataset(BaseAsset):
-    description: str
-
-    def __init__(
-        self,
-        asset_path: Union[str, AssetPath],
-        description: str = "",
-        id: Optional[uuid.UUID] = None,
-        dependencies: Optional[Sequence[BaseAsset]] = None,
-    ):
-        super().__init__(
-            path=asset_path,
-            asset_type=AssetType.DATASET,
-            id=id,
-            dependencies=dependencies,
-        )
-        self.description = description
-
-    def with_project_name(self: "BaseDataset", project_name: str) -> "BaseDataset":
-        new_asset = super().with_project_name(project_name=project_name)
-        return BaseDataset(
-            new_asset.path,
-            self.description,
-            self.id,
-            self.dependencies,
-        )
 
 
 @enum.unique
@@ -59,7 +29,7 @@ class DatasetBuild:
     index: str = ""
 
 
-class Dataset(BaseDataset, metaclass=abc.ABCMeta):
+class Dataset(BaseAsset):
     """
     Provides access to datasets defined in Layer.
 
@@ -74,45 +44,41 @@ class Dataset(BaseDataset, metaclass=abc.ABCMeta):
 
     """
 
-    schema: str
-    uri: str
-    build: DatasetBuild
-    __pandas_df_factory: Optional[
-        Callable[[], "pandas.DataFrame"]
-    ]  # https://stackoverflow.com/questions/51811024/mypy-type-checking-on-callable-thinks-that-member-variable-is-a-method
-    version: str
-
     def __init__(
         self,
         asset_path: Union[str, AssetPath],
-        description: str = "",
         id: Optional[uuid.UUID] = None,
         dependencies: Optional[Sequence[BaseAsset]] = None,
-        schema: str = "{}",
+        version_id: Optional[uuid.UUID] = None,
+        description: str = "",
         uri: str = "",
-        fabric: str = "",
+        schema: str = "{}",
+        metadata: Optional[Mapping[str, str]] = None,
         build: Optional[DatasetBuild] = None,
+        # https://stackoverflow.com/questions/51811024/mypy-type-checking-on-callable-thinks-that-member-variable-is-a-method
         _pandas_df_factory: Optional[Callable[[], "pandas.DataFrame"]] = None,
-        version: Optional[str] = None,
+        version: Optional[str] = None,  # TODO(volkan) is this needed?
     ):
         super().__init__(
-            asset_path=asset_path,
+            asset_type=AssetType.DATASET,
+            path=asset_path,
             id=id,
             dependencies=dependencies,
-            description=description,
         )
+        self._version_id = version_id
+        self.description = description
         self.schema = schema
+        self.metadata = metadata if metadata is not None else {}
+        self.build = build or DatasetBuild()
+        self.__pandas_df_factory = _pandas_df_factory or _create_empty_data_frame
         self.uri = uri
-        if build is None:
-            build = DatasetBuild()
-        self.build = build
-        if _pandas_df_factory is None:
-            _pandas_df_factory = _create_empty_data_frame
-        self.__pandas_df_factory = _pandas_df_factory
-        if version is None:
-            version = ""
-        self.version = version
-        self.fabric = fabric
+        self.version = version if version is not None else ""
+
+    def with_project_name(self: "Dataset", project_name: str) -> "Dataset":
+        new_asset = super().with_project_name(project_name=project_name)
+        new_dataset = copy.deepcopy(self)
+        new_dataset._update_with(new_asset)  # pylint: disable=protected-access
+        return new_dataset
 
     def with_id(self, id: uuid.UUID) -> "Dataset":
         new_ds = copy.deepcopy(self)
@@ -179,7 +145,7 @@ class Dataset(BaseDataset, metaclass=abc.ABCMeta):
 
         # Check if `torch` is installed
         try:
-            import torch  # noqa: F401
+            import torch
         except ImportError:
             raise Exception(
                 "PyTorch needs to be installed to run `to_pytorch()`. Try `pip install torch`"
@@ -231,164 +197,16 @@ class Dataset(BaseDataset, metaclass=abc.ABCMeta):
             persistent_workers=persistent_workers,
         )
 
-    def __str__(self) -> str:
-        return f"Dataset({self.name})"
-
-
-class RawDataset(Dataset):
-    metadata: Mapping[str, str]
-
-    def __init__(
-        self,
-        asset_path: Union[str, AssetPath],
-        description: str = "",
-        id: Optional[uuid.UUID] = None,
-        dependencies: Optional[Sequence[BaseAsset]] = None,
-        schema: str = "{}",
-        uri: str = "",
-        build: Optional[DatasetBuild] = None,
-        _pandas_df_factory: Callable[[], "pandas.DataFrame"] = _create_empty_data_frame,
-        metadata: Optional[Mapping[str, str]] = None,
-        version: Optional[str] = None,
-    ):
-        super().__init__(
-            asset_path=asset_path,
-            id=id,
-            dependencies=dependencies,
-            description=description,
-            schema=schema,
-            uri=uri,
-            build=build,
-            _pandas_df_factory=_pandas_df_factory,
-            version=version,
-        )
-        if metadata is None:
-            metadata = {}
-        self.metadata = metadata
-
-    def with_table_name(self, name: str) -> "RawDataset":
-        new_ds = copy.deepcopy(self)
-        new_ds.metadata = {**self.metadata, **{"table": name}}
-        return new_ds
-
-    def with_metadata(self, metadata: Mapping[str, str]) -> "RawDataset":
-        new_ds = copy.deepcopy(self)
-        new_ds.metadata = metadata
-        return new_ds
-
-    def with_project_name(self, project_name: str) -> "RawDataset":
-        new_asset_path = self._path.with_project_name(project_name=project_name)
-        new_ds = copy.deepcopy(self)
-        new_ds._path = new_asset_path  # pylint: disable=protected-access
-        return new_ds
-
-
-class DerivedDataset(Dataset):
-    """
-    Provides access to derived datasets defined in Layer.
-
-    You can retrieve an instance of this object with :code:`layer.get_dataset()`.
-
-    This class should not be initialized by end-users.
-
-    .. code-block:: python
-
-        # Fetches the `titanic` derived dataset
-        DerivedDataset("titanic")
-
-    """
-
-    def __init__(
-        self,
-        asset_path: Union[str, AssetPath],
-        description: str = "",
-        id: Optional[uuid.UUID] = None,
-        dependencies: Optional[Sequence[BaseAsset]] = None,
-        schema: str = "{}",
-        uri: str = "",
-        build: Optional[DatasetBuild] = None,
-        _pandas_df_factory: Callable[[], "pandas.DataFrame"] = _create_empty_data_frame,
-    ):
-        super().__init__(
-            asset_path=asset_path,
-            id=id,
-            dependencies=dependencies,
-            description=description,
-            schema=schema,
-            uri=uri,
-            build=build,
-            _pandas_df_factory=_pandas_df_factory,
-        )
-
-    def with_dependencies(self, dependencies: Sequence[BaseAsset]) -> "DerivedDataset":
+    def with_dependencies(self, dependencies: Sequence[BaseAsset]) -> "Dataset":
         new_ds = copy.deepcopy(self)
         new_ds._set_dependencies(dependencies)  # pylint: disable=protected-access
         return new_ds
 
-    def drop_dependencies(self) -> "DerivedDataset":
+    def drop_dependencies(self) -> "Dataset":
         return self.with_dependencies(())
 
-    def with_project_name(self, project_name: str) -> "DerivedDataset":
-        new_asset_path = self._path.with_project_name(project_name=project_name)
-        new_ds = copy.deepcopy(self)
-        new_ds._path = new_asset_path  # pylint: disable=protected-access
-        return new_ds
-
-
-class PythonDataset(DerivedDataset):
-    entrypoint: str
-    entrypoint_path: Path
-    entrypoint_content: str
-    environment: str
-    environment_path: Path
-    language_version: Tuple[int, int, int]
-
-    def __init__(
-        self,
-        asset_path: Union[str, AssetPath],
-        description: str = "",
-        id: Optional[uuid.UUID] = None,
-        dependencies: Optional[Sequence[BaseAsset]] = None,
-        schema: str = "{}",
-        uri: str = "",
-        build: Optional[DatasetBuild] = None,
-        _pandas_df_factory: Callable[[], "pandas.DataFrame"] = _create_empty_data_frame,
-        fabric: str = "",
-        entrypoint: str = "",
-        entrypoint_path: Optional[Path] = None,
-        entrypoint_content: str = "",
-        environment: str = "",
-        environment_path: Optional[Path] = None,
-        language_version: Tuple[int, int, int] = (0, 0, 0),
-    ):
-        super().__init__(
-            asset_path=asset_path,
-            id=id,
-            dependencies=dependencies,
-            description=description,
-            schema=schema,
-            uri=uri,
-            build=build,
-            _pandas_df_factory=_pandas_df_factory,
-        )
-        self.fabric = fabric
-        self.entrypoint = entrypoint
-        if entrypoint_path is None:
-            entrypoint_path = Path()
-        self.entrypoint_path = entrypoint_path
-        self.entrypoint_content = entrypoint_content
-        self.environment = environment
-        if environment_path is None:
-            environment_path = Path()
-        self.environment_path = environment_path
-        self.language_version = language_version
-
-    def with_language_version(
-        self, language_version: Tuple[int, int, int]
-    ) -> "PythonDataset":
-        new_ds = copy.deepcopy(self)
-        new_ds.language_version = language_version
-        return new_ds
+    def __str__(self) -> str:
+        return f"Dataset({self.name})"
 
 
 @dataclass(frozen=True)

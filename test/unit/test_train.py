@@ -7,7 +7,6 @@ import pytest
 
 from layer.clients.layer import LayerClient
 from layer.clients.model_catalog import ModelCatalogClient
-from layer.clients.model_service import MLModelService
 from layer.config import ClientConfig
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.training.train import Train
@@ -113,10 +112,10 @@ def test_when_save_model_gets_invalid_object_then_throw_exception(
 ) -> None:
     config = create_autospec(ClientConfig)
     config.model_catalog = MagicMock()
-    s3_endpoint_url = MagicMock()
-    ml_service = MLModelService(logger, s3_endpoint_url)
+    config.s3 = MagicMock()
+    config.s3.endpoint_url = MagicMock()
     client = create_autospec(LayerClient)
-    client.model_catalog = ModelCatalogClient(config, ml_service, logger)
+    client.model_catalog = ModelCatalogClient(config, logger)
 
     train = Train(
         layer_client=client,

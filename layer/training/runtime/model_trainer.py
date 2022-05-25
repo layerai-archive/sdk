@@ -21,7 +21,7 @@ from layer.global_context import (
     set_active_context,
 )
 from layer.resource_manager import ResourceManager
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.tracker.project_progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
 from .common import import_function, update_train_status
@@ -92,7 +92,7 @@ class ModelTrainer:
     train_context: TrainContext
     logger: Logger
     failure_reporter: ModelTrainFailureReporter
-    tracker: ProjectProgressTracker = ProjectProgressTracker()
+    tracker: RunProgressTracker = RunProgressTracker()
 
     def train(self) -> Any:
         self.tracker.mark_model_training(

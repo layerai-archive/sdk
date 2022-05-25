@@ -1,7 +1,6 @@
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
-from layer import Dataset, Model
-from layer.contracts.asset import AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
 from layer.exceptions.exceptions import ConfigError
 from layer.global_context import (
@@ -25,7 +24,7 @@ class LayerSettings:
     _pip_requirements_file: Optional[str] = None
     _pip_packages: Optional[List[str]] = None
     _paths: Optional[List[str]] = None
-    _dependencies: Optional[List[Union[Dataset, Model]]] = None
+    _dependencies: Optional[List[AssetPath]] = None
     _assertions: Optional[List[Any]] = None
 
     def get_fabric(self) -> Optional[Fabric]:
@@ -48,7 +47,7 @@ class LayerSettings:
     def get_asset_type(self) -> Optional[AssetType]:
         return self._asset_type
 
-    def get_dependencies(self) -> List[Union[Dataset, Model]]:
+    def get_dependencies(self) -> List[AssetPath]:
         return self._dependencies if self._dependencies else []
 
     def get_assertions(self) -> List[Any]:
@@ -79,7 +78,7 @@ class LayerSettings:
     def set_entity_name(self, name: str) -> None:
         self._name = name
 
-    def set_dependencies(self, dependencies: List[Union[Dataset, Model]]) -> None:
+    def set_dependencies(self, dependencies: List[AssetPath]) -> None:
         self._dependencies = dependencies
 
     def append_assertions(self, assertions: List[Any]) -> None:

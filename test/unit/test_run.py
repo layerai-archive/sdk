@@ -16,12 +16,11 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     StartRunV2Response,
 )
 
-from layer.contracts.asset import AssetType
-from layer.contracts.projects import Asset, Function
+from layer.contracts.runs import DatasetFunctionDefinition, ModelFunctionDefinition
 from layer.exceptions.exceptions import ProjectRunnerError
 from layer.projects.project_runner import ProjectRunner
 from layer.tracker.remote_execution_project_progress_tracker import (
-    RemoteExecutionProjectProgressTracker,
+    RemoteExecutionRunProgressTracker,
 )
 from layer.utils.grpc.interceptors import (
     GRPCErrorClientInterceptor,
@@ -192,7 +191,7 @@ class TestProjectRun:
     def test_project_run_fails_when_max_active_run_exceeds(self) -> None:
         runner = ProjectRunner(
             config=MagicMock(),
-            project_progress_tracker_factory=RemoteExecutionProjectProgressTracker,
+            project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
         )
         error = rpc_error(
             metadata=(),
@@ -204,12 +203,12 @@ class TestProjectRun:
 
         client = MagicMock()
         client.flow_manager.start_run.side_effect = layer_client_exception
-        project = MagicMock()
-        project.name.return_value = "test"
+        run = MagicMock()
+        run.project_name.return_value = "test"
         with pytest.raises(ProjectRunnerError, match=".*RESOURCE_EXHAUSTED.*"):
             runner._run(  # pylint: disable=protected-access
                 client=client,
-                project=project,
+                run=run,
                 execution_plan=ExecutionPlan(),
                 user_command="",
             )
@@ -217,18 +216,15 @@ class TestProjectRun:
     def test_get_user_command_returns_the_command_correctly(self) -> None:
         runner = ProjectRunner(
             config=MagicMock(),
-            project_progress_tracker_factory=RemoteExecutionProjectProgressTracker,
+            project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
         )
-        functions = [
-            Function(
-                "create_my_dataset",
-                Asset(name="my_dataset", type=AssetType.DATASET),
-            ),
-            Function(
-                "create_my_model",
-                Asset(name="my_model", type=AssetType.MODEL),
-            ),
-        ]
+
+        func1: DatasetFunctionDefinition = MagicMock()
+        func1.func_name = "create_my_dataset"
+        func2: ModelFunctionDefinition = MagicMock()
+        func2.func_name = "create_my_model"
+
+        functions = [func1, func2]
         user_command = runner._get_user_command(  # pylint: disable=protected-access
             runner.run, functions
         )

@@ -25,7 +25,7 @@ _GLOBAL_CONTEXT = GlobalContext(
 )
 
 
-def reset_to(project_name: str) -> None:
+def reset_to(project_name: Optional[str]) -> None:
     if current_project_name() != project_name:
         global _GLOBAL_CONTEXT
         _GLOBAL_CONTEXT = GlobalContext(
@@ -37,7 +37,7 @@ def reset_to(project_name: str) -> None:
         )
 
 
-def set_current_project_name(name: str) -> None:
+def set_current_project_name(name: Optional[str]) -> None:
     _GLOBAL_CONTEXT.project_name = name
 
 

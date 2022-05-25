@@ -2,7 +2,7 @@ import random
 import string
 from pathlib import Path
 
-from layer.cache import Cache
+from layer.cache.cache import Cache
 
 
 def test_cache_init_default_dir():

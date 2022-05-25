@@ -4,23 +4,23 @@ from typing import Dict, List, Tuple
 
 from layerapi.api.entity.history_event_pb2 import HistoryEvent
 from layerapi.api.entity.run_metadata_pb2 import RunMetadata
-from layerapi.api.entity.run_pb2 import Run
+from layerapi.api.entity.run_pb2 import Run as PBRun
 from layerapi.api.entity.task_pb2 import Task as PBTask
-from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId, RunId
+from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId
 
 from layer.clients.layer import LayerClient
 from layer.contracts.projects import ApplyResult
+from layer.contracts.runs import Run
 from layer.exceptions.exceptions import (
     LayerClientTimeoutException,
     ProjectDatasetBuildExecutionException,
-    ProjectHPTExecutionException,
     ProjectModelExecutionException,
     ProjectRunnerError,
     ProjectRunTerminatedError,
 )
 from layer.exceptions.status_report import ExecutionStatusReportFactory
-from layer.projects.util import get_current_project_name
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.projects.utils import get_current_project_name
+from layer.tracker.project_progress_tracker import RunProgressTracker
 from layer.utils.session import is_layer_debug_on
 
 
@@ -37,22 +37,22 @@ _FormattedRunMetadata = Dict[Tuple["PBTask.Type.V", str, str], str]
 
 
 class ProgressTrackerUpdater:
-    tracker: ProjectProgressTracker
+    tracker: RunProgressTracker
     client: LayerClient
     apply_metadata: ApplyResult
-    run_id: RunId
+    run: Run
     run_metadata: _FormattedRunMetadata
 
     def __init__(
         self,
-        tracker: ProjectProgressTracker,
+        tracker: RunProgressTracker,
         apply_metadata: ApplyResult,
-        run_id: RunId,
+        run: Run,
         client: LayerClient,
     ):
         self.tracker = tracker
         self.apply_metadata = apply_metadata
-        self.run_id = run_id
+        self.run = run
         self.client = client
 
     @staticmethod
@@ -82,16 +82,16 @@ class ProgressTrackerUpdater:
 
             if event_type == "run":
                 run_status = event.run.run_status
-                if run_status == Run.STATUS_TERMINATED:
-                    raise ProjectRunTerminatedError(run_id=self.run_id)
+                if run_status == PBRun.STATUS_TERMINATED:
+                    raise ProjectRunTerminatedError(run_id=self.run.run_id)
 
-                elif run_status == Run.STATUS_FAILED:
-                    raise ProjectRunnerError("Run failed", self.run_id)
+                elif run_status == PBRun.STATUS_FAILED:
+                    raise ProjectRunnerError("Run failed", self.run.run_id)
 
-                elif run_status in [Run.STATUS_SUCCEEDED]:
+                elif run_status in [PBRun.STATUS_SUCCEEDED]:
                     return True
 
-                elif run_status == Run.STATUS_INVALID:
+                elif run_status == PBRun.STATUS_INVALID:
                     # TODO: alert for this
                     _print_debug("Run status INVALID")
 
@@ -127,10 +127,6 @@ class ProgressTrackerUpdater:
                 version=dataset.version,
                 build_index=dataset.build.index,
             )
-        elif task_type == PBTask.TYPE_HYPERPARAMETER_TUNING_TRAIN:
-            self.tracker.mark_model_trained(
-                name=self._find_model_name_by_hpt_train_id(task_id),
-            )
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             train_id = uuid.UUID(self.run_metadata[(task_type, task_id, "train-id")])
             model_name = self._find_model_name_by_version_id(task_id)
@@ -155,7 +151,7 @@ class ProgressTrackerUpdater:
         task_info = task.info
         if task_type == PBTask.TYPE_DATASET_BUILD:
             exc_ds = ProjectDatasetBuildExecutionException(
-                self.run_id,
+                self.run.run_id,
                 task_id,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
@@ -163,20 +159,9 @@ class ProgressTrackerUpdater:
                 name=task_id, reason=exc_ds.message
             )
             raise exc_ds
-        elif task_type == PBTask.TYPE_HYPERPARAMETER_TUNING_TRAIN:
-            exc_hpt = ProjectHPTExecutionException(
-                self.run_id,
-                task_id,
-                ExecutionStatusReportFactory.from_json(task_info),
-            )
-            self.tracker.mark_model_train_failed(
-                name=self._find_model_name_by_hpt_train_id(task_id),
-                reason=f"{exc_hpt.message}",
-            )
-            raise exc_hpt
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             exc_model = ProjectModelExecutionException(
-                self.run_id,
+                self.run.run_id,
                 task_id,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
@@ -194,10 +179,6 @@ class ProgressTrackerUpdater:
         task_type = task.type
         if task_type == PBTask.TYPE_DATASET_BUILD:
             self.tracker.mark_derived_dataset_building(name=task_id)
-        elif task_type == PBTask.TYPE_HYPERPARAMETER_TUNING_TRAIN:
-            self.tracker.mark_model_training(
-                name=self._find_model_name_by_hpt_train_id(task_id)
-            )
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             self.tracker.mark_model_training(
                 name=self._find_model_name_by_version_id(task_id)
@@ -207,16 +188,10 @@ class ProgressTrackerUpdater:
             _print_debug(f"Task type not handled {task_type}")
 
     def _find_model_name_by_version_id(self, version_id: str) -> str:
-        for name, v in self.apply_metadata.models_metadata.items():
-            if v.value == version_id:
-                return name
+        for definition in self.run.definitions:
+            if str(definition.version_id) == version_id:
+                return definition.name
         raise KeyError(version_id)
-
-    def _find_model_name_by_hpt_train_id(self, train_id: str) -> str:
-        for name, id_ in self.apply_metadata.hyperparameter_tuning_metadata.items():
-            if id_.value == train_id:
-                return name
-        raise KeyError(train_id)
 
 
 def _print_debug(msg: str) -> None:

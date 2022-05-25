@@ -8,13 +8,14 @@ from yarl import URL
 
 from layer.config import Config
 from layer.contracts.assertions import Assertion
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.entities import Entity, EntityStatus, EntityType
 from layer.contracts.runs import DatasetTransferState, ResourceTransferState
 from layer.tracker.output import get_progress_ui
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.tracker.project_progress_tracker import RunProgressTracker
 
 
-class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
+class LocalExecutionRunProgressTracker(RunProgressTracker):
     def __init__(
         self,
         config: Config,
@@ -29,7 +30,7 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         self._task_ids: Dict[Tuple[EntityType, str], TaskID] = {}
 
     @contextmanager
-    def track(self) -> Iterator["LocalExecutionProjectProgressTracker"]:
+    def track(self) -> Iterator["LocalExecutionRunProgressTracker"]:
         """
         Initializes tracking. Meant to be used with a `with` construct.
         """
@@ -141,34 +142,31 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
             self._progress.stop_task(task_id)
             self._progress.update(task_id, completed=0, description="error")
 
-    def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
+    def _get_url(self, asset_type: AssetType, name: str) -> URL:
         assert self._project_name
         assert self._account_name
-        url = EntityType.DERIVED_DATASET.get_url(
-            self._config.url,
-            self._project_name,
-            self._account_name,
-            name=name,
-            id=id_,
+        return AssetPath(
+            entity_name=name,
+            asset_type=asset_type,
+            org_name=self._account_name,
+            project_name=self._project_name,
+        ).url(self._config.url)
+
+    def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
+        self._update_entity(
+            EntityType.DERIVED_DATASET,
+            name,
+            url=self._get_url(AssetType.DATASET, name),
         )
-        self._update_entity(EntityType.DERIVED_DATASET, name, url=url)
 
     def mark_derived_dataset_building(
         self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
     ) -> None:
-        assert self._project_name
-        assert self._account_name
-        url = EntityType.DERIVED_DATASET.get_url(
-            self._config.url,
-            self._project_name,
-            self._account_name,
-            name=name,
-        )
         self._update_entity(
             EntityType.DERIVED_DATASET,
             name,
             status=EntityStatus.BUILDING,
-            url=url,
+            url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_idx,
         )
@@ -180,21 +178,24 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         version: Optional[str] = None,
         build_index: Optional[str] = None,
     ) -> None:
-        assert self._project_name
-        assert self._account_name
-        url = EntityType.DERIVED_DATASET.get_url(
-            self._config.url,
-            self._project_name,
-            self._account_name,
-            name=name,
-        )
         self._update_entity(
             EntityType.DERIVED_DATASET,
             name,
             status=EntityStatus.DONE,
-            url=url,
+            url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_index,
+        )
+
+    def update_derived_dataset_saving_progress(
+        self, name: str, cur_step: int, total_steps: int
+    ) -> None:
+        self._update_entity(
+            EntityType.DERIVED_DATASET,
+            name,
+            status=EntityStatus.SAVING,
+            cur_step=cur_step,
+            total_steps=total_steps,
         )
 
     def mark_model_saving(self, name: str) -> None:
@@ -206,19 +207,11 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
     def mark_model_training(
         self, name: str, version: Optional[str] = None, train_idx: Optional[str] = None
     ) -> None:
-        assert self._project_name
-        assert self._account_name
-        url = EntityType.MODEL.get_url(
-            self._config.url,
-            self._project_name,
-            self._account_name,
-            name=name,
-        )
         self._update_entity(
             EntityType.MODEL,
             name,
             status=EntityStatus.TRAINING,
-            url=url,
+            url=self._get_url(AssetType.MODEL, name),
             version=version,
             build_idx=train_idx,
         )
@@ -231,21 +224,17 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         train_index: Optional[str] = None,
     ) -> None:
         self._update_entity(
-            EntityType.MODEL, name, url=None, status=EntityStatus.SAVING
+            EntityType.MODEL,
+            name,
+            url=self._get_url(AssetType.MODEL, name),
+            status=EntityStatus.SAVING,
         )
 
     def mark_model_train_failed(self, name: str, reason: str) -> None:
-        self._update_entity(EntityType.MODEL, name, status=EntityStatus.ERROR)
-
-    def update_derived_dataset_saving_progress(
-        self, name: str, cur_step: int, total_steps: int
-    ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.MODEL,
             name,
-            status=EntityStatus.SAVING,
-            cur_step=cur_step,
-            total_steps=total_steps,
+            status=EntityStatus.ERROR,
         )
 
     def mark_model_running_assertions(self, name: str) -> None:
@@ -272,7 +261,10 @@ class LocalExecutionProjectProgressTracker(ProjectProgressTracker):
         stringified = [str(assertion) for assertion in assertions]
         error_msg = f"failed: {', '.join(stringified)}"
         self._update_entity(
-            EntityType.MODEL, name, status=EntityStatus.ERROR, error_reason=error_msg
+            EntityType.MODEL,
+            name,
+            status=EntityStatus.ERROR,
+            error_reason=error_msg,
         )
 
     def mark_dataset_running_assertions(self, name: str) -> None:

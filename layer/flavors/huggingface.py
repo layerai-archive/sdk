@@ -3,7 +3,7 @@ from typing import Any
 
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.contracts.models import TrainedModelObject
+from layer.types import ModelArtifact
 
 from .base import ModelFlavor
 
@@ -26,7 +26,7 @@ class HuggingFaceModelFlavor(ModelFlavor):
         with open(directory / self.HF_TYPE_FILE, "w") as f:
             f.write(type(model_object).__name__)
 
-    def load_model_from_directory(self, directory: Path) -> TrainedModelObject:
+    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
         with open(directory / self.HF_TYPE_FILE) as f:
             transformer_type = f.readlines()[0]
 

@@ -16,7 +16,7 @@ from layer.global_context import (
 from layer.projects.init_project_runner import InitProjectRunner
 
 
-def _get_random_project_id_with_org_id():
+def _get_random_project_id_with_org_id() -> ProjectIdWithAccountId:
     expected_project_id = uuid.uuid4()
     expected_account_id = uuid.uuid4()
     return ProjectIdWithAccountId(

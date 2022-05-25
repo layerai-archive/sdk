@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List
 import wrapt  # type: ignore
 
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
-from layer.decorators.utils import ensure_has_layer_settings
 
 
 def resources(path: str, *paths: str) -> Callable[..., Any]:
@@ -69,7 +68,6 @@ def _resources_wrapper(path: str, *paths: str) -> Any:
     class ResourcesFunctionWrapper(LayerFunctionWrapper, ABC):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            ensure_has_layer_settings(self.__wrapped__)
             self.__wrapped__.layer.set_paths([path, *paths])
 
     return ResourcesFunctionWrapper

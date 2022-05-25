@@ -8,15 +8,14 @@ from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.contracts.asset import AssetType
-from layer.decorators.layer_wrapper import LayerFunctionWrapper
-from layer.decorators.utils import ensure_has_layer_settings
-from layer.definitions import ModelDefinition
-from layer.projects.util import (
+from layer.contracts.runs import ModelFunctionDefinition
+from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
+from layer.projects.utils import (
     get_current_project_name,
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.tracker.local_execution_project_progress_tracker import (
-    LocalExecutionProjectProgressTracker,
+    LocalExecutionRunProgressTracker,
 )
 from layer.training.runtime.model_train_failure_reporter import (
     ModelTrainFailureReporter,
@@ -28,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def model(
-    name: str, dependencies: Optional[List[Union[Dataset, Model]]] = None
+    name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
 ) -> Callable[..., Any]:
     """
     Decorator function used to wrap another function that trains a model. The function that decorator has been applied to needs to return a ML model object from a supported framework.
@@ -95,15 +94,18 @@ def model(
 
 def _model_wrapper(
     name: str,
-    dependencies: Optional[List[Union[Dataset, Model]]] = None,
+    dependencies: Optional[List[Union[str, Dataset, Model]]] = None,
 ) -> Any:
-    class FunctionWrapper(LayerFunctionWrapper):
+    class FunctionWrapper(LayerAssetFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
-            super().__init__(wrapped, wrapper, enabled)
-            ensure_has_layer_settings(self.__wrapped__)
-            self.__wrapped__.layer.set_asset_type(AssetType.MODEL)
-            self.__wrapped__.layer.set_entity_name(name)
-            self.__wrapped__.layer.set_dependencies(dependencies)
+            super().__init__(
+                wrapped,
+                wrapper,
+                enabled,
+                AssetType.MODEL,
+                name,
+                dependencies,
+            )
 
         # This is not serialized with cloudpickle, so it will only be run locally.
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
@@ -112,7 +114,7 @@ def _model_wrapper(
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
                 account_name = client.account.get_my_account().name
-                project_progress_tracker = LocalExecutionProjectProgressTracker(
+                project_progress_tracker = LocalExecutionRunProgressTracker(
                     project_name=current_project_name_,
                     config=config,
                     account_name=account_name,
@@ -120,7 +122,7 @@ def _model_wrapper(
 
                 with project_progress_tracker.track() as tracker:
                     tracker.add_model(self.__wrapped__.layer.get_entity_name())
-                    model_definition = ModelDefinition(
+                    model_definition = ModelFunctionDefinition(
                         self.__wrapped__, current_project_name_
                     )
                     return self._train_model_locally_and_store_remotely(
@@ -129,8 +131,8 @@ def _model_wrapper(
 
         def _train_model_locally_and_store_remotely(
             self,
-            model_definition: ModelDefinition,
-            tracker: LocalExecutionProjectProgressTracker,
+            model_definition: ModelFunctionDefinition,
+            tracker: LocalExecutionRunProgressTracker,
             client: LayerClient,
         ) -> Any:
             from layer.training.runtime.model_trainer import (
@@ -138,12 +140,15 @@ def _model_wrapper(
                 ModelTrainer,
             )
 
-            model = model_definition.get_local_entity()
-            assert model.project_name is not None
-            verify_project_exists_and_retrieve_project_id(client, model.project_name)
+            assert model_definition.project_name is not None
+            verify_project_exists_and_retrieve_project_id(
+                client, model_definition.project_name
+            )
 
             model_version = client.model_catalog.create_model_version(
-                model.project_name, model
+                model_definition.project_name,
+                model_definition,
+                True,
             ).model_version
             train_id = client.model_catalog.create_model_train_from_version_id(
                 model_version.id
@@ -152,11 +157,11 @@ def _model_wrapper(
 
             context = LocalTrainContext(  # noqa: F841
                 logger=logger,
-                model_name=model.name,
+                model_name=model_definition.name,
                 model_version=model_version.name,
                 train_id=UUID(train_id.value),
-                source_folder=model.local_path.parent,
-                source_entrypoint=model.training.entrypoint,
+                source_folder=model_definition.entity_path,
+                source_entrypoint=model_definition.entrypoint,
                 train_index=str(train.index),
             )
             failure_reporter = ModelTrainFailureReporter(

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.contracts.models import TrainedModelObject
+from layer.types import ModelArtifact
 
 from .base import ModelFlavor
 
@@ -14,7 +14,7 @@ class TensorFlowModelFlavor(ModelFlavor):
     PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_TENSORFLOW")
 
     def save_model_to_directory(
-        self, model_object: TrainedModelObject, directory: Path
+        self, model_object: ModelArtifact, directory: Path
     ) -> None:
         import mlflow.tensorflow
         import tensorflow  # type: ignore
@@ -29,7 +29,7 @@ class TensorFlowModelFlavor(ModelFlavor):
             path=directory.as_posix(),
         )
 
-    def load_model_from_directory(self, directory: Path) -> TrainedModelObject:
+    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
         import mlflow.tensorflow
 
         return mlflow.tensorflow.load_model(directory.as_uri())

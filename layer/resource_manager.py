@@ -12,9 +12,13 @@ import aiohttp
 
 from layer.clients.layer import LayerClient
 from layer.contracts.asset import AssetType
-from layer.contracts.projects import Function, Project, ResourcePath
-from layer.contracts.runs import ResourceTransferState
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.contracts.runs import (
+    FunctionDefinition,
+    ResourcePath,
+    ResourceTransferState,
+    Run,
+)
+from layer.tracker.project_progress_tracker import RunProgressTracker
 
 
 def _strip_resource_root_path(path: str) -> str:
@@ -68,11 +72,11 @@ class ResourceManager:
             )
         state.increment_num_transferred_files(1)
 
-    def _update_resource_paths_index(self, project: Project) -> None:
-        for function in project.functions:
+    def _update_resource_paths_index(self, run: Run) -> None:
+        for function in run.definitions:
             self._client.data_catalog.update_resource_paths_index(
-                project_name=project.name,
-                function_name=function.name,
+                project_name=run.project_name,
+                function_name=function.func_name,
                 paths=[
                     local_path
                     for resource_path in function.resource_paths
@@ -89,29 +93,27 @@ class ResourceManager:
         state: ResourceTransferState = ctx.trace_request_ctx["state"]
         state.increment_transferred_resource_size_bytes(len(params.chunk))
 
-    async def _upload_resources(
-        self, project: Project, tracker: ProjectProgressTracker
-    ) -> None:
+    async def _upload_resources(self, run: Run, tracker: RunProgressTracker) -> None:
         """
         Collect and upload local files as resources for all functions decorated with `@resource`.
         """
-        self._update_resource_paths_index(project)
+        self._update_resource_paths_index(run)
         trace_config = aiohttp.TraceConfig()
         trace_config.on_request_chunk_sent.append(self._on_request_chunk_sent)
         async with aiohttp.ClientSession(
             raise_for_status=True, trace_configs=[trace_config]
         ) as session:
             upload_tasks = [
-                self._upload_resources_for_function(project, tracker, function, session)
-                for function in project.functions
+                self._upload_resources_for_function(run, tracker, function, session)
+                for function in run.definitions
             ]
             await asyncio.gather(*upload_tasks)
 
     async def _upload_resources_for_function(
         self,
-        project: Project,
-        tracker: ProjectProgressTracker,
-        function: Function,
+        run: Run,
+        tracker: RunProgressTracker,
+        function: FunctionDefinition,
         session: aiohttp.ClientSession,
     ) -> None:
         state = ResourceTransferState()
@@ -123,8 +125,8 @@ class ResourceManager:
                 total_num_files += 1
                 total_files_size_bytes += os.path.getsize(os.path.abspath(local_path))
                 upload_task = self._upload_resource(
-                    project_name=project.name,
-                    function_name=function.name,
+                    project_name=run.project_name,
+                    function_name=function.func_name,
                     resource_path=ResourcePath(path=local_path),
                     file_path=os.path.abspath(local_path),
                     session=session,
@@ -134,8 +136,8 @@ class ResourceManager:
         state.total_num_files = total_num_files
         state.total_resource_size_bytes = total_files_size_bytes
 
-        asset_type = function.asset.type
-        entity_name = function.asset.name
+        asset_type = function.asset_type
+        entity_name = function.name
         if asset_type == AssetType.DATASET:
             tracker.mark_dataset_resources_uploading(entity_name, state)
         elif asset_type == AssetType.MODEL:
@@ -146,9 +148,7 @@ class ResourceManager:
         elif asset_type == AssetType.MODEL:
             tracker.mark_model_resources_uploaded(entity_name)
 
-    def wait_resource_upload(
-        self, project: Project, tracker: ProjectProgressTracker
-    ) -> None:
+    def wait_resource_upload(self, run: Run, tracker: RunProgressTracker) -> None:
         """
         Collect and upload local files as resources for all functions decorated with `@resources`.
         """
@@ -156,7 +156,7 @@ class ResourceManager:
         # run in a separate thread to make sure no other loop is running
         with ThreadPoolExecutor(max_workers=1) as executor:
             upload = executor.submit(
-                lambda: asyncio.run(self._upload_resources(project, tracker))
+                lambda: asyncio.run(self._upload_resources(run, tracker))
             )
             upload.result()
 

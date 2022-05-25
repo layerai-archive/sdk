@@ -1,8 +1,8 @@
 __version__ = "0.0.1b1"
 
 from .context import Context  # noqa
-from .contracts.datasets import Dataset, DerivedDataset  # noqa
-from .contracts.models import Model, Train  # noqa
+from .contracts.datasets import Dataset  # noqa
+from .contracts.models import Model  # noqa
 from .contracts.projects import Project  # noqa
 from .contracts.runs import Run  # noqa
 from .global_context import current_project_name  # noqa

@@ -13,7 +13,7 @@ from layer.global_context import (
     set_pip_packages,
     set_pip_requirements_file,
 )
-from layer.projects.util import get_or_create_remote_project
+from layer.projects.utils import get_or_create_remote_project
 from layer.utils.async_utils import asyncio_run_in_thread
 
 
@@ -42,7 +42,7 @@ class InitProjectRunner:
         login_config = asyncio_run_in_thread(self._config_manager.refresh())
         return login_config
 
-    def _update_readme(self, project: Project, layer_client: LayerClient) -> None:
+    def _update_readme(self, project_name: str, layer_client: LayerClient) -> None:
         readme_discover_path = self._project_root_path
         if not readme_discover_path:
             # We expect README file in the running directory unless told otherwise
@@ -52,7 +52,7 @@ class InitProjectRunner:
         readme_contents = ProjectLoader.load_project_readme(project_root_path)
         if readme_contents:
             layer_client.project_service_client.update_project_readme(
-                project_name=project.name, readme=readme_contents
+                project_name=project_name, readme=readme_contents
             )
 
     def setup_project(
@@ -68,10 +68,10 @@ class InitProjectRunner:
 
         with layer_client.init() as initialized_client:
             project = get_or_create_remote_project(
-                initialized_client, Project(name=self._project_name)
+                initialized_client, self._project_name
             )
 
-            self._update_readme(project, layer_client)
+            self._update_readme(self._project_name, layer_client)
 
         global_context.reset_to(self._project_name)
         if fabric:
