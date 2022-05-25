@@ -77,6 +77,15 @@ class LogDataRunner:
 
                     assert isinstance(value, matplotlib.figure.Figure)
                 self._log_plot_figure(tag=tag, figure=value)
+            elif self._is_axes_subplot(value):
+                if TYPE_CHECKING:
+                    import matplotlib.axes._subplots  # type: ignore
+
+                    assert isinstance(
+                        value,
+                        matplotlib.axes._subplots.AxesSubplot,  # pylint: disable=protected-access
+                    )
+                self._log_plot_figure(tag=tag, figure=value.get_figure())
             elif self._is_pyplot(value):
                 assert isinstance(value, ModuleType)
                 self._log_current_plot_figure(tag=tag, plt=value)
@@ -183,6 +192,10 @@ class LogDataRunner:
 
     def _is_plot_figure(self, value: Any) -> bool:
         return "matplotlib.figure" in self._get_base_module_list(value)
+
+    def _is_axes_subplot(self, value: Any) -> bool:
+        base_module_list = self._get_base_module_list(value)
+        return "matplotlib.axes._subplots" in base_module_list
 
     def _is_pyplot(self, value: Any) -> bool:
         return (

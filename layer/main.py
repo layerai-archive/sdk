@@ -60,6 +60,7 @@ from .utils.async_utils import asyncio_run_in_thread
 
 
 if TYPE_CHECKING:
+    import matplotlib.axes._subplots  # type: ignore
     import matplotlib.figure  # type: ignore
     import pandas
     import PIL.Image
@@ -631,6 +632,7 @@ def log(
             "pandas.DataFrame",
             "PIL.Image.Image",
             "matplotlib.figure.Figure",
+            "matplotlib.axes._subplots.AxesSubplot",
             ModuleType,
             Path,
         ],
@@ -673,6 +675,7 @@ def log(
     Accepted Types:
     ``matplotlib.figure.Figure``,
     ``matplotlib.pyplot``,
+    ``matplotlib.axes._subplots.AxesSubplot``,
     ``ModuleType`` (only for the matplotlib module, for convenience)
 
     **Tables**
