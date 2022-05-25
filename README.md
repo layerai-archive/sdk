@@ -39,9 +39,10 @@ limitations under the License.
     </a>
 </p>
 
+## Layer - Metadata Store for Production ML
 [Layer](https://layer.ai) helps you build, train and track all your machine learning project metadata including ML models and datasets with semantic versioning, extensive artifact logging and dynamic reporting with local↔cloud training
 
-[Start for Free now!](https://app.layer.ai/login?returnTo=%2Fgetting-started)
+**[Start for Free now!](https://app.layer.ai/login?returnTo=%2Fgetting-started)**
 
 ## Getting Started
 
@@ -57,20 +58,34 @@ layer.login()
 layer.init("my-first-project")
 ```
 
-And decorate your training function to register your model to Layer:
+Decorate your training function to register your model to Layer:
 ```python
 from layer.decorators import model
 
 @model("my-model")
 def train():
-    model = ...
-    model.fit(..)
-    return model
+    from sklearn import datasets
+    from sklearn.svm import SVC
+    iris = datasets.load_iris()
+    clf = SVC()
+    clf.fit(iris.data, iris.target)
+    return clf
 
 train()
 ```
 
-### [Try in a colab now!](https://docs.app.layer.ai/docs/getting-started)
+Now you can fetch your model from Layer:
+
+```python
+import layer
+
+clf = layer.get_model("my-model:1.1")
+clf
+
+# > SVC()
+```
+
+**[🚀 Try in a colab now!](https://colab.research.google.com/github/layerai/examples/blob/main/tutorials/add-models-to-layer/how_to_add_models_to_layer.ipynb)**
 
 ## Reporting bugs 
 You have a bug, a request or a feature? Let us know on [Slack](https://bit.ly/layercommunityslack) or [open an issue](https://github.com/layerai/sdk/issues/new/choose)
