@@ -17,7 +17,8 @@ limitations under the License.
 <p align="center">
     <br>
     <a href="https://layer.ai">
-        <img src="https://app.layer.ai/assets/logo.svg" width="200" alt="Layer"/>
+          <img src=".github/assets/layer_logo_light.png#gh-light-mode-only" width="512" alt="Layer"/>
+          <img src=".github/assets/layer_logo_light.png#gh-dark-mode-only" width="512" alt="Layer"/>
     </a>
     <br>
 <p>
@@ -39,12 +40,49 @@ limitations under the License.
     </a>
 </p>
 
-# Layer
+[Layer](https://layer.ai) helps you build, train and track all your machine learning project metadata including ML models and datasets with semantic versioning, extensive artifact logging and dynamic reporting with local↔cloud training
 
-Layer helps you create production-grade ML pipelines with a seamless local↔cloud transition while enabling collaboration with semantic versioning, extensive artifact logging and dynamic reporting.
-
-[Start for Free!](https://app.layer.ai)
+[Start for Free now!](https://app.layer.ai/login?returnTo=%2Fgetting-started)
 
 ## Getting Started
 
-The simplest way to get started with Layer is to go through the [quickstart guide](https://docs.app.layer.ai/docs/getting-started).
+Install Layer:
+```shell
+pip install layer --upgrade
+```
+
+Login to your free account and initialize your project:
+```python
+import layer
+layer.login()
+layer.init("my-first-project")
+```
+
+And decorate your training function to register your model to Layer:
+```python
+from layer.decorators import model
+
+@model("my-model")
+def train():
+    model = ...
+    model.fit(..)
+    return model
+
+train()
+```
+
+### [Try in a colab now!](https://docs.app.layer.ai/docs/getting-started)
+
+## Reporting bugs 
+You have a bug, a request or a feature? Let us know on [Slack](https://bit.ly/layercommunityslack) or [open an issue](https://github.com/layerai/sdk/issues/new/choose)
+
+## Contributing code
+Do you want to help us build the best metadata store? Check out the [Contributing Guide](./CONTRIBUTING.md)
+
+## Learn more
+- Join our [Slack Community ](https://bit.ly/layercommunityslack) to connect with other Layer users
+- Visit [Layer Examples Repo](https://github.com/layerai/examples) for more examples
+- Browse [Community Projects](https://layer.ai/community) to see more use cases
+- Check out [Layer Documentation](https://docs.layer.ai)
+- [Contact us](https://layer.ai/contact-us?interest=notebook) for your questions
+
