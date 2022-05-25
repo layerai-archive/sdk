@@ -9,7 +9,7 @@ POETRY := $(shell command -v poetry 2> /dev/null)
 install: $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock
 	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. See https://python-poetry.org/docs/"; exit 2; fi
-	$(POETRY) install --remove-untracked
+	$(POETRY) install
 	touch $(INSTALL_STAMP)
 
 .PHONY: test
