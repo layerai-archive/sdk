@@ -1,5 +1,4 @@
 import tempfile
-import uuid
 import warnings
 from contextlib import contextmanager
 from logging import Logger
@@ -126,7 +125,7 @@ class ModelCatalogClient:
                         name=model.entrypoint,
                         location=f"s3://{s3_path.bucket}/{s3_path.key}{model.name}.tgz",
                     ),
-                    language=SourceCode.Language.Value("LANGUAGE_PYTHON"),
+                    language=SourceCode.Language.LANGUAGE_PYTHON,
                     language_version=SourceCode.LanguageVersion(
                         major=int(model.language_version[0]),
                         minor=int(model.language_version[1]),
@@ -264,11 +263,11 @@ class ModelCatalogClient:
 
     def start_model_train(
         self,
-        train_id: uuid.UUID,
+        train_id: ModelTrainId,
     ) -> TrainStorageConfiguration:
         response = self._service.StartModelTrain(
             StartModelTrainRequest(
-                model_train_id=ModelTrainId(value=str(train_id)),
+                model_train_id=train_id,
             ),
         )
         return TrainStorageConfiguration(
@@ -293,7 +292,9 @@ class ModelCatalogClient:
         return response.id
 
     def complete_model_train(
-        self, train_id: ModelTrainId, flavor: Optional["ModelVersion.ModelFlavor"]
+        self,
+        train_id: ModelTrainId,
+        flavor: Optional[ModelVersion.ModelFlavor.ValueType],
     ) -> None:
         self._service.CompleteModelTrain(
             CompleteModelTrainRequest(id=train_id, flavor=flavor),

@@ -33,7 +33,7 @@ class PollingStepFunction:
         return min(self._max_backoff, step * self._backoff_multiplier)
 
 
-_FormattedRunMetadata = Dict[Tuple["PBTask.Type.V", str, str], str]
+_FormattedRunMetadata = Dict[Tuple[PBTask.Type.ValueType, str, str], str]
 
 
 class ProgressTrackerUpdater:
@@ -146,6 +146,7 @@ class ProgressTrackerUpdater:
             _print_debug(f"Task type not handled {task_type}")
 
     def _handle_task_failed(self, task: PBTask) -> None:
+        assert self.run.run_id
         task_id = task.id
         task_type = task.type
         task_info = task.info

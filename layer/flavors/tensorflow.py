@@ -11,7 +11,7 @@ class TensorFlowModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of TensorFlow Models."""
 
     MODULE_KEYWORD = "tensorflow"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_TENSORFLOW")
+    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_TENSORFLOW
 
     def save_model_to_directory(
         self, model_object: ModelArtifact, directory: Path

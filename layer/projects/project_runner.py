@@ -239,6 +239,7 @@ class ProjectRunner:
         initial_step_sec = 2
         step_function = PollingStepFunction(max_backoff_sec=3.0, backoff_multiplier=1.2)
 
+        assert run.run_id
         polling.poll(
             lambda: client.flow_manager.get_run_status_history_and_metadata(
                 run_id=run.run_id,

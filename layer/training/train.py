@@ -53,7 +53,7 @@ class Train(BaseTrain):
         )
         self.__start_train_ts: int  # For computing relative to start metric timestamps
         # Populated at the save of a model train
-        self.__flavor: Optional[ModelVersion.ModelFlavor] = None
+        self.__flavor: Optional[ModelVersion.ModelFlavor.V] = None
 
     def get_id(self) -> UUID:
         assert self.__train_id
@@ -165,7 +165,10 @@ class Train(BaseTrain):
         )
         self.__flavor = flavor.PROTO_FLAVOR
         model = Model(
-            self.__name, self.__train_id, flavor=flavor, storage_config=storage_config
+            self.__name,
+            uuid.UUID(self.__train_id.value),
+            flavor=flavor,
+            storage_config=storage_config,
         )
         self.__layer_client.model_catalog.save_model_artifact(
             model, model_artifact, tracker=tracker
@@ -190,7 +193,7 @@ class Train(BaseTrain):
                 project_name=self.__project_name,
             )
         self.__layer_client.model_catalog.start_model_train(
-            train_id=uuid.UUID(self.__train_id.value),
+            train_id=self.__train_id,
         )
         self.__start_train_ts = int(time.time())
 

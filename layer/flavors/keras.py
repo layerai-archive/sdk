@@ -11,7 +11,7 @@ class KerasModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of Keras Models."""
 
     MODULE_KEYWORD = "keras"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_KERAS")
+    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_KERAS
 
     TOKENIZER_FILE = "tokenizer.pickle"
 

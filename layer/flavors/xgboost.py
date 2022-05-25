@@ -15,7 +15,7 @@ class XGBoostModelFlavor(ModelFlavor):
     """
 
     MODULE_KEYWORD = "xgboost"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_XGBOOST")
+    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_XGBOOST
 
     def save_model_to_directory(
         self, model_object: ModelArtifact, directory: Path

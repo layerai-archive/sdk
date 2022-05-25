@@ -2,9 +2,7 @@ import inspect
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pathlib import Path
 
-from layerapi.api.entity.model_version_pb2 import (  # pylint: disable=unused-import
-    ModelVersion,
-)
+from layerapi.api.entity.model_version_pb2 import ModelVersion
 
 from layer.types import ModelArtifact
 
@@ -27,7 +25,7 @@ class ModelFlavor(metaclass=ABCMeta):
     @abstractproperty
     def PROTO_FLAVOR(  # pylint: disable=invalid-name
         self,
-    ) -> "ModelVersion.ModelFlavor":
+    ) -> ModelVersion.ModelFlavor.ValueType:
         """Defines the proto flavor that this Model Flavor uses.
 
         Returns:
