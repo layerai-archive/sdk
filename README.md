@@ -17,7 +17,7 @@ limitations under the License.
 <p align="center">
     <br>
     <a href="https://layer.ai">
-          <img src=".github/assets/layer_logo_light.png" width="512" alt="Layer"/>
+          <img src="https://app.layer.ai/assets/layer_wordmark_black.png" width="400" alt="Layer"/>
     </a>
     <br>
 <p>
@@ -91,7 +91,7 @@ clf
 You have a bug, a request or a feature? Let us know on [Slack](https://bit.ly/layercommunityslack) or [open an issue](https://github.com/layerai/sdk/issues/new/choose)
 
 ## Contributing code
-Do you want to help us build the best metadata store? Check out the [Contributing Guide](./CONTRIBUTING.md)
+Do you want to help us build the best metadata store? Check out the [Contributing Guide](https://github.com/layerai/sdk/blob/main/CONTRIBUTING.md)
 
 ## Learn more
 - Join our [Slack Community ](https://bit.ly/layercommunityslack) to connect with other Layer users
