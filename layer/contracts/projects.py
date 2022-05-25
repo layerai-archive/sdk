@@ -74,6 +74,18 @@ class Project:
     def with_readme(self, readme: Optional[str]) -> "Project":
         return replace(self, readme=readme)
 
+    def __str__(self) -> str:
+        if self.account:
+            from layer.config import DEFAULT_PATH, ConfigManager
+
+            config = ConfigManager(DEFAULT_PATH).load()
+            return f"Your Layer project is here: {config.url}/{self.account.name}/{self.name}"
+        else:
+            return f"Project({self.name})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 @dataclass(frozen=True)
 class ApplyResult:
