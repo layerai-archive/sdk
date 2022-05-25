@@ -16,7 +16,7 @@ from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
 from layer.projects.project_runner import ProjectRunner
 from layer.tracker.remote_execution_project_progress_tracker import (
-    RemoteExecutionProjectProgressTracker,
+    RemoteExecutionRunProgressTracker,
 )
 
 
@@ -142,7 +142,7 @@ def _cleanup_project(client: LayerClient, project: Project):
 @pytest.fixture()
 def project_runner(config: Config) -> ProjectRunner:
     return ProjectRunner(
-        config, project_progress_tracker_factory=RemoteExecutionProjectProgressTracker
+        config, project_progress_tracker_factory=RemoteExecutionRunProgressTracker
     )
 
 
@@ -152,12 +152,14 @@ def asserter(client: LayerClient) -> E2ETestAsserter:
 
 
 @pytest.fixture()
-async def guest_context(config: Config, tmp_path: Path, monkeypatch) -> Callable:
+async def guest_context(
+    config: Config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Callable[..., Any]:
     guest_config_path = tmp_path / "guest_config.json"
     await ConfigManager(guest_config_path).login_as_guest(config.url)
 
     @contextmanager
-    def manager():
+    def manager() -> Iterator[None]:
         with monkeypatch.context() as m:
             m.setattr(
                 layer.config.ConfigManager,

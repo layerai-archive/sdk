@@ -7,61 +7,47 @@ from rich.text import Text
 from yarl import URL
 
 from layer.config import Config
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.entities import Entity, EntityStatus, EntityType
-from layer.contracts.projects import Project
-from layer.contracts.runs import ResourceTransferState
+from layer.contracts.runs import ResourceTransferState, Run
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 from layer.tracker.output import get_progress_ui
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.tracker.project_progress_tracker import RunProgressTracker
 
 
-class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
-    def __init__(self, config: Config, project: Project) -> None:
+class RemoteExecutionRunProgressTracker(RunProgressTracker):
+    def __init__(self, config: Config, run: Run) -> None:
         self._config = config
-        self._project = project
+        self._run = run
         self._task_ids: Dict[Tuple[EntityType, str], TaskID] = {}
         self._progress = get_progress_ui()
 
     @contextmanager
-    def track(self) -> Iterator["RemoteExecutionProjectProgressTracker"]:
+    def track(self) -> Iterator["RemoteExecutionRunProgressTracker"]:
         with self._progress:
             self._init_tasks()
             yield self
 
     def _init_tasks(self) -> None:
-        for raw_dataset in self._project.raw_datasets:
+        for definition in self._run.definitions:
+            entity_type: Optional[EntityType] = None
+            if definition.asset_type == AssetType.DATASET:
+                entity_type = EntityType.DERIVED_DATASET
+            elif definition.asset_type == AssetType.MODEL:
+                entity_type = EntityType.MODEL
+            else:
+                continue
+
             task_id = self._progress.add_task(
                 EntityStatus.PENDING,
                 start=False,
                 entity=Entity(
-                    type=EntityType.RAW_DATASET,
-                    name=raw_dataset.name,
+                    type=entity_type,
+                    name=definition.name,
                     status=EntityStatus.PENDING,
                 ),
             )
-            self._task_ids[(EntityType.RAW_DATASET, raw_dataset.name)] = task_id
-
-        for derived_dataset in self._project.derived_datasets:
-            task_id = self._progress.add_task(
-                EntityStatus.PENDING,
-                start=False,
-                entity=Entity(
-                    type=EntityType.DERIVED_DATASET,
-                    name=derived_dataset.name,
-                    status=EntityStatus.PENDING,
-                ),
-            )
-            self._task_ids[(EntityType.DERIVED_DATASET, derived_dataset.name)] = task_id
-
-        for model in self._project.models:
-            task_id = self._progress.add_task(
-                EntityStatus.PENDING,
-                start=False,
-                entity=Entity(
-                    type=EntityType.MODEL, name=model.name, status=EntityStatus.PENDING
-                ),
-            )
-            self._task_ids[(EntityType.MODEL, model.name)] = task_id
+            self._task_ids[(entity_type, definition.name)] = task_id
 
     def _update_entity(
         self,
@@ -119,6 +105,15 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         entity = task.fields["entity"]
         return entity
 
+    def _get_url(self, asset_type: AssetType, name: str) -> URL:
+        assert self._run.account
+        return AssetPath(
+            entity_name=name,
+            asset_type=asset_type,
+            org_name=self._run.account.name,
+            project_name=self._run.project_name,
+        ).url(self._config.url)
+
     def mark_error_messages(
         self, exc: Union[ProjectBaseException, ProjectRunnerError]
     ) -> None:
@@ -147,26 +142,14 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
                 )
             )
 
-    def mark_raw_dataset_saved(self, name: str) -> None:
-        status = EntityStatus.DONE
-        self._update_entity(EntityType.RAW_DATASET, name, status=status)
-
-    def mark_raw_dataset_save_failed(self, name: str, reason: str) -> None:
-        self._update_entity(
-            EntityType.RAW_DATASET, name, status=EntityStatus.ERROR, error_reason=reason
-        )
-
     def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
         status = EntityStatus.PENDING
-        assert self._project.account
-        url = EntityType.DERIVED_DATASET.get_url(
-            self._config.url,
-            self._project.name,
-            self._project.account.name,
-            name=name,
-            id=id_,
+        self._update_entity(
+            EntityType.DERIVED_DATASET,
+            name,
+            url=self._get_url(AssetType.DATASET, name),
+            status=status,
         )
-        self._update_entity(EntityType.DERIVED_DATASET, name, url=url, status=status)
 
     def mark_derived_dataset_building(
         self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
@@ -177,19 +160,11 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         if entity.status == EntityStatus.DONE:
             return
 
-        assert self._project.account is not None
-        url = EntityType.DERIVED_DATASET.get_url(
-            self._config.url,
-            self._project.name,
-            self._project.account.name,
-            name=name,
-        )
-
         self._update_entity(
             EntityType.DERIVED_DATASET,
             name,
             status=EntityStatus.BUILDING,
-            url=url,
+            url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_idx,
         )
@@ -209,18 +184,11 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         version: Optional[str] = None,
         build_index: Optional[str] = None,
     ) -> None:
-        assert self._project.account is not None
-        url = EntityType.DERIVED_DATASET.get_url(
-            self._config.url,
-            self._project.name,
-            self._project.account.name,
-            name=name,
-        )
         self._update_entity(
             EntityType.DERIVED_DATASET,
             name,
             status=EntityStatus.DONE,
-            url=url,
+            url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_index,
         )
@@ -245,18 +213,11 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         if entity.status == EntityStatus.DONE:
             return
 
-        assert self._project.account is not None
-        url = EntityType.MODEL.get_url(
-            self._config.url,
-            self._project.name,
-            self._project.account.name,
-            name=name,
-        )
         self._update_entity(
             EntityType.MODEL,
             name,
             status=EntityStatus.TRAINING,
-            url=url,
+            url=self._get_url(AssetType.MODEL, name),
             version=version,
             build_idx=train_idx,
         )
@@ -268,18 +229,11 @@ class RemoteExecutionProjectProgressTracker(ProjectProgressTracker):
         version: Optional[str] = None,
         train_index: Optional[str] = None,
     ) -> None:
-        assert self._project.account is not None
-        url = EntityType.MODEL.get_url(
-            self._config.url,
-            self._project.name,
-            self._project.account.name,
-            name=name,
-        )
         self._update_entity(
             EntityType.MODEL,
             name,
-            url=url,
             status=EntityStatus.DONE,
+            url=self._get_url(AssetType.MODEL, name),
             version=version,
             build_idx=train_index,
         )

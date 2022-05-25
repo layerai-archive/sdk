@@ -18,7 +18,6 @@ LOGS_BUFFER_INTERVAL = 20  # Minimum amount of time to have as a buffer for logs
 @unique
 class EntityType(Enum):
     MODEL_TRAIN = 2
-    HYPERPARAMETER_TUNING_TRAIN = 3
     DATASET_BUILD = 4
 
 
@@ -44,8 +43,6 @@ def __convert_log_line(line: PBUserLogLine) -> UserLogLine:
 def __convert_entity(entity: PBUserLogLine.TaskType) -> EntityType:
     if entity == PBUserLogLine.TASK_TYPE_MODEL_TRAIN:
         return EntityType.MODEL_TRAIN
-    elif entity == PBUserLogLine.TASK_TYPE_HYPERPARAMETER_TUNING_TRAIN:
-        return EntityType.HYPERPARAMETER_TUNING_TRAIN
     elif entity == PBUserLogLine.TASK_TYPE_DATASET_BUILD:
         return EntityType.DATASET_BUILD
     else:

@@ -4,7 +4,7 @@ import uuid
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Iterator, List, Optional, Sequence
+from typing import Any, Callable, Iterator, List, Optional, Sequence
 
 import pandas
 import pyarrow
@@ -30,7 +30,6 @@ from layerapi.api.service.datacatalog.data_catalog_api_pb2 import (
     InitiateBuildRequest,
     InitiateBuildResponse,
     RegisterDatasetRequest,
-    RegisterRawDatasetRequest,
     UpdateResourcePathsIndexRequest,
 )
 from layerapi.api.service.datacatalog.data_catalog_api_pb2_grpc import (
@@ -42,7 +41,6 @@ from layerapi.api.service.dataset.dataset_api_pb2 import (
     DatasetSnapshot,
 )
 from layerapi.api.value.language_version_pb2 import LanguageVersion
-from layerapi.api.value.metadata_pb2 import Metadata
 from layerapi.api.value.python_dataset_pb2 import PythonDataset as PBPythonDataset
 from layerapi.api.value.python_source_pb2 import PythonSource
 from layerapi.api.value.s3_path_pb2 import S3Path
@@ -56,10 +54,9 @@ from layer.contracts.datasets import (
     Dataset,
     DatasetBuild,
     DatasetBuildStatus,
-    PythonDataset,
-    RawDataset,
     SortField,
 )
+from layer.contracts.runs import DatasetFunctionDefinition
 from layer.exceptions.exceptions import LayerClientException
 from layer.utils.file_utils import tar_directory
 from layer.utils.grpc import create_grpc_channel, generate_client_error_from_grpc_error
@@ -67,9 +64,6 @@ from layer.utils.s3 import S3Util
 
 from .dataset_service import DatasetClient, DatasetClientError
 
-
-if TYPE_CHECKING:
-    pass
 
 # Number of rows to send in a single chunk, but still bounded by the gRPC max message size.
 # Allow to send rows on average up to 1MB, assuming default max gRPC message size is 4MB
@@ -118,10 +112,10 @@ class DataCatalogClient:
             yield self
 
     def _get_python_dataset_access_credentials(
-        self, dataset_path: str
+        self, dataset_path: AssetPath
     ) -> GetPythonDatasetAccessCredentialsResponse:
         return self._service.GetPythonDatasetAccessCredentials(
-            GetPythonDatasetAccessCredentialsRequest(dataset_path=dataset_path),
+            GetPythonDatasetAccessCredentialsRequest(dataset_path=dataset_path.path()),
         )
 
     def fetch_dataset(
@@ -198,7 +192,10 @@ class DataCatalogClient:
             )
 
     def initiate_build(
-        self, dataset: Dataset, project_id: uuid.UUID
+        self,
+        dataset: DatasetFunctionDefinition,
+        project_id: uuid.UUID,
+        is_local: bool,
     ) -> InitiateBuildResponse:
         self._logger.debug(
             "Initiating build for the dataset %r",
@@ -211,7 +208,7 @@ class DataCatalogClient:
                 format="python",
                 build_entity_type=PBDatasetBuild.BUILD_ENTITY_TYPE_DATASET,
                 project_id=ProjectId(value=str(project_id)),
-                fabric=dataset.fabric,
+                fabric=dataset.get_fabric(is_local),
             )
         )
 
@@ -220,7 +217,7 @@ class DataCatalogClient:
     def complete_build(
         self,
         dataset_build_id: DatasetBuildId,
-        dataset: Dataset,
+        dataset: DatasetFunctionDefinition,
         error: Optional[Exception] = None,
     ) -> CompleteBuildResponse:
         self._logger.debug(
@@ -257,51 +254,38 @@ class DataCatalogClient:
 
         return resp
 
-    def add_dataset(self, project_id: uuid.UUID, dataset: Dataset) -> Dataset:
+    def add_dataset(
+        self,
+        project_id: uuid.UUID,
+        dataset_definition: DatasetFunctionDefinition,
+        is_local: bool,
+    ) -> DatasetFunctionDefinition:
         self._logger.debug(
             "Adding or updating a dataset with name %r",
-            dataset.name,
+            dataset_definition.name,
         )
         resp = self._service.RegisterDataset(
             RegisterDatasetRequest(
-                name=dataset.name,
-                description=dataset.description,
-                python_dataset=self._get_pb_python_dataset(dataset)
-                if isinstance(dataset, PythonDataset)
-                else None,
+                name=dataset_definition.name,
+                description=dataset_definition.description,
+                python_dataset=self._get_pb_python_dataset(
+                    dataset_definition, is_local
+                ),
                 project_id=ProjectId(value=str(project_id)),
             ),
         )
-        return dataset.with_id(uuid.UUID(resp.dataset_id.value))
+        return dataset_definition.with_repository_id(resp.dataset_id.value)
 
-    def add_raw_dataset(self, project_id: uuid.UUID, dataset: Dataset) -> Dataset:
-        self._logger.debug(
-            "Adding or updating a raw dataset with name %r",
-            dataset.name,
-        )
-        if isinstance(dataset, RawDataset):
-            resp = self._service.RegisterRawDataset(
-                RegisterRawDatasetRequest(
-                    name=dataset.name,
-                    description=dataset.description,
-                    success=RegisterRawDatasetRequest.BuildSuccess(
-                        location=StorageLocation(
-                            uri=dataset.uri, metadata=Metadata(value=dataset.metadata)
-                        )
-                    ),
-                    project_id=ProjectId(value=str(project_id)),
-                ),
-            )
-            return dataset.with_id(uuid.UUID(resp.dataset_id.value))
-        else:
-            raise LayerClientException("Cannot add a non-raw dataset as raw")
-
-    def _get_pb_python_dataset(self, dataset: PythonDataset) -> PBPythonDataset:
+    def _get_pb_python_dataset(
+        self,
+        dataset: DatasetFunctionDefinition,
+        is_local: bool,
+    ) -> PBPythonDataset:
         s3_path = self._upload_dataset_source(dataset)
         return PBPythonDataset(
             s3_path=s3_path,
             python_source=PythonSource(
-                content=dataset.entrypoint_content,
+                content=dataset.func_source,
                 entrypoint=dataset.entrypoint,
                 environment=dataset.environment,
                 language_version=LanguageVersion(
@@ -310,15 +294,16 @@ class DataCatalogClient:
                     micro=dataset.language_version[2],
                 ),
             ),
-            fabric=dataset.fabric,
+            fabric=dataset.get_fabric(is_local),
         )
 
-    def _upload_dataset_source(self, dataset: PythonDataset) -> S3Path:
-        response = self._get_python_dataset_access_credentials(dataset.path)
+    def _upload_dataset_source(self, dataset: DatasetFunctionDefinition) -> S3Path:
+        response = self._get_python_dataset_access_credentials(dataset.asset_path)
         archive_name = f"{dataset.name}.tgz"
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             archive_path = f"{tmp_dir}/{archive_name}"
-            tar_directory(archive_path, dataset.entrypoint_path.parent)
+            tar_directory(archive_path, dataset.entity_path)
             S3Util.upload_dir(
                 Path(tmp_dir),
                 response.credentials,
@@ -394,7 +379,7 @@ class DataCatalogClient:
             entity_version=version.name,
             project_name=dataset.project_name,
         )
-        return RawDataset(
+        return Dataset(
             id=uuid.UUID(dataset.id.value),
             asset_path=asset_path,
             description=dataset.description,

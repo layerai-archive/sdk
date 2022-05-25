@@ -19,8 +19,8 @@ class Fabric(enum.Enum):
             return False
 
     @classmethod
-    def default(cls) -> str:
-        return Fabric.F_SMALL.value
+    def default(cls) -> "Fabric":
+        return Fabric.F_SMALL
 
     def is_gpu(self) -> bool:
         return "gpu" in self.value

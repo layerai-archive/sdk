@@ -11,7 +11,7 @@ from layerapi.api.value.ticket_pb2 import PartitionTicket
 from pyarrow import flight as fl
 from pyarrow.lib import ArrowKeyError
 
-from layer.cache import Cache
+from layer.cache.cache import Cache
 from layer.utils.grpc import create_grpc_ssl_config
 
 

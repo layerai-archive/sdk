@@ -3,7 +3,7 @@ from typing import Optional
 
 from layer.contracts.datasets import DatasetBuild
 from layer.contracts.entities import EntityType
-from layer.tracker.project_progress_tracker import ProjectProgressTracker
+from layer.tracker.project_progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
 
 
@@ -21,13 +21,13 @@ class Context:
         self,
         train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
-        tracker: Optional[ProjectProgressTracker] = None,
+        tracker: Optional[RunProgressTracker] = None,
         entity_name: Optional[str] = None,
         entity_type: Optional[EntityType] = None,
     ) -> None:
         self._train: Optional[BaseTrain] = train
         self._dataset_build: Optional[DatasetBuild] = dataset_build
-        self._tracker: Optional[ProjectProgressTracker] = tracker
+        self._tracker: Optional[RunProgressTracker] = tracker
         self._entity_name = entity_name
         self._entity_type = entity_type
 
@@ -58,7 +58,7 @@ class Context:
     def with_dataset_build(self, dataset_build: Optional[DatasetBuild]) -> None:
         self._dataset_build = dataset_build
 
-    def with_tracker(self, tracker: ProjectProgressTracker) -> None:
+    def with_tracker(self, tracker: RunProgressTracker) -> None:
         self._tracker = tracker
 
     def with_entity_name(self, entity_name: str) -> None:
@@ -67,7 +67,7 @@ class Context:
     def with_entity_type(self, entity_type: EntityType) -> None:
         self._entity_type = entity_type
 
-    def tracker(self) -> Optional[ProjectProgressTracker]:
+    def tracker(self) -> Optional[RunProgressTracker]:
         return self._tracker
 
     def entity_name(self) -> Optional[str]:
