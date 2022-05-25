@@ -85,7 +85,7 @@ clf
 # > SVC()
 ```
 
-**[🚀 Try in a colab now!](https://colab.research.google.com/github/layerai/examples/blob/main/tutorials/add-models-to-layer/how_to_add_models_to_layer.ipynb)**
+**[🚀 Try in a Colab now!](https://colab.research.google.com/github/layerai/examples/blob/main/tutorials/add-models-to-layer/how_to_add_models_to_layer.ipynb)**
 
 ## Reporting bugs 
 You have a bug, a request or a feature? Let us know on [Slack](https://bit.ly/layercommunityslack) or [open an issue](https://github.com/layerai/sdk/issues/new/choose)
