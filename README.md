@@ -79,7 +79,7 @@ Now you can fetch your model from Layer:
 ```python
 import layer
 
-clf = layer.get_model("my-model:1.1")
+clf = layer.get_model("my-model:1.1").get_train()
 clf
 
 # > SVC()
