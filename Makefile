@@ -3,13 +3,18 @@ INSTALL_STAMP := .install.stamp
 E2E_TEST_HOME := $(ROOT_DIR)/build/e2e-home
 TEST_TOKEN_FILE := .test-token
 POETRY := $(shell command -v poetry 2> /dev/null)
+IN_VENV := $(shell echo $(CONDA_DEFAULT_ENV)$(CONDA_PREFIX)$(VIRTUAL_ENV))
 
 .DEFAULT_GOAL:=help
 
 install: $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock
 	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. See https://python-poetry.org/docs/"; exit 2; fi
+ifdef IN_VENV
+	$(POETRY) install
+else
 	$(POETRY) install --remove-untracked
+endif
 	touch $(INSTALL_STAMP)
 
 .PHONY: test
