@@ -1,27 +1,16 @@
 import io
 import itertools
 import warnings
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generator,
-    Iterable,
-    Optional,
-    Sequence,
-    Type,
-    Union,
-)
+from typing import Any, Generator, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+import PIL.Image
 import pyarrow as pa
 from pandas._typing import PositionalIndexer  # type: ignore
 from pandas.core.arrays.base import ExtensionArray  # type: ignore
 from pandas.core.dtypes.base import register_extension_dtype  # type: ignore
 from pandas.core.dtypes.base import ExtensionDtype
-
-
-if TYPE_CHECKING:
-    from PIL.Image import Image
+from PIL.Image import Image
 
 
 warnings.filterwarnings(
@@ -71,9 +60,7 @@ class _ImageDtype(ExtensionDtype):
         return Images
 
     @property
-    def type(self) -> Type["Image"]:
-        from PIL.Image import Image
-
+    def type(self) -> Type[Image]:
         return Image
 
     def __from_arrow__(self, array: Union[pa.Array, pa.ChunkedArray]) -> "Images":
@@ -85,18 +72,16 @@ class _ImageDtype(ExtensionDtype):
         return Images(tuple(images))
 
 
-def _load_image(binary: Union[pa.BinaryScalar, pa.ExtensionScalar]) -> "Image":
+def _load_image(binary: Union[pa.BinaryScalar, pa.ExtensionScalar]) -> Image:
     storage_array = binary.value if isinstance(binary, pa.ExtensionScalar) else binary
     with io.BytesIO(storage_array.as_buffer().to_pybytes()) as buf:
-        import PIL.Image
-
         image = PIL.Image.open(buf)
         image.load()
         return image
 
 
 class Images(ExtensionArray):
-    def __init__(self, images: Sequence["Image"]):
+    def __init__(self, images: Sequence[Image]):
         self._images = images
         self._dtype = _ImageDtype()
 
@@ -127,7 +112,7 @@ class Images(ExtensionArray):
     def __len__(self) -> int:
         return len(self._images)
 
-    def __getitem__(self, item: PositionalIndexer) -> Union["Images", "Image"]:
+    def __getitem__(self, item: PositionalIndexer) -> Union["Images", Image]:
         if isinstance(item, int):
             # for scalar item, return a scalar value suitable for the array's type
             return self._images[item]
@@ -138,9 +123,7 @@ class Images(ExtensionArray):
             return Images(self._images[item.start : item.stop : item.step])
         raise NotImplementedError(f"item type {type(item)}")
 
-    def _get_images_by_mask(
-        self, mask: Iterable[bool]
-    ) -> Generator["Image", None, None]:
+    def _get_images_by_mask(self, mask: Iterable[bool]) -> Generator[Image, None, None]:
         for i, include in enumerate(mask):
             if include:
                 yield self._images[i]
@@ -181,7 +164,7 @@ class Images(ExtensionArray):
         return total_bytes
 
 
-def _image_bytes(image: "Image") -> bytes:
+def _image_bytes(image: Image) -> bytes:
     with io.BytesIO() as buf:
         image.save(buf, format="PNG")
         return buf.getvalue()
