@@ -1,12 +1,19 @@
 import inspect
 from abc import ABCMeta, abstractmethod, abstractproperty
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable, Optional
 
 import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
 from layer.types import ModelArtifact
+
+
+@dataclass(frozen=True)
+class ModelRuntimeObjects:
+    model_artifact: ModelArtifact
+    prediction_function: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None
 
 
 class ModelFlavor(metaclass=ABCMeta):
@@ -66,9 +73,7 @@ class ModelFlavor(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def load_model_from_directory(
-        self, directory: Path
-    ) -> Tuple[ModelArtifact, Callable[[pd.DataFrame], pd.DataFrame]]:
+    def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         """Defines the method that this Model Flavor uses to load a model from a directory.
 
         Returns:

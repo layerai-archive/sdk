@@ -3,9 +3,8 @@ import warnings
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import Callable, Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional
 
-import pandas as pd
 from layerapi.api.entity.model_pb2 import Model as PBModel
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
 from layerapi.api.entity.model_train_status_pb2 import (
@@ -48,6 +47,7 @@ from layer.config import ClientConfig
 from layer.contracts.models import Model, ModelArtifact, TrainStorageConfiguration
 from layer.contracts.runs import ModelFunctionDefinition, ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
+from layer.flavors.base import ModelRuntimeObjects
 from layer.flavors.utils import get_flavor_for_proto
 from layer.tracker.project_progress_tracker import RunProgressTracker
 from layer.utils.grpc import create_grpc_channel
@@ -177,12 +177,12 @@ class ModelCatalogClient:
         )
         return response.id
 
-    def load_model(
+    def load_model_runtime_objects(
         self,
         model: Model,
         state: ResourceTransferState,
         no_cache: bool = False,
-    ) -> Tuple[ModelArtifact, Callable[[pd.DataFrame], pd.DataFrame]]:
+    ) -> ModelRuntimeObjects:
         """
         Loads a model artifact from the model catalog
 
@@ -204,19 +204,19 @@ class ModelCatalogClient:
                         state=state,
                     )
                     if no_cache:
-                        return self._load_model(model, local_path)
+                        return self._load_model_runtime_objects(model, local_path)
                     model_cache_dir = self._cache.put_path_entry(
                         str(model.id), local_path
                     )
 
             assert model_cache_dir is not None
-            return self._load_model(model, model_cache_dir)
+            return self._load_model_runtime_objects(model, model_cache_dir)
         except Exception as ex:
             raise LayerClientException(f"Error while loading model, {ex}")
 
-    def _load_model(
+    def _load_model_runtime_objects(
         self, model: Model, model_dir: Path
-    ) -> Tuple[ModelArtifact, Callable[[pd.DataFrame], pd.DataFrame]]:
+    ) -> ModelRuntimeObjects:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             return model.flavor.load_model_from_directory(model_dir)

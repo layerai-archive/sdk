@@ -2,7 +2,6 @@ from typing import Dict, List, Optional
 
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.flavors.base import ModelFlavor
 from layer.types import ModelArtifact
 
 from .base import ModelFlavor  # noqa
