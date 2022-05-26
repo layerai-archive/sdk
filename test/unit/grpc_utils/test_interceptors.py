@@ -3,7 +3,6 @@ import os
 import uuid
 from collections import namedtuple
 from pathlib import Path
-from test.unit.grpc_test_utils import new_client_call_details, rpc_error
 from typing import Any, Optional, Tuple
 from unittest.mock import MagicMock
 
@@ -31,6 +30,7 @@ from layer.utils.grpc.interceptors import (
     LogRpcCallsInterceptor,
 )
 from layer.utils.session import _ENV_KEY_LAYER_DEBUG
+from test.unit.grpc_test_utils import new_client_call_details, rpc_error
 
 
 class TestLogRpcCallsInterceptor:

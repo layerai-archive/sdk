@@ -1,5 +1,3 @@
-from test.e2e.assertion_utils import E2ETestAsserter
-
 import pandas as pd
 import pytest
 from sklearn.svm import SVC
@@ -16,6 +14,7 @@ from layer.exceptions.exceptions import (
     ProjectDatasetBuildExecutionException,
     ProjectModelExecutionException,
 )
+from test.e2e.assertion_utils import E2ETestAsserter
 
 
 def test_remote_run_succeeds_and_registers_metadata_when_assertion_succeeds(

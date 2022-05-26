@@ -1,6 +1,3 @@
-from test.e2e.assertion_utils import E2ETestAsserter
-from test.e2e.conftest import _cleanup_project
-
 import pandas as pd
 import pytest
 
@@ -11,6 +8,8 @@ from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
 from layer.decorators import dataset, pip_requirements
 from layer.exceptions.exceptions import LayerClientException
+from test.e2e.assertion_utils import E2ETestAsserter
+from test.e2e.conftest import _cleanup_project
 
 
 def test_remote_run_with_dependent_datasets_succeeds_and_registers_metadata(

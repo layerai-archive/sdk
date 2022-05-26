@@ -44,7 +44,7 @@ format: $(INSTALL_STAMP) ## Apply formatters
 
 .PHONY: lint
 lint: $(INSTALL_STAMP) ## Run all linters
-	$(POETRY) run isort --profile=black --lines-after-imports=2 --check-only .
+	$(POETRY) run isort --check-only .
 	$(POETRY) run black --check . --diff
 	$(POETRY) run flake8 .
 	$(POETRY) run pylint  --recursive yes .
@@ -54,7 +54,7 @@ lint: $(INSTALL_STAMP) ## Run all linters
 .PHONY: check
 check: test lint ## Run test and lint
 
-.PHONY: publish 
+.PHONY: publish
 publish: ## Publish to PyPi - should only run in CI
 	@test $${PATCH_VERSION?PATCH_VERSION expected}
 	@test $${PYPI_USER?PYPI_USER expected}
@@ -91,4 +91,3 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@grep -E '^[8+a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo
-	

@@ -2,7 +2,6 @@ import filecmp
 import os.path
 import tempfile
 import uuid
-from test.e2e.assertion_utils import E2ETestAsserter
 
 import pandas as pd
 
@@ -12,6 +11,7 @@ from layer.contracts.runs import ModelFunctionDefinition, Run
 from layer.decorators import dataset, model, pip_requirements, resources
 from layer.resource_manager import ResourceManager
 from layer.tracker.project_progress_tracker import RunProgressTracker
+from test.e2e.assertion_utils import E2ETestAsserter
 
 
 def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserter):

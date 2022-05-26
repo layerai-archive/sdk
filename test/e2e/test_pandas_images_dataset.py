@@ -1,5 +1,3 @@
-from test.e2e.assertion_utils import E2ETestAsserter
-
 import pandas as pd
 import PIL
 from pandas.testing import assert_frame_equal
@@ -9,6 +7,7 @@ from PIL.Image import Image
 import layer
 from layer.contracts.projects import Project
 from layer.decorators import dataset, pip_requirements
+from test.e2e.assertion_utils import E2ETestAsserter
 
 
 def test_pandas_images_dataset_store_and_save(

@@ -1,5 +1,3 @@
-from test.e2e.assertion_utils import E2ETestAsserter
-
 import pandas as pd
 
 import layer
@@ -7,6 +5,7 @@ from layer.clients.layer import LayerClient
 from layer.contracts.logged_data import LoggedDataType
 from layer.contracts.projects import Project
 from layer.decorators import dataset
+from test.e2e.assertion_utils import E2ETestAsserter
 
 
 def test_remote_run_with_log(

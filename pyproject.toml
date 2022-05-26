@@ -316,3 +316,8 @@ skips = [
     "B105", # hardcoded_password_string too noisy on defaults values empty string
     "B106", # hardcoded_password_funcarg too noisy on defaults values empty string
 ]
+
+[tool.isort]
+profile = "black"
+lines_after_imports = 2
+known_first_party = ["layer", "test"]

@@ -3,7 +3,6 @@ import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from test.e2e.assertion_utils import E2ETestAsserter
 from typing import Any, Callable, Iterator
 
 import ddtrace
@@ -18,6 +17,7 @@ from layer.projects.project_runner import ProjectRunner
 from layer.tracker.remote_execution_project_progress_tracker import (
     RemoteExecutionRunProgressTracker,
 )
+from test.e2e.assertion_utils import E2ETestAsserter
 
 
 logger = logging.getLogger(__name__)
