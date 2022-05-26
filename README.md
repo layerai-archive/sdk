@@ -34,7 +34,7 @@ limitations under the License.
     <a href="https://pypi.python.org/pypi/layer">
         <img alt="PyPI" src="https://img.shields.io/pypi/v/layer.svg">
     </a>
-    <a href="https://github.com/layer/sdk/blob/main/CODE_OF_CONDUCT.md">
+    <a href="https://github.com/layerai/.github/blob/main/CODE_OF_CONDUCT.md">
         <img alt="Contributor Covenant" src="https://img.shields.io/badge/contributor%20covenant-v2.1%20adopted-blueviolet.svg">
     </a>
 </p>
@@ -87,7 +87,7 @@ clf
 
 [**🚀 Try in Google Colab now!**](https://colab.research.google.com/github/layerai/examples/blob/main/tutorials/add-models-to-layer/how_to_add_models_to_layer.ipynb)
 
-## Reporting bugs 
+## Reporting bugs
 You have a bug, a request or a feature? Let us know on [Slack](https://bit.ly/layercommunityslack) or [open an issue](https://github.com/layerai/sdk/issues/new/choose)
 
 ## Contributing code
@@ -99,4 +99,3 @@ Do you want to help us build the best metadata store? Check out the [Contributin
 - Browse [Community Projects](https://layer.ai/community) to see more use cases
 - Check out the [Documentation](https://docs.app.layer.ai)
 - [Contact us](https://layer.ai/contact-us) for your questions
-
