@@ -247,7 +247,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                     with Context() as context:
                         set_active_context(context)
                         context.with_entity_name(asset_path.entity_name)
-                        context.with_entity_type(EntityType.DERIVED_DATASET)
+                        context.with_entity_type(EntityType.dataset)
                         tracker = LocalExecutionRunProgressTracker(
                             project_name=None, config=config
                         )
@@ -259,7 +259,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                                 False,  # Datasets are fetched per partition, no good way to show caching per partition
                                 within_run,
                                 context,
-                                EntityType.DERIVED_DATASET,
+                                EntityType.dataset,
                             )
                 finally:
                     reset_active_context()  # Reset only if outside layer func, as the layer func logic will reset it
@@ -271,7 +271,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                     False,  # Datasets are fetched per partition, no good way to show caching per partition
                     within_run,
                     context,
-                    EntityType.DERIVED_DATASET,
+                    EntityType.dataset,
                 )
 
             return dataset
@@ -396,7 +396,7 @@ def _ui_progress_with_tracker(
     entity_type = context.entity_type()
     assert entity_type
     if entity_type == EntityType.MODEL:
-        if getting_entity_type == EntityType.DERIVED_DATASET:
+        if getting_entity_type == EntityType.dataset:
             tracker.mark_model_getting_dataset(
                 entity_name, getting_entity_name, from_cache
             )
@@ -404,8 +404,8 @@ def _ui_progress_with_tracker(
             tracker.mark_model_getting_model(
                 entity_name, getting_entity_name, state, from_cache
             )
-    elif entity_type == EntityType.DERIVED_DATASET:
-        if getting_entity_type == EntityType.DERIVED_DATASET:
+    elif entity_type == EntityType.dataset:
+        if getting_entity_type == EntityType.dataset:
             tracker.mark_dataset_getting_dataset(
                 entity_name, getting_entity_name, from_cache
             )
@@ -417,11 +417,11 @@ def _ui_progress_with_tracker(
     if within_run:
         if entity_type == EntityType.MODEL:
             tracker.mark_model_training(entity_name)
-        elif entity_type == EntityType.DERIVED_DATASET:
-            tracker.mark_derived_dataset_building(entity_name)
+        elif entity_type == EntityType.dataset:
+            tracker.mark_dataset_building(entity_name)
     elif entity_type == EntityType.MODEL:
         tracker.mark_model_loaded(entity_name)
-    elif entity_type == EntityType.DERIVED_DATASET:
+    elif entity_type == EntityType.dataset:
         tracker.mark_dataset_loaded(entity_name)
     return result
 

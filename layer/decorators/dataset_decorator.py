@@ -168,7 +168,7 @@ def _build_dataset_locally_and_store_remotely(
     dataset = register_dataset_function(
         client, current_project_uuid, dataset, True, tracker
     )
-    tracker.mark_derived_dataset_building(layer.get_entity_name())  # type: ignore
+    tracker.mark_dataset_building(layer.get_entity_name())  # type: ignore
 
     (result, build_uuid) = _build_locally_update_remotely(
         client,
@@ -189,7 +189,7 @@ def _build_dataset_locally_and_store_remotely(
         build_id=build_uuid,
         progress_callback=transfer_state.increment_num_transferred_rows,
     )
-    tracker.mark_derived_dataset_built(dataset.name)
+    tracker.mark_dataset_built(dataset.name)
     return result
 
 

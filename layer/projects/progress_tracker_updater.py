@@ -20,7 +20,7 @@ from layer.exceptions.exceptions import (
 )
 from layer.exceptions.status_report import ExecutionStatusReportFactory
 from layer.projects.utils import get_current_project_name
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.session import is_layer_debug_on
 
 
@@ -122,7 +122,7 @@ class ProgressTrackerUpdater:
                 self.run_metadata[(task_type, dataset_path, "build-id")]
             )
             dataset = self.client.data_catalog.get_dataset_by_build_id(dataset_build_id)
-            self.tracker.mark_derived_dataset_built(
+            self.tracker.mark_dataset_built(
                 name=dataset_name,
                 version=dataset.version,
                 build_index=dataset.build.index,
@@ -156,9 +156,7 @@ class ProgressTrackerUpdater:
                 task_id,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
-            self.tracker.mark_derived_dataset_failed(
-                name=task_id, reason=exc_ds.message
-            )
+            self.tracker.mark_dataset_failed(name=task_id, reason=exc_ds.message)
             raise exc_ds
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             exc_model = ProjectModelExecutionException(
@@ -179,7 +177,7 @@ class ProgressTrackerUpdater:
         task_id = task.id
         task_type = task.type
         if task_type == PBTask.TYPE_DATASET_BUILD:
-            self.tracker.mark_derived_dataset_building(name=task_id)
+            self.tracker.mark_dataset_building(name=task_id)
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             self.tracker.mark_model_training(
                 name=self._find_model_name_by_version_id(task_id)

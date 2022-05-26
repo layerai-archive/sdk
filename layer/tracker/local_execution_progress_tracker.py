@@ -12,7 +12,7 @@ from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.entities import Entity, EntityStatus, EntityType
 from layer.contracts.runs import DatasetTransferState, ResourceTransferState
 from layer.tracker.output import get_progress_ui
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 
 
 class LocalExecutionRunProgressTracker(RunProgressTracker):
@@ -38,7 +38,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
             yield self
 
     def add_build(self, name: str) -> None:
-        self._get_or_create_task(EntityType.DERIVED_DATASET, name)
+        self._get_or_create_task(EntityType.dataset, name)
 
     def add_model(self, name: str) -> None:
         self._get_or_create_task(EntityType.MODEL, name)
@@ -108,7 +108,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         if status == EntityStatus.PENDING:
             self._progress.update(task_id, description="pending")
         elif status == EntityStatus.SAVING:
-            if type_ == EntityType.DERIVED_DATASET:
+            if type_ == EntityType.dataset:
                 # Even if we go through all steps, we still want to keep track of time elapsed until the status is DONE, so we add +1 to total_steps.
                 self._progress.update(
                     task_id,
@@ -152,18 +152,18 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
             project_name=self._project_name,
         ).url(self._config.url)
 
-    def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
+    def mark_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             url=self._get_url(AssetType.DATASET, name),
         )
 
-    def mark_derived_dataset_building(
+    def mark_dataset_building(
         self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
     ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             status=EntityStatus.BUILDING,
             url=self._get_url(AssetType.DATASET, name),
@@ -171,7 +171,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
             build_idx=build_idx,
         )
 
-    def mark_derived_dataset_built(
+    def mark_dataset_built(
         self,
         name: str,
         *,
@@ -179,7 +179,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         build_index: Optional[str] = None,
     ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             status=EntityStatus.DONE,
             url=self._get_url(AssetType.DATASET, name),
@@ -187,11 +187,11 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
             build_idx=build_index,
         )
 
-    def update_derived_dataset_saving_progress(
+    def update_dataset_saving_progress(
         self, name: str, cur_step: int, total_steps: int
     ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             status=EntityStatus.SAVING,
             cur_step=cur_step,
@@ -269,7 +269,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
 
     def mark_dataset_running_assertions(self, name: str) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             status=EntityStatus.ASSERTING,
             description="asserting...",
@@ -277,13 +277,13 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
 
     def mark_dataset_running_assertion(self, name: str, assertion: Assertion) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             description=str(assertion),
         )
 
     def mark_dataset_completed_assertions(self, name: str) -> None:
-        self._update_entity(EntityType.DERIVED_DATASET, name, description="asserted")
+        self._update_entity(EntityType.dataset, name, description="asserted")
 
     def mark_dataset_failed_assertions(
         self, name: str, assertions: List[Assertion]
@@ -291,7 +291,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         stringified = [str(assertion) for assertion in assertions]
         error_msg = f"failed: {', '.join(stringified)}"
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             status=EntityStatus.ERROR,
             error_reason=error_msg,
@@ -301,7 +301,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self, name: str, state: DatasetTransferState
     ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             dataset_transfer_state=state,
             status=EntityStatus.RESULT_UPLOADING,
@@ -353,7 +353,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         from_cache: bool,
     ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             entity_download_transfer_state=state,
             status=EntityStatus.ENTITY_DOWNLOADING
@@ -366,7 +366,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self, name: str, getting_entity_name: str, from_cache: bool
     ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             entity_download_transfer_state=DatasetTransferState(0, getting_entity_name),
             status=EntityStatus.ENTITY_DOWNLOADING
@@ -385,6 +385,4 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self,
         name: str,
     ) -> None:
-        self._update_entity(
-            EntityType.DERIVED_DATASET, name, status=EntityStatus.ENTITY_LOADED
-        )
+        self._update_entity(EntityType.dataset, name, status=EntityStatus.ENTITY_LOADED)

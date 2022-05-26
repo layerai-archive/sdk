@@ -3,7 +3,7 @@ from typing import Optional
 
 from layer.contracts.datasets import DatasetBuild
 from layer.contracts.entities import EntityType
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
 
 
@@ -79,7 +79,7 @@ class Context:
         elif self.train():
             return EntityType.MODEL
         elif self.dataset_build():
-            return EntityType.DERIVED_DATASET
+            return EntityType.dataset
         else:
             raise Exception("Unsupported entity type")
 

@@ -12,7 +12,7 @@ from layer.contracts.entities import Entity, EntityStatus, EntityType
 from layer.contracts.runs import ResourceTransferState, Run
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 from layer.tracker.output import get_progress_ui
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 
 
 class RemoteExecutionRunProgressTracker(RunProgressTracker):
@@ -32,7 +32,7 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
         for definition in self._run.definitions:
             entity_type: Optional[EntityType] = None
             if definition.asset_type == AssetType.DATASET:
-                entity_type = EntityType.DERIVED_DATASET
+                entity_type = EntityType.dataset
             elif definition.asset_type == AssetType.MODEL:
                 entity_type = EntityType.MODEL
             else:
@@ -142,26 +142,26 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
                 )
             )
 
-    def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
+    def mark_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
         status = EntityStatus.PENDING
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             url=self._get_url(AssetType.DATASET, name),
             status=status,
         )
 
-    def mark_derived_dataset_building(
+    def mark_dataset_building(
         self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
     ) -> None:
         # For some reason, this function is called even after the dataset is successfully built and
         # it causes a flicker in the progress bar. This is a workaround.
-        entity = self._get_entity(EntityType.DERIVED_DATASET, name)
+        entity = self._get_entity(EntityType.dataset, name)
         if entity.status == EntityStatus.DONE:
             return
 
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             status=EntityStatus.BUILDING,
             url=self._get_url(AssetType.DATASET, name),
@@ -169,15 +169,15 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
             build_idx=build_idx,
         )
 
-    def mark_derived_dataset_failed(self, name: str, reason: str) -> None:
+    def mark_dataset_failed(self, name: str, reason: str) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             status=EntityStatus.ERROR,
             error_reason=f"{reason}",
         )
 
-    def mark_derived_dataset_built(
+    def mark_dataset_built(
         self,
         name: str,
         *,
@@ -185,7 +185,7 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
         build_index: Optional[str] = None,
     ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             status=EntityStatus.DONE,
             url=self._get_url(AssetType.DATASET, name),
@@ -266,7 +266,7 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
         self, name: str, state: ResourceTransferState
     ) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             description="uploading",
             state=state,
@@ -275,7 +275,7 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
 
     def mark_dataset_resources_uploaded(self, name: str) -> None:
         self._update_entity(
-            EntityType.DERIVED_DATASET,
+            EntityType.dataset,
             name,
             description="uploaded",
             status=EntityStatus.PENDING,  # Pending here meaning that training has not started yet

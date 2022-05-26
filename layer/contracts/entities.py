@@ -47,7 +47,7 @@ class EntityStatus(str, Enum):
 @unique
 class EntityType(str, Enum):
     RAW_DATASET = "raw_dataset"
-    DERIVED_DATASET = "derived_dataset"
+    dataset = "dataset"
     MODEL = "model"
 
 

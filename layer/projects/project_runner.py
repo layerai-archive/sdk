@@ -283,13 +283,13 @@ def register_dataset_function(
     try:
         dataset = client.data_catalog.add_dataset(project_id, dataset, is_local)
         assert dataset.repository_id
-        tracker.mark_derived_dataset_saved(dataset.name, id_=dataset.repository_id)
+        tracker.mark_dataset_saved(dataset.name, id_=dataset.repository_id)
         return dataset
     except LayerClientServiceUnavailableException as e:
-        tracker.mark_derived_dataset_failed(dataset.name, "")
+        tracker.mark_dataset_failed(dataset.name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
     except LayerClientException as e:
-        tracker.mark_derived_dataset_failed(dataset.name, "")
+        tracker.mark_dataset_failed(dataset.name, "")
         raise ProjectInitializationException(
             f"Failed to save derived dataset {dataset.name!r}: {e}",
             "Please retry",
