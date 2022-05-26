@@ -1,8 +1,9 @@
 import copy
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Union
 
+import pandas as pd
 from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
@@ -47,6 +48,7 @@ class Model(BaseAsset):
         storage_config: Optional[TrainStorageConfiguration] = None,
         parameters: Optional[Dict[str, Any]] = None,
         model_artifact: Optional[ModelArtifact] = None,
+        predict_function: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
     ):
         super().__init__(
             asset_type=AssetType.MODEL,
@@ -60,6 +62,7 @@ class Model(BaseAsset):
         self._storage_config = storage_config
         self.parameters = parameters or {}
         self._model_artifact = model_artifact
+        self._predict_function = predict_function
 
     def set_parameters(self, parameters: Dict[str, Any]) -> "Model":
         self.parameters = parameters
@@ -67,6 +70,12 @@ class Model(BaseAsset):
 
     def set_artifact(self, model_artifact: ModelArtifact) -> "Model":
         self._model_artifact = model_artifact
+        return self
+
+    def set_predict_function(
+        self, func: Callable[[pd.DataFrame], pd.DataFrame]
+    ) -> "Model":
+        self._predict_function = func
         return self
 
     @property
@@ -100,6 +109,15 @@ class Model(BaseAsset):
         :return: The trained model artifact.
         """
         return self.artifact
+
+    def predict(self, input_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Performs prediction on the input dataframe data.
+        :return: the predictions as a pd.DataFrame
+        """
+        if self._predict_function is None:
+            raise Exception("No predict function provided")
+        return self._predict_function(input_df)
 
     def get_parameters(self) -> Dict[str, Any]:
         """

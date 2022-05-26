@@ -1,7 +1,9 @@
 import inspect
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pathlib import Path
+from typing import Callable, Tuple
 
+import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
 from layer.types import ModelArtifact
@@ -64,7 +66,9 @@ class ModelFlavor(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
+    def load_model_from_directory(
+        self, directory: Path
+    ) -> Tuple[ModelArtifact, Callable[[pd.DataFrame], pd.DataFrame]]:
         """Defines the method that this Model Flavor uses to load a model from a directory.
 
         Returns:

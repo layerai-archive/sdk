@@ -1,5 +1,7 @@
 from pathlib import Path
+from typing import Any, Callable, Tuple
 
+import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
 from layer.types import ModelArtifact
@@ -59,7 +61,9 @@ class KerasModelFlavor(ModelFlavor):
         else:
             mlflow.keras.save_model(model_object, path=directory.as_posix())
 
-    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
+    def load_model_from_directory(
+        self, directory: Path
+    ) -> Tuple[ModelArtifact, Callable[[pd.DataFrame], pd.DataFrame]]:
         import mlflow.keras
 
         tokenizer_file = directory / KerasModelFlavor.TOKENIZER_FILE
@@ -68,6 +72,12 @@ class KerasModelFlavor(ModelFlavor):
             import cloudpickle
 
             with open(directory / KerasModelFlavor.TOKENIZER_FILE, "rb") as handle:
-                return cloudpickle.load(handle)
+                model = cloudpickle.load(handle)
+                return model, lambda input_df: self.__predict(model, input_df)
         else:
-            return mlflow.keras.load_model(directory.as_uri())
+            model = mlflow.keras.load_model(directory.as_uri())
+            return model, lambda input_df: self.__predict(model, input_df)
+
+    @staticmethod
+    def __predict(model: Any, input_df: pd.DataFrame) -> pd.DataFrame:
+        raise Exception("Not implemented")

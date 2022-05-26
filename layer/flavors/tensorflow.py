@@ -1,5 +1,7 @@
 from pathlib import Path
+from typing import Any, Callable, Tuple
 
+import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
 from layer.types import ModelArtifact
@@ -29,7 +31,14 @@ class TensorFlowModelFlavor(ModelFlavor):
             path=directory.as_posix(),
         )
 
-    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
+    def load_model_from_directory(
+        self, directory: Path
+    ) -> Tuple[ModelArtifact, Callable[[pd.DataFrame], pd.DataFrame]]:
         import mlflow.tensorflow
 
-        return mlflow.tensorflow.load_model(directory.as_uri())
+        model = mlflow.tensorflow.load_model(directory.as_uri())
+        return model, lambda input_df: self.__predict(model, input_df)
+
+    @staticmethod
+    def __predict(model: Any, input_df: pd.DataFrame) -> pd.DataFrame:
+        raise Exception("Not implemented")

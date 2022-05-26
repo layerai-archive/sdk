@@ -37,7 +37,7 @@ def test_model_load_from_cache(tmp_path: Path) -> None:
 
     with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
         s3_download.side_effect = download_model_files_from_s3
-        model_catalog.load_model_artifact(model, state=ResourceTransferState())
+        model_catalog.load_model(model, state=ResourceTransferState())
         # assert model was downloaded and not loaded from the cache dir
         s3_download.assert_called_once()
         model_flavor.model_impl.assert_called_once_with(model_cache_dir.as_uri())
@@ -45,7 +45,7 @@ def test_model_load_from_cache(tmp_path: Path) -> None:
     model_flavor.model_impl.reset_mock()
 
     with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
-        model_catalog.load_model_artifact(model, state=ResourceTransferState())
+        model_catalog.load_model(model, state=ResourceTransferState())
         # assert model was loaded from the cache dir without downloading
         s3_download.assert_not_called()
         model_flavor.model_impl.assert_called_once_with(model_cache_dir.as_uri())
@@ -69,9 +69,7 @@ def test_model_load_from_cache_does_not_cache_if_no_cache_true(tmp_path: Path) -
 
     with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
         s3_download.side_effect = download_model_files_from_s3
-        model_catalog.load_model_artifact(
-            model, state=ResourceTransferState(), no_cache=True
-        )
+        model_catalog.load_model(model, state=ResourceTransferState(), no_cache=True)
         model_download_dir = s3_download.call_args[1]["local_dir"]
         # assert model was downloaded and not loaded from the cache dir
         s3_download.assert_called_once()

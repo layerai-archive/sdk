@@ -367,12 +367,13 @@ def _load_model_artifact(
     state: ResourceTransferState,
     no_cache: bool,
 ) -> Model:
-    model_artifact = client.model_catalog.load_model_artifact(
+    model_artifact, predict_func = client.model_catalog.load_model(
         model,
         state=state,
         no_cache=no_cache,
     )
     model.set_artifact(model_artifact)
+    model.set_predict_function(predict_func)
     parameters = client.model_catalog.get_model_train_parameters(
         ModelTrainId(value=str(model.id)),
     )

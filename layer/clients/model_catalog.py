@@ -3,8 +3,9 @@ import warnings
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import Dict, Iterator, Optional
+from typing import Callable, Dict, Iterator, Optional, Tuple
 
+import pandas as pd
 from layerapi.api.entity.model_pb2 import Model as PBModel
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
 from layerapi.api.entity.model_train_status_pb2 import (
@@ -176,12 +177,12 @@ class ModelCatalogClient:
         )
         return response.id
 
-    def load_model_artifact(
+    def load_model(
         self,
         model: Model,
         state: ResourceTransferState,
         no_cache: bool = False,
-    ) -> ModelArtifact:
+    ) -> Tuple[ModelArtifact, Callable[[pd.DataFrame], pd.DataFrame]]:
         """
         Loads a model artifact from the model catalog
 
@@ -213,7 +214,9 @@ class ModelCatalogClient:
         except Exception as ex:
             raise LayerClientException(f"Error while loading model, {ex}")
 
-    def _load_model(self, model: Model, model_dir: Path) -> ModelArtifact:
+    def _load_model(
+        self, model: Model, model_dir: Path
+    ) -> Tuple[ModelArtifact, Callable[[pd.DataFrame], pd.DataFrame]]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             return model.flavor.load_model_from_directory(model_dir)
