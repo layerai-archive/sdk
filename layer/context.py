@@ -1,7 +1,7 @@
 from types import TracebackType
 from typing import Optional
 
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
@@ -22,14 +22,14 @@ class Context:
         train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
         tracker: Optional[RunProgressTracker] = None,
-        entity_name: Optional[str] = None,
-        entity_type: Optional[AssetType] = None,
+        asset_name: Optional[str] = None,
+        asset_type: Optional[AssetType] = None,
     ) -> None:
         self._train: Optional[BaseTrain] = train
         self._dataset_build: Optional[DatasetBuild] = dataset_build
         self._tracker: Optional[RunProgressTracker] = tracker
-        self._entity_name = entity_name
-        self._entity_type = entity_type
+        self._asset_name = asset_name
+        self._asset_type = asset_type
 
     def train(self) -> Optional[BaseTrain]:
         """
@@ -61,27 +61,27 @@ class Context:
     def with_tracker(self, tracker: RunProgressTracker) -> None:
         self._tracker = tracker
 
-    def with_entity_name(self, entity_name: str) -> None:
-        self._entity_name = entity_name
+    def with_asset_name(self, asset_name: str) -> None:
+        self._asset_name = asset_name
 
-    def with_entity_type(self, entity_type: AssetType) -> None:
-        self._entity_type = entity_type
+    def with_asset_type(self, asset_type: AssetType) -> None:
+        self._asset_type = asset_type
 
     def tracker(self) -> Optional[RunProgressTracker]:
         return self._tracker
 
-    def entity_name(self) -> Optional[str]:
-        return self._entity_name
+    def asset_name(self) -> Optional[str]:
+        return self._asset_name
 
-    def entity_type(self) -> AssetType:
-        if self._entity_type:
-            return self._entity_type
+    def asset_type(self) -> AssetType:
+        if self._asset_type:
+            return self._asset_type
         elif self.train():
             return AssetType.MODEL
         elif self.dataset_build():
             return AssetType.DATASET
         else:
-            raise Exception("Unsupported entity type")
+            raise Exception("Unsupported asset type")
 
     def close(self) -> None:
         pass

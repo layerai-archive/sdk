@@ -11,7 +11,7 @@ from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layer.exceptions.exceptions import ProjectException
 
 from .accounts import Account
-from .asset import AssetType
+from .assets import AssetType
 
 
 logger = logging.getLogger()
@@ -19,15 +19,9 @@ LeveledNode = namedtuple("LeveledNode", ["node", "level"])
 
 
 @dataclass(frozen=True)
-class Asset:
-    type: AssetType
-    name: str
-
-
-@dataclass(frozen=True)
 class Project:
     """
-    Provides access to projects stored in Layer. Projects are containers to organize your machine learning project assets.
+    Provides access to projects stored in Layer. Projects are containers to organize your machine learning project entities.
 
     You can retrieve an instance of this object with :code:`layer.init()`.
 

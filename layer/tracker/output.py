@@ -13,7 +13,7 @@ from rich.text import Text, TextType
 
 from layer.contracts.runs import GetRunsFunction
 
-from .entity_column import EntityColumn
+from .asset_column import AssetColumn
 
 
 # Taken from https://github.com/willmcgugan/rich/blob/6f09ae226c26a2be52e3214ee93e6d704756d282/rich/progress.py#L211
@@ -67,7 +67,7 @@ class SpinnerColumn(ProgressColumn):
 
 def get_progress_ui() -> Progress:
     return Progress(
-        SpinnerColumn(finished_text=":white_heavy_check_mark:"), EntityColumn()
+        SpinnerColumn(finished_text=":white_heavy_check_mark:"), AssetColumn()
     )
 
 

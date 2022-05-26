@@ -18,7 +18,7 @@ from layer.config import DEFAULT_FUNC_PATH
 from layer.exceptions.exceptions import LayerClientException
 
 from .accounts import Account
-from .asset import AssetPath, AssetType
+from .assets import AssetPath, AssetType
 from .fabrics import Fabric
 
 
@@ -84,7 +84,7 @@ class FunctionDefinition(abc.ABC):
         self.language_version = language_version
 
         layer_settings = func.layer
-        name = layer_settings.get_entity_name()
+        name = layer_settings.get_asset_name()
         if name is None:
             raise LayerClientException("Name cannot be empty")
         self.name = name
@@ -117,7 +117,7 @@ class FunctionDefinition(abc.ABC):
     def asset_path(self) -> AssetPath:
         return AssetPath(
             asset_type=self.asset_type,
-            entity_name=self.name,
+            asset_name=self.name,
             project_name=self.project_name,
         )
 
@@ -130,12 +130,12 @@ class FunctionDefinition(abc.ABC):
         return f"{self.name}.pkl"
 
     @property
-    def entity_path(self) -> Path:
+    def pickle_dir(self) -> Path:
         return DEFAULT_FUNC_PATH / self.project_name / self.name
 
     @property
     def pickle_path(self) -> Path:
-        return self.entity_path / self.entrypoint
+        return self.pickle_dir / self.entrypoint
 
     @property
     def environment(self) -> str:
@@ -147,7 +147,7 @@ class FunctionDefinition(abc.ABC):
 
     @property
     def environment_path(self) -> Path:
-        return self.entity_path / self.environment
+        return self.pickle_dir / self.environment
 
     def get_fabric(self, is_local: bool) -> str:
         if is_local:
@@ -157,15 +157,15 @@ class FunctionDefinition(abc.ABC):
 
     def _clean_pickle_folder(self) -> None:
         # Remove directory to clean leftovers from previous runs
-        entity_path = self.entity_path
-        if entity_path.exists():
-            shutil.rmtree(entity_path)
-        os.makedirs(entity_path)
+        pickle_dir = self.pickle_dir
+        if pickle_dir.exists():
+            shutil.rmtree(pickle_dir)
+        os.makedirs(pickle_dir)
 
     def _pack(self) -> None:
         self._clean_pickle_folder()
 
-        # Dump pickled function to entity_name.pkl
+        # Dump pickled function to asset_name.pkl
         with open(self.pickle_path, mode="wb") as file:
             cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
 

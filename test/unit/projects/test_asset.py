@@ -2,7 +2,7 @@ from typing import Optional
 
 import pytest
 
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.assets import AssetPath, AssetType
 
 
 class TestCompositeEntityName:
@@ -17,7 +17,7 @@ class TestCompositeEntityName:
     def test_parse_composite_name_with_invalid_format(self, bad_format: str) -> None:
         with pytest.raises(
             ValueError,
-            match="(Please specify full path or specify entity type|Entity path does not match expected pattern)",
+            match="(Please specify full path or specify asset type|Asset path does not match expected pattern)",
         ):
             AssetPath.parse(bad_format)
 
@@ -27,50 +27,50 @@ class TestCompositeEntityName:
             (
                 "models/test",
                 None,
-                AssetPath(entity_name="test", asset_type=AssetType.MODEL),
+                AssetPath(asset_name="test", asset_type=AssetType.MODEL),
             ),
             (
                 "models/test",
                 AssetType.MODEL,
-                AssetPath(entity_name="test", asset_type=AssetType.MODEL),
+                AssetPath(asset_name="test", asset_type=AssetType.MODEL),
             ),
             (
                 "test",
                 AssetType.MODEL,
-                AssetPath(entity_name="test", asset_type=AssetType.MODEL),
+                AssetPath(asset_name="test", asset_type=AssetType.MODEL),
             ),
             (
                 "models/test:1",
                 None,
                 AssetPath(
-                    entity_name="test", asset_type=AssetType.MODEL, entity_version="1"
+                    asset_name="test", asset_type=AssetType.MODEL, asset_version="1"
                 ),
             ),
             (
                 "test:1",
                 AssetType.MODEL,
                 AssetPath(
-                    entity_name="test", asset_type=AssetType.MODEL, entity_version="1"
+                    asset_name="test", asset_type=AssetType.MODEL, asset_version="1"
                 ),
             ),
             (
                 "models/test:1.2",
                 None,
                 AssetPath(
-                    entity_name="test",
+                    asset_name="test",
                     asset_type=AssetType.MODEL,
-                    entity_version="1",
-                    entity_build=2,
+                    asset_version="1",
+                    asset_build=2,
                 ),
             ),
             (
                 "the-project/models/test:1.2",
                 None,
                 AssetPath(
-                    entity_name="test",
+                    asset_name="test",
                     asset_type=AssetType.MODEL,
-                    entity_version="1",
-                    entity_build=2,
+                    asset_version="1",
+                    asset_build=2,
                     project_name="the-project",
                 ),
             ),
@@ -78,10 +78,10 @@ class TestCompositeEntityName:
                 "the-org/the-project/models/test:1.2",
                 None,
                 AssetPath(
-                    entity_name="test",
+                    asset_name="test",
                     asset_type=AssetType.MODEL,
-                    entity_version="1",
-                    entity_build=2,
+                    asset_version="1",
+                    asset_build=2,
                     project_name="the-project",
                     org_name="the-org",
                 ),
@@ -90,7 +90,7 @@ class TestCompositeEntityName:
                 "The-org/The_Project/datasets/test_entity",
                 None,
                 AssetPath(
-                    entity_name="test_entity",
+                    asset_name="test_entity",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
@@ -100,24 +100,24 @@ class TestCompositeEntityName:
                 "The-org/The_Project/datasets/test_entity#the_selected",
                 None,
                 AssetPath(
-                    entity_name="test_entity",
+                    asset_name="test_entity",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    entity_selector="the_selected",
+                    asset_selector="the_selected",
                 ),
             ),
             (
                 "The-org/The_Project/datasets/test_entity:the_tag.12#the_selected",
                 None,
                 AssetPath(
-                    entity_name="test_entity",
+                    asset_name="test_entity",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    entity_version="the_tag",
-                    entity_build=12,
-                    entity_selector="the_selected",
+                    asset_version="the_tag",
+                    asset_build=12,
+                    asset_selector="the_selected",
                 ),
             ),
         ],
@@ -136,7 +136,7 @@ class TestCompositeEntityName:
 
     def test_parse_composite_name_with_missing_asset_type(self):
         with pytest.raises(
-            ValueError, match="Please specify full path or specify entity type"
+            ValueError, match="Please specify full path or specify asset type"
         ):
             AssetPath.parse("the-model:1.21")
 
@@ -145,7 +145,7 @@ class TestCompositeEntityName:
         [
             (
                 AssetPath(
-                    entity_name="test_entity",
+                    asset_name="test_entity",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
@@ -154,28 +154,28 @@ class TestCompositeEntityName:
             ),
             (
                 AssetPath(
-                    entity_name="test_entity",
+                    asset_name="test_entity",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    entity_version=12,
+                    asset_version=12,
                 ),
                 "The-org/The_Project/datasets/test_entity:12",
             ),
             (
                 AssetPath(
-                    entity_name="test_entity",
+                    asset_name="test_entity",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    entity_version=12,
-                    entity_build=8,
+                    asset_version=12,
+                    asset_build=8,
                 ),
                 "The-org/The_Project/datasets/test_entity:12.8",
             ),
             (
                 AssetPath(
-                    entity_name="test_entity#feature",
+                    asset_name="test_entity#feature",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
@@ -184,28 +184,28 @@ class TestCompositeEntityName:
             ),
             (
                 AssetPath(
-                    entity_name="test_entity#feature",
+                    asset_name="test_entity#feature",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    entity_version=12,
+                    asset_version=12,
                 ),
                 "The-org/The_Project/datasets/test_entity#feature:12",
             ),
             (
                 AssetPath(
-                    entity_name="test_entity#feature",
+                    asset_name="test_entity#feature",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    entity_version=12,
-                    entity_build=8,
+                    asset_version=12,
+                    asset_build=8,
                 ),
                 "The-org/The_Project/datasets/test_entity#feature:12.8",
             ),
         ],
     )
-    def test_composite_entity_name_to_path(
+    def test_composite_asset_name_to_path(
         self, composite: AssetPath, expected: str
     ) -> None:
         result = composite.path()
@@ -214,12 +214,12 @@ class TestCompositeEntityName:
 
     def test_composite_with_project_name(self) -> None:
         src = AssetPath(
-            entity_name="test_entity",
+            asset_name="test_entity",
             asset_type=AssetType.DATASET,
             project_name="The_Project",
             org_name="The-org",
-            entity_version=12,
-            entity_build=8,
+            asset_version=12,
+            asset_build=8,
         )
         result = src.with_project_name("new-project-name")
 

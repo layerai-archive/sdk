@@ -3,7 +3,7 @@ from typing import Optional, Sequence, Type
 
 import pytest
 
-from layer.contracts.asset import AssetPath
+from layer.contracts.assets import AssetPath
 from layer.contracts.fabrics import Fabric
 from layer.contracts.runs import (
     DatasetFunctionDefinition,
@@ -16,24 +16,24 @@ from layer.projects.execution_planner import (
     _build_graph,
     _find_cycles,
     build_execution_plan,
-    check_entity_dependencies,
+    check_asset_dependencies,
     drop_independent_entities,
 )
 from layer.settings import LayerSettings
 
 
 class TestProjectExecutionPlanner:
-    def test_check_entity_external_dependency(self) -> None:
+    def test_check_asset_external_dependency(self) -> None:
         ds1 = self._create_mock_dataset("ds1", project_name="another-project-x")
         m1 = self._create_mock_model("m1", ["another-project-x/datasets/ds1"])
 
-        check_entity_dependencies([m1, ds1])
+        check_asset_dependencies([m1, ds1])
 
-    def test_external_entity_dependencies_is_not_checked(self) -> None:
+    def test_external_asset_dependencies_is_not_checked(self) -> None:
         m1 = self._create_mock_model("m1", ["external_project/datasets/ds1"])
 
         try:
-            check_entity_dependencies([m1])
+            check_asset_dependencies([m1])
         except Exception as e:
             pytest.fail(f"External entity dependency raised an exception: {e}")
 
@@ -44,7 +44,7 @@ class TestProjectExecutionPlanner:
         with pytest.raises(
             ProjectCircularDependenciesException,
         ):
-            check_entity_dependencies([ds1, m1])
+            check_asset_dependencies([ds1, m1])
 
     def test_project_find_cycles_returns_correct_cycles(self) -> None:
         m = self._create_mock_model("m", ["datasets/a", "datasets/e"])
@@ -219,7 +219,7 @@ class TestProjectExecutionPlanner:
 
     @staticmethod
     def _create_mock_entity(
-        entity_type: Type[FunctionDefinition],
+        asset_type: Type[FunctionDefinition],
         name: str,
         dependencies: Optional[Sequence[str]] = None,
         project_name: str = "test",
@@ -238,10 +238,10 @@ class TestProjectExecutionPlanner:
             pass
 
         settings = LayerSettings()
-        settings.set_entity_name(name)
+        settings.set_asset_name(name)
         settings.set_dependencies(dependency_paths)
         settings.set_fabric(Fabric.F_LOCAL.value)
 
         func.layer = settings  # type: ignore
 
-        return entity_type(func, project_name, version_id=uuid.uuid4())
+        return asset_type(func, project_name, version_id=uuid.uuid4())

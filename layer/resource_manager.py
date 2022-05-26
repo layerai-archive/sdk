@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 import aiohttp
 
 from layer.clients.layer import LayerClient
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.runs import FunctionDefinition, ResourcePath, Run
 from layer.contracts.tracker import ResourceTransferState
 from layer.tracker.progress_tracker import RunProgressTracker
@@ -133,16 +133,16 @@ class ResourceManager:
         state.total_resource_size_bytes = total_files_size_bytes
 
         asset_type = function.asset_type
-        entity_name = function.name
+        asset_name = function.name
         if asset_type == AssetType.DATASET:
-            tracker.mark_dataset_resources_uploading(entity_name, state)
+            tracker.mark_dataset_resources_uploading(asset_name, state)
         elif asset_type == AssetType.MODEL:
-            tracker.mark_model_resources_uploading(entity_name, state)
+            tracker.mark_model_resources_uploading(asset_name, state)
         await asyncio.gather(*upload_tasks)
         if asset_type == AssetType.DATASET:
-            tracker.mark_dataset_resources_uploaded(entity_name)
+            tracker.mark_dataset_resources_uploaded(asset_name)
         elif asset_type == AssetType.MODEL:
-            tracker.mark_model_resources_uploaded(entity_name)
+            tracker.mark_model_resources_uploaded(asset_name)
 
     def wait_resource_upload(self, run: Run, tracker: RunProgressTracker) -> None:
         """

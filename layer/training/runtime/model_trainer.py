@@ -159,7 +159,7 @@ class ModelTrainer:
             ) as train:
                 context.with_train(train)
                 context.with_tracker(self.tracker)
-                context.with_entity_name(self.train_context.model_name)
+                context.with_asset_name(self.train_context.model_name)
                 self.train_context.init_or_save_context(context)
                 update_train_status(
                     self.client.model_catalog,

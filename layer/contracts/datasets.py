@@ -6,7 +6,7 @@ from typing import Any, Callable, List, Mapping, Optional, Sequence, Union
 
 import pandas
 
-from .asset import AssetPath, AssetType, BaseAsset
+from .assets import AssetPath, AssetType, BaseAsset
 
 
 def _create_empty_data_frame() -> "pandas.DataFrame":

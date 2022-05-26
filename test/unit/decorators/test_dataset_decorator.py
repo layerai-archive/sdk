@@ -10,7 +10,7 @@ from layerapi.api.ids_pb2 import DatasetBuildId
 from layerapi.api.service.datacatalog.data_catalog_api_pb2 import InitiateBuildResponse
 
 from layer.clients.data_catalog import DataCatalogClient
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
@@ -42,7 +42,7 @@ class TestDatasetDecorator:
     ) -> None:
         func = _make_test_dataset_function("foo")
 
-        assert func.layer.get_entity_name() == "foo"
+        assert func.layer.get_asset_name() == "foo"
         assert func.layer.get_asset_type() == AssetType.DATASET
 
     def test_dataset_decorator_assigns_attributes_to_function_before_calling_bound_function(
@@ -53,11 +53,11 @@ class TestDatasetDecorator:
             def create_my_dataset(self) -> pd.DataFrame:
                 return pd.DataFrame()
 
-        assert MyClass.create_my_dataset.layer.get_entity_name() == "foo"
+        assert MyClass.create_my_dataset.layer.get_asset_name() == "foo"
         assert MyClass.create_my_dataset.layer.get_asset_type() == AssetType.DATASET
 
         my_class = MyClass()
-        assert my_class.create_my_dataset.layer.get_entity_name() == "foo"
+        assert my_class.create_my_dataset.layer.get_asset_name() == "foo"
         assert my_class.create_my_dataset.layer.get_asset_type() == AssetType.DATASET
 
     def test_dataset_decorator_given_no_current_project_set_raise_exception(
@@ -133,13 +133,13 @@ class TestDatasetDecorator:
             assert dataset.name == name
             assert dataset.project_name == test_project_name
             assert len(dataset.dependencies) == 4
-            assert dataset.dependencies[0].entity_name == "bar"
+            assert dataset.dependencies[0].asset_name == "bar"
             assert dataset.dependencies[0].asset_type == AssetType.DATASET
-            assert dataset.dependencies[1].entity_name == "foo"
+            assert dataset.dependencies[1].asset_name == "foo"
             assert dataset.dependencies[1].asset_type == AssetType.MODEL
-            assert dataset.dependencies[2].entity_name == "baz"
+            assert dataset.dependencies[2].asset_name == "baz"
             assert dataset.dependencies[2].asset_type == AssetType.DATASET
-            assert dataset.dependencies[3].entity_name == "zoo"
+            assert dataset.dependencies[3].asset_name == "zoo"
             assert dataset.dependencies[3].asset_type == AssetType.MODEL
 
             assert dataset.environment_path.exists()
@@ -147,7 +147,7 @@ class TestDatasetDecorator:
             # Check if the unpickled file contains the correct function
             assert dataset.pickle_path.exists()
             loaded = pickle.load(open(dataset.pickle_path, "rb"))
-            assert loaded.layer.get_entity_name() == name
+            assert loaded.layer.get_asset_name() == name
             assert loaded.layer.get_asset_type() == AssetType.DATASET
             assert loaded.layer.get_pip_packages() == ["sklearn==0.0"]
 
@@ -218,6 +218,6 @@ class TestDatasetDecorator:
 
         with pytest.raises(
             ConfigError,
-            match="^Your @dataset and @model must be named. Pass an entity name as a first argument to your decorators.$",
+            match="^Your @dataset and @model must be named. Pass an asset name as a first argument to your decorators.$",
         ):
             func()

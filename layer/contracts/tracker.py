@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Union
 
 from yarl import URL
 
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 
 
 class ResourceTransferState:
@@ -148,7 +148,7 @@ class DatasetTransferState:
 
 
 @unique
-class EntityTrackerStatus(str, Enum):
+class AssetTrackerStatus(str, Enum):
     PENDING = "pending"
     SAVING = "saving"
     BUILDING = "building"
@@ -158,43 +158,43 @@ class EntityTrackerStatus(str, Enum):
     ASSERTING = "asserting"
     RESOURCE_UPLOADING = "uploading resources"
     RESULT_UPLOADING = "uploading result"
-    ENTITY_DOWNLOADING = "downloading entity"
-    ENTITY_FROM_CACHE = "entity from cache"
-    ENTITY_LOADED = "entity loaded"
+    ASSET_DOWNLOADING = "downloading entity"
+    ASSET_FROM_CACHE = "entity from cache"
+    ASSET_LOADED = "entity loaded"
 
     @property
     def is_running(self) -> bool:
         return self in (
-            EntityTrackerStatus.SAVING,
-            EntityTrackerStatus.BUILDING,
-            EntityTrackerStatus.TRAINING,
-            EntityTrackerStatus.ASSERTING,
-            EntityTrackerStatus.RESOURCE_UPLOADING,
-            EntityTrackerStatus.RESULT_UPLOADING,
-            EntityTrackerStatus.ENTITY_DOWNLOADING,
-            EntityTrackerStatus.ENTITY_FROM_CACHE,
+            AssetTrackerStatus.SAVING,
+            AssetTrackerStatus.BUILDING,
+            AssetTrackerStatus.TRAINING,
+            AssetTrackerStatus.ASSERTING,
+            AssetTrackerStatus.RESOURCE_UPLOADING,
+            AssetTrackerStatus.RESULT_UPLOADING,
+            AssetTrackerStatus.ASSET_DOWNLOADING,
+            AssetTrackerStatus.ASSET_FROM_CACHE,
         )
 
     @property
     def is_finished(self) -> bool:
         return self in (
-            EntityTrackerStatus.DONE,
-            EntityTrackerStatus.ERROR,
-            EntityTrackerStatus.ENTITY_LOADED,
+            AssetTrackerStatus.DONE,
+            AssetTrackerStatus.ERROR,
+            AssetTrackerStatus.ASSET_LOADED,
         )
 
 
 @dataclass
-class EntityTracker:
+class AssetTracker:
     type: AssetType
     name: str
-    status: EntityTrackerStatus = EntityTrackerStatus.PENDING
+    status: AssetTrackerStatus = AssetTrackerStatus.PENDING
     base_url: Optional[URL] = None
     error_reason: str = ""
     resource_transfer_state: Optional[ResourceTransferState] = None
     dataset_transfer_state: Optional[DatasetTransferState] = None
     model_transfer_state: Optional[ResourceTransferState] = None
-    entity_download_transfer_state: Optional[
+    asset_download_transfer_state: Optional[
         Union[ResourceTransferState, DatasetTransferState]
     ] = None
     loading_cache_entity: Optional[str] = None

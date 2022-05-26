@@ -7,9 +7,9 @@ import wrapt  # type: ignore
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.runs import ModelFunctionDefinition
-from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
+from layer.decorators.layer_wrapper import LayerEntityFunctionWrapper
 from layer.projects.utils import (
     get_current_project_name,
     verify_project_exists_and_retrieve_project_id,
@@ -96,7 +96,7 @@ def _model_wrapper(
     name: str,
     dependencies: Optional[List[Union[str, Dataset, Model]]] = None,
 ) -> Any:
-    class FunctionWrapper(LayerAssetFunctionWrapper):
+    class FunctionWrapper(LayerEntityFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(
                 wrapped,
@@ -121,7 +121,7 @@ def _model_wrapper(
                 )
 
                 with progress_tracker.track() as tracker:
-                    tracker.add_model(self.__wrapped__.layer.get_entity_name())
+                    tracker.add_model(self.__wrapped__.layer.get_asset_name())
                     model_definition = ModelFunctionDefinition(
                         self.__wrapped__, current_project_name_
                     )
@@ -160,7 +160,7 @@ def _model_wrapper(
                 model_name=model_definition.name,
                 model_version=model_version.name,
                 train_id=UUID(train_id.value),
-                source_folder=model_definition.entity_path,
+                source_folder=model_definition.asset_path,
                 source_entrypoint=model_definition.entrypoint,
                 train_index=str(train.index),
             )

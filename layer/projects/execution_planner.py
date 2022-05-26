@@ -13,7 +13,7 @@ from layerapi.api.entity.operations_pb2 import (
 )
 from layerapi.api.ids_pb2 import ModelVersionId
 
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.runs import FunctionDefinition, Run
 from layer.exceptions.exceptions import (
     LayerClientException,
@@ -99,7 +99,7 @@ def build_execution_plan(run: Run) -> ExecutionPlan:
     return execution_plan
 
 
-def check_entity_dependencies(definitions: Sequence[FunctionDefinition]) -> None:
+def check_asset_dependencies(definitions: Sequence[FunctionDefinition]) -> None:
     _build_directed_acyclic_graph(definitions)
 
 
@@ -111,21 +111,21 @@ def drop_independent_entities(
 ) -> Sequence[FunctionDefinition]:
     from networkx import NodeNotFound, shortest_path
 
-    target_entity_id = _get_entity_id(target_path)
+    target_asset_id = _get_asset_id(target_path)
     if keep_dependencies:
         graph = _build_directed_acyclic_graph(definitions)
         try:
-            entity_ids: Set[str] = set.union(
-                set(), *shortest_path(graph, target=target_entity_id).values()
+            asset_ids: Set[str] = set.union(
+                set(), *shortest_path(graph, target=target_asset_id).values()
             )
         except NodeNotFound:
             raise _create_not_found_exception(target_path)
     else:
-        entity_ids = {target_entity_id}
+        asset_ids = {target_asset_id}
     definitions = [
         f if keep_dependencies else f.drop_dependencies()
         for f in definitions
-        if _get_entity_id(f.asset_path) in entity_ids
+        if _get_asset_id(f.asset_path) in asset_ids
     ]
     return definitions
 
@@ -139,12 +139,12 @@ def _build_graph(definitions: Sequence[FunctionDefinition]) -> "DiGraph":
         _add_function_to_graph(graph, func)
 
     for func in definitions:
-        entity_id = _get_entity_id(func.asset_path)
+        asset_id = _get_asset_id(func.asset_path)
         for dependency_path in func.dependencies:
-            dependency_entity_id = _get_entity_id(dependency_path)
+            dependency_asset_id = _get_asset_id(dependency_path)
             # we add connections only to other entities to build
-            if dependency_entity_id in graph.nodes:
-                graph.add_edge(dependency_entity_id, entity_id)
+            if dependency_asset_id in graph.nodes:
+                graph.add_edge(dependency_asset_id, asset_id)
 
     return graph
 
@@ -158,7 +158,7 @@ def _build_directed_acyclic_graph(
 
     if not is_directed_acyclic_graph(graph):
         cycles: List[List[AssetPath]] = _find_cycles(graph.reverse())
-        stringified_paths = [_stringify_entity_cycle(cycle) for cycle in cycles]
+        stringified_paths = [_stringify_asset_cycle(cycle) for cycle in cycles]
         stringified_paths.sort()  # Ensure stability across different runs
         raise ProjectCircularDependenciesException(stringified_paths)
     return graph
@@ -166,7 +166,7 @@ def _build_directed_acyclic_graph(
 
 def _add_function_to_graph(graph: "DiGraph", func: FunctionDefinition) -> None:
     graph.add_node(
-        _get_entity_id(func.asset_path),
+        _get_asset_id(func.asset_path),
         node=PlanNode(
             path=func.asset_path,
             name=func.name,
@@ -203,24 +203,24 @@ def _topological_sort_grouping(
     return res
 
 
-def _stringify_entity_cycle(entity_cycle_path: List[AssetPath]) -> str:
-    def rotate_list(entity_cycle_path: List[str]) -> List[str]:
+def _stringify_asset_cycle(asset_cycle_path: List[AssetPath]) -> str:
+    def rotate_list(asset_cycle_path: List[str]) -> List[str]:
         smallest_idx = 0
-        for i in range(1, len(entity_cycle_path)):
-            if entity_cycle_path[i] < entity_cycle_path[smallest_idx]:
+        for i in range(1, len(asset_cycle_path)):
+            if asset_cycle_path[i] < asset_cycle_path[smallest_idx]:
                 smallest_idx = i
-        rotated = deque(entity_cycle_path)
+        rotated = deque(asset_cycle_path)
         rotated.rotate(-smallest_idx)
         return list(rotated)
 
     stringified = rotate_list(
-        [str(entity) for entity in entity_cycle_path]
+        [str(entity) for entity in asset_cycle_path]
     )  # Ensure stability within a cycle path across runs
     stringified.append(stringified[0])  # Add dependency to first node in cycle
     return " -> ".join(stringified)
 
 
-def _get_entity_id(path: AssetPath) -> str:
+def _get_asset_id(path: AssetPath) -> str:
     if path.project_name is None:
         raise LayerClientException("Cannot plan execution with missing project name")
     return path.path()

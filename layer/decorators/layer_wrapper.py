@@ -2,8 +2,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import wrapt  # type: ignore
 
-from layer.contracts.asset import AssetPath, AssetType, BaseAsset
 from layer.contracts.datasets import Dataset
+from layer.contracts.assets import BaseAsset, AssetPath, AssetType
 from layer.contracts.models import Model
 from layer.settings import LayerSettings
 
@@ -39,7 +39,7 @@ class LayerFunctionWrapper(wrapt.FunctionWrapper):
         pass
 
 
-class LayerAssetFunctionWrapper(LayerFunctionWrapper):
+class LayerEntityFunctionWrapper(LayerFunctionWrapper):
     def __init__(
         self,
         wrapped: Any,
@@ -52,7 +52,7 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
         super().__init__(wrapped, wrapper, enabled)
         ensure_has_layer_settings(self.__wrapped__)
         self.__wrapped__.layer.set_asset_type(asset_type)
-        self.__wrapped__.layer.set_entity_name(name)
+        self.__wrapped__.layer.set_asset_name(name)
 
         paths: List[AssetPath] = []
         if dependencies is not None:

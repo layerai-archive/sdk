@@ -10,7 +10,7 @@ from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
 from layer.config import Config
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.projects import ApplyResult
 from layer.contracts.runs import (
     DatasetFunctionDefinition,
@@ -31,7 +31,7 @@ from layer.exceptions.exceptions import (
 )
 from layer.projects.execution_planner import (
     build_execution_plan,
-    check_entity_dependencies,
+    check_asset_dependencies,
 )
 from layer.projects.progress_tracker_updater import (
     PollingStepFunction,
@@ -162,7 +162,7 @@ class ProjectRunner:
         debug: bool = False,
         printer: Callable[[str], Any] = print,
     ) -> Run:
-        check_entity_dependencies(run.definitions)
+        check_asset_dependencies(run.definitions)
         with LayerClient(self._config.client, logger).init() as client:
             project = get_or_create_remote_project(client, run.project_name)
             assert project.account

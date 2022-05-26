@@ -1,6 +1,6 @@
 from typing import Any, List, Optional
 
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
 from layer.exceptions.exceptions import ConfigError
 from layer.global_context import (
@@ -41,7 +41,7 @@ class LayerSettings:
     def get_paths(self) -> Optional[List[str]]:
         return self._paths
 
-    def get_entity_name(self) -> Optional[str]:
+    def get_asset_name(self) -> Optional[str]:
         return self._name
 
     def get_asset_type(self) -> Optional[AssetType]:
@@ -75,7 +75,7 @@ class LayerSettings:
     def set_asset_type(self, asset_type: AssetType) -> None:
         self._asset_type = asset_type
 
-    def set_entity_name(self, name: str) -> None:
+    def set_asset_name(self, name: str) -> None:
         self._name = name
 
     def set_dependencies(self, dependencies: List[AssetPath]) -> None:
@@ -93,9 +93,9 @@ class LayerSettings:
                 "is required for each function. Add @dataset or @model decorator on top of existing "
                 "decorators to run functions in Layer."
             )
-        if self.get_entity_name() is None or self.get_entity_name() == "":
+        if self.get_asset_name() is None or self.get_asset_name() == "":
             raise ConfigError(
-                "Your @dataset and @model must be named. Pass an entity name as a first argument to your decorators."
+                "Your @dataset and @model must be named. Pass an asset name as a first argument to your decorators."
             )
         fabric = self.get_fabric()
         if (

@@ -1,6 +1,6 @@
 import pytest
 
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.fabrics import Fabric
 from layer.decorators import dataset, fabric, pip_requirements
 from layer.exceptions.exceptions import ConfigError
@@ -31,7 +31,7 @@ def test_settings_from_multiple_decorators_are_cumulated():
         pass
 
     assert test.layer.get_fabric() == Fabric.F_MEDIUM
-    assert test.layer.get_entity_name() == "test"
+    assert test.layer.get_asset_name() == "test"
     assert test.layer.get_pip_requirements_file() == "test.txt"
     assert test.layer.get_asset_type() == AssetType.DATASET
 
@@ -42,6 +42,6 @@ def test_doesnt_validate_dataset_with_gpu_fabric():
         match="GPU fabrics can only be used for model training. Use a different fabric for your dataset build.",
     ):
         settings.set_fabric(Fabric.F_GPU_SMALL)
-        settings.set_entity_name("my_dataset")
+        settings.set_asset_name("my_dataset")
         settings.set_asset_type(AssetType.DATASET)
         settings.validate()

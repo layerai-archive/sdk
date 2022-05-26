@@ -9,12 +9,12 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.context import Context
 from layer.contracts.assertions import Assertion
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
 from layer.decorators.assertions import get_assertion_functions_data
-from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
+from layer.decorators.layer_wrapper import LayerEntityFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
 from layer.projects.project_runner import register_dataset_function
 from layer.projects.utils import (
@@ -109,7 +109,7 @@ def dataset(
 def _dataset_wrapper(
     name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
 ) -> Any:
-    class DatasetFunctionWrapper(LayerAssetFunctionWrapper):
+    class DatasetFunctionWrapper(LayerEntityFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(
                 wrapped,
@@ -160,7 +160,7 @@ def _build_dataset_locally_and_store_remotely(
     client: LayerClient,
     assertions: List[Assertion],
 ) -> Any:
-    tracker.add_build(layer.get_entity_name())  # type: ignore
+    tracker.add_build(layer.get_asset_name())  # type: ignore
 
     current_project_uuid = verify_project_exists_and_retrieve_project_id(
         client, get_current_project_name()
@@ -169,7 +169,7 @@ def _build_dataset_locally_and_store_remotely(
     dataset = register_dataset_function(
         client, current_project_uuid, dataset, True, tracker
     )
-    tracker.mark_dataset_building(layer.get_entity_name())  # type: ignore
+    tracker.mark_dataset_building(layer.get_asset_name())  # type: ignore
 
     (result, build_uuid) = _build_locally_update_remotely(
         client,
@@ -214,7 +214,7 @@ def _build_locally_update_remotely(
                 DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.STARTED)
             )
             context.with_tracker(tracker)
-            context.with_entity_name(dataset.name)
+            context.with_asset_name(dataset.name)
             set_active_context(context)
             try:
                 result = function_that_builds_dataset()
@@ -238,21 +238,21 @@ def _build_locally_update_remotely(
 
 
 def _run_assertions(
-    entity_name: str,
+    asset_name: str,
     result: Any,
     assertions: List[Assertion],
     tracker: LocalExecutionRunProgressTracker,
 ) -> None:
     failed_assertions = []
-    tracker.mark_dataset_running_assertions(entity_name)
+    tracker.mark_dataset_running_assertions(asset_name)
     for assertion in reversed(assertions):
         try:
-            tracker.mark_dataset_running_assertion(entity_name, assertion)
+            tracker.mark_dataset_running_assertion(asset_name, assertion)
             assertion.function(result)
         except Exception:
             failed_assertions.append(assertion)
     if len(failed_assertions) > 0:
-        tracker.mark_dataset_failed_assertions(entity_name, failed_assertions)
+        tracker.mark_dataset_failed_assertions(asset_name, failed_assertions)
         raise Exception(f"Failed assertions {failed_assertions}\n")
     else:
-        tracker.mark_dataset_completed_assertions(entity_name)
+        tracker.mark_dataset_completed_assertions(asset_name)

@@ -11,7 +11,7 @@ from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelFlavor
 from layer.types import ModelArtifact
 
-from .asset import AssetPath, AssetType, BaseAsset
+from .assets import BaseAsset, AssetPath, AssetType
 
 
 @dataclass(frozen=True)
@@ -128,9 +128,9 @@ class Model(BaseAsset):
         return new_model
 
     def with_project_name(self, project_name: str) -> "Model":
-        new_asset = super().with_project_name(project_name=project_name)
+        new_entity = super().with_project_name(project_name=project_name)
         new_model = copy.deepcopy(self)
-        new_model._update_with(new_asset)  # pylint: disable=protected-access
+        new_model._update_with(new_entity)  # pylint: disable=protected-access
         return new_model
 
     def drop_dependencies(self) -> "Model":

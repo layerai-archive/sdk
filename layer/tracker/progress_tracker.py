@@ -125,28 +125,28 @@ class RunProgressTracker:
     def mark_model_getting_model(
         self,
         name: str,
-        getting_entity_name: str,
+        getting_asset_name: str,
         state: Optional[ResourceTransferState],
         from_cache: bool,
     ) -> None:
         pass
 
     def mark_model_getting_dataset(
-        self, name: str, getting_entity_name: str, from_cache: bool
+        self, name: str, getting_asset_name: str, from_cache: bool
     ) -> None:
         pass
 
     def mark_dataset_getting_model(
         self,
         name: str,
-        getting_entity_name: str,
+        getting_asset_name: str,
         state: Optional[ResourceTransferState],
         from_cache: bool,
     ) -> None:
         pass
 
     def mark_dataset_getting_dataset(
-        self, name: str, getting_entity_name: str, from_cache: bool
+        self, name: str, getting_asset_name: str, from_cache: bool
     ) -> None:
         pass
 
