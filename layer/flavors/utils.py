@@ -14,6 +14,7 @@ from .pytorch import PyTorchModelFlavor  # noqa
 from .sklearn import ScikitLearnModelFlavor  # noqa
 from .tensorflow import TensorFlowModelFlavor  # noqa
 from .xgboost import XGBoostModelFlavor  # noqa
+from .custom import CustomModelFlavor  # noqa
 
 
 # Order matters for matching
@@ -27,6 +28,7 @@ PYTHON_FLAVORS: List[ModelFlavor] = [
     XGBoostModelFlavor(),
     LightGBMModelFlavor(),
     CatBoostModelFlavor(),
+    CustomModelFlavor(),
 ]
 
 # mypy proto enum typing issue https://github.com/protocolbuffers/protobuf/issues/8175
