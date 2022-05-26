@@ -8,13 +8,14 @@ from PIL.Image import Image
 
 import layer
 from layer.contracts.projects import Project
-from layer.decorators import dataset
+from layer.decorators import dataset, pip_requirements
 
 
 def test_pandas_images_dataset_store_and_save(
     initialized_project: Project, asserter: E2ETestAsserter
 ):
     @dataset("images")
+    @pip_requirements(packages=["Pillow==9.1.1"])
     def build_images() -> pd.DataFrame:
         def _generate_image(n: int) -> Image:
             image = PIL.Image.new("RGB", (160, 40), color=(73, 109, 137))
