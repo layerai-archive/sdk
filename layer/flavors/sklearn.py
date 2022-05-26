@@ -11,7 +11,7 @@ class ScikitLearnModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of Scikit Learn Models."""
 
     MODULE_KEYWORD = "sklearn"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_SKLEARN")
+    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_SKLEARN
 
     def save_model_to_directory(
         self, model_object: ModelArtifact, directory: Path

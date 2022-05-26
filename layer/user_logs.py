@@ -40,7 +40,7 @@ def __convert_log_line(line: PBUserLogLine) -> UserLogLine:
     )
 
 
-def __convert_entity(entity: PBUserLogLine.TaskType) -> EntityType:
+def __convert_entity(entity: PBUserLogLine.TaskType.ValueType) -> EntityType:
     if entity == PBUserLogLine.TASK_TYPE_MODEL_TRAIN:
         return EntityType.MODEL_TRAIN
     elif entity == PBUserLogLine.TASK_TYPE_DATASET_BUILD:

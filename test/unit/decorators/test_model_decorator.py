@@ -1,5 +1,4 @@
 import pickle
-from test.unit.decorators.util import project_client_mock
 from typing import Any, Callable
 from unittest.mock import ANY, patch
 
@@ -11,6 +10,7 @@ from layer.decorators.model_decorator import model
 from layer.decorators.pip_requirements_decorator import pip_requirements
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import set_current_project_name
+from test.unit.decorators.util import project_client_mock
 
 
 def _make_test_model_function(name: str) -> Callable[..., Any]:

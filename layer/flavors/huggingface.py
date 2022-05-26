@@ -12,7 +12,7 @@ class HuggingFaceModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of Hugging Face Transformer Models."""
 
     MODULE_KEYWORD = "transformers.models"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_HUGGINGFACE")
+    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_HUGGINGFACE
 
     HF_TYPE_FILE = "model.hf_type"
 

@@ -1,6 +1,5 @@
 import pickle
 import uuid
-from test.unit.decorators.util import project_client_mock
 from typing import Any, Callable, Optional
 from unittest.mock import ANY, MagicMock, patch
 from uuid import UUID
@@ -23,6 +22,7 @@ from layer.exceptions.exceptions import (
     ProjectInitializationException,
 )
 from layer.global_context import set_current_project_name, set_default_fabric
+from test.unit.decorators.util import project_client_mock
 
 
 def _make_test_dataset_function(name: str) -> Callable[..., Any]:

@@ -16,7 +16,7 @@ class S3Util:
     def download_dir(
         local_dir: Path,
         s3_path: S3Path,
-        credentials: AwsCredentials = None,
+        credentials: Optional[AwsCredentials] = None,
         *,
         endpoint_url: Optional[URL] = None,
         state: ResourceTransferState,

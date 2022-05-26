@@ -1,11 +1,10 @@
-from test.e2e.assertion_utils import E2ETestAsserter
-
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
 import layer
 from layer.contracts.projects import Project
 from layer.decorators import dataset
+from test.e2e.assertion_utils import E2ETestAsserter
 
 
 def test_remote_run_with_supported_column_types_succeeds_and_registers_metadata(

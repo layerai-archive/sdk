@@ -24,6 +24,7 @@ from typing import (
 
 import cloudpickle  # type: ignore
 from layerapi.api.entity.run_pb2 import Run as PBRun
+from layerapi.api.ids_pb2 import RunId
 
 from layer.config import DEFAULT_FUNC_PATH
 from layer.exceptions.exceptions import LayerClientException
@@ -257,9 +258,9 @@ class Run:
     files_hash: str = ""
     account: Optional[Account] = None
     readme: str = field(repr=False, default="")
-    run_id: Optional[uuid.UUID] = field(repr=False, default=None)
+    run_id: Optional[RunId] = field(repr=False, default=None)
 
-    def with_run_id(self, run_id: uuid.UUID) -> "Run":
+    def with_run_id(self, run_id: RunId) -> "Run":
         return replace(self, run_id=run_id)
 
     def with_definitions(self, definitions: Sequence[FunctionDefinition]) -> "Run":

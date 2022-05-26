@@ -1,6 +1,5 @@
 import os
 import uuid
-from test.unit.grpc_test_utils import new_client_call_details, rpc_error
 from typing import Any, Optional
 from unittest.mock import MagicMock
 
@@ -32,6 +31,7 @@ from layer.utils.session import (
     UserSessionId,
     is_layer_debug_on,
 )
+from test.unit.grpc_test_utils import new_client_call_details, rpc_error
 
 
 class TestLayerDebug:

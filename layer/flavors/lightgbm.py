@@ -14,7 +14,7 @@ class LightGBMModelFlavor(ModelFlavor):
     """
 
     MODULE_KEYWORD = "lightgbm"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_LIGHTGBM")
+    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_LIGHTGBM
 
     def save_model_to_directory(
         self,

@@ -1,11 +1,10 @@
-from test.e2e.assertion_utils import E2ETestAsserter
-
 from sklearn.svm import SVC
 
 import layer
 from layer import global_context
 from layer.contracts.projects import Project
 from layer.decorators import model, pip_requirements
+from test.e2e.assertion_utils import E2ETestAsserter
 
 
 def test_remote_run_succeeds_and_registers_metadata(

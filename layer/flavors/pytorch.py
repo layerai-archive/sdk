@@ -11,7 +11,7 @@ class PyTorchModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of PyTorch Models."""
 
     MODULE_KEYWORD = "torch"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_PYTORCH")
+    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_PYTORCH
 
     def save_model_to_directory(
         self, model_object: ModelArtifact, directory: Path

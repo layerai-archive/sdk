@@ -11,7 +11,7 @@ class CatBoostModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of CatBoost Models."""
 
     MODULE_KEYWORD = "catboost"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_CATBOOST")
+    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_CATBOOST
 
     def save_model_to_directory(
         self, model_object: ModelArtifact, directory: Path
