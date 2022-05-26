@@ -14,7 +14,7 @@ from layer.projects.utils import (
     get_current_project_name,
     verify_project_exists_and_retrieve_project_id,
 )
-from layer.tracker.local_execution_project_progress_tracker import (
+from layer.tracker.local_execution_progress_tracker import (
     LocalExecutionRunProgressTracker,
 )
 from layer.training.runtime.model_train_failure_reporter import (
@@ -114,13 +114,13 @@ def _model_wrapper(
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
                 account_name = client.account.get_my_account().name
-                project_progress_tracker = LocalExecutionRunProgressTracker(
+                progress_tracker = LocalExecutionRunProgressTracker(
                     project_name=current_project_name_,
                     config=config,
                     account_name=account_name,
                 )
 
-                with project_progress_tracker.track() as tracker:
+                with progress_tracker.track() as tracker:
                     tracker.add_model(self.__wrapped__.layer.get_entity_name())
                     model_definition = ModelFunctionDefinition(
                         self.__wrapped__, current_project_name_

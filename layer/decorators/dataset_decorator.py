@@ -21,7 +21,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
-from layer.tracker.local_execution_project_progress_tracker import (
+from layer.tracker.local_execution_progress_tracker import (
     LocalExecutionRunProgressTracker,
 )
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -127,12 +127,12 @@ def _dataset_wrapper(
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
                 account_name = client.account.get_my_account().name
-                project_progress_tracker = LocalExecutionRunProgressTracker(
+                progress_tracker = LocalExecutionRunProgressTracker(
                     config=config,
                     project_name=current_project_name_,
                     account_name=account_name,
                 )
-                with project_progress_tracker.track() as tracker:
+                with progress_tracker.track() as tracker:
                     dataset_definition = DatasetFunctionDefinition(
                         self.__wrapped__, current_project_name_
                     )

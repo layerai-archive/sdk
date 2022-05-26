@@ -44,8 +44,8 @@ from layer.projects.utils import (
 )
 from layer.resource_manager import ResourceManager
 from layer.settings import LayerSettings
-from layer.tracker.project_progress_tracker import RunProgressTracker
-from layer.tracker.remote_execution_project_progress_tracker import (
+from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.remote_execution_progress_tracker import (
     RemoteExecutionRunProgressTracker,
 )
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
@@ -88,17 +88,17 @@ class RunContext:
 
 class ProjectRunner:
     _tracker: RunProgressTracker
-    _project_progress_tracker_factory: Type[RemoteExecutionRunProgressTracker]
+    _progress_tracker_factory: Type[RemoteExecutionRunProgressTracker]
 
     def __init__(
         self,
         config: Config,
-        project_progress_tracker_factory: Type[
+        progress_tracker_factory: Type[
             RemoteExecutionRunProgressTracker
         ] = RemoteExecutionRunProgressTracker,
     ) -> None:
         self._config = config
-        self._project_progress_tracker_factory = project_progress_tracker_factory
+        self._progress_tracker_factory = progress_tracker_factory
 
     def get_tracker(self) -> RunProgressTracker:
         return self._tracker
@@ -167,9 +167,7 @@ class ProjectRunner:
             project = get_or_create_remote_project(client, run.project_name)
             assert project.account
             run = run.with_account(project.account)
-            with self._project_progress_tracker_factory(
-                self._config, run
-            ).track() as tracker:
+            with self._progress_tracker_factory(self._config, run).track() as tracker:
                 self._tracker = tracker
                 try:
                     metadata = self._apply(client, run)

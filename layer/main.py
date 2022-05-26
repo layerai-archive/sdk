@@ -39,10 +39,10 @@ from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.utils import get_current_project_name
 from layer.settings import LayerSettings
-from layer.tracker.local_execution_project_progress_tracker import (
+from layer.tracker.local_execution_progress_tracker import (
     LocalExecutionRunProgressTracker,
 )
-from layer.tracker.remote_execution_project_progress_tracker import (
+from layer.tracker.remote_execution_progress_tracker import (
     RemoteExecutionRunProgressTracker,
 )
 from layer.training.train import Train
@@ -559,7 +559,7 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
     project_runner = ProjectRunner(
         config=layer_config,
-        project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
+        progress_tracker_factory=RemoteExecutionRunProgressTracker,
     )
     run = project_runner.with_functions(project_name, functions)
     run = project_runner.run(run, debug=debug)
