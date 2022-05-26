@@ -11,7 +11,8 @@ from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
-from layer.contracts.runs import DatasetFunctionDefinition, DatasetTransferState
+from layer.contracts.runs import DatasetFunctionDefinition
+from layer.contracts.tracker import DatasetTransferState
 from layer.decorators.assertions import get_assertion_functions_data
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context

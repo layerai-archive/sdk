@@ -9,7 +9,7 @@ from yarl import URL
 from layer.clients.model_catalog import ModelCatalogClient
 from layer.config.config import ClientConfig
 from layer.contracts.models import Model
-from layer.contracts.runs import ResourceTransferState
+from layer.contracts.tracker import ResourceTransferState
 from layer.flavors.base import ModelFlavor
 from layer.types import ModelArtifact
 

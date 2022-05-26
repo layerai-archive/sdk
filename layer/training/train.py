@@ -10,7 +10,7 @@ from layer.clients.layer import LayerClient
 from layer.contracts.models import Model
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.flavors.utils import get_flavor_for_model
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.types import ModelArtifact
 
 from .base_train import BaseTrain

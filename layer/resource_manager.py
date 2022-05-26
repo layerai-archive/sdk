@@ -12,13 +12,9 @@ import aiohttp
 
 from layer.clients.layer import LayerClient
 from layer.contracts.asset import AssetType
-from layer.contracts.runs import (
-    FunctionDefinition,
-    ResourcePath,
-    ResourceTransferState,
-    Run,
-)
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.contracts.runs import FunctionDefinition, ResourcePath, Run
+from layer.contracts.tracker import ResourceTransferState
+from layer.tracker.progress_tracker import RunProgressTracker
 
 
 def _strip_resource_root_path(path: str) -> str:

@@ -9,10 +9,15 @@ from yarl import URL
 from layer.config import Config
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
-from layer.contracts.entities import Entity, EntityStatus, EntityType
-from layer.contracts.runs import DatasetTransferState, ResourceTransferState
-from layer.tracker.output import get_progress_ui
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.contracts.tracker import (
+    DatasetTransferState,
+    EntityTracker,
+    EntityTrackerStatus,
+    ResourceTransferState,
+)
+
+from .output import get_progress_ui
+from .progress_tracker import RunProgressTracker
 
 
 class LocalExecutionRunProgressTracker(RunProgressTracker):
@@ -27,7 +32,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self._config = config
         self._console = Console()
         self._progress = get_progress_ui()
-        self._task_ids: Dict[Tuple[EntityType, str], TaskID] = {}
+        self._task_ids: Dict[Tuple[AssetType, str], TaskID] = {}
 
     @contextmanager
     def track(self) -> Iterator["LocalExecutionRunProgressTracker"]:
@@ -38,16 +43,18 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
             yield self
 
     def add_build(self, name: str) -> None:
-        self._get_or_create_task(EntityType.dataset, name)
+        self._get_or_create_task(AssetType.DATASET, name)
 
     def add_model(self, name: str) -> None:
-        self._get_or_create_task(EntityType.MODEL, name)
+        self._get_or_create_task(AssetType.MODEL, name)
 
-    def _get_or_create_task(self, entity_type: EntityType, name: str) -> TaskID:
+    def _get_or_create_task(self, entity_type: AssetType, name: str) -> TaskID:
         if (entity_type, name) not in self._task_ids:
             task_id = self._progress.add_task(
                 start=False,
-                entity=Entity(type=entity_type, name=name, status=EntityStatus.PENDING),
+                entity=EntityTracker(
+                    type=entity_type, name=name, status=EntityTrackerStatus.PENDING
+                ),
                 description="pending",
             )
             self._task_ids[(entity_type, name)] = task_id
@@ -55,10 +62,10 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
 
     def _update_entity(  # noqa: C901
         self,
-        type_: EntityType,
+        type_: AssetType,
         name: str,
         *,
-        status: Optional[EntityStatus] = None,
+        status: Optional[EntityTrackerStatus] = None,
         cur_step: int = 0,
         total_steps: int = 0,
         url: Optional[URL] = None,
@@ -105,10 +112,10 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
                 description=description,
             )
 
-        if status == EntityStatus.PENDING:
+        if status == EntityTrackerStatus.PENDING:
             self._progress.update(task_id, description="pending")
-        elif status == EntityStatus.SAVING:
-            if type_ == EntityType.dataset:
+        elif status == EntityTrackerStatus.SAVING:
+            if type_ == AssetType.DATASET:
                 # Even if we go through all steps, we still want to keep track of time elapsed until the status is DONE, so we add +1 to total_steps.
                 self._progress.update(
                     task_id,
@@ -116,29 +123,29 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
                     total=(total_steps + 1),
                     description=f"saved {cur_step}/{total_steps} rows",
                 )
-            elif type_ == EntityType.MODEL:
+            elif type_ == AssetType.MODEL:
                 self._progress.update(
                     task_id,
                     description="saving",
                 )
-        elif status == EntityStatus.BUILDING:
+        elif status == EntityTrackerStatus.BUILDING:
             if not task.started:
                 self._progress.start_task(task_id)
             self._progress.update(task_id, description="building")
         elif (
-            status == EntityStatus.ENTITY_DOWNLOADING
-            or status == EntityStatus.ENTITY_FROM_CACHE
+            status == EntityTrackerStatus.ENTITY_DOWNLOADING
+            or status == EntityTrackerStatus.ENTITY_FROM_CACHE
         ):
             if not task.started:
                 self._progress.start_task(task_id)
-        elif status == EntityStatus.TRAINING:
+        elif status == EntityTrackerStatus.TRAINING:
             if not task.started:
                 self._progress.start_task(task_id)
             self._progress.update(task_id, description="training")
-        elif status == EntityStatus.DONE:
+        elif status == EntityTrackerStatus.DONE:
             self._progress.update(task_id, completed=task.total, description="done")
             self._progress.stop_task(task_id)
-        elif status == EntityStatus.ERROR:
+        elif status == EntityTrackerStatus.ERROR:
             self._progress.stop_task(task_id)
             self._progress.update(task_id, completed=0, description="error")
 
@@ -154,7 +161,7 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
 
     def mark_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
             url=self._get_url(AssetType.DATASET, name),
         )
@@ -163,9 +170,9 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
     ) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
-            status=EntityStatus.BUILDING,
+            status=EntityTrackerStatus.BUILDING,
             url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_idx,
@@ -179,9 +186,9 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         build_index: Optional[str] = None,
     ) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
-            status=EntityStatus.DONE,
+            status=EntityTrackerStatus.DONE,
             url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_index,
@@ -191,26 +198,26 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self, name: str, cur_step: int, total_steps: int
     ) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
-            status=EntityStatus.SAVING,
+            status=EntityTrackerStatus.SAVING,
             cur_step=cur_step,
             total_steps=total_steps,
         )
 
     def mark_model_saving(self, name: str) -> None:
-        self._update_entity(EntityType.MODEL, name, status=EntityStatus.SAVING)
+        self._update_entity(AssetType.MODEL, name, status=EntityTrackerStatus.SAVING)
 
     def mark_model_saved(self, name: str) -> None:
-        self._update_entity(EntityType.MODEL, name, status=EntityStatus.DONE)
+        self._update_entity(AssetType.MODEL, name, status=EntityTrackerStatus.DONE)
 
     def mark_model_training(
         self, name: str, version: Optional[str] = None, train_idx: Optional[str] = None
     ) -> None:
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
-            status=EntityStatus.TRAINING,
+            status=EntityTrackerStatus.TRAINING,
             url=self._get_url(AssetType.MODEL, name),
             version=version,
             build_idx=train_idx,
@@ -224,36 +231,36 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         train_index: Optional[str] = None,
     ) -> None:
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
             url=self._get_url(AssetType.MODEL, name),
-            status=EntityStatus.SAVING,
+            status=EntityTrackerStatus.SAVING,
         )
 
     def mark_model_train_failed(self, name: str, reason: str) -> None:
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
-            status=EntityStatus.ERROR,
+            status=EntityTrackerStatus.ERROR,
         )
 
     def mark_model_running_assertions(self, name: str) -> None:
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
-            status=EntityStatus.ASSERTING,
+            status=EntityTrackerStatus.ASSERTING,
             description="asserting...",
         )
 
     def mark_model_running_assertion(self, name: str, assertion: Assertion) -> None:
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
             description=str(assertion),
         )
 
     def mark_model_completed_assertions(self, name: str) -> None:
-        self._update_entity(EntityType.MODEL, name, description="asserted")
+        self._update_entity(AssetType.MODEL, name, description="asserted")
 
     def mark_model_failed_assertions(
         self, name: str, assertions: List[Assertion]
@@ -261,29 +268,29 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         stringified = [str(assertion) for assertion in assertions]
         error_msg = f"failed: {', '.join(stringified)}"
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
-            status=EntityStatus.ERROR,
+            status=EntityTrackerStatus.ERROR,
             error_reason=error_msg,
         )
 
     def mark_dataset_running_assertions(self, name: str) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
-            status=EntityStatus.ASSERTING,
+            status=EntityTrackerStatus.ASSERTING,
             description="asserting...",
         )
 
     def mark_dataset_running_assertion(self, name: str, assertion: Assertion) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
             description=str(assertion),
         )
 
     def mark_dataset_completed_assertions(self, name: str) -> None:
-        self._update_entity(EntityType.dataset, name, description="asserted")
+        self._update_entity(AssetType.DATASET, name, description="asserted")
 
     def mark_dataset_failed_assertions(
         self, name: str, assertions: List[Assertion]
@@ -291,9 +298,9 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         stringified = [str(assertion) for assertion in assertions]
         error_msg = f"failed: {', '.join(stringified)}"
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
-            status=EntityStatus.ERROR,
+            status=EntityTrackerStatus.ERROR,
             error_reason=error_msg,
         )
 
@@ -301,18 +308,18 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self, name: str, state: DatasetTransferState
     ) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
             dataset_transfer_state=state,
-            status=EntityStatus.RESULT_UPLOADING,
+            status=EntityTrackerStatus.RESULT_UPLOADING,
         )
 
     def mark_model_saving_result(self, name: str, state: ResourceTransferState) -> None:
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
             model_transfer_state=state,
-            status=EntityStatus.RESULT_UPLOADING,
+            status=EntityTrackerStatus.RESULT_UPLOADING,
         )
 
     def mark_model_getting_model(
@@ -323,12 +330,12 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         from_cache: bool,
     ) -> None:
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
             entity_download_transfer_state=state,
-            status=EntityStatus.ENTITY_DOWNLOADING
+            status=EntityTrackerStatus.ENTITY_DOWNLOADING
             if not from_cache
-            else EntityStatus.ENTITY_FROM_CACHE,
+            else EntityTrackerStatus.ENTITY_FROM_CACHE,
             loading_cache_entity=None if not from_cache else getting_entity_name,
         )
 
@@ -336,12 +343,12 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self, name: str, getting_entity_name: str, from_cache: bool
     ) -> None:
         self._update_entity(
-            EntityType.MODEL,
+            AssetType.MODEL,
             name,
             entity_download_transfer_state=DatasetTransferState(0, getting_entity_name),
-            status=EntityStatus.ENTITY_DOWNLOADING
+            status=EntityTrackerStatus.ENTITY_DOWNLOADING
             if not from_cache
-            else EntityStatus.ENTITY_FROM_CACHE,
+            else EntityTrackerStatus.ENTITY_FROM_CACHE,
             loading_cache_entity=None if not from_cache else getting_entity_name,
         )
 
@@ -353,12 +360,12 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         from_cache: bool,
     ) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
             entity_download_transfer_state=state,
-            status=EntityStatus.ENTITY_DOWNLOADING
+            status=EntityTrackerStatus.ENTITY_DOWNLOADING
             if not from_cache
-            else EntityStatus.ENTITY_FROM_CACHE,
+            else EntityTrackerStatus.ENTITY_FROM_CACHE,
             loading_cache_entity=None if not from_cache else getting_entity_name,
         )
 
@@ -366,12 +373,12 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self, name: str, getting_entity_name: str, from_cache: bool
     ) -> None:
         self._update_entity(
-            EntityType.dataset,
+            AssetType.DATASET,
             name,
             entity_download_transfer_state=DatasetTransferState(0, getting_entity_name),
-            status=EntityStatus.ENTITY_DOWNLOADING
+            status=EntityTrackerStatus.ENTITY_DOWNLOADING
             if not from_cache
-            else EntityStatus.ENTITY_FROM_CACHE,
+            else EntityTrackerStatus.ENTITY_FROM_CACHE,
             loading_cache_entity=None if not from_cache else getting_entity_name,
         )
 
@@ -379,10 +386,14 @@ class LocalExecutionRunProgressTracker(RunProgressTracker):
         self,
         name: str,
     ) -> None:
-        self._update_entity(EntityType.MODEL, name, status=EntityStatus.ENTITY_LOADED)
+        self._update_entity(
+            AssetType.MODEL, name, status=EntityTrackerStatus.ENTITY_LOADED
+        )
 
     def mark_dataset_loaded(
         self,
         name: str,
     ) -> None:
-        self._update_entity(EntityType.dataset, name, status=EntityStatus.ENTITY_LOADED)
+        self._update_entity(
+            AssetType.DATASET, name, status=EntityTrackerStatus.ENTITY_LOADED
+        )

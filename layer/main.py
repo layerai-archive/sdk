@@ -23,10 +23,11 @@ from layer.cache.cache import Cache
 from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
 from layer.config import DEFAULT_PATH, DEFAULT_URL, ConfigManager
+from layer.config.config import Config
 from layer.context import Context
-from layer.contracts.entities import EntityType
 from layer.contracts.projects import Project
-from layer.contracts.runs import ResourceTransferState, Run
+from layer.contracts.runs import Run
+from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import (
     ConfigError,
     ProjectInitializationException,
@@ -229,7 +230,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
         # You can also get datasets from other projects you have access to, including public projects.
         layer.get_dataset("the-project/datasets/titanic")
     """
-    config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
+    config: Config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
     asset_path = AssetPath.parse(name, expected_asset_type=AssetType.DATASET)
     asset_path = _ensure_asset_path_has_project_name(asset_path)
 
@@ -238,7 +239,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
         with LayerClient(config.client, logger).init() as client:
             within_run = (
                 True if context else False
-            )  # if layer.get_dataset is called within a @dataset decorated func of not
+            )  # if layer.get_dataset is called within an @dataset decorated func or not
             callback = lambda: client.data_catalog.fetch_dataset(  # noqa: E731
                 asset_path, no_cache=no_cache
             )
@@ -247,7 +248,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                     with Context() as context:
                         set_active_context(context)
                         context.with_entity_name(asset_path.entity_name)
-                        context.with_entity_type(EntityType.dataset)
+                        context.with_entity_type(AssetType.DATASET)
                         tracker = LocalExecutionRunProgressTracker(
                             project_name=None, config=config
                         )
@@ -259,7 +260,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                                 False,  # Datasets are fetched per partition, no good way to show caching per partition
                                 within_run,
                                 context,
-                                EntityType.dataset,
+                                AssetType.DATASET,
                             )
                 finally:
                     reset_active_context()  # Reset only if outside layer func, as the layer func logic will reset it
@@ -271,7 +272,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                     False,  # Datasets are fetched per partition, no good way to show caching per partition
                     within_run,
                     context,
-                    EntityType.dataset,
+                    AssetType.DATASET,
                 )
 
             return dataset
@@ -329,7 +330,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
                 with Context() as context:
                     set_active_context(context)
                     context.with_entity_name(asset_path.entity_name)
-                    context.with_entity_type(EntityType.MODEL)
+                    context.with_entity_type(AssetType.MODEL)
                     tracker = LocalExecutionRunProgressTracker(
                         project_name=None, config=config
                     )
@@ -341,7 +342,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
                             from_cache,
                             within_run,
                             context,
-                            EntityType.MODEL,
+                            AssetType.MODEL,
                             state,
                         )
             finally:
@@ -354,7 +355,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
                 from_cache,
                 within_run,
                 context,
-                EntityType.MODEL,
+                AssetType.MODEL,
                 state,
             )
 
@@ -386,7 +387,7 @@ def _ui_progress_with_tracker(
     from_cache: bool,
     within_run: bool,
     context: Context,
-    getting_entity_type: EntityType,
+    getting_entity_type: AssetType,
     state: Optional[ResourceTransferState] = None,
 ) -> Any:
     entity_name = context.entity_name()
@@ -395,33 +396,33 @@ def _ui_progress_with_tracker(
     assert tracker
     entity_type = context.entity_type()
     assert entity_type
-    if entity_type == EntityType.MODEL:
-        if getting_entity_type == EntityType.dataset:
+    if entity_type == AssetType.MODEL:
+        if getting_entity_type == AssetType.DATASET:
             tracker.mark_model_getting_dataset(
                 entity_name, getting_entity_name, from_cache
             )
-        elif getting_entity_type == EntityType.MODEL:
+        elif getting_entity_type == AssetType.MODEL:
             tracker.mark_model_getting_model(
                 entity_name, getting_entity_name, state, from_cache
             )
-    elif entity_type == EntityType.dataset:
-        if getting_entity_type == EntityType.dataset:
+    elif entity_type == AssetType.DATASET:
+        if getting_entity_type == AssetType.DATASET:
             tracker.mark_dataset_getting_dataset(
                 entity_name, getting_entity_name, from_cache
             )
-        elif getting_entity_type == EntityType.MODEL:
+        elif getting_entity_type == AssetType.MODEL:
             tracker.mark_dataset_getting_model(
                 entity_name, getting_entity_name, state, from_cache
             )
     result = callback()
     if within_run:
-        if entity_type == EntityType.MODEL:
+        if entity_type == AssetType.MODEL:
             tracker.mark_model_training(entity_name)
-        elif entity_type == EntityType.dataset:
+        elif entity_type == AssetType.DATASET:
             tracker.mark_dataset_building(entity_name)
-    elif entity_type == EntityType.MODEL:
+    elif entity_type == AssetType.MODEL:
         tracker.mark_model_loaded(entity_name)
-    elif entity_type == EntityType.dataset:
+    elif entity_type == AssetType.DATASET:
         tracker.mark_dataset_loaded(entity_name)
     return result
 

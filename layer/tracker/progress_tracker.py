@@ -5,7 +5,7 @@ from typing import Iterator, List, Optional, Union
 from layerapi.api.ids_pb2 import RunId
 
 from layer.contracts.assertions import Assertion
-from layer.contracts.runs import DatasetTransferState, ResourceTransferState
+from layer.contracts.tracker import DatasetTransferState, ResourceTransferState
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 
 

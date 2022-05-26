@@ -1,8 +1,8 @@
 from types import TracebackType
 from typing import Optional
 
+from layer.contracts.asset import AssetType
 from layer.contracts.datasets import DatasetBuild
-from layer.contracts.entities import EntityType
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
 
@@ -23,7 +23,7 @@ class Context:
         dataset_build: Optional[DatasetBuild] = None,
         tracker: Optional[RunProgressTracker] = None,
         entity_name: Optional[str] = None,
-        entity_type: Optional[EntityType] = None,
+        entity_type: Optional[AssetType] = None,
     ) -> None:
         self._train: Optional[BaseTrain] = train
         self._dataset_build: Optional[DatasetBuild] = dataset_build
@@ -64,7 +64,7 @@ class Context:
     def with_entity_name(self, entity_name: str) -> None:
         self._entity_name = entity_name
 
-    def with_entity_type(self, entity_type: EntityType) -> None:
+    def with_entity_type(self, entity_type: AssetType) -> None:
         self._entity_type = entity_type
 
     def tracker(self) -> Optional[RunProgressTracker]:
@@ -73,13 +73,13 @@ class Context:
     def entity_name(self) -> Optional[str]:
         return self._entity_name
 
-    def entity_type(self) -> EntityType:
+    def entity_type(self) -> AssetType:
         if self._entity_type:
             return self._entity_type
         elif self.train():
-            return EntityType.MODEL
+            return AssetType.MODEL
         elif self.dataset_build():
-            return EntityType.dataset
+            return AssetType.DATASET
         else:
             raise Exception("Unsupported entity type")
 

@@ -45,10 +45,11 @@ from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
 from layer.contracts.models import Model, ModelArtifact, TrainStorageConfiguration
-from layer.contracts.runs import ModelFunctionDefinition, ResourceTransferState
+from layer.contracts.runs import ModelFunctionDefinition
+from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.utils import get_flavor_for_proto
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.grpc import create_grpc_channel
 from layer.utils.s3 import S3Util
 

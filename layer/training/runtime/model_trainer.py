@@ -21,7 +21,7 @@ from layer.global_context import (
     set_active_context,
 )
 from layer.resource_manager import ResourceManager
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
 from .common import import_function, update_train_status
