@@ -51,6 +51,16 @@ lint: $(INSTALL_STAMP) ## Run all linters
 	$(POETRY) run mypy .
 	$(POETRY) run bandit -c pyproject.toml -r .
 
+.PHONY: check-package-loads
+check-package-loads: ## Check that we can load the package without the dev dependencies
+	@rm -f $(INSTALL_STAMP)
+ifdef IN_VENV
+	$(POETRY) install --no-dev
+else
+	$(POETRY) install --no-dev --remove-untracked
+endif
+	$(POETRY) run python -c "import layer"
+
 .PHONY: check
 check: test lint ## Run test and lint
 
