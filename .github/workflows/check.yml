@@ -3,6 +3,26 @@ on:
   pull_request
 
 jobs:
+  check-package-loads:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.13
+      - name: Cache poetry virtualenvs
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/.cache/pypoetry/virtualenvs
+          key: poetry-venvs-no-dev-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-vevns-no-dev-${{ runner.os }}-3.8-
+      - name: Check package loads without dev dependencies
+        run: make check-package-loads
+
   check-lockfile:
     runs-on: ubuntu-18.04
     steps:
