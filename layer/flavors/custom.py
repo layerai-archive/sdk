@@ -15,8 +15,6 @@ class CustomModel:
     A generic model that evaluates inputs and produces outputs.
     """
 
-    MODEL_PICKLE_FILE = "custom_model.pkl"
-
     def __init__(self):
         """
         Initializes the custom  model
@@ -35,7 +33,7 @@ class CustomModel:
 class CustomModelFlavor(ModelFlavor):
     """A model flavor implementation which enables custom model implementation for Layer users."""
 
-    MODULE_KEYWORD = "layer.CustomModel"
+    MODULE_KEYWORD = "layer"
     MODEL_PICKLE_FILE = "custom_model.pkl"
     PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_CUSTOM
 
