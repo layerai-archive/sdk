@@ -11,7 +11,7 @@ from layer.cache.cache import Cache
 from layer.exceptions.exceptions import LayerClientException
 
 
-_asset_path_PATTERN = re.compile(
+_ASSET_PATH_PATTERN = re.compile(
     r"^(([a-zA-Z0-9_-]+)\/)?(([a-zA-Z0-9_-]+)\/)?(datasets|models)\/([a-zA-Z0-9_-]+)(:([a-z0-9_]*)(\.([0-9]*))?)?(#([a-zA-Z0-9_-]+))?$"
 )
 
@@ -42,7 +42,7 @@ class AssetPath:
                 raise ValueError("Please specify full path or specify asset type")
             composite_name = f"{expected_asset_type.value}/{composite_name}"
 
-        result = _asset_path_PATTERN.search(composite_name)
+        result = _ASSET_PATH_PATTERN.search(composite_name)
         if not result:
             raise ValueError("Asset path does not match expected pattern")
         groups = result.groups()

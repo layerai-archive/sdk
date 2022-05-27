@@ -11,7 +11,6 @@ from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layer.exceptions.exceptions import ProjectException
 
 from .accounts import Account
-from .assets import AssetType
 
 
 logger = logging.getLogger()

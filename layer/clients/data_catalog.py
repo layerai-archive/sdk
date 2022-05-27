@@ -206,7 +206,7 @@ class DataCatalogClient:
             InitiateBuildRequest(
                 dataset_name=dataset.name,
                 format="python",
-                build_asset_type=PBDatasetBuild.BUILD_asset_type_DATASET,
+                build_entity_type=PBDatasetBuild.BUILD_ENTITY_TYPE_DATASET,
                 project_id=ProjectId(value=str(project_id)),
                 fabric=dataset.get_fabric(is_local),
             )
@@ -303,7 +303,7 @@ class DataCatalogClient:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             archive_path = f"{tmp_dir}/{archive_name}"
-            tar_directory(archive_path, dataset.asset_path)
+            tar_directory(archive_path, dataset.pickle_dir)
             S3Util.upload_dir(
                 Path(tmp_dir),
                 response.credentials,

@@ -2,8 +2,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import wrapt  # type: ignore
 
+from layer.contracts.assets import AssetPath, AssetType, BaseAsset
 from layer.contracts.datasets import Dataset
-from layer.contracts.assets import BaseAsset, AssetPath, AssetType
 from layer.contracts.models import Model
 from layer.settings import LayerSettings
 

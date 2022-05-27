@@ -160,7 +160,7 @@ def _model_wrapper(
                 model_name=model_definition.name,
                 model_version=model_version.name,
                 train_id=UUID(train_id.value),
-                source_folder=model_definition.asset_path,
+                source_folder=model_definition.pickle_dir,
                 source_entrypoint=model_definition.entrypoint,
                 train_index=str(train.index),
             )

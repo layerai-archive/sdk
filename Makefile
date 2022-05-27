@@ -39,7 +39,7 @@ endif
 
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters
-	$(POETRY) run isort --profile=black --lines-after-imports=2 .
+	$(POETRY) run isort .
 	$(POETRY) run black .
 
 .PHONY: lint

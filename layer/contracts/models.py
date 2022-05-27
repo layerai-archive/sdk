@@ -11,7 +11,7 @@ from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelFlavor
 from layer.types import ModelArtifact
 
-from .assets import BaseAsset, AssetPath, AssetType
+from .assets import AssetPath, AssetType, BaseAsset
 
 
 @dataclass(frozen=True)
