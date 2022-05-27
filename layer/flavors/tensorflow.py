@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
@@ -40,5 +39,5 @@ class TensorFlowModelFlavor(ModelFlavor):
         )
 
     @staticmethod
-    def __predict(model: Any, input_df: pd.DataFrame) -> pd.DataFrame:
+    def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
         raise Exception("Not implemented")

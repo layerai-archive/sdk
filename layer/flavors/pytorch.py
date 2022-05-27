@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
@@ -59,8 +58,8 @@ class PyTorchModelFlavor(ModelFlavor):
         )
 
     @staticmethod
-    def __predict(model: Any, input_df: pd.DataFrame) -> pd.DataFrame:
+    def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
         from mlflow.pytorch import _PyTorchWrapper
 
         model = _PyTorchWrapper(model)
-        return model.predict(input_df)
+        return model.predict(input_df)  # type: ignore

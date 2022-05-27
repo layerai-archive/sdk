@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
@@ -34,6 +33,6 @@ class ScikitLearnModelFlavor(ModelFlavor):
         )
 
     @staticmethod
-    def __predict(model: Any, input_df: pd.DataFrame) -> pd.DataFrame:
-        prediction_np_array = model.predict(input_df)
+    def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
+        prediction_np_array = model.predict(input_df)  # type: ignore
         return pd.DataFrame(prediction_np_array, columns=["prediction"])
