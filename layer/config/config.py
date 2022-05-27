@@ -171,7 +171,13 @@ class Credentials:
     @property
     def _access_token_expiration_time(self) -> float:
         return (
-            float(jwt.decode(self.access_token, verify=False).get("exp", float("inf")))
+            float(
+                jwt.decode(
+                    self.access_token,
+                    options={"verify_signature": False},
+                    algorithms=["HS256"],
+                ).get("exp", float("inf"))
+            )
             - self._expiration_margin
         )
 
@@ -187,7 +193,7 @@ class Credentials:
     def is_authenticated_outside_organization(self) -> bool:
         # todo: update this to account_id along with LAY-2716
         return self.is_empty or f"{ROOT_LAYER_URL}/organization_id" not in jwt.decode(
-            self.access_token, verify=False
+            self.access_token, options={"verify_signature": False}, algorithms=["HS256"]
         )
 
 
