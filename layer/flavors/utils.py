@@ -7,6 +7,7 @@ from layer.types import ModelArtifact
 
 from .base import ModelFlavor  # noqa
 from .catboost import CatBoostModelFlavor  # noqa
+from .custom import CustomModelFlavor  # noqa
 from .huggingface import HuggingFaceModelFlavor  # noqa
 from .keras import KerasModelFlavor  # noqa
 from .lightgbm import LightGBMModelFlavor  # noqa
@@ -27,6 +28,7 @@ PYTHON_FLAVORS: List[ModelFlavor] = [
     XGBoostModelFlavor(),
     LightGBMModelFlavor(),
     CatBoostModelFlavor(),
+    CustomModelFlavor(),
 ]
 
 # mypy proto enum typing issue https://github.com/protocolbuffers/protobuf/issues/8175

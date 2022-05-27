@@ -5,8 +5,10 @@ from pathlib import Path
 
 import pytest
 
+import layer
 from layer.flavors import (
     CatBoostModelFlavor,
+    CustomModelFlavor,
     HuggingFaceModelFlavor,
     KerasModelFlavor,
     LightGBMModelFlavor,
@@ -233,3 +235,34 @@ class TestModelFlavors:
         # Load and check the type of the model
         model = pt_flavor.load_model_from_directory(tmp_path)
         assert model.__class__.__name__ == "AutoShape"
+
+    def test_custom_flavor(self, tmp_path):
+        from sklearn.datasets import load_iris
+        from sklearn.svm import SVC
+
+        from layer import CustomModel
+
+        class DummyModel(CustomModel):
+            def __init__(self):
+                super().__init__()
+                svc = SVC()
+                svc.set_params(kernel="linear")
+                x, y = load_iris(return_X_y=True)
+                svc.fit(x, y)
+                self.model = svc
+
+            def predict(self, model_input):
+                return self.model.predict(model_input)
+
+        model = DummyModel()
+        flavor = get_flavor_for_model(model)
+        assert type(flavor).__name__ == CustomModelFlavor.__name__
+
+        flavor.save_model_to_directory(model, tmp_path)
+        loaded_model = flavor.load_model_from_directory(tmp_path)
+        assert isinstance(loaded_model, layer.CustomModel)
+        assert isinstance(loaded_model.model, SVC)
+
+        x, _ = load_iris(return_X_y=True)
+        result = loaded_model.predict(x[:5])
+        assert list(result) == [0, 0, 0, 0, 0]
