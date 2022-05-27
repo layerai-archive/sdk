@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import cloudpickle  # type: ignore
+import pandas
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
 from layer.types import ModelArtifact
@@ -21,12 +22,12 @@ class CustomModel:
         """
 
     @abstractmethod
-    def predict(self, model_input: Any) -> Any:
+    def predict(self, model_input: pandas.DataFrame) -> pandas.DataFrame:
         """
         Evaluates an input for this model and produces an output.
 
-        :param model_input: An input for the model to evaluate.
-        :return: Model output
+        :param model_input: A pandas.DataFrame as input for the model to evaluate.
+        :return: Model output as a pandas.DataFrame
         """
 
 
