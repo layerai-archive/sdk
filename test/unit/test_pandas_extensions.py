@@ -298,6 +298,7 @@ def test_infer_custom_types_infers_images_type(tmp_path):
     data_parquet = pd.read_parquet(parquet_path, engine=_PARQUET_ENGINE)
 
     assert inferred["img"].dtype.name == "layer.image"
+    # assert implictly converted types was written and read correctly
     _assert_image_columns_equal(data, data_parquet, col="img")
 
 
@@ -311,6 +312,7 @@ def test_infer_custom_types_infers_arrays_type(tmp_path):
     data_parquet = pd.read_parquet(parquet_path, engine=_PARQUET_ENGINE)
 
     assert inferred["arr"].dtype.name == "layer.ndarray"
+    # assert implictly converted types was written and read correctly
     assert_frame_equal(data, data_parquet)
 
 
@@ -322,4 +324,5 @@ def test_infer_custom_types_does_not_infer_for_1dim_array(tmp_path):
     data_parquet = pd.read_parquet(parquet_path, engine=_PARQUET_ENGINE)
 
     assert inferred["arr"].dtype.name == "object"
+    # assert implictly converted types was written and read correctly
     assert_frame_equal(data, data_parquet)
