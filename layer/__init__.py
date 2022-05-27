@@ -5,6 +5,7 @@ from .contracts.datasets import Dataset  # noqa
 from .contracts.models import Model  # noqa
 from .contracts.projects import Project  # noqa
 from .contracts.runs import Run  # noqa
+from .flavors.custom import CustomModel  # noqa
 from .global_context import current_project_name  # noqa
 from .main import clear_cache  # noqa
 from .main import get_dataset  # noqa
@@ -19,7 +20,6 @@ from .main import logout  # noqa
 from .main import run  # noqa
 from .main import show_api_key  # noqa
 from .pandas_extensions import Arrays, Images, _register_type_extensions  # noqa
-from .flavors.custom import CustomModel
 
 
 _register_type_extensions()

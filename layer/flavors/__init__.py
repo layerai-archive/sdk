@@ -1,5 +1,6 @@
 from .base import ModelFlavor  # noqa
 from .catboost import CatBoostModelFlavor  # noqa
+from .custom import CustomModelFlavor  # noqa
 from .huggingface import HuggingFaceModelFlavor  # noqa
 from .keras import KerasModelFlavor  # noqa
 from .lightgbm import LightGBMModelFlavor  # noqa
@@ -7,4 +8,3 @@ from .pytorch import PyTorchModelFlavor  # noqa
 from .sklearn import ScikitLearnModelFlavor  # noqa
 from .tensorflow import TensorFlowModelFlavor  # noqa
 from .xgboost import XGBoostModelFlavor  # noqa
-from .custom import CustomModelFlavor  # noqa
