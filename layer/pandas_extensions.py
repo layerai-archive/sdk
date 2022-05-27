@@ -97,6 +97,25 @@ def _load_image(binary: Union[pa.BinaryScalar, pa.ExtensionScalar]) -> "Image":
 
 
 class Images(ExtensionArray):
+    """
+    Extends `pandas.ExtensionArray` to provide automatic conversion between `PIL.Image.Image` class and `pyarrow`.
+    The conversion is required to store images in layer datasets.
+
+    .. code-block:: python
+
+        def make_image(n: int) -> Image:
+            image = PIL.Image.new("RGB", (160, 40), color=(73, 109, 137))
+            draw = ImageDraw.Draw(image)
+            draw.text((11, 10), f"Image #{n}", fill=(255, 255, 0))
+            return image
+
+        image_1 = make_image(1)
+        image_2 = make_image(2)
+        image_3 = make_image(3)
+
+        pandas.DataFrame({"images": layer.Images([image_1, image_2, image_3])})
+    """
+
     def __init__(self, images: Sequence["Image"]):
         self._images = images
         self._dtype = _ImageDtype()
@@ -257,6 +276,24 @@ def _load_array(binary: Union[pa.BinaryScalar, pa.ExtensionScalar]) -> np.ndarra
 
 
 class Arrays(ExtensionArray):
+    """
+    Extends `pandas.ExtensionArray` to provide automatic conversion between `numpy.ndarray` class and `pyarrow`.
+    The conversion is required to store multi-dimensional arrays in layer datasets.
+
+    .. code-block:: python
+
+        pd.DataFrame(
+        {
+            "array": layer.Arrays(
+                (
+                    np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int64),
+                    np.array([[7, 8, 9], [10, 11, 12]], dtype=np.int64),
+                    np.array([[13, 14, 15], [16, 17, 18]], dtype=np.int64),
+                )
+            )
+        })
+    """
+
     def __init__(self, arrays: Sequence[np.ndarray]):  # type: ignore
         self._arrays = arrays
         self._dtype = _ArrayDtype()
