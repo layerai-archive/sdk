@@ -60,4 +60,7 @@ class PyTorchModelFlavor(ModelFlavor):
 
     @staticmethod
     def __predict(model: Any, input_df: pd.DataFrame) -> pd.DataFrame:
-        raise Exception("Not implemented")
+        from mlflow.pytorch import _PyTorchWrapper
+
+        model = _PyTorchWrapper(model)
+        return model.predict(input_df)
