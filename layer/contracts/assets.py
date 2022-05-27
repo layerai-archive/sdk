@@ -1,9 +1,10 @@
 import re
 import uuid
+from abc import ABCMeta, abstractproperty
 from dataclasses import dataclass, replace
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, TypeVar, Union
 
 from yarl import URL
 
@@ -13,6 +14,10 @@ from layer.exceptions.exceptions import LayerClientException
 
 _ASSET_PATH_PATTERN = re.compile(
     r"^(([a-zA-Z0-9_-]+)\/)?(([a-zA-Z0-9_-]+)\/)?(datasets|models)\/([a-zA-Z0-9_-]+)(:([a-z0-9_]*)(\.([0-9]*))?)?(#([a-zA-Z0-9_-]+))?$"
+)
+
+BaseAssetType = TypeVar(  # pylint: disable=invalid-name
+    "BaseAssetType", bound="BaseAsset"
 )
 
 
@@ -114,18 +119,17 @@ class AssetPath:
         return base_url / self.path()
 
 
-class BaseAsset:
+class BaseAsset(metaclass=ABCMeta):
     def __init__(
         self,
         path: Union[str, AssetPath],
-        asset_type: Optional[AssetType] = None,
         id: Optional[uuid.UUID] = None,
         dependencies: Optional[Sequence["BaseAsset"]] = None,
     ):
         if dependencies is None:
             dependencies = []
         self._path = (
-            AssetPath.parse(path, asset_type) if isinstance(path, str) else path
+            AssetPath.parse(path, self.asset_type) if isinstance(path, str) else path
         )
         self._id = id
         self._dependencies = dependencies
@@ -140,6 +144,13 @@ class BaseAsset:
             and self._dependencies == other._dependencies
         )
 
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({self.name})"
+
+    @abstractproperty
+    def asset_type(self) -> AssetType:
+        ...
+
     @property
     def name(self) -> str:
         return self._path.asset_name
@@ -148,21 +159,10 @@ class BaseAsset:
     def path(self) -> str:
         return self._path.path()
 
-    def _update_with(self, asset: "BaseAsset") -> None:
-        self._path = asset._path  # pylint: disable=protected-access
-        self._id = asset.id
-        self._dependencies = asset.dependencies
-
-    def _set_id(self, id: uuid.UUID) -> None:
-        self._id = id
-
     @property
     def id(self) -> uuid.UUID:
         assert self._id is not None
         return self._id
-
-    def _set_dependencies(self, dependencies: Sequence["BaseAsset"]) -> None:
-        self._dependencies = dependencies
 
     @property
     def dependencies(self) -> Sequence["BaseAsset"]:
@@ -172,13 +172,22 @@ class BaseAsset:
     def project_name(self) -> Optional[str]:
         return self._path.project_name
 
-    def with_project_name(self, project_name: str) -> "BaseAsset":
-        new_path = self._path.with_project_name(project_name=project_name)
-        return BaseAsset(
-            path=new_path,
-            id=self.id,
-            dependencies=self.dependencies,
-        )
+    def with_project_name(self: BaseAssetType, project_name: str) -> BaseAssetType:
+        self._path = self._path.with_project_name(project_name=project_name)
+        return self
+
+    def with_id(self: BaseAssetType, id: uuid.UUID) -> BaseAssetType:
+        self._id = id
+        return self
+
+    def with_dependencies(
+        self: BaseAssetType, dependencies: Sequence["BaseAsset"]
+    ) -> BaseAssetType:
+        self._dependencies = dependencies
+        return self
+
+    def drop_dependencies(self: BaseAssetType) -> BaseAssetType:
+        return self.with_dependencies(())
 
     def get_cache_dir(self, cache_dir: Optional[Path] = None) -> Optional[Path]:
         cache = Cache(cache_dir=cache_dir).initialise()

@@ -1,4 +1,3 @@
-import copy
 import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Sequence, Union
@@ -49,7 +48,6 @@ class Model(BaseAsset):
         model_artifact: Optional[ModelArtifact] = None,
     ):
         super().__init__(
-            asset_type=AssetType.MODEL,
             path=asset_path,
             id=id,
             dependencies=dependencies,
@@ -60,6 +58,10 @@ class Model(BaseAsset):
         self._storage_config = storage_config
         self.parameters = parameters or {}
         self._model_artifact = model_artifact
+
+    @property
+    def asset_type(self) -> AssetType:
+        return AssetType.MODEL
 
     def set_parameters(self, parameters: Dict[str, Any]) -> "Model":
         self.parameters = parameters
@@ -101,6 +103,14 @@ class Model(BaseAsset):
         """
         return self.artifact
 
+    def get_artifact(self) -> ModelArtifact:
+        """
+        Returns the trained and saved model artifact. For example, a scikit-learn or PyTorch model object.
+
+        :return: The trained model artifact.
+        """
+        return self.artifact
+
     def get_parameters(self) -> Dict[str, Any]:
         """
         Returns a dictionary of the parameters of the model.
@@ -121,20 +131,3 @@ class Model(BaseAsset):
 
         """
         return self.parameters
-
-    def with_dependencies(self, dependencies: Sequence[BaseAsset]) -> "Model":
-        new_model = copy.deepcopy(self)
-        new_model._set_dependencies(dependencies)  # pylint: disable=protected-access
-        return new_model
-
-    def with_project_name(self, project_name: str) -> "Model":
-        new_entity = super().with_project_name(project_name=project_name)
-        new_model = copy.deepcopy(self)
-        new_model._update_with(new_entity)  # pylint: disable=protected-access
-        return new_model
-
-    def drop_dependencies(self) -> "Model":
-        return self.with_dependencies(())
-
-    def __str__(self) -> str:
-        return f"Model({self.name})"

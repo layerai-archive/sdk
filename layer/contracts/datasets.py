@@ -1,4 +1,3 @@
-import copy
 import enum
 import uuid
 from dataclasses import dataclass, field
@@ -60,7 +59,6 @@ class Dataset(BaseAsset):
         version: Optional[str] = None,  # TODO(volkan) is this needed?
     ):
         super().__init__(
-            asset_type=AssetType.DATASET,
             path=asset_path,
             id=id,
             dependencies=dependencies,
@@ -74,16 +72,9 @@ class Dataset(BaseAsset):
         self.uri = uri
         self.version = version if version is not None else ""
 
-    def with_project_name(self: "Dataset", project_name: str) -> "Dataset":
-        new_asset = super().with_project_name(project_name=project_name)
-        new_dataset = copy.deepcopy(self)
-        new_dataset._update_with(new_asset)  # pylint: disable=protected-access
-        return new_dataset
-
-    def with_id(self, id: uuid.UUID) -> "Dataset":
-        new_ds = copy.deepcopy(self)
-        new_ds._set_id(id)  # pylint: disable=protected-access
-        return new_ds
+    @property
+    def asset_type(self) -> AssetType:
+        return AssetType.DATASET
 
     def _pandas_df_factory(self) -> "pandas.DataFrame":
         assert self.__pandas_df_factory
@@ -196,17 +187,6 @@ class Dataset(BaseAsset):
             prefetch_factor=prefetch_factor,
             persistent_workers=persistent_workers,
         )
-
-    def with_dependencies(self, dependencies: Sequence[BaseAsset]) -> "Dataset":
-        new_ds = copy.deepcopy(self)
-        new_ds._set_dependencies(dependencies)  # pylint: disable=protected-access
-        return new_ds
-
-    def drop_dependencies(self) -> "Dataset":
-        return self.with_dependencies(())
-
-    def __str__(self) -> str:
-        return f"Dataset({self.name})"
 
 
 @dataclass(frozen=True)
