@@ -10,7 +10,7 @@ from layerapi.api.value.s3_path_pb2 import S3Path
 
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelFlavor, ModelRuntimeObjects
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
 from .asset import AssetPath, AssetType, BaseAsset
 
@@ -91,12 +91,12 @@ class Model(BaseAsset):
         return self._storage_config
 
     @property
-    def artifact(self) -> ModelArtifact:
+    def artifact(self) -> ModelObject:
         if self._model_runtime_objects is None:
             raise LayerClientException("Model artifact is not yet fetched from storage")
-        return self._model_runtime_objects.model_artifact
+        return self._model_runtime_objects.model_object
 
-    def get_train(self) -> ModelArtifact:
+    def get_train(self) -> ModelObject:
         """
         Returns the trained and saved model artifact. For example, a scikit-learn or PyTorch model object.
 

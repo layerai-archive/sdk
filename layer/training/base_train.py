@@ -5,7 +5,7 @@ from layer.tracker.project_progress_tracker import RunProgressTracker
 
 
 if TYPE_CHECKING:
-    from layer.types import ModelArtifact
+    from layer.types import ModelObject
 
 
 class BaseTrain:
@@ -97,7 +97,7 @@ class BaseTrain:
 
     def save_model(
         self,
-        trained_model_obj: "ModelArtifact",
+        trained_model_obj: "ModelObject",
         tracker: Optional[RunProgressTracker] = None,
     ) -> Any:
         pass

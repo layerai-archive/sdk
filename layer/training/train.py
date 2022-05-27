@@ -11,7 +11,7 @@ from layer.contracts.models import Model
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.flavors.utils import get_flavor_for_model
 from layer.tracker.project_progress_tracker import RunProgressTracker
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
 from .base_train import BaseTrain
 
@@ -148,16 +148,16 @@ class Train(BaseTrain):
 
     def save_model(
         self,
-        model_artifact: ModelArtifact,
+        model_object: ModelObject,
         tracker: Optional[RunProgressTracker] = None,
     ) -> Any:
         if not tracker:
             tracker = RunProgressTracker()
         assert self.__train_id
 
-        flavor = get_flavor_for_model(model_artifact)
+        flavor = get_flavor_for_model(model_object)
         if flavor is None:
-            raise UnexpectedModelTypeException(type(model_artifact))
+            raise UnexpectedModelTypeException(type(model_object))
         storage_config = (
             self.__layer_client.model_catalog.get_model_train_storage_configuration(
                 self.__train_id
@@ -170,8 +170,8 @@ class Train(BaseTrain):
             flavor=flavor,
             storage_config=storage_config,
         )
-        self.__layer_client.model_catalog.save_model_artifact(
-            model, model_artifact, tracker=tracker
+        self.__layer_client.model_catalog.save_model_object(
+            model, model_object, tracker=tracker
         )
 
     def __parse_parameter(self, value: str) -> Any:

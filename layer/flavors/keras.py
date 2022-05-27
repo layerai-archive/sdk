@@ -4,7 +4,7 @@ from typing import Any
 import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
 from .base import ModelFlavor, ModelRuntimeObjects
 
@@ -17,7 +17,7 @@ class KerasModelFlavor(ModelFlavor):
 
     TOKENIZER_FILE = "tokenizer.pickle"
 
-    def can_interpret_object(self, model_object: ModelArtifact) -> bool:
+    def can_interpret_object(self, model_object: ModelObject) -> bool:
         # Check if model is a tensorflow keras
         try:
             import tensorflow.keras.models  # type: ignore
@@ -48,7 +48,7 @@ class KerasModelFlavor(ModelFlavor):
         return False
 
     def save_model_to_directory(
-        self, model_object: ModelArtifact, directory: Path
+        self, model_object: ModelObject, directory: Path
     ) -> None:
         import cloudpickle  # type: ignore
         import keras

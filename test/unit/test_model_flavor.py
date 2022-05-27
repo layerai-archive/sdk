@@ -170,21 +170,21 @@ class TestModelFlavors:
         tmp_path = tmp_path / "model1"
         model = TFBertForSequenceClassification(BertConfig())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_artifact
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_object
         assert isinstance(loaded_model, TFBertForSequenceClassification)
 
         # Bert Pytorch Model
         tmp_path = tmp_path / "model2"
         model = BertForSequenceClassification(BertConfig())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_artifact
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_object
         assert isinstance(loaded_model, BertForSequenceClassification)
 
         # GPT2 LMHEad Tensorflow Model
         tmp_path = tmp_path / "model3"
         model = TFGPT2LMHeadModel(GPT2Config())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_artifact
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_object
 
         assert isinstance(loaded_model, TFGPT2LMHeadModel)
 
@@ -202,7 +202,7 @@ class TestModelFlavors:
         pt_flavor = PyTorchModelFlavor()
         pt_model = torch.nn.Sequential()
         pt_flavor.save_model_to_directory(pt_model, tmp_path)
-        loaded_model = pt_flavor.load_model_from_directory(tmp_path).model_artifact
+        loaded_model = pt_flavor.load_model_from_directory(tmp_path).model_object
         assert isinstance(loaded_model, torch.nn.Module)
 
     def test_yolo_save_load(self, tmp_path):
@@ -233,7 +233,7 @@ class TestModelFlavors:
             del sys.modules["yolov5"]
 
         # Load and check the type of the model
-        model = pt_flavor.load_model_from_directory(tmp_path).model_artifact
+        model = pt_flavor.load_model_from_directory(tmp_path).model_object
         assert model.__class__.__name__ == "AutoShape"
 
     def test_custom_flavor(self, tmp_path):

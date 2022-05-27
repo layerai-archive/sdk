@@ -11,7 +11,7 @@ from layer.config.config import ClientConfig
 from layer.contracts.models import Model
 from layer.contracts.runs import ResourceTransferState
 from layer.flavors.base import ModelFlavor
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
 
 logger = logging.getLogger(__name__)
@@ -93,9 +93,9 @@ class DummyModelFlavor(ModelFlavor):
         self.model_impl = Mock(name="dummy_model_impl")
 
     def save_model_to_directory(
-        self, model_artifact: ModelArtifact, directory: Path
+        self, model_object: ModelObject, directory: Path
     ) -> None:
         return
 
-    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
+    def load_model_from_directory(self, directory: Path) -> ModelObject:
         return self.model_impl(directory.as_uri())

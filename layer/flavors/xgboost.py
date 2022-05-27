@@ -4,7 +4,7 @@ from typing import Any
 import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
 from .base import ModelFlavor, ModelRuntimeObjects
 
@@ -20,7 +20,7 @@ class XGBoostModelFlavor(ModelFlavor):
     PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_XGBOOST
 
     def save_model_to_directory(
-        self, model_object: ModelArtifact, directory: Path
+        self, model_object: ModelObject, directory: Path
     ) -> None:
         import mlflow.xgboost
 

@@ -44,7 +44,7 @@ from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
 
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
-from layer.contracts.models import Model, ModelArtifact, TrainStorageConfiguration
+from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
 from layer.contracts.runs import ModelFunctionDefinition, ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
@@ -221,19 +221,19 @@ class ModelCatalogClient:
             warnings.simplefilter("ignore", category=UserWarning)
             return model.flavor.load_model_from_directory(model_dir)
 
-    def save_model_artifact(
+    def save_model_object(
         self,
         model: Model,
-        model_artifact: ModelArtifact,
+        model_object: ModelObject,
         tracker: Optional[RunProgressTracker] = None,
-    ) -> ModelArtifact:
+    ) -> ModelObject:
         if not tracker:
             tracker = RunProgressTracker()
-        self._logger.debug(f"Storing given model {model_artifact} for {model.path}")
+        self._logger.debug(f"Storing given model {model_object} for {model.path}")
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 local_path = Path(tmp) / "model"
-                model.flavor.save_model_to_directory(model_artifact, local_path)
+                model.flavor.save_model_to_directory(model_object, local_path)
                 state = ResourceTransferState()
                 tracker.mark_model_saving_result(model.name, state)
                 S3Util.upload_dir(
@@ -247,7 +247,7 @@ class ModelCatalogClient:
             raise LayerClientException(f"Error while storing model, {ex}")
         self._logger.debug(f"User model {model.path} saved successfully")
 
-        return model_artifact
+        return model_object
 
     def get_model_train_storage_configuration(
         self,

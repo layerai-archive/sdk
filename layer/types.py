@@ -1,4 +1,4 @@
 from typing import NewType
 
 
-ModelArtifact = NewType("ModelArtifact", object)
+ModelObject = NewType("ModelObject", object)
