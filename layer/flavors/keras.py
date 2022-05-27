@@ -82,4 +82,6 @@ class KerasModelFlavor(ModelFlavor):
 
     @staticmethod
     def __predict(model: Any, input_df: pd.DataFrame) -> pd.DataFrame:
-        raise Exception("Not implemented")
+        #  https://www.tensorflow.org/api_docs/python/tf/keras/Model#predict
+        predictions = model.predict(input_df)
+        return pd.DataFrame(predictions)
