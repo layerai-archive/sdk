@@ -320,6 +320,17 @@ class Arrays(ExtensionArray):
             total_bytes += arr.nbytes
         return total_bytes
 
+    def value_counts(
+        values: Sequence[Any],
+        sort: bool = True,
+        ascending: bool = False,
+        normalize: bool = False,
+        bins: Any = None,
+        dropna: bool = True,
+    ) -> pd.Series:  # type: ignore
+        # make all values unique for now
+        return pd.Series(np.ones(len(values), dtype=np.int64))
+
 
 def _array_bytes(arr: np.ndarray) -> bytes:  # type: ignore
     with io.BytesIO() as buf:

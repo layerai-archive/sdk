@@ -260,3 +260,11 @@ def test_pandas_images_describe():
         {"image": [3, 3, 0, 1]}, index=["count", "unique", "top", "freq"]
     )
     assert_frame_equal(describe, data.describe())
+
+
+def test_pandas_arrays_describe():
+    data = _array_data_frame()
+    describe = pd.DataFrame(
+        {"array": [3, 3, 0, 1]}, index=["count", "unique", "top", "freq"]
+    )
+    assert_frame_equal(describe, data.describe())
