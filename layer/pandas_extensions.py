@@ -346,3 +346,21 @@ def _register_type_extensions() -> None:
     # register pandas extension types
     register_extension_dtype(_ImageDtype)
     register_extension_dtype(_ArrayDtype)
+
+
+def _infer_custom_types(data: pd.DataFrame) -> pd.DataFrame:
+    if len(data) == 0:
+        return data
+    first_row = data.head(n=1)
+    try:
+        from PIL.Image import Image
+
+        for col in first_row:
+            value = data[col][0]
+            if isinstance(value, Image):
+                data[col] = Images(data[col])
+            elif isinstance(value, np.ndarray) and value.ndim > 1:
+                data[col] = Arrays(data[col])
+    except ImportError:
+        pass
+    return data

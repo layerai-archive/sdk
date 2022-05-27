@@ -9,10 +9,25 @@ from pandas.testing import assert_frame_equal
 from PIL.Image import Image
 
 import layer
-from layer.pandas_extensions import Images, _ArrayDtype, _ImageDtype
+from layer.pandas_extensions import (
+    Images,
+    _ArrayDtype,
+    _ImageDtype,
+    _infer_custom_types,
+)
 
 
 _PARQUET_ENGINE = "pyarrow"
+
+
+def _assert_image_columns_equal(left: pd.DataFrame, right: pd.DataFrame, col: str):
+    # Cannot use assert_frame_equal, because of the incorrect comparison of boolean arrays in
+    # https://github.com/pandas-dev/pandas/blob/ad190575aa75962d2d0eade2de81a5fe5a2e285b/pandas/_libs/testing.pyx#L177
+    # due to ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+    def to_numpy(d):
+        return np.array([np.asarray(image) for image in d[col]])
+
+    np.testing.assert_array_equal(to_numpy(left), to_numpy(right))
 
 
 def test_pandas_images_read_write(tmp_path):
@@ -23,13 +38,7 @@ def test_pandas_images_read_write(tmp_path):
     data.to_parquet(parquet_path, engine=_PARQUET_ENGINE)
     data_parquet = pd.read_parquet(parquet_path, engine=_PARQUET_ENGINE)
 
-    def to_numpy(d):
-        return np.array([np.asarray(image) for image in d["image"]])
-
-    # Cannot use assert_frame_equal, because of the incorrect comparison of boolean arrays in
-    # https://github.com/pandas-dev/pandas/blob/ad190575aa75962d2d0eade2de81a5fe5a2e285b/pandas/_libs/testing.pyx#L177
-    # due to ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
-    np.testing.assert_array_equal(to_numpy(data), to_numpy(data_parquet))
+    _assert_image_columns_equal(data, data_parquet, col="image")
     assert data_parquet["image"].dtype.name == "layer.image"
 
 
@@ -268,3 +277,49 @@ def test_pandas_arrays_describe():
         {"array": [3, 3, 0, 1]}, index=["count", "unique", "top", "freq"]
     )
     assert_frame_equal(describe, data.describe())
+
+
+def test_infer_custom_types_returns_empty_data_frame_for_empty_data_frame():
+    inferred = _infer_custom_types(pd.DataFrame())
+    assert_frame_equal(pd.DataFrame(), inferred)
+
+
+def test_infer_custom_types_returns_same_data_frame():
+    data = pd.DataFrame({"col1": [1, 2, 3], "col2": ["x", "y", "z"]})
+    inferred = _infer_custom_types(data)
+    assert_frame_equal(data, inferred)
+
+
+def test_infer_custom_types_infers_images_type(tmp_path):
+    data = pd.DataFrame({"col1": [1, 2, 3], "img": [_image(1), _image(2), _image(3)]})
+    inferred = _infer_custom_types(data)
+    parquet_path = tmp_path / str(uuid4())
+    data.to_parquet(parquet_path, engine=_PARQUET_ENGINE)
+    data_parquet = pd.read_parquet(parquet_path, engine=_PARQUET_ENGINE)
+
+    assert inferred["img"].dtype.name == "layer.image"
+    _assert_image_columns_equal(data, data_parquet, col="img")
+
+
+def test_infer_custom_types_infers_arrays_type(tmp_path):
+    data = pd.DataFrame(
+        {"col1": [1], "arr": [np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int64)]}
+    )
+    inferred = _infer_custom_types(data)
+    parquet_path = tmp_path / str(uuid4())
+    data.to_parquet(parquet_path, engine=_PARQUET_ENGINE)
+    data_parquet = pd.read_parquet(parquet_path, engine=_PARQUET_ENGINE)
+
+    assert inferred["arr"].dtype.name == "layer.ndarray"
+    assert_frame_equal(data, data_parquet)
+
+
+def test_infer_custom_types_does_not_infer_for_1dim_array(tmp_path):
+    data = pd.DataFrame({"col1": [1], "arr": [np.array([1, 2, 3])]})
+    inferred = _infer_custom_types(data)
+    parquet_path = tmp_path / str(uuid4())
+    data.to_parquet(parquet_path, engine=_PARQUET_ENGINE)
+    data_parquet = pd.read_parquet(parquet_path, engine=_PARQUET_ENGINE)
+
+    assert inferred["arr"].dtype.name == "object"
+    assert_frame_equal(data, data_parquet)
