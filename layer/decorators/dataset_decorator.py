@@ -40,6 +40,19 @@ def dataset(
     - If decorated function is passed in to ``layer.run(your_function)``, then Layer runs the function remotely and stores its output as a dataset.
     - If you run the function locally, ``your_function()``, then Layer stores the output in the Layer backend as a dataset. This does not affect function execution.
 
+    Supported Pandas dataframe types:
+    * `bool`
+    * `(u)int{8,16,32,64}`
+    * `float32`
+    * `float64`
+    * `str`
+    * `pd.Categorical` (categorical maps to only integer categories, label information is lost during the conversion)
+    * `pd.Timestamp`
+    * `datetime.date`
+    * `datetime.time`
+    * `PIL.Image.Image`
+    * `numpy.ndarray`
+
     :param name: Name with which the dataset will be stored in Layer backend.
     :param dependencies: List of ``Datasets`` or ``Models`` that will be built by Layer backend prior to building the current function. This hints Layer what entities this function depends on and optimizes the build process.
     :return: Function object being decorated.
