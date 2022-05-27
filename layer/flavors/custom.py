@@ -43,6 +43,7 @@ class CustomModelFlavor(ModelFlavor):
         model_object: Any,
         directory: Path,
     ) -> None:
+        directory.mkdir(parents=True, exist_ok=True)
         with open(directory / self.MODEL_PICKLE_FILE, mode="wb") as file:
             cloudpickle.dump(model_object, file)
 
