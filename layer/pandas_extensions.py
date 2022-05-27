@@ -13,6 +13,7 @@ from typing import (
 )
 
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 from pandas._typing import PositionalIndexer  # type: ignore
 from pandas.core.arrays.base import ExtensionArray  # type: ignore
@@ -164,7 +165,9 @@ class Images(ExtensionArray):
         if not isinstance(other, Images):
             return eq_arr
         for i in range(min(len(self), len(other))):
-            if _image_bytes(self._images[i]) == _image_bytes(other._images[i]):
+            if np.array_equal(
+                np.asarray(self._images[i]), np.asarray(other._images[i])
+            ):
                 eq_arr[i] = True
         return eq_arr
 
@@ -179,6 +182,17 @@ class Images(ExtensionArray):
         for buf in self._images_byte_arr():
             total_bytes += len(buf)
         return total_bytes
+
+    def value_counts(
+        values: Sequence[Any],
+        sort: bool = True,
+        ascending: bool = False,
+        normalize: bool = False,
+        bins: Any = None,
+        dropna: bool = True,
+    ) -> pd.Series:  # type: ignore
+        # make all values unique for now
+        return pd.Series(np.ones(len(values), dtype=np.int64))
 
 
 def _image_bytes(image: "Image") -> bytes:
