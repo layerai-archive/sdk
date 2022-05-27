@@ -1,4 +1,5 @@
 import logging
+import platform
 import uuid
 from typing import Any
 from unittest.mock import MagicMock, create_autospec
@@ -107,6 +108,7 @@ def test_train_raises_exception_if_error_happens() -> None:
         set(),
     ],
 )
+@pytest.mark.skipif(platform.system() == "Darwin", reason="Segfaults on Mac")
 def test_when_save_model_gets_invalid_object_then_throw_exception(
     invalid_model_object: Any,
 ) -> None:
