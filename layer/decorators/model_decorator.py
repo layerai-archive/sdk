@@ -7,7 +7,7 @@ import wrapt  # type: ignore
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
-from layer.contracts.assets import AssetType
+from layer.contracts.asset import AssetType
 from layer.contracts.runs import ModelFunctionDefinition
 from layer.decorators.layer_wrapper import LayerEntityFunctionWrapper
 from layer.projects.utils import (

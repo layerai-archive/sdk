@@ -2,7 +2,7 @@ from typing import Optional
 
 import pytest
 
-from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
 
 
 class TestCompositeEntityName:

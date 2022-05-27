@@ -8,7 +8,7 @@ from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
 from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
-from layer.contracts.assets import AssetType
+from layer.contracts.asset import AssetType
 
 
 POLLING_INTERVAL_SEC = 3

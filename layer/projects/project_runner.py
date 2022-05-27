@@ -10,7 +10,7 @@ from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
 from layer.config import Config
-from layer.contracts.assets import AssetType
+from layer.contracts.asset import AssetType
 from layer.contracts.projects import ApplyResult
 from layer.contracts.runs import (
     DatasetFunctionDefinition,

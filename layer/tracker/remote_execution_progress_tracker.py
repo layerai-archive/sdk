@@ -7,7 +7,7 @@ from rich.text import Text
 from yarl import URL
 
 from layer.config import Config
-from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.runs import Run
 from layer.contracts.tracker import (
     AssetTracker,

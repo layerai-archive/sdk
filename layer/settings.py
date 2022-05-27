@@ -1,6 +1,6 @@
 from typing import Any, List, Optional
 
-from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
 from layer.exceptions.exceptions import ConfigError
 from layer.global_context import (

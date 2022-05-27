@@ -8,7 +8,7 @@ from yarl import URL
 
 from layer.config import Config
 from layer.contracts.assertions import Assertion
-from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.tracker import (
     AssetTracker,
     AssetTrackerStatus,
