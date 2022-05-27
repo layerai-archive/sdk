@@ -91,7 +91,7 @@ class Model(BaseAsset):
         return self._storage_config
 
     @property
-    def artifact(self) -> ModelObject:
+    def model_object(self) -> ModelObject:
         if self._model_runtime_objects is None:
             raise LayerClientException("Model artifact is not yet fetched from storage")
         return self._model_runtime_objects.model_object
@@ -102,7 +102,7 @@ class Model(BaseAsset):
 
         :return: The trained model artifact.
         """
-        return self.artifact
+        return self.model_object
 
     def predict(self, input_df: pd.DataFrame) -> pd.DataFrame:
         """
