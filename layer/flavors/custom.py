@@ -2,7 +2,7 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Any
 
-import cloudpickle
+import cloudpickle  # type: ignore
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
 from layer.types import ModelArtifact
@@ -15,7 +15,7 @@ class CustomModel:
     A generic model that evaluates inputs and produces outputs.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes the custom  model
         """

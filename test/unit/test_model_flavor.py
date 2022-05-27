@@ -245,12 +245,11 @@ class TestModelFlavors:
         class DummyModel(CustomModel):
             def __init__(self):
                 super().__init__()
-                self.model = SVC()
-                self.model.set_params(kernel="linear")
-
-            def train(self):
+                svc = SVC()
+                svc.set_params(kernel="linear")
                 x, y = load_iris(return_X_y=True)
-                self.model.fit(x, y)
+                svc.fit(x, y)
+                self.model = svc
 
             def predict(self, model_input):
                 return self.model.predict(model_input)
