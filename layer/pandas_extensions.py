@@ -13,6 +13,7 @@ from typing import (
 )
 
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 from pandas._typing import PositionalIndexer  # type: ignore
 from pandas.core.arrays.base import ExtensionArray  # type: ignore
@@ -107,12 +108,12 @@ class Images(ExtensionArray):
         *,
         dtype: Optional[ExtensionDtype] = None,
         copy: bool = False,
-    ) -> "Images":
-        return Images(scalars)
+    ) -> Any:
+        return cls(scalars)
 
     @classmethod
-    def _concat_same_type(cls, to_concat: Sequence["Images"]) -> "Images":
-        return Images(tuple(itertools.chain(*to_concat)))
+    def _concat_same_type(cls, to_concat: Sequence["Images"]) -> Any:
+        return cls(tuple(itertools.chain(*to_concat)))
 
     @property
     def dtype(self) -> ExtensionDtype:
@@ -122,7 +123,7 @@ class Images(ExtensionArray):
         return Images(tuple(image.copy() for image in self._images))
 
     def isna(self) -> np.ndarray:  # type: ignore
-        return np.array([image is not None for image in self._images], dtype=bool)
+        return np.array([image is None for image in self._images], dtype=bool)
 
     def __len__(self) -> int:
         return len(self._images)
@@ -164,7 +165,9 @@ class Images(ExtensionArray):
         if not isinstance(other, Images):
             return eq_arr
         for i in range(min(len(self), len(other))):
-            if _image_bytes(self._images[i]) == _image_bytes(other._images[i]):
+            if np.array_equal(
+                np.asarray(self._images[i]), np.asarray(other._images[i])
+            ):
                 eq_arr[i] = True
         return eq_arr
 
@@ -179,6 +182,17 @@ class Images(ExtensionArray):
         for buf in self._images_byte_arr():
             total_bytes += len(buf)
         return total_bytes
+
+    def value_counts(
+        values: Sequence[Any],
+        sort: bool = True,
+        ascending: bool = False,
+        normalize: bool = False,
+        bins: Any = None,
+        dropna: bool = True,
+    ) -> pd.Series:  # type: ignore
+        # make all values unique for now
+        return pd.Series(np.ones(len(values), dtype=np.int64))
 
 
 def _image_bytes(image: "Image") -> bytes:
@@ -265,7 +279,7 @@ class Arrays(ExtensionArray):
         return Arrays(tuple(arr.copy() for arr in self._arrays))
 
     def isna(self) -> np.ndarray:  # type: ignore
-        return np.array([arr is not None for arr in self._arrays], dtype=bool)
+        return np.array([arr is None for arr in self._arrays], dtype=bool)
 
     def __len__(self) -> int:
         return len(self._arrays)
@@ -305,6 +319,17 @@ class Arrays(ExtensionArray):
         for arr in self._arrays:
             total_bytes += arr.nbytes
         return total_bytes
+
+    def value_counts(
+        values: Sequence[Any],
+        sort: bool = True,
+        ascending: bool = False,
+        normalize: bool = False,
+        bins: Any = None,
+        dropna: bool = True,
+    ) -> pd.Series:  # type: ignore
+        # make all values unique for now
+        return pd.Series(np.ones(len(values), dtype=np.int64))
 
 
 def _array_bytes(arr: np.ndarray) -> bytes:  # type: ignore
