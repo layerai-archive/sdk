@@ -107,12 +107,12 @@ class Images(ExtensionArray):
         *,
         dtype: Optional[ExtensionDtype] = None,
         copy: bool = False,
-    ) -> "Images":
-        return Images(scalars)
+    ) -> Any:
+        return cls(scalars)
 
     @classmethod
-    def _concat_same_type(cls, to_concat: Sequence["Images"]) -> "Images":
-        return Images(tuple(itertools.chain(*to_concat)))
+    def _concat_same_type(cls, to_concat: Sequence["Images"]) -> Any:
+        return cls(tuple(itertools.chain(*to_concat)))
 
     @property
     def dtype(self) -> ExtensionDtype:
@@ -122,7 +122,7 @@ class Images(ExtensionArray):
         return Images(tuple(image.copy() for image in self._images))
 
     def isna(self) -> np.ndarray:  # type: ignore
-        return np.array([image is not None for image in self._images], dtype=bool)
+        return np.array([image is None for image in self._images], dtype=bool)
 
     def __len__(self) -> int:
         return len(self._images)
@@ -265,7 +265,7 @@ class Arrays(ExtensionArray):
         return Arrays(tuple(arr.copy() for arr in self._arrays))
 
     def isna(self) -> np.ndarray:  # type: ignore
-        return np.array([arr is not None for arr in self._arrays], dtype=bool)
+        return np.array([arr is None for arr in self._arrays], dtype=bool)
 
     def __len__(self) -> int:
         return len(self._arrays)
