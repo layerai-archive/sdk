@@ -44,9 +44,10 @@ from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
 
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
-from layer.contracts.models import Model, ModelArtifact, TrainStorageConfiguration
+from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
 from layer.contracts.runs import ModelFunctionDefinition, ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
+from layer.flavors.base import ModelRuntimeObjects
 from layer.flavors.utils import get_flavor_for_proto
 from layer.tracker.project_progress_tracker import RunProgressTracker
 from layer.utils.grpc import create_grpc_channel
@@ -176,12 +177,12 @@ class ModelCatalogClient:
         )
         return response.id
 
-    def load_model_artifact(
+    def load_model_runtime_objects(
         self,
         model: Model,
         state: ResourceTransferState,
         no_cache: bool = False,
-    ) -> ModelArtifact:
+    ) -> ModelRuntimeObjects:
         """
         Loads a model artifact from the model catalog
 
@@ -203,34 +204,36 @@ class ModelCatalogClient:
                         state=state,
                     )
                     if no_cache:
-                        return self._load_model(model, local_path)
+                        return self._load_model_runtime_objects(model, local_path)
                     model_cache_dir = self._cache.put_path_entry(
                         str(model.id), local_path
                     )
 
             assert model_cache_dir is not None
-            return self._load_model(model, model_cache_dir)
+            return self._load_model_runtime_objects(model, model_cache_dir)
         except Exception as ex:
             raise LayerClientException(f"Error while loading model, {ex}")
 
-    def _load_model(self, model: Model, model_dir: Path) -> ModelArtifact:
+    def _load_model_runtime_objects(
+        self, model: Model, model_dir: Path
+    ) -> ModelRuntimeObjects:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             return model.flavor.load_model_from_directory(model_dir)
 
-    def save_model_artifact(
+    def save_model_object(
         self,
         model: Model,
-        model_artifact: ModelArtifact,
+        model_object: ModelObject,
         tracker: Optional[RunProgressTracker] = None,
-    ) -> ModelArtifact:
+    ) -> ModelObject:
         if not tracker:
             tracker = RunProgressTracker()
-        self._logger.debug(f"Storing given model {model_artifact} for {model.path}")
+        self._logger.debug(f"Storing given model {model_object} for {model.path}")
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 local_path = Path(tmp) / "model"
-                model.flavor.save_model_to_directory(model_artifact, local_path)
+                model.flavor.save_model_to_directory(model_object, local_path)
                 state = ResourceTransferState()
                 tracker.mark_model_saving_result(model.name, state)
                 S3Util.upload_dir(
@@ -244,7 +247,7 @@ class ModelCatalogClient:
             raise LayerClientException(f"Error while storing model, {ex}")
         self._logger.debug(f"User model {model.path} saved successfully")
 
-        return model_artifact
+        return model_object
 
     def get_model_train_storage_configuration(
         self,

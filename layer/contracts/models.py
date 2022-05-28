@@ -3,13 +3,14 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Sequence, Union
 
+import pandas as pd
 from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
 
 from layer.exceptions.exceptions import LayerClientException
-from layer.flavors.base import ModelFlavor
-from layer.types import ModelArtifact
+from layer.flavors.base import ModelFlavor, ModelRuntimeObjects
+from layer.types import ModelObject
 
 from .asset import AssetPath, AssetType, BaseAsset
 
@@ -46,7 +47,7 @@ class Model(BaseAsset):
         flavor: Optional[ModelFlavor] = None,
         storage_config: Optional[TrainStorageConfiguration] = None,
         parameters: Optional[Dict[str, Any]] = None,
-        model_artifact: Optional[ModelArtifact] = None,
+        model_runtime_objects: Optional[ModelRuntimeObjects] = None,
     ):
         super().__init__(
             asset_type=AssetType.MODEL,
@@ -59,14 +60,16 @@ class Model(BaseAsset):
         self._flavor = flavor
         self._storage_config = storage_config
         self.parameters = parameters or {}
-        self._model_artifact = model_artifact
+        self._model_runtime_objects = model_runtime_objects
 
     def set_parameters(self, parameters: Dict[str, Any]) -> "Model":
         self.parameters = parameters
         return self
 
-    def set_artifact(self, model_artifact: ModelArtifact) -> "Model":
-        self._model_artifact = model_artifact
+    def set_model_runtime_objects(
+        self, model_runtime_objects: ModelRuntimeObjects
+    ) -> "Model":
+        self._model_runtime_objects = model_runtime_objects
         return self
 
     @property
@@ -88,18 +91,30 @@ class Model(BaseAsset):
         return self._storage_config
 
     @property
-    def artifact(self) -> ModelArtifact:
-        if self._model_artifact is None:
+    def model_object(self) -> ModelObject:
+        if self._model_runtime_objects is None:
             raise LayerClientException("Model artifact is not yet fetched from storage")
-        return self._model_artifact
+        return self._model_runtime_objects.model_object
 
-    def get_train(self) -> ModelArtifact:
+    def get_train(self) -> ModelObject:
         """
         Returns the trained and saved model artifact. For example, a scikit-learn or PyTorch model object.
 
         :return: The trained model artifact.
         """
-        return self.artifact
+        return self.model_object
+
+    def predict(self, input_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Performs prediction on the input dataframe data.
+        :return: the predictions as a pd.DataFrame
+        """
+        if (
+            self._model_runtime_objects is None
+            or self._model_runtime_objects.prediction_function is None
+        ):
+            raise Exception("No predict function provided")
+        return self._model_runtime_objects.prediction_function(input_df)
 
     def get_parameters(self) -> Dict[str, Any]:
         """

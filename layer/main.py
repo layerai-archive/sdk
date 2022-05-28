@@ -322,7 +322,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         state = ResourceTransferState(model.name)
 
         def callback() -> Model:
-            return _load_model_artifact(client, model, state, no_cache)
+            return _load_model_runtime_objects(client, model, state, no_cache)
 
         if not within_run:
             try:
@@ -361,18 +361,18 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         return model
 
 
-def _load_model_artifact(
+def _load_model_runtime_objects(
     client: LayerClient,
     model: Model,
     state: ResourceTransferState,
     no_cache: bool,
 ) -> Model:
-    model_artifact = client.model_catalog.load_model_artifact(
+    model_runtime_objects = client.model_catalog.load_model_runtime_objects(
         model,
         state=state,
         no_cache=no_cache,
     )
-    model.set_artifact(model_artifact)
+    model.set_model_runtime_objects(model_runtime_objects)
     parameters = client.model_catalog.get_model_train_parameters(
         ModelTrainId(value=str(model.id)),
     )

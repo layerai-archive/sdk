@@ -6,9 +6,9 @@ import cloudpickle  # type: ignore
 import pandas
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
-from .base import ModelFlavor
+from .base import ModelFlavor, ModelRuntimeObjects
 
 
 class CustomModel:
@@ -47,7 +47,13 @@ class CustomModelFlavor(ModelFlavor):
         with open(directory / self.MODEL_PICKLE_FILE, mode="wb") as file:
             cloudpickle.dump(model_object, file)
 
-    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
+    def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         with open(directory / self.MODEL_PICKLE_FILE, mode="rb") as file:
-            custom_model = cloudpickle.load(file)
-            return custom_model
+            model = cloudpickle.load(file)
+            return ModelRuntimeObjects(
+                model, lambda input_df: self.__predict(model, input_df)
+            )
+
+    @staticmethod
+    def __predict(model: ModelObject, input_df: pandas.DataFrame) -> pandas.DataFrame:
+        return model.predict(input_df)  # type: ignore

@@ -1,10 +1,11 @@
 from pathlib import Path
 
+import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
-from .base import ModelFlavor
+from .base import ModelFlavor, ModelRuntimeObjects
 
 
 class PyTorchModelFlavor(ModelFlavor):
@@ -14,7 +15,7 @@ class PyTorchModelFlavor(ModelFlavor):
     PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_PYTORCH
 
     def save_model_to_directory(
-        self, model_object: ModelArtifact, directory: Path
+        self, model_object: ModelObject, directory: Path
     ) -> None:
         import mlflow.pytorch
 
@@ -44,11 +45,21 @@ class PyTorchModelFlavor(ModelFlavor):
             model_object, path=directory.as_posix(), code_paths=models_module_path
         )
 
-    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
+    def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         import mlflow.pytorch
         import torch
 
-        return mlflow.pytorch.load_model(
+        model = mlflow.pytorch.load_model(
             directory.as_uri(),
             map_location=torch.device("cpu"),
         )
+        return ModelRuntimeObjects(
+            model, lambda input_df: self.__predict(model, input_df)
+        )
+
+    @staticmethod
+    def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
+        from mlflow.pytorch import _PyTorchWrapper
+
+        model = _PyTorchWrapper(model)
+        return model.predict(input_df)  # type: ignore

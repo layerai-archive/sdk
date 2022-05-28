@@ -1,10 +1,19 @@
 import inspect
 from abc import ABCMeta, abstractmethod, abstractproperty
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable, Optional
 
+import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
-from layer.types import ModelArtifact
+from layer.types import ModelObject
+
+
+@dataclass(frozen=True)
+class ModelRuntimeObjects:
+    model_object: ModelObject
+    prediction_function: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None
 
 
 class ModelFlavor(metaclass=ABCMeta):
@@ -32,16 +41,16 @@ class ModelFlavor(metaclass=ABCMeta):
             The proto flavor
         """
 
-    def can_interpret_object(self, model_artifact: ModelArtifact) -> bool:
+    def can_interpret_object(self, model_object: ModelObject) -> bool:
         """Checks whether supplied model object has flavor of this class.
 
         Args:
-            model_artifact: A machine learning model which could be originated from any framework.
+            model_object: A machine learning model which could be originated from any framework.
 
         Returns:
             bool: true if this ModelFlavor can interpret the given model instance.
         """
-        for hierarchy_class in inspect.getmro(type(model_artifact)):
+        for hierarchy_class in inspect.getmro(type(model_object)):
             parent_module = inspect.getmodule(hierarchy_class)
             if (
                 parent_module is not None
@@ -54,7 +63,7 @@ class ModelFlavor(metaclass=ABCMeta):
     @abstractmethod
     def save_model_to_directory(
         self,
-        model_artifact: ModelArtifact,
+        model_object: ModelObject,
         directory: Path,
     ) -> None:
         """Defines the method that this Model Flavor uses to save a model to a directory.
@@ -64,7 +73,7 @@ class ModelFlavor(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
+    def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         """Defines the method that this Model Flavor uses to load a model from a directory.
 
         Returns:
