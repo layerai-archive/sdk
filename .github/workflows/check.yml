@@ -45,11 +45,14 @@ jobs:
           make install
           poetry lock --no-update
           [ -z "$(git status --porcelain=v1 2>/dev/null)" ] || (echo "Lock file is not up to date, please run 'poetry lock --no-update'" && exit 1)
+
   check:
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.7, 3.8]
+    env:
+      CODECOV_PYTHON_VERSION: ${{ matrix.python-version }}
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -68,6 +71,10 @@ jobs:
           restore-keys: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-
       - name: Run check
         run: make check
+      - uses: codecov/codecov-action@v2
+        with:
+          env_vars: CODECOV_PYTHON_VERSION
+
   e2e-test:
     runs-on: ubuntu-18.04
     steps:
