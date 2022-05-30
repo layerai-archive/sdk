@@ -1,6 +1,5 @@
 # type: ignore
 import logging
-import platform
 from pathlib import Path
 
 import pytest
@@ -19,11 +18,13 @@ from layer.flavors import (
 )
 from layer.flavors.utils import get_flavor_for_model
 
+from .. import IS_DARWIN_ARM64
+
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipif(platform.system() == "Darwin", reason="Segfaults on Mac")
+@pytest.mark.skipif(IS_DARWIN_ARM64, reason="Segfaults on Mac M1")
 class TestModelFlavors:
     def test_lightgbm_flavor(self):
         import lightgbm as lgb
