@@ -40,6 +40,10 @@ limitations under the License.
 </p>
 
 ## Layer - Metadata Store for Production ML
+
+![Layer - Metadata store for production ML](https://app.layer.ai/assets/layer_metadata_store.png)
+
+
 [Layer](https://layer.ai) helps you build, train and track all your machine learning project metadata including ML models and datasets with semantic versioning, extensive artifact logging and dynamic reporting with local↔cloud training
 
 **[Start for Free now!](https://app.layer.ai/login?returnTo=%2Fgetting-started)**
