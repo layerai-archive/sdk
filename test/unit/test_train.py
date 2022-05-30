@@ -1,5 +1,4 @@
 import logging
-import platform
 import uuid
 from typing import Any
 from unittest.mock import MagicMock, create_autospec
@@ -11,6 +10,8 @@ from layer.clients.model_catalog import ModelCatalogClient
 from layer.config import ClientConfig
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.training.train import Train
+
+from .. import IS_DARWIN
 
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ def test_train_raises_exception_if_error_happens() -> None:
         set(),
     ],
 )
-@pytest.mark.skipif(platform.system() == "Darwin", reason="Segfaults on Mac")
+@pytest.mark.skipif(IS_DARWIN, reason="Segfaults on Mac")
 def test_when_save_model_gets_invalid_object_then_throw_exception(
     invalid_model_object: Any,
 ) -> None:
