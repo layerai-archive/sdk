@@ -19,7 +19,7 @@ endif
 
 .PHONY: test
 test: $(INSTALL_STAMP) ## Run unit tests
-	$(POETRY) run pytest test/unit --cov . --cov-report=xml
+	$(POETRY) run pytest test/unit --cov .
 
 test-login: $(TEST_TOKEN_FILE)
 $(TEST_TOKEN_FILE):
