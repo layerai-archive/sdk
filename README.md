@@ -17,7 +17,7 @@ limitations under the License.
 <p align="center">
     <br>
     <a href="https://layer.ai">
-          <img src="https://app.layer.ai/assets/layer_wordmark_black.png" width="400" alt="Layer"/>
+          <img src="https://app.layer.ai/assets/layer_wordmark_black.png" width="35%" alt="Layer"/>
     </a>
     <br>
 <p>
