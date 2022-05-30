@@ -23,8 +23,9 @@ PYTHON_FLAVORS: List[ModelFlavor] = [
     KerasModelFlavor(),
     PyTorchModelFlavor(),
     TensorFlowModelFlavor(),
-    ScikitLearnModelFlavor(),
+    # XGB Flavor should come before sklearn since it uses it as back bone
     XGBoostModelFlavor(),
+    ScikitLearnModelFlavor(),
     LightGBMModelFlavor(),
     CatBoostModelFlavor(),
     CustomModelFlavor(),
