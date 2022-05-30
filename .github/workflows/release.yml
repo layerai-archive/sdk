@@ -9,8 +9,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.7, 3.8]
-    env:
-      CODECOV_PYTHON_VERSION: ${{ matrix.python-version }}
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -29,9 +27,6 @@ jobs:
           restore-keys: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-
       - name: Run check
         run: make check
-      - uses: codecov/codecov-action@v2
-        with:
-          env_vars: CODECOV_PYTHON_VERSION
 
   check-package-loads:
     runs-on: ubuntu-18.04
