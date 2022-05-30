@@ -50,6 +50,8 @@ class TestModelFlavors:
         assert type(flavor).__name__ == XGBoostModelFlavor.__name__
 
     def test_xgboost_regressor_flavor(self):
+        import xgboost as xgb
+
         model = xgb.XGBRegressor()
         flavor = MLModelService.get_model_flavor(model, logger)
         assert type(flavor).__name__ == XGBoostModelFlavor.__name__
