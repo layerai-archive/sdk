@@ -207,7 +207,9 @@ def _stringify_entity_cycle(entity_cycle_path: List[AssetPath]) -> str:
     def rotate_list(entity_cycle_path: List[str]) -> List[str]:
         smallest_idx = 0
         for i in range(1, len(entity_cycle_path)):
-            if entity_cycle_path[i] < entity_cycle_path[smallest_idx]:
+            if (
+                entity_cycle_path[i] < entity_cycle_path[smallest_idx]
+            ):  # pragma: no cover
                 smallest_idx = i
         rotated = deque(entity_cycle_path)
         rotated.rotate(-smallest_idx)
