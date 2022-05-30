@@ -53,7 +53,7 @@ class TestModelFlavors:
         import xgboost as xgb
 
         model = xgb.XGBRegressor()
-        flavor = get_flavor_for_model(model, logger)
+        flavor = get_flavor_for_model(model)
         assert type(flavor).__name__ == XGBoostModelFlavor.__name__
 
     def test_sklearn_flavor(self):
