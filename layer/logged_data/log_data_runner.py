@@ -63,7 +63,9 @@ class LogDataRunner:
                     self._log_number(tag=tag, number=value)
             elif isinstance(value, pd.DataFrame):
                 self._log_dataframe(tag=tag, df=value)
-            elif isinstance(value, Path):
+            elif LogDataRunner._is_image(value):
+                if TYPE_CHECKING:
+                    assert isinstance(value, Path)
                 self._log_image_from_path(tag=tag, path=value)
             elif self._is_pil_image(value):
                 if TYPE_CHECKING:
@@ -186,6 +188,24 @@ class LogDataRunner:
             self._log_plot_figure(tag, plt.gcf())
         else:
             raise ValueError("No figures in the current pyplot state!")
+
+    @staticmethod
+    def _has_allowed_extension(
+        file: Path, allowed_extensions: Optional[List[str]]
+    ) -> bool:
+        if allowed_extensions is None:
+            allowed_extensions = []
+        extension = file.suffix.lower()
+        for allowed_extension in allowed_extensions:
+            if extension == allowed_extension:
+                return True
+        return False
+
+    @staticmethod
+    def _is_image(value: Any) -> bool:
+        return isinstance(value, Path) and LogDataRunner._has_allowed_extension(
+            value, [".gif", ".png", ".jpg", ".jpeg"]
+        )
 
     def _is_pil_image(self, value: Any) -> bool:
         return "PIL.Image" in self._get_base_module_list(value)
