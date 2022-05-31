@@ -8,9 +8,10 @@ from uuid import UUID
 
 import pandas as pd
 import requests  # type: ignore
+from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
 from layer.clients.layer import LayerClient
-from layer.contracts.logged_data import ModelMetricPoint
+from layer.contracts.logged_data import Markdown, ModelMetricPoint
 
 
 if TYPE_CHECKING:
@@ -61,8 +62,14 @@ class LogDataRunner:
                     self._log_metric(tag=tag, numeric_value=value, epoch=epoch)
                 else:
                     self._log_number(tag=tag, number=value)
+            elif isinstance(value, Markdown):
+                self._log_markdown(tag=tag, text=value.data)
             elif isinstance(value, pd.DataFrame):
                 self._log_dataframe(tag=tag, df=value)
+            elif LogDataRunner._is_video(value):
+                if TYPE_CHECKING:
+                    assert isinstance(value, Path)
+                self._log_video_from_path(tag=tag, path=value)
             elif LogDataRunner._is_image(value):
                 if TYPE_CHECKING:
                     assert isinstance(value, Path)
@@ -114,6 +121,14 @@ class LogDataRunner:
             data=text,
         )
 
+    def _log_markdown(self, tag: str, text: str) -> None:
+        self._client.logged_data_service_client.log_markdown_data(
+            train_id=self._train_id,
+            dataset_build_id=self._dataset_build_id,
+            tag=tag,
+            data=text,
+        )
+
     def _log_number(self, tag: str, number: Union[float, int]) -> None:
         self._client.logged_data_service_client.log_numeric_data(
             train_id=self._train_id,
@@ -144,14 +159,27 @@ class LogDataRunner:
             data=df_json,
         )
 
+    def _log_video_from_path(self, tag: str, path: Path) -> None:
+        self._log_binary_from_path(tag, path, LoggedDataType.LOGGED_DATA_TYPE_VIDEO, 10)
+
     def _log_image_from_path(self, tag: str, path: Path) -> None:
+        self._log_binary_from_path(tag, path, LoggedDataType.LOGGED_DATA_TYPE_IMAGE, 1)
+
+    def _log_binary_from_path(
+        self,
+        tag: str,
+        path: Path,
+        logged_data_type: "LoggedDataType.V",
+        max_file_size_mb: int,
+    ) -> None:
         file_size_in_bytes = path.stat().st_size
-        self._check_size_less_than_1_mb(file_size_in_bytes)
+        self._check_size_less_than_mb(file_size_in_bytes, max_file_size_mb)
         with requests.Session() as s, open(path, "rb") as image_file:
             presigned_url = self._client.logged_data_service_client.log_binary_data(
                 train_id=self._train_id,
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,
+                logged_data_type=logged_data_type,
             )
             resp = s.put(presigned_url, data=image_file)
             resp.raise_for_status()
@@ -167,6 +195,7 @@ class LogDataRunner:
                 train_id=self._train_id,
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,
+                logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
             )
             resp = s.put(presigned_url, data=buffer.getvalue())
             resp.raise_for_status()
@@ -179,6 +208,7 @@ class LogDataRunner:
                 train_id=self._train_id,
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,
+                logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
             )
             resp = s.put(presigned_url, data=buffer.getvalue())
             resp.raise_for_status()
@@ -207,6 +237,12 @@ class LogDataRunner:
             value, [".gif", ".png", ".jpg", ".jpeg"]
         )
 
+    @staticmethod
+    def _is_video(value: Any) -> bool:
+        return isinstance(value, Path) and LogDataRunner._has_allowed_extension(
+            value, [".mp4", ".webm", ".ogg"]
+        )
+
     def _is_pil_image(self, value: Any) -> bool:
         return "PIL.Image" in self._get_base_module_list(value)
 
@@ -231,11 +267,13 @@ class LogDataRunner:
 
     def _check_buffer_size(self, buffer: io.BytesIO) -> None:
         size_in_bytes = buffer.tell()
-        self._check_size_less_than_1_mb(size_in_bytes)
+        self._check_size_less_than_mb(size_in_bytes, 1)
 
-    def _check_size_less_than_1_mb(self, size_in_bytes: float) -> None:
+    def _check_size_less_than_mb(
+        self, size_in_bytes: float, max_mb_size: float
+    ) -> None:
         size_in_mb = size_in_bytes / 1000**2
-        if size_in_mb > 1:
+        if size_in_mb > max_mb_size:
             raise ValueError(
-                f"Image size cannot exceed 1MB. Current size: {size_in_mb}"
+                f"Image size cannot exceed {max_mb_size}MB. Current size: {size_in_mb}"
             )

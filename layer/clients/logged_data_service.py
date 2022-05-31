@@ -86,13 +86,15 @@ class LoggedDataClient:
 
     def log_binary_data(
         self,
+        *,
         tag: str,
+        logged_data_type: "LoggedDataType.V",
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
     ) -> str:
         return self._log_data(
             tag,
-            LoggedDataType.LOGGED_DATA_TYPE_BLOB,
+            logged_data_type,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
         ).s3_path
@@ -107,6 +109,21 @@ class LoggedDataClient:
         self._log_data(
             tag,
             LoggedDataType.LOGGED_DATA_TYPE_TEXT,
+            data=data,
+            train_id=train_id,
+            dataset_build_id=dataset_build_id,
+        )
+
+    def log_markdown_data(
+        self,
+        tag: str,
+        data: str,
+        train_id: Optional[UUID] = None,
+        dataset_build_id: Optional[UUID] = None,
+    ) -> None:
+        self._log_data(
+            tag,
+            LoggedDataType.LOGGED_DATA_TYPE_MARKDOWN,
             data=data,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
