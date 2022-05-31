@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
+from scipy.sparse import spmatrix  # type: ignore
 
 from layer.types import ModelObject
 
@@ -35,4 +37,15 @@ class XGBoostModelFlavor(ModelFlavor):
 
     @staticmethod
     def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
-        raise Exception("Not implemented")
+        from mlflow.xgboost import _XGBModelWrapper
+
+        model_prediction_obj = _XGBModelWrapper(model)
+        predictions = model_prediction_obj.predict(input_df)
+        if isinstance(predictions, np.ndarray):
+            return pd.DataFrame(predictions)
+        elif isinstance(predictions, pd.DataFrame):
+            return predictions
+        elif isinstance(predictions, spmatrix):
+            return pd.DataFrame.sparse.from_spmatrix(predictions)  # type: ignore
+        else:
+            raise Exception(f"Unsupported return type: {type(predictions)}")

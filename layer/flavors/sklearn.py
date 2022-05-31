@@ -35,4 +35,4 @@ class ScikitLearnModelFlavor(ModelFlavor):
     @staticmethod
     def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
         prediction_np_array = model.predict(input_df)  # type: ignore
-        return pd.DataFrame(prediction_np_array, columns=["prediction"])
+        return pd.DataFrame(prediction_np_array)
