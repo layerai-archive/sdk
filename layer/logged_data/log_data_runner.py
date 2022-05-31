@@ -63,9 +63,9 @@ class LogDataRunner:
                     self._log_number(tag=tag, number=value)
             elif isinstance(value, pd.DataFrame):
                 self._log_dataframe(tag=tag, df=value)
-            elif isinstance(value, Path) and LogDataRunner._has_allowed_extension(
-                value, [".gif", ".png", ".jpg", ".jpeg"]
-            ):
+            elif LogDataRunner._is_image(value):
+                if TYPE_CHECKING:
+                    assert isinstance(value, Path)
                 self._log_image_from_path(tag=tag, path=value)
             elif self._is_pil_image(value):
                 if TYPE_CHECKING:
@@ -200,6 +200,12 @@ class LogDataRunner:
             if extension == allowed_extension:
                 return True
         return False
+
+    @staticmethod
+    def _is_image(value: Any) -> bool:
+        return isinstance(value, Path) and LogDataRunner._has_allowed_extension(
+            value, [".gif", ".png", ".jpg", ".jpeg"]
+        )
 
     def _is_pil_image(self, value: Any) -> bool:
         return "PIL.Image" in self._get_base_module_list(value)
