@@ -1,9 +1,8 @@
-import pickle
+import pickle  # nosec
 from abc import abstractmethod
 from pathlib import Path
 from typing import Any
 
-import cloudpickle  # type: ignore
 import pandas
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 
@@ -50,7 +49,7 @@ class CustomModelFlavor(ModelFlavor):
 
     def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         with open(directory / self.MODEL_PICKLE_FILE, mode="rb") as file:
-            model = pickle.load(file)
+            model = pickle.load(file)  # nosec
             return ModelRuntimeObjects(
                 model, lambda input_df: self.__predict(model, input_df)
             )
