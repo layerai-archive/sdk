@@ -46,11 +46,11 @@ class CustomModelFlavor(ModelFlavor):
     ) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         with open(directory / self.MODEL_PICKLE_FILE, mode="wb") as file:
-            cloudpickle.dump(model_object, file, protocol=pickle.DEFAULT_PROTOCOL)
+            pickle.dump(model_object, file, protocol=pickle.DEFAULT_PROTOCOL)
 
     def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         with open(directory / self.MODEL_PICKLE_FILE, mode="rb") as file:
-            model = cloudpickle.load(file)
+            model = pickle.load(file)
             return ModelRuntimeObjects(
                 model, lambda input_df: self.__predict(model, input_df)
             )
