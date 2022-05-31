@@ -9,12 +9,12 @@ import numpy as np
 import pandas as pd
 import PIL.Image
 import pytest
+from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 from requests import Session
 
 from layer.clients.layer import LayerClient
 from layer.clients.logged_data_service import LoggedDataClient, ModelMetricPoint
 from layer.logged_data.log_data_runner import LogDataRunner
-from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
 
 @pytest.mark.parametrize(
@@ -231,7 +231,10 @@ def test_given_runner_when_log_image_then_calls_log_binary(
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id, tag=tag, dataset_build_id=dataset_build_id, logged_data_type=LoggedDataType.IMAGE,
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -303,7 +306,10 @@ def test_given_runner_when_log_matplotlib_figure_then_calls_log_binary(
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id, tag=tag, dataset_build_id=dataset_build_id, logged_data_type=LoggedDataType.IMAGE,
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -359,7 +365,10 @@ def test_given_runner_when_log_matplotlib_module_then_calls_log_binary(
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id, tag=tag, dataset_build_id=dataset_build_id, logged_data_type=LoggedDataType.IMAGE,
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -392,7 +401,10 @@ def test_given_runner_when_log_image_by_path_then_calls_log_binary(
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id, tag=tag, dataset_build_id=dataset_build_id, logged_data_type=LoggedDataType.IMAGE,
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 

@@ -15,6 +15,7 @@ from layer.clients.logged_data_service import ModelMetricPoint
 
 from .util import get_logged_data_service_client_with_mocks
 
+
 def test_given_tag_not_exists_when_log_text_then_calls_log_data_with_text_type():  # noqa
     # given
     mock_logged_data_api = MagicMock()
@@ -83,14 +84,18 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_blob_type
     tag = "blob-test-tag"
 
     # when
-    s3_path = logged_data_client.log_binary_data(train_id=train_id, tag=tag, logged_data_type=LoggedDataType.IMAGE)
+    s3_path = logged_data_client.log_binary_data(
+        train_id=train_id,
+        tag=tag,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+    )
 
     # then
     mock_logged_data_api.LogData.assert_called_with(
         request=LogDataRequest(
             model_train_id=ModelTrainId(value=str(train_id)),
             unique_tag=tag,
-            type=LoggedDataType.LOGGED_DATA_TYPE_BLOB,
+            type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
             text=None,
         )
     )
