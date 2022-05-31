@@ -1,3 +1,4 @@
+import pickle
 from abc import abstractmethod
 from pathlib import Path
 from typing import Any
@@ -45,7 +46,7 @@ class CustomModelFlavor(ModelFlavor):
     ) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         with open(directory / self.MODEL_PICKLE_FILE, mode="wb") as file:
-            cloudpickle.dump(model_object, file)
+            cloudpickle.dump(model_object, file, protocol=pickle.DEFAULT_PROTOCOL)
 
     def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         with open(directory / self.MODEL_PICKLE_FILE, mode="rb") as file:
