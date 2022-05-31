@@ -266,7 +266,7 @@ class TestModelFlavors:
         flavor = get_flavor_for_model(model)
         assert type(flavor).__name__ == CustomModelFlavor.__name__
 
-        flavor.save_model_to_directory(model, tmp_path)
+        flavor.save_model_to_directory(DummyModel(), tmp_path)
         loaded_model = flavor.load_model_from_directory(tmp_path).model_object
         assert isinstance(loaded_model, layer.CustomModel)
         assert isinstance(loaded_model.model, SVC)
