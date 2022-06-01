@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-import layer
 from layer.flavors import (
     CatBoostModelFlavor,
     CustomModelFlavor,
@@ -245,9 +244,6 @@ class TestModelFlavors:
         assert model.__class__.__name__ == "AutoShape"
 
     def test_custom_flavor(self, tmp_path):
-        from sklearn.datasets import load_iris
-        from sklearn.svm import SVC
-
         from .common.dummy_model import DummyModel
 
         model = DummyModel()

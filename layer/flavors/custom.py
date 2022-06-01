@@ -59,17 +59,32 @@ class CustomModelFlavor(ModelFlavor):
         import inspect
 
         custom_class_model = type(model_object)
-        class_model_source_code = inspect.getsource(custom_class_model)
+        try:
+            class_model_source_code = inspect.getsource(custom_class_model)
+        except OSError:
+            raise Exception(
+                "Can't retrieve the source code of your custom model. Implement your model in a separate python file"
+            )
         with open(directory / self.MODEL_SOURCE_FILE, mode="w") as file:
+            # Plain pickle doesn't pickle the loaded modules at the root level. Since we expect users to inherit
+            # `layer.CustomModel`, we add it at the top of the model source code
             class_model_source_code = (
-                "import layer\nfrom layer import CustomModel\n\n"
-                + class_model_source_code
+                "import layer\n"
+                "from layer import CustomModel\n"
+                "\n" + class_model_source_code
             )
             file.write(class_model_source_code)
 
         # Store model itself
         with open(directory / self.MODEL_PICKLE_FILE, mode="wb") as file:
-            pickle.dump(model_object, file, protocol=pickle.DEFAULT_PROTOCOL)
+            try:
+                pickle.dump(
+                    model_object, file, protocol=pickle.DEFAULT_PROTOCOL
+                )  # nosec
+            except AttributeError:
+                raise Exception(
+                    "You should define your custom model in a separate python file"
+                )
 
     def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         # Load model config
@@ -82,12 +97,15 @@ class CustomModelFlavor(ModelFlavor):
         import importlib.util
         import sys
 
-        spec = importlib.util.spec_from_file_location(
-            model_name, directory / self.MODEL_SOURCE_FILE
-        )
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        sys.modules[model_module_name] = module
+        try:
+            spec = importlib.util.spec_from_file_location(
+                model_name, directory / self.MODEL_SOURCE_FILE
+            )
+            module = importlib.util.module_from_spec(spec)  # type: ignore
+            spec.loader.exec_module(module)  # type: ignore
+            sys.modules[model_module_name] = module
+        except Exception:
+            raise Exception("Failed to load model. Please clear your cache with `layer.clear_cache` and try again!")
 
         # Load model itself
         with open(directory / self.MODEL_PICKLE_FILE, mode="rb") as file:
