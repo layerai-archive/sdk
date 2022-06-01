@@ -105,7 +105,9 @@ class CustomModelFlavor(ModelFlavor):
             spec.loader.exec_module(module)  # type: ignore
             sys.modules[model_module_name] = module
         except Exception:
-            raise Exception("Failed to load model. Please clear your cache with `layer.clear_cache` and try again!")
+            raise Exception(
+                "Failed to load model. Please clear your cache with `layer.clear_cache` and try again!"
+            )
 
         # Load model itself
         with open(directory / self.MODEL_PICKLE_FILE, mode="rb") as file:
