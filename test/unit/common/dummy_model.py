@@ -1,7 +1,6 @@
-from layer import CustomModel
+import layer
 
-
-class DummyModel(CustomModel):
+class DummyModel(layer.CustomModel):
     def __init__(self):
         super().__init__()
 
