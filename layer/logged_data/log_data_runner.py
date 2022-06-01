@@ -160,7 +160,7 @@ class LogDataRunner:
         )
 
     def _log_video_from_path(self, tag: str, path: Path) -> None:
-        self._log_binary_from_path(tag, path, LoggedDataType.LOGGED_DATA_TYPE_VIDEO, 10)
+        self._log_binary_from_path(tag, path, LoggedDataType.LOGGED_DATA_TYPE_VIDEO, 100)
 
     def _log_image_from_path(self, tag: str, path: Path) -> None:
         self._log_binary_from_path(tag, path, LoggedDataType.LOGGED_DATA_TYPE_IMAGE, 1)
