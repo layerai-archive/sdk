@@ -50,15 +50,21 @@ class CustomModelFlavor(ModelFlavor):
         # Store class config
         with open(directory / self.MODEL_CONFIG_FILE, mode="w") as file:
             custom_model_class = type(model_object)
-            class_config = custom_model_class.__module__ + "." + custom_model_class.__name__
+            class_config = (
+                custom_model_class.__module__ + "." + custom_model_class.__name__
+            )
             file.write(class_config)
 
         # Store class definition
         import inspect
+
         custom_class_model = type(model_object)
         class_model_source_code = inspect.getsource(custom_class_model)
         with open(directory / self.MODEL_SOURCE_FILE, mode="w") as file:
-            class_model_source_code = "import layer\nfrom layer import CustomModel\n\n" + class_model_source_code
+            class_model_source_code = (
+                "import layer\nfrom layer import CustomModel\n\n"
+                + class_model_source_code
+            )
             file.write(class_model_source_code)
 
         # Store model itself
@@ -75,7 +81,10 @@ class CustomModelFlavor(ModelFlavor):
         # Load and register custom class definition
         import importlib.util
         import sys
-        spec = importlib.util.spec_from_file_location(model_name, directory / self.MODEL_SOURCE_FILE)
+
+        spec = importlib.util.spec_from_file_location(
+            model_name, directory / self.MODEL_SOURCE_FILE
+        )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         sys.modules[model_module_name] = module
