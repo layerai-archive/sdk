@@ -43,7 +43,8 @@ class XGBoostCallback(xgb.callback.TrainingCallback):
         return model
 
     def after_iteration(self, model: Any, epoch: int, evals_log: dict) -> bool:  # type: ignore
-        layer.log(evals_log, epoch)
+        if evals_log:
+            layer.log(evals_log, epoch)
         return False
 
 
@@ -56,4 +57,5 @@ class KerasCallback(keras.callbacks.Callback):
     """
 
     def on_epoch_end(self, epoch: int, logs: Optional[dict] = None) -> None:  # type: ignore
-        layer.log(logs, epoch)  # type: ignore
+        if logs:
+            layer.log(logs, epoch)
