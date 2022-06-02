@@ -2,8 +2,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.sparse import spmatrix  # type: ignore
 from layerapi.api.entity.model_train_pb2 import ModelTrain
+from scipy.sparse import spmatrix  # type: ignore
 
 from layer.types import ModelObject
 

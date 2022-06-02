@@ -36,9 +36,9 @@ PYTHON_CLASS_NAME_TO_PROTO_FLAVORS: Dict[str, ModelTrain.ModelFlavor.ValueType] 
     flavor.__class__.__name__: flavor.PROTO_FLAVOR for flavor in PYTHON_FLAVORS
 }
 
-PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict[
-    ModelTrain.ModelFlavor.ValueType, ModelFlavor
-] = {flavor.PROTO_FLAVOR: flavor for flavor in PYTHON_FLAVORS}
+PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict[ModelTrain.ModelFlavor.ValueType, ModelFlavor] = {
+    flavor.PROTO_FLAVOR: flavor for flavor in PYTHON_FLAVORS
+}
 
 
 def get_flavor_for_model(model_object: ModelObject) -> Optional[ModelFlavor]:
