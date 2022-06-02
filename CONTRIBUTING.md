@@ -100,7 +100,7 @@ First, install these prerequisite tools on your development environment:
   - [poetry](https://python-poetry.org/)
   - [make](https://www.gnu.org/software/make/manual/make.html)
 
-Then, run `pyenv install` in the root of this repo to ensure you have the preferred Python version installed.
+Then, run `pyenv install $(cat .python-version)` in the root of this repo to ensure you have the preferred Python version installed.
 
 ### Running in development
 
@@ -119,7 +119,7 @@ This repo uses `make` as the build system. The following targets can be used thr
 ### Python setup
 We recommend using `pyenv`
 
-Please run `pyenv install` in the root of this repository to setup the recommended python version.
+Please run `pyenv install $(cat .python-version)` in the root of this repository to setup the recommended python version.
 
 If you are using an M1 machine, we recommend using `conda`. Please run
 
