@@ -3,7 +3,7 @@ import uuid
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.entity.model_train_pb2 import ModelTrain
 from layerapi.api.ids_pb2 import ModelTrainId
 
 from layer.clients.layer import LayerClient
@@ -53,7 +53,7 @@ class Train(BaseTrain):
         )
         self.__start_train_ts: int  # For computing relative to start metric timestamps
         # Populated at the save of a model train
-        self.__flavor: Optional[ModelVersion.ModelFlavor.V] = None
+        self.__flavor: Optional[ModelTrain.ModelFlavor.V] = None
 
     def get_id(self) -> UUID:
         assert self.__train_id

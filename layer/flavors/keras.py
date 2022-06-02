@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.entity.model_train_pb2 import ModelTrain
 
 from layer.types import ModelObject
 
@@ -12,7 +12,7 @@ class KerasModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of Keras Models."""
 
     MODULE_KEYWORD = "keras"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_KERAS
+    PROTO_FLAVOR = ModelTrain.ModelFlavor.MODEL_FLAVOR_KERAS
 
     TOKENIZER_FILE = "tokenizer.pickle"
 

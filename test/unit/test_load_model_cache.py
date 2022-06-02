@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.entity.model_train_pb2 import ModelTrain
 from yarl import URL
 
 from layer.clients.model_catalog import ModelCatalogClient
@@ -86,7 +86,7 @@ def download_model_files_from_s3(*args, **kwargs) -> None:
 
 class DummyModelFlavor(ModelFlavor):
     MODULE_KEYWORD = "dummy"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_INVALID")
+    PROTO_FLAVOR = ModelTrain.ModelFlavor.Value("MODEL_FLAVOR_INVALID")
 
     def __init__(self) -> None:
         super().__init__()

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.entity.model_train_pb2 import ModelTrain
 
 from layer.types import ModelObject
 
@@ -15,7 +15,7 @@ class TensorFlowModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of TensorFlow Models."""
 
     MODULE_KEYWORD = "tensorflow"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_TENSORFLOW
+    PROTO_FLAVOR = ModelTrain.ModelFlavor.MODEL_FLAVOR_TENSORFLOW
 
     def save_model_to_directory(
         self, model_object: ModelObject, directory: Path

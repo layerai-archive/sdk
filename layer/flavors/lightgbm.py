@@ -2,8 +2,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from layerapi.api.entity.model_version_pb2 import ModelVersion
 from scipy.sparse import spmatrix  # type: ignore
+from layerapi.api.entity.model_train_pb2 import ModelTrain
 
 from layer.types import ModelObject
 
@@ -17,7 +17,7 @@ class LightGBMModelFlavor(ModelFlavor):
     """
 
     MODULE_KEYWORD = "lightgbm"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_LIGHTGBM
+    PROTO_FLAVOR = ModelTrain.ModelFlavor.MODEL_FLAVOR_LIGHTGBM
 
     def save_model_to_directory(
         self,

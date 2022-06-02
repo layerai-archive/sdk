@@ -297,7 +297,7 @@ class ModelCatalogClient:
     def complete_model_train(
         self,
         train_id: ModelTrainId,
-        flavor: Optional[ModelVersion.ModelFlavor.ValueType],
+        flavor: Optional[PBModelTrain.ModelFlavor.ValueType],
     ) -> None:
         self._service.CompleteModelTrain(
             CompleteModelTrainRequest(id=train_id, flavor=flavor),

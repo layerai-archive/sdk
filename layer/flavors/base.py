@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import pandas as pd
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.entity.model_train_pb2 import ModelTrain
 
 from layer.types import ModelObject
 
@@ -34,7 +34,7 @@ class ModelFlavor(metaclass=ABCMeta):
     @abstractproperty
     def PROTO_FLAVOR(  # pylint: disable=invalid-name
         self,
-    ) -> ModelVersion.ModelFlavor.ValueType:
+    ) -> ModelTrain.ModelFlavor.ValueType:
         """Defines the proto flavor that this Model Flavor uses.
 
         Returns:
