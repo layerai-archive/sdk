@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from layerapi.api.entity.model_version_pb2 import ModelVersion
+from scipy.sparse import spmatrix  # type: ignore
 
 from layer.types import ModelObject
 
@@ -36,4 +38,12 @@ class LightGBMModelFlavor(ModelFlavor):
 
     @staticmethod
     def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
-        raise Exception("Not implemented")
+        prediction = model.predict(input_df)  # type: ignore
+        if isinstance(prediction, np.ndarray):
+            return pd.DataFrame(prediction)
+        elif isinstance(prediction, pd.DataFrame):
+            return prediction
+        elif isinstance(prediction, spmatrix):
+            return pd.DataFrame.sparse.from_spmatrix(prediction)  # type: ignore
+        else:
+            raise Exception(f"Unsupported return type: {type(prediction)}")

@@ -76,9 +76,6 @@ target/
 # Vim
 *.sw*
 
-# Pyenv
-.python-version
-
 # Vim
 *.sw*
 

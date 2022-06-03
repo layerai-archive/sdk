@@ -8,6 +8,9 @@ from layer.types import ModelObject
 from .base import ModelFlavor, ModelRuntimeObjects
 
 
+LAYER_CACHED_TF_MODELS = {}
+
+
 class TensorFlowModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of TensorFlow Models."""
 
@@ -35,9 +38,16 @@ class TensorFlowModelFlavor(ModelFlavor):
 
         model = mlflow.tensorflow.load_model(directory.as_uri())
         return ModelRuntimeObjects(
-            model, lambda input_df: self.__predict(model, input_df)
+            model, lambda input_df: self.__predict(directory, input_df)
         )
 
     @staticmethod
-    def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
-        raise Exception("Not implemented")
+    def __predict(directory: Path, input_df: pd.DataFrame) -> pd.DataFrame:
+        cache_key = str(directory)
+        if cache_key not in LAYER_CACHED_TF_MODELS:
+            import mlflow.pyfunc
+
+            model = mlflow.pyfunc.load_model(directory.as_uri())
+            LAYER_CACHED_TF_MODELS[cache_key] = model
+        model = LAYER_CACHED_TF_MODELS[cache_key]
+        return model.predict(input_df)
