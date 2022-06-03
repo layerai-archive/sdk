@@ -149,6 +149,69 @@ def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() 
 @pytest.mark.parametrize(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
+def test_given_runner_when_log_dict_then_calls_log_table(
+    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+    tag = "dict-tag"
+    parameters = {
+        "tom": 10,
+        "nick": 15,
+        "juli": 14,
+    }
+
+    # when
+    runner.log({tag: parameters})
+
+    # then
+    expected_dataframe = pd.DataFrame(
+        [["tom", 10], ["nick", 15], ["juli", 14]], columns=["name", "value"]
+    )
+    expected_dataframe_in_json = expected_dataframe.to_json(orient="table")
+    logged_data_client.log_table_data.assert_called_with(
+        train_id=train_id,
+        tag=tag,
+        data=expected_dataframe_in_json,
+        dataset_build_id=dataset_build_id,
+    )
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
+def test_given_runner_when_log_invalid_dict_then_raises(
+    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+    tag = "dict-tag"
+
+    with pytest.raises(
+        ValueError, match=r".*Unsupported value type -> <class 'dict'>.*"
+    ):
+        runner.log({tag: {10: 20}})
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
 def test_given_runner_when_log_pandas_dataframe_then_calls_log_table(
     train_id: Optional[UUID], dataset_build_id: Optional[UUID]
 ) -> None:
