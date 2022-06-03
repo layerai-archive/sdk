@@ -1,33 +1,57 @@
 import pandas as pd
 
 import layer
+from layer.clients.layer import LayerClient
+from layer.contracts.logged_data import LoggedDataType
 from layer.contracts.projects import Project
 from layer.decorators import dataset
+from test.e2e.assertion_utils import E2ETestAsserter
 
 
-def test_scalar_values_logged(initialized_project: Project):
+def test_scalar_values_logged(
+    initialized_project: Project, asserter: E2ETestAsserter, client: LayerClient
+):
     # when
     layer.init(initialized_project.name)
 
+    dataset_name = "scalar_ds"
+
     # given
-    @dataset("scalar_log")
+    @dataset(dataset_name)
     def scalar():
-        layer.log({"string": "string_value"})
-        layer.log({"boolean": True})
-        layer.log({"numeric_int": 123})
-        layer.log({"numeric_float": 1.1})
+        data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
+        dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
         layer.log(
             {
-                "string": "string_value",
-                "boolean": True,
-                "numeric_int": 123,
-                "numeric_float": 1.1,
+                "str-log": "bar",
+                "int-log": 123,
             }
         )
-        return pd.DataFrame()
+        return dataframe
+
+    # when
+    scalar()
 
     # then
-    scalar()
+    asserter.assert_run_succeeded(run.run_id)
+
+    first_ds = client.data_catalog.get_dataset_by_name(
+        initialized_project.id, dataset_name
+    )
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag="str-log", dataset_build_id=first_ds.build.id
+    )
+    assert logged_data.data == "bar"
+    assert logged_data.logged_data_type == LoggedDataType.TEXT
+    assert logged_data.tag == "str-log"
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag="int-log", dataset_build_id=first_ds.build.id
+    )
+    assert logged_data.data == "123"
+    assert logged_data.logged_data_type == LoggedDataType.NUMBER
+    assert logged_data.tag == "int-log"
 
 
 def test_pandas_dataframe_logged(initialized_project: Project):
