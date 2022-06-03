@@ -42,6 +42,7 @@ class LogDataRunner:
                 float,
                 bool,
                 int,
+                Dict[str, Union[str, float, bool, int]],
                 pd.DataFrame,
                 "PIL.Image.Image",
                 "matplotlib.figure.Figure",
@@ -66,6 +67,11 @@ class LogDataRunner:
                 self._log_markdown(tag=tag, text=value.data)
             elif isinstance(value, pd.DataFrame):
                 self._log_dataframe(tag=tag, df=value)
+            elif LogDataRunner._is_tabular_dict(value):
+                if TYPE_CHECKING:
+                    assert isinstance(value, dict)
+                dataframe = LogDataRunner._convert_dict_to_dataframe(value)
+                self._log_dataframe(tag=tag, df=dataframe)
             elif LogDataRunner._is_video(value):
                 if TYPE_CHECKING:
                     assert isinstance(value, Path)
@@ -232,6 +238,26 @@ class LogDataRunner:
             if extension == allowed_extension:
                 return True
         return False
+
+    @staticmethod
+    def _convert_dict_to_dataframe(
+        dictionary: Dict[str, Union[str, float, bool, int]]
+    ) -> pd.DataFrame:
+        df = pd.DataFrame({"name": dictionary.keys(), "value": dictionary.values()})  # type: ignore
+        return df
+
+    @staticmethod
+    def _is_tabular_dict(maybe_dict: Any) -> bool:
+        if not isinstance(maybe_dict, dict):
+            return False
+
+        for key, value in maybe_dict.items():
+            if not isinstance(key, str):
+                return False
+            if not isinstance(value, (float, int, str, bool)):
+                return False
+
+        return True
 
     @staticmethod
     def _is_image(value: Any) -> bool:
