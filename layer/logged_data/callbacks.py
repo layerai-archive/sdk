@@ -1,9 +1,7 @@
 import importlib.util
 from typing import Any, Optional, cast
 
-import keras  # type: ignore
 import pandas as pd
-import xgboost as xgb
 
 import layer
 
@@ -27,6 +25,8 @@ if importlib.util.find_spec("xgboost") is None:
 
 else:
 
+    import xgboost as xgb
+
     class XGBoostTrainingCallback(xgb.callback.TrainingCallback):  # type: ignore
         pass
 
@@ -38,6 +38,7 @@ if importlib.util.find_spec("keras") is None:
             pass
 
 else:
+    import keras  # type: ignore
 
     class KerasTrainingCallback(keras.callbacks.Callback):  # type: ignore
         pass
