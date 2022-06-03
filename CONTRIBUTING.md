@@ -241,11 +241,7 @@ Set these up with your IDE to have a smoother development experience and fewer f
 
 The final step after developing and testing your changes locally is to submit a pull request and get your contribution merged back into `layerai/sdk`. Please follow the instructions in the GitHub template when creating your PR and fix any status checks that are failing.
 
-When the PR passes all checks, a `layerai/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests.
-
-#### Merge Queue
-
-We use a merge queue to merge pull requests in, so once your PR has been approved by a maintainer and all checks are passing, our merge queue will automatically merge your PR into the `main` branch.
+When the PR passes all checks, a `layerai/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests. When everything is satisfied, the PR can then be merged onto the `main` branch.
 
 That's it! We are looking forward to your contributions!
 
