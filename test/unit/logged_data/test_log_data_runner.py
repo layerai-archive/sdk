@@ -167,6 +167,7 @@ def test_given_runner_when_log_dict_then_calls_log_table(
         "tom": 10,
         "nick": 15,
         "juli": 14,
+        "jack": [1, 2, 3],
     }
 
     # when
@@ -174,8 +175,10 @@ def test_given_runner_when_log_dict_then_calls_log_table(
 
     # then
     expected_dataframe = pd.DataFrame(
-        [["tom", 10], ["nick", 15], ["juli", 14]], columns=["name", "value"]
+        [["tom", 10], ["nick", 15], ["juli", 14], ["jack", "[1, 2, 3]"]],
+        columns=["name", "value"],
     )
+    expected_dataframe = expected_dataframe.set_index("name")
     expected_dataframe_in_json = expected_dataframe.to_json(orient="table")
     logged_data_client.log_table_data.assert_called_with(
         train_id=train_id,

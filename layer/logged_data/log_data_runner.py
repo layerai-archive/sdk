@@ -42,7 +42,7 @@ class LogDataRunner:
                 float,
                 bool,
                 int,
-                Dict[str, Union[str, float, bool, int]],
+                Dict[str, Any],
                 pd.DataFrame,
                 "PIL.Image.Image",
                 "matplotlib.figure.Figure",
@@ -240,10 +240,15 @@ class LogDataRunner:
         return False
 
     @staticmethod
-    def _convert_dict_to_dataframe(
-        dictionary: Dict[str, Union[str, float, bool, int]]
-    ) -> pd.DataFrame:
-        df = pd.DataFrame({"name": dictionary.keys(), "value": dictionary.values()})  # type: ignore
+    def _convert_dict_to_dataframe(dictionary: Dict[str, Any]) -> pd.DataFrame:
+        new_values = []
+        for value in dictionary.values():
+            if isinstance(value, (float, int, str, bool)):
+                new_values.append(value)
+            else:
+                new_values.append(str(value))
+        df = pd.DataFrame({"name": dictionary.keys(), "value": new_values})  # type: ignore
+        df = df.set_index("name")
         return df
 
     @staticmethod
@@ -251,10 +256,8 @@ class LogDataRunner:
         if not isinstance(maybe_dict, dict):
             return False
 
-        for key, value in maybe_dict.items():
+        for key in maybe_dict:
             if not isinstance(key, str):
-                return False
-            if not isinstance(value, (float, int, str, bool)):
                 return False
 
         return True
