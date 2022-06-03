@@ -8,6 +8,7 @@ from test.e2e.assertion_utils import E2ETestAsserter
 
 # Metrics (i.e. layer.log with number and epoch)
 
+
 def test_plot_logged():
     pass
     # from: https://colab.research.google.com/github/layerai/examples/blob/main/recommendation-system/Ecommerce_Recommendation_System.ipynb#scrollTo=kqVnGUjtmicl
@@ -31,22 +32,30 @@ def test_scalar_values_logged(initialized_project: Project, asserter: E2ETestAss
         layer.log({"boolean": True})
         layer.log({"numeric_int": 123})
         layer.log({"numeric_float": 1.1})
-        layer.log({"string": "string_value", "boolean": True, "numeric_int": 123,
-                   "numeric_float": 1.1})
+        layer.log(
+            {
+                "string": "string_value",
+                "boolean": True,
+                "numeric_int": 123,
+                "numeric_float": 1.1,
+            }
+        )
         return pd.DataFrame()
 
     # then
     scalar()
 
 
-def test_pandas_dataframe_logged(initialized_project: Project, asserter: E2ETestAsserter):
+def test_pandas_dataframe_logged(
+    initialized_project: Project, asserter: E2ETestAsserter
+):
     # when
     layer.init(initialized_project.name)
 
     # given
     @dataset("pandas_dataframe_log")
     def pandas_dataframe():
-        d = {'col1': [1, 2], 'col2': [3, 4]}
+        d = {"col1": [1, 2], "col2": [3, 4]}
         df = pd.DataFrame(data=d)
         layer.log({"dataframe": df})
         return pd.DataFrame()
@@ -62,8 +71,9 @@ def test_path_logged(initialized_project: Project, asserter: E2ETestAsserter):
     # given
     @dataset("path_log")
     def path():
-        from pathlib import Path
         import os
+        from pathlib import Path
+
         path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_logo.jpeg")
         layer.log({"path": path})
         return pd.DataFrame()
@@ -80,7 +90,9 @@ def test_pil_image_logged(initialized_project: Project, asserter: E2ETestAsserte
     @dataset("pil_image")
     def pil_image():
         import os
+
         from PIL import Image
+
         image = Image.open(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_logo.jpeg")
         layer.log({"pil_image": image})
         return pd.DataFrame()
@@ -89,7 +101,9 @@ def test_pil_image_logged(initialized_project: Project, asserter: E2ETestAsserte
     pil_image()
 
 
-def test_matplotlib_figure_logged(initialized_project: Project, asserter: E2ETestAsserter):
+def test_matplotlib_figure_logged(
+    initialized_project: Project, asserter: E2ETestAsserter
+):
     # when
     layer.init(initialized_project.name)
 
@@ -97,10 +111,11 @@ def test_matplotlib_figure_logged(initialized_project: Project, asserter: E2ETes
     @dataset("matplotlib_figure")
     def matplotlib_figure():
         import matplotlib.pyplot as plt
+
         figure = plt.figure()
         plt = figure.add_subplot(111)
 
-        plt.title = 'Figure'
+        plt.title = "Figure"
         layer.log({"matplotlib_figure": figure})
         return pd.DataFrame()
 
@@ -108,7 +123,9 @@ def test_matplotlib_figure_logged(initialized_project: Project, asserter: E2ETes
     matplotlib_figure()
 
 
-def test_matplotlib_plot_logged(initialized_project: Project, asserter: E2ETestAsserter):
+def test_matplotlib_plot_logged(
+    initialized_project: Project, asserter: E2ETestAsserter
+):
     # when
     layer.init(initialized_project.name)
 
@@ -116,6 +133,7 @@ def test_matplotlib_plot_logged(initialized_project: Project, asserter: E2ETestA
     @dataset("matplotlib_pyplot")
     def matplotlib_pyplot():
         import seaborn
+
         data = pd.DataFrame({"col": [1, 2, 42]})
         plot = seaborn.histplot(data=data, x="col", color="green")
         layer.log({"matplotlib_pyplot": plot})
