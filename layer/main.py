@@ -629,7 +629,7 @@ def log(
             float,
             bool,
             int,
-            dict[str, Union[str, float, bool, int]],
+            Dict[str, Union[str, float, bool, int]],
             "pandas.DataFrame",
             "PIL.Image.Image",
             "matplotlib.figure.Figure",

@@ -42,7 +42,7 @@ class LogDataRunner:
                 float,
                 bool,
                 int,
-                dict[str, Union[str, float, bool, int]],
+                Dict[str, Union[str, float, bool, int]],
                 pd.DataFrame,
                 "PIL.Image.Image",
                 "matplotlib.figure.Figure",
@@ -241,7 +241,7 @@ class LogDataRunner:
 
     @staticmethod
     def _convert_dict_to_dataframe(
-        dictionary: dict[str, Union[str, float, bool, int]]
+        dictionary: Dict[str, Union[str, float, bool, int]]
     ) -> pd.DataFrame:
         df = pd.DataFrame({"name": dictionary.keys(), "value": dictionary.values()})  # type: ignore
         return df
