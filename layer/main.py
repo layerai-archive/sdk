@@ -629,7 +629,7 @@ def log(
             float,
             bool,
             int,
-            Dict[str, Union[str, float, bool, int]],
+            Dict[str, Any],
             "pandas.DataFrame",
             "PIL.Image.Image",
             "matplotlib.figure.Figure",
@@ -685,7 +685,7 @@ def log(
 
     Accepted Types:
     ``pandas.DataFrame``
-    ``dict`` (the key should be a string and the value should be a primitive type)
+    ``dict`` (the key should be a string. The value either needs to be a primitive type or it will be converted to str)
 
     .. code-block:: python
 
