@@ -2,7 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 from scipy.sparse import spmatrix  # type: ignore
 
 from layer.types import ModelObject
@@ -18,7 +18,7 @@ class XGBoostModelFlavor(ModelFlavor):
     """
 
     MODULE_KEYWORD = "xgboost"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_XGBOOST
+    PROTO_FLAVOR = PbModelFlavor.MODEL_FLAVOR_XGBOOST
 
     def save_model_to_directory(
         self, model_object: ModelObject, directory: Path

@@ -38,6 +38,7 @@ from layerapi.api.service.modelcatalog.model_catalog_api_pb2_grpc import (
     ModelCatalogAPIStub,
 )
 from layerapi.api.value.dependency_pb2 import DependencyFile
+from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 from layerapi.api.value.s3_path_pb2 import S3Path
 from layerapi.api.value.sha256_pb2 import Sha256
 from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
@@ -297,7 +298,7 @@ class ModelCatalogClient:
     def complete_model_train(
         self,
         train_id: ModelTrainId,
-        flavor: Optional[ModelVersion.ModelFlavor.ValueType],
+        flavor: Optional[PbModelFlavor.ValueType],
     ) -> None:
         self._service.CompleteModelTrain(
             CompleteModelTrainRequest(id=train_id, flavor=flavor),

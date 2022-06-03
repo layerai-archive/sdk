@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 
 from layer.types import ModelObject
 
@@ -12,7 +12,7 @@ class CatBoostModelFlavor(ModelFlavor):
     """An ML Model flavor implementation which handles persistence of CatBoost Models."""
 
     MODULE_KEYWORD = "catboost"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.MODEL_FLAVOR_CATBOOST
+    PROTO_FLAVOR = PbModelFlavor.MODEL_FLAVOR_CATBOOST
 
     def save_model_to_directory(
         self, model_object: ModelObject, directory: Path
