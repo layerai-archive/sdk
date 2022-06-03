@@ -687,9 +687,9 @@ def log(
 
     .. code-block:: python
 
+        import layer
         import matplotlib.pyplot as plt
         import pandas as pd
-        from layer
         from layer.decorators import dataset, model
 
         # Define a new function for dataset generation
@@ -707,7 +707,7 @@ def log(
                 "my-int-tag": 123, # any number
                 "foo-bool": True,
                 "some-sample-dataframe-tag": ..., # Pandas data frame
-                "some-local-image-file: Path.home() / "images/foo.png",
+                "some-local-image-file": Path.home() / "images/foo.png",
                 "some-matplot-lib-figure": fig, # You could alternatively just passed plt as well, and Layer would just get the current/active figure.
             })
 

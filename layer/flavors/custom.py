@@ -45,6 +45,7 @@ class CustomModelFlavor(ModelFlavor):
         model_object: Any,
         directory: Path,
     ) -> None:
+        """Saves a model to a directory."""
         directory.mkdir(parents=True, exist_ok=True)
 
         # Store class config
@@ -87,6 +88,12 @@ class CustomModelFlavor(ModelFlavor):
                 )
 
     def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
+        """Loads a model from a directory.
+
+        Returns:
+            Model object and prediction function.
+        """
+
         # Load model config
         with open(directory / self.MODEL_CONFIG_FILE, mode="r") as file:
             model_config = file.readline()
