@@ -1,3 +1,4 @@
+import importlib.util
 from typing import Any, Optional, cast
 
 import keras  # type: ignore
@@ -7,7 +8,42 @@ import xgboost as xgb
 import layer
 
 
-class XGBoostCallback(xgb.callback.TrainingCallback):
+# We need keras and xgboost libraries to be able to define XGBoostCallback and KerasCallback convenience classes.
+# Since these are quite large libraries, instead of directly bundling them into our Python package, we use a hacky
+# solution to have a "skeleton" base class if the Python environment doesn't already have these libraries installed.
+# Given that one would almost certainly have these libraries installed if they decide to use the convenience classes,
+# this is a good tradeoff.
+if importlib.util.find_spec("xgboost") is None:
+
+    class XGBoostTrainingCallback:
+        def before_training(self, model: Any) -> Any:
+            pass
+
+        def after_training(self, model: Any) -> Any:
+            pass
+
+        def after_iteration(self, model: Any, epoch: int, evals_log: dict) -> bool:  # type: ignore
+            pass
+
+else:
+
+    class XGBoostTrainingCallback(xgb.callback.TrainingCallback):  # type: ignore
+        pass
+
+
+if importlib.util.find_spec("keras") is None:
+
+    class KerasTrainingCallback:
+        def on_epoch_end(self, epoch: int, logs: Optional[dict] = None) -> None:  # type: ignore
+            pass
+
+else:
+
+    class KerasTrainingCallback(keras.callbacks.Callback):  # type: ignore
+        pass
+
+
+class XGBoostCallback(XGBoostTrainingCallback):
     """
     A default implementation for `callbacks` parameter in various XGBoost methods that uses `layer.log`.
 
@@ -16,7 +52,7 @@ class XGBoostCallback(xgb.callback.TrainingCallback):
     """
 
     def __init__(self, importance_type: str = "gain") -> None:
-        super().__init__()  # type: ignore
+        super().__init__()
         self.importance_type = importance_type
 
     def before_training(self, model: Any) -> Any:
@@ -48,7 +84,7 @@ class XGBoostCallback(xgb.callback.TrainingCallback):
         return False
 
 
-class KerasCallback(keras.callbacks.Callback):
+class KerasCallback(KerasTrainingCallback):
     """
     A default implementation for `callbacks` parameter in various Keras methods that uses `layer.log`.
 
