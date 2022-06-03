@@ -3,25 +3,9 @@ import pandas as pd
 import layer
 from layer.contracts.projects import Project
 from layer.decorators import dataset
-from test.e2e.assertion_utils import E2ETestAsserter
 
 
-# Metrics (i.e. layer.log with number and epoch)
-
-
-def test_plot_logged():
-    pass
-    # from: https://colab.research.google.com/github/layerai/examples/blob/main/recommendation-system/Ecommerce_Recommendation_System.ipynb#scrollTo=kqVnGUjtmicl
-    # plt.hist(kmeans_model.labels_, rwidth=0.7)
-    # plt.ylabel("Number of Products")
-    # plt.xlabel("Cluster No")
-
-    # Layer logs the plot (figure)
-    # fig = plt.gcf()
-    # layer.log({"Product Distribution over Clusters": fig})
-
-
-def test_scalar_values_logged(initialized_project: Project, asserter: E2ETestAsserter):
+def test_scalar_values_logged(initialized_project: Project):
     # when
     layer.init(initialized_project.name)
 
@@ -46,9 +30,7 @@ def test_scalar_values_logged(initialized_project: Project, asserter: E2ETestAss
     scalar()
 
 
-def test_pandas_dataframe_logged(
-    initialized_project: Project, asserter: E2ETestAsserter
-):
+def test_pandas_dataframe_logged(initialized_project: Project):
     # when
     layer.init(initialized_project.name)
 
@@ -64,7 +46,7 @@ def test_pandas_dataframe_logged(
     pandas_dataframe()
 
 
-def test_path_logged(initialized_project: Project, asserter: E2ETestAsserter):
+def test_path_logged(initialized_project: Project):
     # when
     layer.init(initialized_project.name)
 
@@ -82,7 +64,7 @@ def test_path_logged(initialized_project: Project, asserter: E2ETestAsserter):
     path()
 
 
-def test_pil_image_logged(initialized_project: Project, asserter: E2ETestAsserter):
+def test_pil_image_logged(initialized_project: Project):
     # when
     layer.init(initialized_project.name)
 
@@ -101,9 +83,7 @@ def test_pil_image_logged(initialized_project: Project, asserter: E2ETestAsserte
     pil_image()
 
 
-def test_matplotlib_figure_logged(
-    initialized_project: Project, asserter: E2ETestAsserter
-):
+def test_matplotlib_figure_logged(initialized_project: Project):
     # when
     layer.init(initialized_project.name)
 
@@ -115,7 +95,6 @@ def test_matplotlib_figure_logged(
         figure = plt.figure()
         plt = figure.add_subplot(111)
 
-        plt.title = "Figure"
         layer.log({"matplotlib_figure": figure})
         return pd.DataFrame()
 
@@ -123,9 +102,7 @@ def test_matplotlib_figure_logged(
     matplotlib_figure()
 
 
-def test_matplotlib_plot_logged(
-    initialized_project: Project, asserter: E2ETestAsserter
-):
+def test_matplotlib_plot_logged(initialized_project: Project):
     # when
     layer.init(initialized_project.name)
 
@@ -143,7 +120,7 @@ def test_matplotlib_plot_logged(
     matplotlib_pyplot()
 
 
-def test_metrics_logged(initialized_project: Project, asserter: E2ETestAsserter):
+def test_metrics_logged(initialized_project: Project):
     # when
     layer.init(initialized_project.name)
 
