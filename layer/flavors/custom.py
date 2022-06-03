@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas
-from layerapi.api.entity.model_train_pb2 import ModelTrain
+from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 
 from layer.types import ModelObject
 
@@ -38,7 +38,7 @@ class CustomModelFlavor(ModelFlavor):
     MODEL_PICKLE_FILE = "custom_model.pkl"
     MODEL_SOURCE_FILE = "custom_model.py"
     MODEL_CONFIG_FILE = "custom_model.config"
-    PROTO_FLAVOR = ModelTrain.ModelFlavor.MODEL_FLAVOR_CUSTOM
+    PROTO_FLAVOR = PbModelFlavor.MODEL_FLAVOR_CUSTOM
 
     def save_model_to_directory(
         self,

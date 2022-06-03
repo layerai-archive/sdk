@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 
-from layerapi.api.entity.model_train_pb2 import ModelTrain
+from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 
 from layer.types import ModelObject
 
@@ -32,11 +32,11 @@ PYTHON_FLAVORS: List[ModelFlavor] = [
 ]
 
 # mypy proto enum typing issue https://github.com/protocolbuffers/protobuf/issues/8175
-PYTHON_CLASS_NAME_TO_PROTO_FLAVORS: Dict[str, ModelTrain.ModelFlavor.ValueType] = {
+PYTHON_CLASS_NAME_TO_PROTO_FLAVORS: Dict[str, PbModelFlavor.ValueType] = {
     flavor.__class__.__name__: flavor.PROTO_FLAVOR for flavor in PYTHON_FLAVORS
 }
 
-PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict[ModelTrain.ModelFlavor.ValueType, ModelFlavor] = {
+PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict[PbModelFlavor.ValueType, ModelFlavor] = {
     flavor.PROTO_FLAVOR: flavor for flavor in PYTHON_FLAVORS
 }
 
@@ -51,6 +51,6 @@ def get_flavor_for_model(model_object: ModelObject) -> Optional[ModelFlavor]:
 
 
 def get_flavor_for_proto(
-    proto_flavor: ModelTrain.ModelFlavor.ValueType,
+    proto_flavor: PbModelFlavor.ValueType,
 ) -> Optional[ModelFlavor]:
     return PROTO_TO_PYTHON_OBJECT_FLAVORS.get(proto_flavor)
