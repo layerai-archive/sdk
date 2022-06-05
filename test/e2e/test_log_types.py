@@ -11,26 +11,23 @@ from test.e2e.assertion_utils import E2ETestAsserter
 def test_scalar_values_logged(
     initialized_project: Project, asserter: E2ETestAsserter, client: LayerClient
 ):
-    # when
-    layer.init(initialized_project.name)
-
+    # given
     dataset_name = "scalar_ds"
 
-    # given
+    str_tag = "str_tag"
+    int_tag = "int_tag"
+    bool_tag = "bool_tag"
+    float_tag = "float_tag"
+
     @dataset(dataset_name)
     def scalar():
         data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
         dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
-        layer.log(
-            {
-                "str-log": "bar",
-                "int-log": 123,
-            }
-        )
+        layer.log({str_tag: "bar", int_tag: 123, bool_tag: True, float_tag: 1.11})
         return dataframe
 
     # when
-    scalar()
+    run = layer.run([scalar])
 
     # then
     asserter.assert_run_succeeded(run.run_id)
@@ -40,120 +37,208 @@ def test_scalar_values_logged(
     )
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag="str-log", dataset_build_id=first_ds.build.id
+        tag=str_tag, dataset_build_id=first_ds.build.id
     )
     assert logged_data.data == "bar"
     assert logged_data.logged_data_type == LoggedDataType.TEXT
-    assert logged_data.tag == "str-log"
+    assert logged_data.tag == str_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag="int-log", dataset_build_id=first_ds.build.id
+        tag=int_tag, dataset_build_id=first_ds.build.id
     )
     assert logged_data.data == "123"
     assert logged_data.logged_data_type == LoggedDataType.NUMBER
-    assert logged_data.tag == "int-log"
+    assert logged_data.tag == int_tag
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=bool_tag, dataset_build_id=first_ds.build.id
+    )
+    assert logged_data.data == "True"
+    assert logged_data.logged_data_type == LoggedDataType.BOOLEAN
+    assert logged_data.tag == bool_tag
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=float_tag, dataset_build_id=first_ds.build.id
+    )
+    assert logged_data.data == "1.11"
+    assert logged_data.logged_data_type == LoggedDataType.NUMBER
+    assert logged_data.tag == float_tag
 
 
-def test_pandas_dataframe_logged(initialized_project: Project):
-    # when
-    layer.init(initialized_project.name)
-
+def test_pandas_dataframe_logged(initialized_project: Project, client: LayerClient):
     # given
-    @dataset("pandas_dataframe_log")
-    def pandas_dataframe():
+    ds_tag = "dataframe_tag"
+    ds_name = "pandas_dataframe_log"
+
+    @dataset(ds_name)
+    def dataset_func():
         d = {"col1": [1, 2], "col2": [3, 4]}
         df = pd.DataFrame(data=d)
-        layer.log({"dataframe": df})
-        return pd.DataFrame()
+        layer.log({ds_tag: df})
+        return df
 
     # then
-    pandas_dataframe()
+    dataset_func()
+
+    ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=ds_tag, dataset_build_id=ds.build.id
+    )
+
+    assert logged_data.logged_data_type == LoggedDataType.TABLE
 
 
-def test_path_logged(initialized_project: Project):
-    # when
-    layer.init(initialized_project.name)
-
+def test_markdown_logged(initialized_project: Project, client: LayerClient):
     # given
-    @dataset("path_log")
-    def path():
+    ds_tag = "dataframe_tag"
+    ds_name = "markdown_dataframe_log"
+
+    markdown = """
+        # Markdown header
+        Some code with [link](http://my link)
+        """
+
+    @dataset(ds_name)
+    def dataset_func():
+        layer.log({ds_tag: layer.Markdown(markdown)})
+        return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
+
+    # then
+    dataset_func()
+
+    ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=ds_tag, dataset_build_id=ds.build.id
+    )
+
+    print("logged_data:")
+    print(logged_data)
+    assert logged_data.logged_data_type == LoggedDataType.MARKDOWN
+    assert logged_data.data == markdown
+
+
+def test_image_and_video_logged(initialized_project: Project, client: LayerClient):
+    # given
+    ds_name = "multimedia"
+    pil_image_tag = "pil_image_tag"
+    image_path_tag = "image_path_tag"
+    video_path_tag = "video_path_tag"
+
+    @dataset(ds_name)
+    def multimedia():
         import os
         from pathlib import Path
-
-        path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_logo.jpeg")
-        layer.log({"path": path})
-        return pd.DataFrame()
-
-    # then
-    path()
-
-
-def test_pil_image_logged(initialized_project: Project):
-    # when
-    layer.init(initialized_project.name)
-
-    # given
-    @dataset("pil_image")
-    def pil_image():
-        import os
 
         from PIL import Image
 
         image = Image.open(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_logo.jpeg")
-        layer.log({"pil_image": image})
-        return pd.DataFrame()
+        layer.log({pil_image_tag: image})
 
-    # then
-    pil_image()
+        image_path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_logo.jpeg")
+        layer.log({image_path_tag: image_path})
+
+        video_path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_video.mp4")
+        layer.log({video_path_tag: video_path})
+
+        return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
+
+    multimedia()
+
+    ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=pil_image_tag, dataset_build_id=ds.build.id
+    )
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(pil_image_tag)
+    assert logged_data.logged_data_type == LoggedDataType.IMAGE
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=image_path_tag, dataset_build_id=ds.build.id
+    )
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(image_path_tag)
+    assert logged_data.logged_data_type == LoggedDataType.IMAGE
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=video_path_tag, dataset_build_id=ds.build.id
+    )
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(video_path_tag)
+    assert logged_data.logged_data_type == LoggedDataType.VIDEO
 
 
-def test_matplotlib_figure_logged(initialized_project: Project):
-    # when
-    layer.init(initialized_project.name)
-
+def test_matplotlib_objects_logged(initialized_project: Project, client: LayerClient):
     # given
-    @dataset("matplotlib_figure")
-    def matplotlib_figure():
+    figure_tag = "matplotlib_figure_tag"
+    plot_tag = "matplotlib_pyplot_tag"
+
+    ds_name = "ds_with_plots"
+
+    @dataset(ds_name)
+    # @pip_requirements(packages=["matplotlib==3.5.1"])
+    def dataset_func():
         import matplotlib.pyplot as plt
-
-        figure = plt.figure()
-        plt = figure.add_subplot(111)
-
-        layer.log({"matplotlib_figure": figure})
-        return pd.DataFrame()
-
-    # then
-    matplotlib_figure()
-
-
-def test_matplotlib_plot_logged(initialized_project: Project):
-    # when
-    layer.init(initialized_project.name)
-
-    # given
-    @dataset("matplotlib_pyplot")
-    def matplotlib_pyplot():
         import seaborn
 
         data = pd.DataFrame({"col": [1, 2, 42]})
         plot = seaborn.histplot(data=data, x="col", color="green")
-        layer.log({"matplotlib_pyplot": plot})
-        return pd.DataFrame()
+        layer.log({plot_tag: plot})
+
+        figure = plt.figure()
+        figure.add_subplot(111)
+
+        layer.log({figure_tag: figure})
+        return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
 
     # then
-    matplotlib_pyplot()
+    dataset_func()
+
+    ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=figure_tag, dataset_build_id=ds.build.id
+    )
+
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(figure_tag)
+    assert logged_data.logged_data_type == LoggedDataType.IMAGE
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=plot_tag, dataset_build_id=ds.build.id
+    )
+
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(plot_tag)
+    assert logged_data.logged_data_type == LoggedDataType.IMAGE
 
 
-def test_metrics_logged(initialized_project: Project):
-    # when
-    layer.init(initialized_project.name)
-
+def test_metrics_logged(initialized_project: Project, client: LayerClient):
     # given
-    @dataset("metrics")
+    metric_tag_1 = "metric_tag_1"
+    metric_tag_2 = "metric_tag_2"
+
+    ds_name = "metrics_ds"
+
+    @dataset(ds_name)
     def metrics():
         for step in range(1, 5):
-            layer.log({"metric1": "value1", "metric2": "value2"}, step)
-        return pd.DataFrame()
+            layer.log(
+                {metric_tag_1: f"value {step}", metric_tag_2: f"value {step}"}, step
+            )
+        return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
 
     # then
     metrics()
+
+    ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=metric_tag_1, dataset_build_id=ds.build.id
+    )
+
+    assert logged_data.logged_data_type == LoggedDataType.TEXT
+    # value from the last step
+    assert logged_data.data == "value 4"
