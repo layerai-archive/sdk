@@ -113,8 +113,6 @@ def test_markdown_logged(initialized_project: Project, client: LayerClient):
         tag=ds_tag, dataset_build_id=ds.build.id
     )
 
-    print("logged_data:")
-    print(logged_data)
     assert logged_data.logged_data_type == LoggedDataType.MARKDOWN
     assert logged_data.data == markdown
 
@@ -178,7 +176,6 @@ def test_matplotlib_objects_logged(initialized_project: Project, client: LayerCl
     ds_name = "ds_with_plots"
 
     @dataset(ds_name)
-    # @pip_requirements(packages=["matplotlib==3.5.1"])
     def dataset_func():
         import matplotlib.pyplot as plt
         import seaborn
