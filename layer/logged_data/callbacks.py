@@ -2,6 +2,8 @@ import importlib.util
 from typing import Any, Optional, cast
 
 import pandas as pd
+import pkg_resources
+from packaging import version
 
 import layer
 
@@ -11,7 +13,10 @@ import layer
 # solution to have a "skeleton" base class if the Python environment doesn't already have these libraries installed.
 # Given that one would almost certainly have these libraries installed if they decide to use the convenience classes,
 # this is a good tradeoff.
-if importlib.util.find_spec("xgboost") is None:
+# XGBoost implemented the callback interface at version 1.3.0, make sure we have a version newer than that.
+if importlib.util.find_spec("xgboost") is None or version.parse(
+    pkg_resources.get_distribution("xgboost").version
+) < version.parse("1.3.0"):
 
     class XGBoostTrainingCallback:
         def before_training(self, model: Any) -> Any:
@@ -24,7 +29,6 @@ if importlib.util.find_spec("xgboost") is None:
             pass
 
 else:
-
     import xgboost as xgb
 
     class XGBoostTrainingCallback(xgb.callback.TrainingCallback):  # type: ignore
