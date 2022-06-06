@@ -109,7 +109,7 @@ This repo uses `make` as the build system. The following targets can be used thr
 
 - `install` - prepares the `poetry` virtual environment. Most of the other tasks will do that automatically for you
 - `format` - formats the code
-- `test` - runs unit testsru
+- `test` - runs unit tests
 - `lint` - runs linters
 - `check` - runs `test` and `lint`
 - `publish` - publishes the project to PyPi. This is intended to be used in CI only.

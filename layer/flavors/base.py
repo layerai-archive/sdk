@@ -66,16 +66,12 @@ class ModelFlavor(metaclass=ABCMeta):
         model_object: ModelObject,
         directory: Path,
     ) -> None:
-        """Defines the method that this Model Flavor uses to save a model to a directory.
-
-        Returns:
-             A callable to save the model.
-        """
+        """Defines the method that this Model Flavor uses to save a model to a directory."""
 
     @abstractmethod
     def load_model_from_directory(self, directory: Path) -> ModelRuntimeObjects:
         """Defines the method that this Model Flavor uses to load a model from a directory.
 
         Returns:
-             A callable to load the model.
+             Model object and prediction function.
         """
