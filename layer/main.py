@@ -37,7 +37,7 @@ from layer.exceptions.exceptions import (
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
-from layer.projects.utils import get_current_project_name
+from layer.projects.utils import get_current_project_full_name
 from layer.settings import LayerSettings
 from layer.tracker.local_execution_project_progress_tracker import (
     LocalExecutionRunProgressTracker,
@@ -555,18 +555,18 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     """
     _ensure_all_functions_are_decorated(functions)
 
-    project_name = get_current_project_name()
+    project_full_name = get_current_project_full_name()
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
     project_runner = ProjectRunner(
         config=layer_config,
         project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
     )
-    run = project_runner.with_functions(project_name, functions)
-    run = project_runner.run(run, debug=debug)
+    run_ = project_runner.with_functions(project_full_name, functions)
+    run_ = project_runner.run(run_, debug=debug)
 
     _make_notebook_links_open_in_new_tab()
 
-    return run
+    return run_
 
 
 # Normally, Colab/IPython opens links as an IFrame. One can open them as new tabs through the right-click menu or using shift+click.

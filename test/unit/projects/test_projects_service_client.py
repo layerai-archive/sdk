@@ -5,15 +5,17 @@ from unittest.mock import MagicMock
 
 import pytest
 from layerapi.api.entity.project_pb2 import Project
-from layerapi.api.ids_pb2 import OrganizationId, ProjectId
+from layerapi.api.ids_pb2 import AccountId, OrganizationId, ProjectId
 from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
     CreateProjectResponse,
+    GetProjectByNameRequest,
     GetProjectByNameResponse,
 )
 
 from layer.clients.project_service import ProjectServiceClient
 from layer.config import ClientConfig, ProjectServiceConfig
+from layer.contracts.accounts import Account
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientResourceNotFoundException,
@@ -58,13 +60,19 @@ def test_given_project_exists_when_get_project_by_name_then_uuid_returned():
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )
+    parent_account = Account(id=uuid.uuid4(), name="account-name")
 
     # when
-    project_id_with_org_id = project_service_client.get_project_id_and_org_id("name")
+    project_id = project_service_client.get_project_id(parent_account, "name")
 
     # then
-    assert mock_project.id.value == str(project_id_with_org_id.project_id)
-    assert mock_project.organization_id.value == str(project_id_with_org_id.account_id)
+    assert mock_project.id.value == str(project_id)
+    mock_project_api.GetProjectByName.assert_called_with(
+        GetProjectByNameRequest(
+            account_id=AccountId(value=str(parent_account.id)),
+            project_name="name",
+        )
+    )
 
 
 def test_given_no_project_when_get_project_by_name_then_returns_none():
@@ -74,13 +82,19 @@ def test_given_no_project_when_get_project_by_name_then_returns_none():
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )
+    parent_account = Account(id=uuid.uuid4(), name="account-name")
 
     # when
-    project_id_with_org_id = project_service_client.get_project_id_and_org_id("name")
+    project_id = project_service_client.get_project_id(parent_account, "name")
 
     # then
-    assert project_id_with_org_id.project_id is None
-    assert project_id_with_org_id.account_id is None
+    assert project_id is None
+    mock_project_api.GetProjectByName.assert_called_with(
+        GetProjectByNameRequest(
+            account_id=AccountId(value=str(parent_account.id)),
+            project_name="name",
+        )
+    )
 
 
 def test_given_unknown_error_when_get_project_by_name_raises_unhandled_grpc_error():  # noqa
@@ -90,10 +104,11 @@ def test_given_unknown_error_when_get_project_by_name_raises_unhandled_grpc_erro
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )
+    parent_account = Account(id=uuid.uuid4(), name="account-name")
 
     # when + then
     with pytest.raises(LayerClientException):
-        project_service_client.get_project_id_and_org_id("name")
+        project_service_client.get_project_id(parent_account, "name")
 
 
 def test_given_project_not_exists_when_update_project_raise_resource_not_found_error():  # noqa
@@ -103,10 +118,11 @@ def test_given_project_not_exists_when_update_project_raise_resource_not_found_e
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )
+    parent_account = Account(id=uuid.uuid4(), name="account-name")
 
     # when + then
     with pytest.raises(LayerClientResourceNotFoundException):
-        project_service_client.update_project_readme("name", "readme")
+        project_service_client.update_project_readme(parent_account, "name", "readme")
 
 
 def test_given_project_not_exists_when_create_project_creates_project_with_private_visibility():  # noqa
@@ -119,9 +135,10 @@ def test_given_project_not_exists_when_create_project_creates_project_with_priva
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )
+    parent_account = Account(id=uuid.uuid4(), name="account-name")
 
     # when
-    project_service_client.create_project("test")
+    project_service_client.create_project(parent_account, "test")
 
     # then
     mock_project_api.CreateProject.assert_called_with(

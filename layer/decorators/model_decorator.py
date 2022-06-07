@@ -8,11 +8,12 @@ from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.contracts.asset import AssetType
+from layer.contracts.projects import ProjectFullName
 from layer.contracts.runs import ModelFunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.projects.utils import (
     get_current_project_name,
-    verify_project_exists_and_retrieve_project_id,
+    verify_account_project_exists_and_retrieve_project_id,
 )
 from layer.tracker.local_execution_project_progress_tracker import (
     LocalExecutionRunProgressTracker,
@@ -141,12 +142,14 @@ def _model_wrapper(
             )
 
             assert model_definition.project_name is not None
-            verify_project_exists_and_retrieve_project_id(
-                client, model_definition.project_name
+            verify_account_project_exists_and_retrieve_project_id(
+                client,
+                ProjectFullName(
+                    model_definition.project_name, model_definition.account_name
+                ),
             )
 
             model_version = client.model_catalog.create_model_version(
-                model_definition.project_name,
                 model_definition,
                 True,
             ).model_version

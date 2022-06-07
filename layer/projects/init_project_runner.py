@@ -13,7 +13,10 @@ from layer.global_context import (
     set_pip_packages,
     set_pip_requirements_file,
 )
-from layer.projects.utils import get_or_create_remote_project
+from layer.projects.utils import (
+    get_or_create_remote_project,
+    get_specified_account_or_default_to_personal,
+)
 from layer.utils.async_utils import asyncio_run_in_thread
 
 
@@ -25,11 +28,13 @@ class InitProjectRunner:
     def __init__(
         self,
         project_name: str,
+        account_name: Optional[str] = None,
         project_root_path: Optional[str] = None,
         logger: Optional[Logger] = None,
         config_manager: Optional[ConfigManager] = None,
     ):
         self._project_name = project_name
+        self._account_name = account_name
         self._project_root_path = project_root_path
         self._config_manager = (
             config_manager if config_manager is not None else ConfigManager()
@@ -67,13 +72,18 @@ class InitProjectRunner:
             layer_client = LayerClient(login_config.client, self._logger)
 
         with layer_client.init() as initialized_client:
+            parent_account = get_specified_account_or_default_to_personal(
+                initialized_client, self._account_name
+            )
             project = get_or_create_remote_project(
-                initialized_client, self._project_name
+                initialized_client, parent_account, self._project_name
             )
 
             self._update_readme(self._project_name, layer_client)
 
-        global_context.reset_to(self._project_name)
+        global_context.reset_to(
+            project_name=self._project_name, account_name=self._account_name
+        )
         if fabric:
             set_default_fabric(fabric)
         if pip_packages:

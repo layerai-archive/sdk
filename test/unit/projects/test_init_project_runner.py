@@ -40,13 +40,13 @@ def _get_mock_layer_client(
 
 def test_given_project_exists_when_set_up_project_gets_and_sets_global_project():
     # given
-    expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_project_id = uuid.uuid4()
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
-        get_project_id_and_org_id=Mock(
-            return_value=expected_project_id_with_org_id,
-            spec_set=ProjectServiceClient.get_project_id_and_org_id,
+        get_project_id=Mock(
+            return_value=expected_project_id,
+            spec_set=ProjectServiceClient.get_project_id,
         ),
     )
     layer_client_mock = _get_mock_layer_client(project_client_mock)
@@ -65,27 +65,27 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
     )
 
     # then
-    assert project._id == expected_project_id_with_org_id.project_id
+    assert project._id == expected_project_id
     assert current_project_name() == expected_project_name
     assert default_fabric() == my_fabric
     assert get_pip_requirements_file() == pip_requirements_file_name
-    project_client_mock.get_project_id_and_org_id.assert_called_once()
+    project_client_mock.get_project_id.assert_called_once()  # TODO assert account
     project_client_mock.create_project.assert_not_called()
 
 
 def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_project():
     # given
-    missing_project_id_with_org_id = ProjectIdWithAccountId()
-    expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    missing_project_id = None
+    expected_project_id = uuid.uuid4()
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
-        get_project_id_and_org_id=Mock(
-            return_value=missing_project_id_with_org_id,
-            spec_set=ProjectServiceClient.get_project_id_and_org_id,
+        get_project_id=Mock(
+            return_value=missing_project_id,
+            spec_set=ProjectServiceClient.get_project_id,
         ),
         create_project=Mock(
-            return_value=expected_project_id_with_org_id,
+            return_value=expected_project_id,
             spec_set=ProjectServiceClient.create_project,
         ),
     )
@@ -106,12 +106,12 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
     )
 
     # then
-    assert project._id == expected_project_id_with_org_id.project_id
+    assert project._id == expected_project_id
     assert current_project_name() == expected_project_name
     assert default_fabric() == my_fabric
     assert get_pip_packages() == pip_packages
-    project_client_mock.get_project_id_and_org_id.assert_called_once()
-    project_client_mock.create_project.assert_called_once()
+    project_client_mock.get_project_id.assert_called_once()  # TODO assert account
+    project_client_mock.create_project.assert_called_once()  # TODO assert account
 
 
 def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tmp_path):
@@ -122,21 +122,21 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tm
     with open(readme_path, "w") as f:
         f.write(expected_readme)
 
-    expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_project_id = uuid.uuid4()
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
-        get_project_id_and_org_id=Mock(
-            return_value=expected_project_id_with_org_id,
-            spec_set=ProjectServiceClient.get_project_id_and_org_id,
+        get_project_id=Mock(
+            return_value=expected_project_id,
+            spec_set=ProjectServiceClient.get_project_id,
         ),
     )
     layer_client_mock = _get_mock_layer_client(project_client_mock)
 
     # when
     project_runner = InitProjectRunner(
-        project_root_path=tmp_path,
         project_name=expected_project_name,
+        project_root_path=str(tmp_path),
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
     )
@@ -152,21 +152,21 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tm
 
 def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(tmp_path):
     # given
-    expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_project_id = uuid.uuid4()
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
-        get_project_id_and_org_id=Mock(
-            return_value=expected_project_id_with_org_id,
-            spec_set=ProjectServiceClient.get_project_id_and_org_id,
+        get_project_id=Mock(
+            return_value=expected_project_id,
+            spec_set=ProjectServiceClient.get_project_id,
         ),
     )
     layer_client_mock = _get_mock_layer_client(project_client_mock)
 
     # when
     project_runner = InitProjectRunner(
-        project_root_path=tmp_path,
         project_name=expected_project_name,
+        project_root_path=str(tmp_path),
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
     )
@@ -189,20 +189,20 @@ def test_given_long_readme_exists_when_set_up_project_gets_and_sets_project_read
     with open(readme_path, "w") as f:
         f.write(actual_readme)
 
-    expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_project_id = uuid.uuid4()
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
-        get_project_id_and_org_id=Mock(
-            return_value=expected_project_id_with_org_id,
-            spec_set=ProjectServiceClient.get_project_id_and_org_id,
+        get_project_id=Mock(
+            return_value=expected_project_id,
+            spec_set=ProjectServiceClient.get_project_id,
         ),
     )
     layer_client_mock = _get_mock_layer_client(project_client_mock)
     # when
     project_runner = InitProjectRunner(
-        project_root_path=tmp_path,
         project_name=expected_project_name,
+        project_root_path=str(tmp_path),
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
     )

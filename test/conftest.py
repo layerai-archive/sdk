@@ -15,9 +15,9 @@ def tmp_dir(tmpdir: Any) -> Path:
 @pytest.fixture(autouse=True)
 def test_project_name(request: pytest.FixtureRequest) -> Iterator[str]:
     test_project_name = _pseudo_random_project_name(request)
-    global_context.reset_to(test_project_name)
+    global_context.reset_to(project_name=test_project_name)
     yield test_project_name
-    global_context.reset_to(None)
+    global_context.reset_to(project_name=None)
 
 
 def _pseudo_random_project_name(fixture_request: pytest.FixtureRequest) -> str:

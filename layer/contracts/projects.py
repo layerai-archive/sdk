@@ -25,6 +25,12 @@ class Asset:
 
 
 @dataclass(frozen=True)
+class ProjectFullName:
+    project_name: str
+    account_name: Optional[str]
+
+
+@dataclass(frozen=True)
 class Project:
     """
     Provides access to projects stored in Layer. Projects are containers to organize your machine learning project assets.

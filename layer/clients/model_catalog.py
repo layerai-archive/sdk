@@ -1,4 +1,5 @@
 import tempfile
+import uuid
 import warnings
 from contextlib import contextmanager
 from logging import Logger
@@ -12,7 +13,7 @@ from layerapi.api.entity.model_train_status_pb2 import (
 )
 from layerapi.api.entity.model_version_pb2 import ModelVersion
 from layerapi.api.entity.source_code_environment_pb2 import SourceCodeEnvironment
-from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId
+from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId, ProjectId
 from layerapi.api.service.modelcatalog.model_catalog_api_pb2 import (
     CompleteModelTrainRequest,
     CreateModelTrainFromVersionIdRequest,
@@ -82,7 +83,7 @@ class ModelCatalogClient:
 
     def create_model_version(
         self,
-        project_name: str,
+        project_id: uuid.UUID,
         model: ModelFunctionDefinition,
         is_local: bool,
     ) -> CreateModelVersionResponse:
@@ -93,13 +94,17 @@ class ModelCatalogClient:
         :param model: the structured of the parsed entity
         :return: the created model version entity
         """
-        model_path = f"{project_name}/models/{model.name}"
+        model_path = f"{model.project_name}/models/{model.name}"
+        if model.account_name is not None:
+            model_path = f"{model.account_name}/{model_path}"
         self._logger.debug(
             f"Creating model version for the following model: {model_path}"
         )
         response = self._service.CreateModelVersion(
             CreateModelVersionRequest(
-                model_path=model_path,
+                # TODO Update API
+                project_id=ProjectId(value=str(project_id)),
+                model_name=model.name,
                 description=model.description,
                 training_files_hash=Sha256(value=model.source_code_digest.hexdigest()),
                 should_create_initial_train=True,

@@ -7,7 +7,7 @@ from uuid import UUID
 from layer.clients.account_service import AccountServiceClient
 from layer.clients.data_catalog import DataCatalogClient
 from layer.clients.layer import LayerClient
-from layer.clients.project_service import ProjectIdWithAccountId, ProjectServiceClient
+from layer.clients.project_service import ProjectServiceClient
 from layer.config import ClientConfig, Config, ProjectServiceConfig
 
 
@@ -62,12 +62,7 @@ def _get_mock_project_service_client(
         config=config_mock, logger=MagicMock(spec_set=logging.getLogger())
     )
     if project_api_stub is None:
-        valid_response = ProjectIdWithAccountId(
-            project_id=VALID_UUID, account_id=VALID_UUID
-        )
-        project_client.get_project_id_and_org_id = MagicMock(
-            return_value=valid_response
-        )
+        project_client.get_project_id = MagicMock(return_value=VALID_UUID)
     else:
         # can't use spec_set as it does not recognise methods as defined by protocompiler
         project_client._service = project_api_stub  # pylint: disable=protected-access
