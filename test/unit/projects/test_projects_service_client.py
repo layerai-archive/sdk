@@ -9,11 +9,12 @@ from layerapi.api.ids_pb2 import OrganizationId, ProjectId
 from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
     CreateProjectResponse,
-    GetProjectByNameResponse,
+    GetProjectByPathResponse,
 )
 
 from layer.clients.project_service import ProjectServiceClient
 from layer.config import ClientConfig, ProjectServiceConfig
+from layer.contracts.projects import ProjectFullName
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientResourceNotFoundException,
@@ -52,7 +53,7 @@ def test_given_project_exists_when_get_project_by_name_then_uuid_returned():
     # given
     mock_project = _get_mock_project()
     mock_project_api = MagicMock()
-    mock_project_api.GetProjectByName.return_value = GetProjectByNameResponse(
+    mock_project_api.GetProjectByPath.return_value = GetProjectByPathResponse(
         project=mock_project
     )
     project_service_client = _get_project_service_client_with_mocks(
@@ -60,7 +61,10 @@ def test_given_project_exists_when_get_project_by_name_then_uuid_returned():
     )
 
     # when
-    project_id_with_org_id = project_service_client.get_project_id_and_org_id("name")
+    project_full_name = ProjectFullName(project_name="test", account_name="acc")
+    project_id_with_org_id = project_service_client.get_project_id_and_org_id(
+        project_full_name
+    )
 
     # then
     assert mock_project.id.value == str(project_id_with_org_id.project_id)
@@ -70,13 +74,16 @@ def test_given_project_exists_when_get_project_by_name_then_uuid_returned():
 def test_given_no_project_when_get_project_by_name_then_returns_none():
     # given
     mock_project_api = MagicMock()
-    mock_project_api.GetProjectByName.side_effect = LayerClientResourceNotFoundException
+    mock_project_api.GetProjectByPath.side_effect = LayerClientResourceNotFoundException
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )
 
     # when
-    project_id_with_org_id = project_service_client.get_project_id_and_org_id("name")
+    project_full_name = ProjectFullName(project_name="test", account_name="acc")
+    project_id_with_org_id = project_service_client.get_project_id_and_org_id(
+        project_full_name
+    )
 
     # then
     assert project_id_with_org_id.project_id is None
@@ -86,14 +93,15 @@ def test_given_no_project_when_get_project_by_name_then_returns_none():
 def test_given_unknown_error_when_get_project_by_name_raises_unhandled_grpc_error():  # noqa
     # given
     mock_project_api = MagicMock()
-    mock_project_api.GetProjectByName.side_effect = Exception
+    mock_project_api.GetProjectByPath.side_effect = Exception
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )
 
     # when + then
+    project_full_name = ProjectFullName(project_name="test", account_name="acc")
     with pytest.raises(LayerClientException):
-        project_service_client.get_project_id_and_org_id("name")
+        project_service_client.get_project_id_and_org_id(project_full_name)
 
 
 def test_given_project_not_exists_when_update_project_raise_resource_not_found_error():  # noqa
@@ -121,7 +129,8 @@ def test_given_project_not_exists_when_create_project_creates_project_with_priva
     )
 
     # when
-    project_service_client.create_project("test")
+    project_full_name = ProjectFullName(project_name="test", account_name="acc")
+    project_service_client.create_project(project_full_name)
 
     # then
     mock_project_api.CreateProject.assert_called_with(

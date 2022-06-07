@@ -8,6 +8,7 @@ from layer.global_context import (
     get_pip_requirements_file,
     reset_to,
     set_active_context,
+    set_current_account_name,
     set_current_project_name,
     set_default_fabric,
     set_pip_packages,
@@ -38,12 +39,13 @@ class TestGlobalContext:
         assert get_pip_packages() is None
         assert get_pip_requirements_file() is None
 
-    def test_reset_with_the_same_project_name(self) -> None:
+    def test_reset_with_the_same_project_and_account_names(self) -> None:
         set_current_project_name("test")
+        set_current_account_name("test-acc")
         set_default_fabric(Fabric.F_SMALL)
         set_pip_requirements_file("/path/to/requirements2.txt")
         set_pip_packages(["numpy=1.22.2"])
-        reset_to("test")
+        reset_to("test", account_name="test-acc")
         assert current_project_name() == "test"
         assert default_fabric() == Fabric.F_SMALL
         assert get_pip_packages() == ["numpy=1.22.2"]

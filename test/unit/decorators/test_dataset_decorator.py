@@ -14,6 +14,7 @@ from layer.contracts.asset import AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
+from layer.contracts.projects import ProjectFullName
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.decorators import dataset, fabric, pip_requirements
 from layer.exceptions.exceptions import (
@@ -21,7 +22,7 @@ from layer.exceptions.exceptions import (
     LayerClientResourceNotFoundException,
     ProjectInitializationException,
 )
-from layer.global_context import set_current_project_name, set_default_fabric
+from layer.global_context import reset_to, set_current_project_name, set_default_fabric
 from test.unit.decorators.util import project_client_mock
 
 
@@ -79,7 +80,7 @@ class TestDatasetDecorator:
         self,
     ) -> None:
         mock_project_api = MagicMock()
-        mock_project_api.GetProjectByName.side_effect = (
+        mock_project_api.GetProjectByPath.side_effect = (
             LayerClientResourceNotFoundException()
         )
 
@@ -91,9 +92,9 @@ class TestDatasetDecorator:
 
             with pytest.raises(
                 ProjectInitializationException,
-                match="Project with the name foo-test does not exist.",
+                match="Project 'acc-name/foo-test' does not exist.",
             ):
-                set_current_project_name("foo-test")
+                reset_to(project_name="foo-test", account_name="acc-name")
                 create_my_dataset()
 
     @pytest.mark.parametrize(("name",), [("foo1",), ("foo2",)])
@@ -114,7 +115,6 @@ class TestDatasetDecorator:
 
             def side_effect(
                 unused_client,
-                unused_current_project_uuid,
                 dataset_definition,
                 unused_is_local,
                 unused_tracker,
@@ -127,7 +127,7 @@ class TestDatasetDecorator:
 
             func()
 
-            mock_register_datasets.assert_called_with(ANY, ANY, ANY, ANY, ANY)
+            mock_register_datasets.assert_called_with(ANY, ANY, ANY, ANY)
 
             assert dataset
             assert dataset.name == name
@@ -157,9 +157,15 @@ class TestDatasetDecorator:
             id=DatasetBuildId(value=str(uuid.uuid4()))
         )
 
+        mock_dataset_function = MagicMock()
+        mock_dataset_function.project_full_name = ProjectFullName(
+            account_name="test-account",
+            project_name="project-name",
+        )
+
         with patch(
             "layer.decorators.dataset_decorator.register_dataset_function",
-            return_value=Dataset(asset_path="test"),
+            return_value=mock_dataset_function,
         ), project_client_mock(data_catalog_client=data_catalog_client):
 
             @dataset("foo")

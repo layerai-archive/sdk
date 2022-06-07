@@ -132,7 +132,7 @@ def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
 
 def _cleanup_project(client: LayerClient, project: Project):
     project_id = client.project_service_client.get_project_id_and_org_id(
-        project.name
+        project.full_name
     ).project_id
     if project_id:
         print(f"project {project.name} exists, will remove")

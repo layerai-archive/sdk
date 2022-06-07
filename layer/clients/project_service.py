@@ -9,13 +9,15 @@ from layerapi.api.entity.project_pb2 import Project
 from layerapi.api.ids_pb2 import ProjectId
 from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
-    GetProjectByNameRequest,
+    GetProjectByPathRequest,
+    GetProjectByPathResponse,
     RemoveProjectByIdRequest,
     UpdateProjectRequest,
 )
 from layerapi.api.service.flowmanager.project_api_pb2_grpc import ProjectAPIStub
 
 from layer.config import ClientConfig
+from layer.contracts.projects import ProjectFullName
 from layer.exceptions.exceptions import (
     LayerClientResourceAlreadyExistsException,
     LayerClientResourceNotFoundException,
@@ -25,6 +27,7 @@ from layer.utils.grpc import create_grpc_channel, generate_client_error_from_grp
 
 @dataclass(frozen=True)
 class ProjectIdWithAccountId:
+    # TODO why optionals?
     project_id: Optional[UUID] = None
     account_id: Optional[UUID] = None
 
@@ -54,11 +57,13 @@ class ProjectServiceClient:
             self._service = ProjectAPIStub(channel=channel)
             yield self
 
-    def get_project_id_and_org_id(self, name: str) -> ProjectIdWithAccountId:
+    def get_project_id_and_org_id(
+        self, full_name: ProjectFullName
+    ) -> ProjectIdWithAccountId:
         project_id_with_org_id = ProjectIdWithAccountId()
         try:
-            resp = self._service.GetProjectByName(
-                GetProjectByNameRequest(project_name=name)
+            resp: GetProjectByPathResponse = self._service.GetProjectByPath(
+                GetProjectByPathRequest(path=full_name.path)
             )
             if resp.project is not None:
                 project_id_with_org_id = ProjectIdWithAccountId(
@@ -76,11 +81,13 @@ class ProjectServiceClient:
             RemoveProjectByIdRequest(project_id=ProjectId(value=str(project_id)))
         )
 
-    def create_project(self, name: str) -> ProjectIdWithAccountId:
+    def create_project(self, full_name: ProjectFullName) -> ProjectIdWithAccountId:
         try:
+            # TODO Use CreateProjectByPath
             resp = self._service.CreateProject(
                 CreateProjectRequest(
-                    project_name=name, visibility=Project.VISIBILITY_PRIVATE
+                    project_name=full_name.project_name,
+                    visibility=Project.VISIBILITY_PRIVATE,
                 )
             )
             return ProjectIdWithAccountId(
@@ -92,6 +99,7 @@ class ProjectServiceClient:
         except Exception as err:
             raise generate_client_error_from_grpc_error(err, "internal")
 
+    # TODO Should use project full name
     def update_project_readme(self, project_name: str, readme: str) -> None:
         try:
             self._service.UpdateProject(

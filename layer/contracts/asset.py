@@ -25,6 +25,7 @@ class AssetType(Enum):
 class AssetPath:
     entity_name: str
     asset_type: AssetType
+    # TODO rename to 'account'
     org_name: Optional[str] = None
     project_name: Optional[str] = None
     entity_version: Optional[str] = None
@@ -103,6 +104,7 @@ class AssetPath:
     def with_project_name(self, project_name: str) -> "AssetPath":
         return replace(self, project_name=project_name)
 
+    # TODO rename to 'account'
     def with_org_name(self, org_name: str) -> "AssetPath":
         return replace(self, org_name=org_name)
 

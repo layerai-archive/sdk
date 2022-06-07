@@ -11,7 +11,7 @@ from layer.contracts.asset import AssetType
 from layer.contracts.runs import ModelFunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.projects.utils import (
-    get_current_project_name,
+    get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.tracker.local_execution_project_progress_tracker import (
@@ -110,27 +110,28 @@ def _model_wrapper(
         # This is not serialized with cloudpickle, so it will only be run locally.
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            current_project_name_ = get_current_project_name()
+            current_project_full_name_ = get_current_project_full_name()
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
-                account_name = client.account.get_my_account().name
                 project_progress_tracker = LocalExecutionRunProgressTracker(
-                    project_name=current_project_name_,
+                    project_name=current_project_full_name_.project_name,
                     config=config,
-                    account_name=account_name,
+                    account_name=current_project_full_name_.account_name,
                 )
 
                 with project_progress_tracker.track() as tracker:
                     tracker.add_model(self.__wrapped__.layer.get_entity_name())
                     model_definition = ModelFunctionDefinition(
-                        self.__wrapped__, current_project_name_
+                        self.__wrapped__,
+                        project_name=current_project_full_name_.project_name,
+                        account_name=current_project_full_name_.account_name,
                     )
                     return self._train_model_locally_and_store_remotely(
                         model_definition, tracker, client
                     )
 
+        @staticmethod
         def _train_model_locally_and_store_remotely(
-            self,
             model_definition: ModelFunctionDefinition,
             tracker: LocalExecutionRunProgressTracker,
             client: LayerClient,
@@ -142,11 +143,11 @@ def _model_wrapper(
 
             assert model_definition.project_name is not None
             verify_project_exists_and_retrieve_project_id(
-                client, model_definition.project_name
+                client, model_definition.project_full_name
             )
 
             model_version = client.model_catalog.create_model_version(
-                model_definition.project_name,
+                model_definition.project_full_name,
                 model_definition,
                 True,
             ).model_version

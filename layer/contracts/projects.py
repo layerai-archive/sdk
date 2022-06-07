@@ -25,6 +25,20 @@ class Asset:
 
 
 @dataclass(frozen=True)
+class ProjectFullName:
+    """
+    Represents the project name and its owning account name
+    """
+
+    project_name: str
+    account_name: str
+
+    @property
+    def path(self) -> str:
+        return f"{self.account_name}/{self.project_name}"
+
+
+@dataclass(frozen=True)
 class Project:
     """
     Provides access to projects stored in Layer. Projects are containers to organize your machine learning project assets.
@@ -43,6 +57,15 @@ class Project:
     name: str
     account: Optional[Account] = None
     _id: Optional[uuid.UUID] = None
+
+    @property
+    def full_name(self) -> ProjectFullName:
+        if self.account is None:
+            raise ProjectException("project has no account defined")
+        return ProjectFullName(
+            project_name=self.name,
+            account_name=self.account.name,
+        )
 
     @property
     def id(self) -> uuid.UUID:

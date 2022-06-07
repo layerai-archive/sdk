@@ -7,6 +7,7 @@ from .contracts.fabrics import Fabric
 
 @dataclass
 class GlobalContext:
+    account_name: Optional[str]
     project_name: Optional[str]
     fabric: Optional[Fabric]
     active_context: Optional[Context]
@@ -17,6 +18,7 @@ class GlobalContext:
 # We store project name, fabric, active context and requirements
 # at the process level for use in subsequent calls in the same Python process.
 _GLOBAL_CONTEXT = GlobalContext(
+    account_name=None,
     project_name=None,
     fabric=None,
     active_context=None,
@@ -25,10 +27,11 @@ _GLOBAL_CONTEXT = GlobalContext(
 )
 
 
-def reset_to(project_name: Optional[str]) -> None:
-    if current_project_name() != project_name:
+def reset_to(project_name: Optional[str], account_name: Optional[str] = None) -> None:
+    if current_project_name() != project_name or current_account_name() != account_name:
         global _GLOBAL_CONTEXT
         _GLOBAL_CONTEXT = GlobalContext(
+            account_name=account_name,
             project_name=project_name,
             fabric=None,
             active_context=None,
@@ -43,6 +46,14 @@ def set_current_project_name(name: Optional[str]) -> None:
 
 def current_project_name() -> Optional[str]:
     return _GLOBAL_CONTEXT.project_name
+
+
+def set_current_account_name(name: Optional[str]) -> None:
+    _GLOBAL_CONTEXT.account_name = name
+
+
+def current_account_name() -> Optional[str]:
+    return _GLOBAL_CONTEXT.account_name
 
 
 def set_active_context(context: Context) -> None:

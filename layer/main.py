@@ -22,10 +22,10 @@ from yarl import URL
 from layer.cache.cache import Cache
 from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
-from layer.config import DEFAULT_PATH, DEFAULT_URL, ConfigManager
+from layer.config import DEFAULT_PATH, DEFAULT_URL, Config, ConfigManager
 from layer.context import Context
 from layer.contracts.entities import EntityType
-from layer.contracts.projects import Project
+from layer.contracts.projects import Project, ProjectFullName
 from layer.contracts.runs import ResourceTransferState, Run
 from layer.exceptions.exceptions import (
     ConfigError,
@@ -37,7 +37,6 @@ from layer.exceptions.exceptions import (
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
-from layer.projects.utils import get_current_project_name
 from layer.settings import LayerSettings
 from layer.tracker.local_execution_project_progress_tracker import (
     LocalExecutionRunProgressTracker,
@@ -54,8 +53,10 @@ from .global_context import (
     current_project_name,
     get_active_context,
     reset_active_context,
+    reset_to,
     set_active_context,
 )
+from .projects.utils import get_current_project_name
 from .utils.async_utils import asyncio_run_in_thread
 
 
@@ -512,7 +513,17 @@ def init(
         raise ValueError(
             "either pip_requirements_file or pip_packages should be provided, not both"
         )
-    init_project_runner = InitProjectRunner(project_name, logger=logger)
+    layer_config = asyncio_run_in_thread(ConfigManager().refresh())
+
+    # TODO Provide option to pass project full name
+    project_full_name = get_project_full_name(layer_config, project_name)
+
+    reset_to(
+        project_name=project_full_name.project_name,
+        account_name=project_full_name.account_name,
+    )
+
+    init_project_runner = InitProjectRunner(project_full_name, logger=logger)
     fabric_to_set = Fabric(fabric) if fabric else None
     return init_project_runner.setup_project(
         fabric=fabric_to_set,
@@ -555,18 +566,29 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     """
     _ensure_all_functions_are_decorated(functions)
 
-    project_name = get_current_project_name()
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
+
+    # TODO Provide option to extract from context like project_name
+    project_full_name = get_project_full_name(layer_config, get_current_project_name())
     project_runner = ProjectRunner(
         config=layer_config,
         project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
     )
-    run = project_runner.with_functions(project_name, functions)
+    run = project_runner.with_functions(project_full_name, functions)
     run = project_runner.run(run, debug=debug)
 
     _make_notebook_links_open_in_new_tab()
 
     return run
+
+
+def get_project_full_name(layer_config: Config, project_name: str) -> ProjectFullName:
+    with LayerClient(layer_config.client, logger).init() as client:
+        account_name = client.account.get_my_account().name
+        return ProjectFullName(
+            project_name=project_name,
+            account_name=account_name,
+        )
 
 
 # Normally, Colab/IPython opens links as an IFrame. One can open them as new tabs through the right-click menu or using shift+click.

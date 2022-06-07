@@ -32,6 +32,7 @@ from layer.exceptions.exceptions import LayerClientException
 from .accounts import Account
 from .asset import AssetPath, AssetType
 from .fabrics import Fabric
+from .projects import ProjectFullName
 
 
 def _language_version() -> Tuple[int, int, int]:
@@ -78,7 +79,7 @@ class FunctionDefinition(abc.ABC):
         self,
         func: Any,
         project_name: str,
-        account_name: Optional[str] = None,
+        account_name: str,
         version_id: Optional[uuid.UUID] = None,
         repository_id: Optional[uuid.UUID] = None,
         description: str = "",
@@ -126,11 +127,19 @@ class FunctionDefinition(abc.ABC):
         ...
 
     @property
+    def project_full_name(self) -> ProjectFullName:
+        return ProjectFullName(
+            account_name=self.account_name,
+            project_name=self.project_name,
+        )
+
+    @property
     def asset_path(self) -> AssetPath:
         return AssetPath(
             asset_type=self.asset_type,
             entity_name=self.name,
             project_name=self.project_name,
+            org_name=self.account_name,
         )
 
     @property
@@ -205,12 +214,6 @@ class FunctionDefinition(abc.ABC):
         self.repository_id = repository_id
         return self
 
-    def set_account_name(
-        self: FunctionDefinitionType, account_name: str
-    ) -> FunctionDefinitionType:
-        self.account_name = account_name
-        return self
-
     def drop_dependencies(self: FunctionDefinitionType) -> FunctionDefinitionType:
         self._dependencies = set()
         return self
@@ -252,13 +255,19 @@ class Run:
 
     """
 
-    project_id: uuid.UUID = field(repr=False)
-    project_name: str
+    project_full_name: ProjectFullName
     definitions: Sequence[FunctionDefinition] = field(default_factory=list, repr=False)
     files_hash: str = ""
-    account: Optional[Account] = None
     readme: str = field(repr=False, default="")
     run_id: Optional[RunId] = field(repr=False, default=None)
+
+    @property
+    def project_name(self) -> str:
+        return self.project_full_name.project_name
+
+    @property
+    def account_name(self) -> str:
+        return self.project_full_name.account_name
 
     def with_run_id(self, run_id: RunId) -> "Run":
         return replace(self, run_id=run_id)

@@ -8,6 +8,7 @@ from layer.clients.layer import LayerClient
 from layer.clients.project_service import ProjectIdWithAccountId, ProjectServiceClient
 from layer.config import ConfigManager
 from layer.contracts.fabrics import Fabric
+from layer.contracts.projects import ProjectFullName
 from layer.global_context import (
     default_fabric,
     get_pip_packages,
@@ -41,6 +42,7 @@ def _get_mock_layer_client(
 def test_given_project_exists_when_set_up_project_gets_and_sets_global_project():
     # given
     expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_account_name = "acc_name"
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
@@ -54,7 +56,10 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
     pip_requirements_file_name = "req.txt"
     # when
     project_runner = InitProjectRunner(
-        project_name=expected_project_name,
+        project_full_name=ProjectFullName(
+            project_name=expected_project_name,
+            account_name=expected_account_name,
+        ),
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
     )
@@ -77,6 +82,7 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
     # given
     missing_project_id_with_org_id = ProjectIdWithAccountId()
     expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_account_name = "acc_name"
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
@@ -95,7 +101,10 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
 
     # when
     project_runner = InitProjectRunner(
-        project_name=expected_project_name,
+        project_full_name=ProjectFullName(
+            project_name=expected_project_name,
+            account_name=expected_account_name,
+        ),
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
     )
@@ -123,6 +132,7 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tm
         f.write(expected_readme)
 
     expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_account_name = "acc_name"
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
@@ -136,7 +146,10 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tm
     # when
     project_runner = InitProjectRunner(
         project_root_path=tmp_path,
-        project_name=expected_project_name,
+        project_full_name=ProjectFullName(
+            project_name=expected_project_name,
+            account_name=expected_account_name,
+        ),
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
     )
@@ -153,6 +166,7 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tm
 def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(tmp_path):
     # given
     expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_account_name = "acc_name"
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
@@ -166,7 +180,10 @@ def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(tmp_
     # when
     project_runner = InitProjectRunner(
         project_root_path=tmp_path,
-        project_name=expected_project_name,
+        project_full_name=ProjectFullName(
+            project_name=expected_project_name,
+            account_name=expected_account_name,
+        ),
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
     )
@@ -190,6 +207,7 @@ def test_given_long_readme_exists_when_set_up_project_gets_and_sets_project_read
         f.write(actual_readme)
 
     expected_project_id_with_org_id = _get_random_project_id_with_org_id()
+    expected_account_name = "acc_name"
     expected_project_name = "project_name"
     project_client_mock = MagicMock(
         set_spec=ProjectServiceClient,
@@ -202,7 +220,10 @@ def test_given_long_readme_exists_when_set_up_project_gets_and_sets_project_read
     # when
     project_runner = InitProjectRunner(
         project_root_path=tmp_path,
-        project_name=expected_project_name,
+        project_full_name=ProjectFullName(
+            project_name=expected_project_name,
+            account_name=expected_account_name,
+        ),
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
     )

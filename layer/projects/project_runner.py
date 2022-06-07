@@ -1,6 +1,5 @@
 import logging
 import threading
-import uuid
 from datetime import datetime
 from typing import Any, Callable, List, Optional, Sequence, Type
 
@@ -11,7 +10,7 @@ from layerapi.api.ids_pb2 import RunId
 from layer.clients.layer import LayerClient
 from layer.config import Config
 from layer.contracts.asset import AssetType
-from layer.contracts.projects import ApplyResult
+from layer.contracts.projects import ApplyResult, ProjectFullName
 from layer.contracts.runs import (
     DatasetFunctionDefinition,
     FunctionDefinition,
@@ -108,11 +107,11 @@ class ProjectRunner:
         for definition in run.definitions:
             if isinstance(definition, DatasetFunctionDefinition):
                 definition = register_dataset_function(
-                    client, run.project_id, definition, False, self._tracker
+                    client, definition, False, self._tracker
                 )
             elif isinstance(definition, ModelFunctionDefinition):
                 definition = register_model_function(
-                    client, run.project_name, definition, False, self._tracker
+                    client, definition, False, self._tracker
                 )
             updated_definitions.append(definition)
         run = run.with_definitions(updated_definitions)
@@ -123,7 +122,10 @@ class ProjectRunner:
         )
         return ApplyResult(execution_plan=execution_plan)
 
-    def with_functions(self, project_name: str, functions: List[Any]) -> Run:
+    @staticmethod
+    def with_functions(project_full_name: ProjectFullName, functions: List[Any]) -> Run:
+        project_name = project_full_name.project_name
+        account_name = project_full_name.account_name
         definitions: List[FunctionDefinition] = []
         for f in functions:
             layer_settings: LayerSettings = f.layer
@@ -131,27 +133,19 @@ class ProjectRunner:
                 dataset = DatasetFunctionDefinition(
                     func=f,
                     project_name=project_name,
+                    account_name=account_name,
                 )
                 definitions.append(dataset)
             elif layer_settings.get_asset_type() == AssetType.MODEL:
                 model = ModelFunctionDefinition(
                     func=f,
                     project_name=project_name,
+                    account_name=account_name,
                 )
                 definitions.append(model)
-        try:
-            layer_client = LayerClient(self._config.client, logger)
-            with layer_client.init() as client:
-                project_id = verify_project_exists_and_retrieve_project_id(
-                    client, project_name
-                )
-
-        except LayerClientServiceUnavailableException as e:
-            raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
 
         return Run(
-            project_id=project_id,
-            project_name=project_name,
+            project_full_name=project_full_name,
             definitions=definitions,
             files_hash=calculate_hash_by_definitions(definitions),
         )
@@ -164,7 +158,7 @@ class ProjectRunner:
     ) -> Run:
         check_entity_dependencies(run.definitions)
         with LayerClient(self._config.client, logger).init() as client:
-            project = get_or_create_remote_project(client, run.project_name)
+            project = get_or_create_remote_project(client, run.project_full_name)
             assert project.account
             run = run.with_account(project.account)
             with self._project_progress_tracker_factory(
@@ -275,7 +269,6 @@ class ProjectRunner:
 
 def register_dataset_function(
     client: LayerClient,
-    project_id: uuid.UUID,
     dataset: DatasetFunctionDefinition,
     is_local: bool,
     tracker: Optional[RunProgressTracker] = None,
@@ -283,6 +276,9 @@ def register_dataset_function(
     if not tracker:
         tracker = RunProgressTracker()
     try:
+        project_id = verify_project_exists_and_retrieve_project_id(
+            client, dataset.project_full_name
+        )
         dataset = client.data_catalog.add_dataset(project_id, dataset, is_local)
         assert dataset.repository_id
         tracker.mark_derived_dataset_saved(dataset.name, id_=dataset.repository_id)
@@ -300,7 +296,6 @@ def register_dataset_function(
 
 def register_model_function(
     client: LayerClient,
-    project_name: str,
     model: ModelFunctionDefinition,
     is_local: bool,
     tracker: Optional[RunProgressTracker] = None,
@@ -310,7 +305,7 @@ def register_model_function(
 
     try:
         response = client.model_catalog.create_model_version(
-            project_name, model, is_local
+            model.project_full_name, model, is_local
         )
         version = response.model_version
         if response.should_upload_training_files:
