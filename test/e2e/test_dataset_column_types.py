@@ -101,6 +101,9 @@ def test_remote_run_with_supported_column_types_succeeds_and_registers_metadata(
                     np.array([], dtype=np.dtype(np.str_)),
                     None,
                 ],
+                "datetime_ns": pd.Series(
+                    pd.date_range("2000", freq="D", periods=3)
+                ),  # pandas type datetime64[ns]
             }
         )
         return pandas_df
