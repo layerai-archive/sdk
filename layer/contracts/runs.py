@@ -29,7 +29,6 @@ from layerapi.api.ids_pb2 import RunId
 from layer.config import DEFAULT_FUNC_PATH
 from layer.exceptions.exceptions import LayerClientException
 
-from .accounts import Account
 from .asset import AssetPath, AssetType
 from .fabrics import Fabric
 from .projects import ProjectFullName
@@ -274,9 +273,6 @@ class Run:
 
     def with_definitions(self, definitions: Sequence[FunctionDefinition]) -> "Run":
         return replace(self, definitions=definitions)
-
-    def with_account(self, account: Account) -> "Run":
-        return replace(self, account=account)
 
 
 class ResourceTransferState:

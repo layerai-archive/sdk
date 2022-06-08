@@ -158,9 +158,7 @@ class ProjectRunner:
     ) -> Run:
         check_entity_dependencies(run.definitions)
         with LayerClient(self._config.client, logger).init() as client:
-            project = get_or_create_remote_project(client, run.project_full_name)
-            assert project.account
-            run = run.with_account(project.account)
+            get_or_create_remote_project(client, run.project_full_name)
             with self._project_progress_tracker_factory(
                 self._config, run
             ).track() as tracker:
