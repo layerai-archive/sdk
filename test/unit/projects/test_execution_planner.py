@@ -242,14 +242,7 @@ class TestProjectExecutionPlanner:
         if dependencies is None:
             dependencies = []
 
-        dependency_paths = []
-        for dependency in dependencies:
-            path = AssetPath.parse(dependency)
-            if path.project_name is None:
-                path = path.with_project_name(project_name)
-            if path.org_name is None:
-                path = path.with_org_name(account_name)
-            dependency_paths.append(path)
+        dependency_paths = [AssetPath.parse(d) for d in dependencies]
 
         def func() -> None:
             pass

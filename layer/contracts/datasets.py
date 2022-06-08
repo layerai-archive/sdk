@@ -75,12 +75,6 @@ class Dataset(BaseAsset):
         self.uri = uri
         self.version = version if version is not None else ""
 
-    def with_project_name(self: "Dataset", project_name: str) -> "Dataset":
-        new_asset = super().with_project_name(project_name=project_name)
-        new_dataset = copy.deepcopy(self)
-        new_dataset._update_with(new_asset)  # pylint: disable=protected-access
-        return new_dataset
-
     def with_project_full_name(
         self: "Dataset", project_full_name: ProjectFullName
     ) -> "Dataset":

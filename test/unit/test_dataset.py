@@ -12,30 +12,35 @@ from layer.clients.data_catalog import DataCatalogClient
 from layer.clients.dataset_service import DatasetClient, Partition, PartitionMetadata
 from layer.clients.layer import LayerClient
 from layer.config import ClientConfig, Config
+from layer.global_context import current_account_name
 
 
-def test_get_dataset_to_pandas_calls_dataset_api(test_project_name):
+def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(
+    test_project_name,
+):
     dataset_client = MagicMock(spec_set=DatasetClient)
     with _dataset_client_mock(dataset_client_mock=dataset_client):
         get_dataset("dataset_42").to_pandas()
 
     expected_ticket = DataTicket(
         dataset_path_ticket=DatasetPathTicket(
-            path=f"{test_project_name}/datasets/dataset_42"
+            path=f"{current_account_name()}/{test_project_name}/datasets/dataset_42"
         )
     )
     expected_command = Command(dataset_query=DatasetQuery(ticket=expected_ticket))
     dataset_client.get_partitions_metadata.assert_called_with(expected_command)
 
 
-def test_get_dataset_to_pandas_calls_dataset_api_with_path():
+def test_get_dataset_to_pandas_calls_dataset_api_with_account_name_from_context():
     dataset_client = MagicMock(spec_set=DatasetClient)
-    dataset_path = "another-project/datasets/dataset_42"
+    dataset_relative_path = "another-project/datasets/dataset_42"
     with _dataset_client_mock(dataset_client_mock=dataset_client):
-        get_dataset(dataset_path).to_pandas()
+        get_dataset(dataset_relative_path).to_pandas()
 
     expected_ticket = DataTicket(
-        dataset_path_ticket=DatasetPathTicket(path=dataset_path)
+        dataset_path_ticket=DatasetPathTicket(
+            path=f"{current_account_name()}/{dataset_relative_path}"
+        )
     )
     expected_command = Command(dataset_query=DatasetQuery(ticket=expected_ticket))
     dataset_client.get_partitions_metadata.assert_called_with(expected_command)

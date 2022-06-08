@@ -105,19 +105,12 @@ class AssetPath:
 
         return p
 
-    def with_project_name(self, project_name: str) -> "AssetPath":
-        return replace(self, project_name=project_name)
-
     def with_project_full_name(self, project_full_name: ProjectFullName) -> "AssetPath":
         return replace(
             self,
             project_name=project_full_name.project_name,
             org_name=project_full_name.account_name,
         )
-
-    # TODO rename to 'account'
-    def with_org_name(self, org_name: str) -> "AssetPath":
-        return replace(self, org_name=org_name)
 
     def url(self, base_url: URL) -> URL:
         if self.org_name is None:
@@ -185,18 +178,8 @@ class BaseAsset:
     def project_name(self) -> Optional[str]:
         return self._path.project_name
 
-    def with_project_name(self, project_name: str) -> "BaseAsset":
-        new_path = self._path.with_project_name(project_name=project_name)
-        return BaseAsset(
-            path=new_path,
-            id=self.id,
-            dependencies=self.dependencies,
-        )
-
     def with_project_full_name(self, project_full_name: ProjectFullName) -> "BaseAsset":
-        new_path = self._path.with_org_name(
-            project_full_name.account_name
-        ).with_project_name(project_name=project_full_name.project_name)
+        new_path = self._path.with_project_full_name(project_full_name)
         return BaseAsset(
             path=new_path,
             id=self.id,

@@ -51,6 +51,7 @@ from . import Dataset, Model
 from .contracts.asset import AssetPath, AssetType
 from .contracts.fabrics import Fabric
 from .global_context import (
+    current_account_name,
     current_project_name,
     get_active_context,
     reset_active_context,
@@ -233,7 +234,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
     """
     config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
     asset_path = AssetPath.parse(name, expected_asset_type=AssetType.DATASET)
-    asset_path = _ensure_asset_path_has_project_name(asset_path)
+    asset_path = _ensure_asset_path_is_absolute(asset_path)
 
     def fetch_dataset() -> "pandas.DataFrame":
         context = get_active_context()
@@ -312,7 +313,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
     """
     config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
     asset_path = AssetPath.parse(name, expected_asset_type=AssetType.MODEL)
-    asset_path = _ensure_asset_path_has_project_name(asset_path)
+    asset_path = _ensure_asset_path_is_absolute(asset_path)
     context = get_active_context()
 
     with LayerClient(config.client, logger).init() as client:
@@ -428,19 +429,26 @@ def _ui_progress_with_tracker(
     return result
 
 
-def _ensure_asset_path_has_project_name(
-    composite: AssetPath,
+def _ensure_asset_path_is_absolute(
+    path: AssetPath,
 ) -> AssetPath:
-    if composite.has_project():
-        return composite
-    elif not current_project_name():
+    if not path.is_relative():
+        return path
+    project_name = path.project_name if path.has_project() else current_project_name()
+    account_name = (
+        path.org_name if path.org_name is not None else current_account_name()
+    )
+
+    if not project_name or not account_name:
         raise ProjectInitializationException(
-            "Please specify the project name globally with layer.init('project-name')"
-            "or have it in the entity full name like 'the-project/models/the-model-name'"
+            "Please specify the project full name globally with layer.init('account-name/project-name')"
+            "or have it in the entity full name like 'the-account/the-project/models/the-model-name'"
         )
 
-    composite = composite.with_project_name(str(current_project_name()))
-    return composite
+    path = path.with_project_full_name(
+        ProjectFullName(account_name=account_name, project_name=project_name)
+    )
+    return path
 
 
 @contextmanager
