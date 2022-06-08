@@ -524,8 +524,7 @@ def init(
         )
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
 
-    # TODO Provide option to pass project full name
-    project_full_name = get_project_full_name(layer_config, project_name)
+    project_full_name = _get_project_full_name(layer_config, project_name)
 
     reset_to(
         project_name=project_full_name.project_name,
@@ -577,8 +576,7 @@ def run(functions: List[Any], debug: bool = False) -> Run:
 
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
 
-    # TODO Provide option to extract from context like project_name
-    project_full_name = get_project_full_name(layer_config, get_current_project_name())
+    project_full_name = _get_project_full_name(layer_config, get_current_project_name())
     project_runner = ProjectRunner(
         config=layer_config,
         project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
@@ -591,13 +589,31 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     return run
 
 
-def get_project_full_name(layer_config: Config, project_name: str) -> ProjectFullName:
-    with LayerClient(layer_config.client, logger).init() as client:
-        account_name = client.account.get_my_account().name
-        return ProjectFullName(
-            project_name=project_name,
-            account_name=account_name,
-        )
+def _get_project_full_name(
+    layer_config: Config, user_input_project_name: str
+) -> ProjectFullName:
+    """
+    Will first try to extract account_name/project_name from :user_input_project_name
+
+    If no account name can be extracted, will try to get it from global context.
+
+    If that too fails, will fetch the personal account.
+    """
+    parts = user_input_project_name.split("/")
+    account_name: Optional[str]
+    project_name: str
+    if len(parts) == 1:
+        project_name = user_input_project_name
+        with LayerClient(layer_config.client, logger).init() as client:
+            account_name = client.account.get_my_account().name
+    else:
+        account_name = parts[0]
+        project_name = parts[1]
+
+    return ProjectFullName(
+        project_name=project_name,
+        account_name=account_name,
+    )
 
 
 # Normally, Colab/IPython opens links as an IFrame. One can open them as new tabs through the right-click menu or using shift+click.

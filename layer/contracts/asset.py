@@ -26,7 +26,7 @@ class AssetType(Enum):
 class AssetPath:
     entity_name: str
     asset_type: AssetType
-    # TODO rename to 'account'
+    # TODO rename to 'account_name'
     org_name: Optional[str] = None
     project_name: Optional[str] = None
     entity_version: Optional[str] = None
