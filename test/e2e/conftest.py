@@ -131,12 +131,10 @@ def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
 
 
 def _cleanup_project(client: LayerClient, project: Project):
-    project_id = client.project_service_client.get_project_id_and_org_id(
-        project.full_name
-    ).project_id
-    if project_id:
+    project = client.project_service_client.get_project(project.full_name)
+    if project:
         print(f"project {project.name} exists, will remove")
-        client.project_service_client.remove_project(project_id)
+        client.project_service_client.remove_project(project.id)
 
 
 @pytest.fixture()

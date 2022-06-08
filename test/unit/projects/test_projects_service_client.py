@@ -49,7 +49,7 @@ def _get_mock_project() -> Project:
     )
 
 
-def test_given_project_exists_when_get_project_by_name_then_uuid_returned():
+def test_given_project_exists_when_get_project_by_path_then_project_returned():
     # given
     mock_project = _get_mock_project()
     mock_project_api = MagicMock()
@@ -61,17 +61,19 @@ def test_given_project_exists_when_get_project_by_name_then_uuid_returned():
     )
 
     # when
-    project_full_name = ProjectFullName(project_name="test", account_name="acc")
-    project_id_with_org_id = project_service_client.get_project_id_and_org_id(
-        project_full_name
+    project_full_name = ProjectFullName(
+        project_name=mock_project.name, account_name="acc"
     )
+    project = project_service_client.get_project(project_full_name)
 
     # then
-    assert mock_project.id.value == str(project_id_with_org_id.project_id)
-    assert mock_project.organization_id.value == str(project_id_with_org_id.account_id)
+    assert mock_project.id.value == str(project.id)
+    assert mock_project.name == str(project.name)
+    assert "acc" == str(project.account.name)
+    assert mock_project.organization_id.value == str(project.account.id)
 
 
-def test_given_no_project_when_get_project_by_name_then_returns_none():
+def test_given_no_project_when_get_project_by_path_then_returns_none():
     # given
     mock_project_api = MagicMock()
     mock_project_api.GetProjectByPath.side_effect = LayerClientResourceNotFoundException
@@ -81,16 +83,13 @@ def test_given_no_project_when_get_project_by_name_then_returns_none():
 
     # when
     project_full_name = ProjectFullName(project_name="test", account_name="acc")
-    project_id_with_org_id = project_service_client.get_project_id_and_org_id(
-        project_full_name
-    )
+    project = project_service_client.get_project(project_full_name)
 
     # then
-    assert project_id_with_org_id.project_id is None
-    assert project_id_with_org_id.account_id is None
+    assert project is None
 
 
-def test_given_unknown_error_when_get_project_by_name_raises_unhandled_grpc_error():  # noqa
+def test_given_unknown_error_when_get_project_by_path_raises_unhandled_grpc_error():  # noqa
     # given
     mock_project_api = MagicMock()
     mock_project_api.GetProjectByPath.side_effect = Exception
@@ -101,7 +100,7 @@ def test_given_unknown_error_when_get_project_by_name_raises_unhandled_grpc_erro
     # when + then
     project_full_name = ProjectFullName(project_name="test", account_name="acc")
     with pytest.raises(LayerClientException):
-        project_service_client.get_project_id_and_org_id(project_full_name)
+        project_service_client.get_project(project_full_name)
 
 
 def test_given_project_not_exists_when_update_project_raise_resource_not_found_error():  # noqa
