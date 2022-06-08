@@ -12,6 +12,7 @@ from layer.exceptions.exceptions import ProjectException
 
 from .accounts import Account
 from .asset import AssetType
+from .project_full_name import ProjectFullName
 
 
 logger = logging.getLogger()
@@ -22,20 +23,6 @@ LeveledNode = namedtuple("LeveledNode", ["node", "level"])
 class Asset:
     type: AssetType
     name: str
-
-
-@dataclass(frozen=True)
-class ProjectFullName:
-    """
-    Represents the project name and its owning account name
-    """
-
-    project_name: str
-    account_name: str
-
-    @property
-    def path(self) -> str:
-        return f"{self.account_name}/{self.project_name}"
 
 
 @dataclass(frozen=True)

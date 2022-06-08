@@ -5,7 +5,7 @@ import pytest
 
 from layer.contracts.asset import AssetPath
 from layer.contracts.fabrics import Fabric
-from layer.contracts.projects import ProjectFullName
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import (
     DatasetFunctionDefinition,
     FunctionDefinition,

@@ -7,6 +7,7 @@ from typing import Any, Callable, List, Mapping, Optional, Sequence, Union
 import pandas
 
 from .asset import AssetPath, AssetType, BaseAsset
+from .project_full_name import ProjectFullName
 
 
 def _create_empty_data_frame() -> "pandas.DataFrame":
@@ -76,6 +77,14 @@ class Dataset(BaseAsset):
 
     def with_project_name(self: "Dataset", project_name: str) -> "Dataset":
         new_asset = super().with_project_name(project_name=project_name)
+        new_dataset = copy.deepcopy(self)
+        new_dataset._update_with(new_asset)  # pylint: disable=protected-access
+        return new_dataset
+
+    def with_project_full_name(
+        self: "Dataset", project_full_name: ProjectFullName
+    ) -> "Dataset":
+        new_asset = super().with_project_full_name(project_full_name)
         new_dataset = copy.deepcopy(self)
         new_dataset._update_with(new_asset)  # pylint: disable=protected-access
         return new_dataset

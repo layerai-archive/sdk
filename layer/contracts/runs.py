@@ -31,7 +31,7 @@ from layer.exceptions.exceptions import LayerClientException
 
 from .asset import AssetPath, AssetType
 from .fabrics import Fabric
-from .projects import ProjectFullName
+from .project_full_name import ProjectFullName
 
 
 def _language_version() -> Tuple[int, int, int]:
@@ -107,7 +107,7 @@ class FunctionDefinition(abc.ABC):
         if fabric is None:
             fabric = Fabric.default()
         self._fabric = fabric
-        self._dependencies = layer_settings.get_dependencies()
+        self._dependencies: List[AssetPath] = layer_settings.get_dependencies()
         self.pip_packages = layer_settings.get_pip_packages()
         self.pip_requirements_file = layer_settings.get_pip_requirements_file()
 
@@ -143,7 +143,30 @@ class FunctionDefinition(abc.ABC):
 
     @property
     def dependencies(self) -> List[AssetPath]:
-        return [d.with_project_name(self.project_name) for d in self._dependencies]
+        """
+        Account and project names from this function definition
+        are added to dependency paths which are relative
+        """
+        deps: List[AssetPath] = []
+        for d in self._dependencies:
+            full_path_dep: AssetPath
+            if d.is_relative():
+                if d.has_project():
+                    assert d.project_name is not None
+                    full_path_dep = d.with_project_full_name(
+                        ProjectFullName(
+                            account_name=self.account_name,
+                            project_name=d.project_name,
+                        )
+                    )
+                else:
+                    full_path_dep = d.with_project_full_name(
+                        replace(self.project_full_name)
+                    )
+            else:
+                full_path_dep = d
+            deps.append(full_path_dep)
+        return deps
 
     @property
     def entrypoint(self) -> str:
@@ -214,7 +237,7 @@ class FunctionDefinition(abc.ABC):
         return self
 
     def drop_dependencies(self: FunctionDefinitionType) -> FunctionDefinitionType:
-        self._dependencies = set()
+        self._dependencies = []
         return self
 
 

@@ -8,6 +8,7 @@ from typing import Any, Optional, Sequence, Union
 from yarl import URL
 
 from layer.cache.cache import Cache
+from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import LayerClientException
 
 
@@ -80,6 +81,9 @@ class AssetPath:
             org_name=optional_org,
         )
 
+    def is_relative(self) -> bool:
+        return self.org_name is None or self.project_name is None
+
     def has_project(self) -> bool:
         return self.project_name is not None and self.project_name != ""
 
@@ -103,6 +107,13 @@ class AssetPath:
 
     def with_project_name(self, project_name: str) -> "AssetPath":
         return replace(self, project_name=project_name)
+
+    def with_project_full_name(self, project_full_name: ProjectFullName) -> "AssetPath":
+        return replace(
+            self,
+            project_name=project_full_name.project_name,
+            org_name=project_full_name.account_name,
+        )
 
     # TODO rename to 'account'
     def with_org_name(self, org_name: str) -> "AssetPath":
@@ -176,6 +187,16 @@ class BaseAsset:
 
     def with_project_name(self, project_name: str) -> "BaseAsset":
         new_path = self._path.with_project_name(project_name=project_name)
+        return BaseAsset(
+            path=new_path,
+            id=self.id,
+            dependencies=self.dependencies,
+        )
+
+    def with_project_full_name(self, project_full_name: ProjectFullName) -> "BaseAsset":
+        new_path = self._path.with_org_name(
+            project_full_name.account_name
+        ).with_project_name(project_name=project_full_name.project_name)
         return BaseAsset(
             path=new_path,
             id=self.id,

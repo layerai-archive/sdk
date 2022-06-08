@@ -7,7 +7,8 @@ from layer import global_context
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.contracts.fabrics import Fabric
-from layer.contracts.projects import Project, ProjectFullName, ProjectLoader
+from layer.contracts.project_full_name import ProjectFullName
+from layer.contracts.projects import Project, ProjectLoader
 from layer.global_context import (
     set_default_fabric,
     set_pip_packages,

@@ -25,7 +25,8 @@ from layer.clients.layer import LayerClient
 from layer.config import DEFAULT_PATH, DEFAULT_URL, Config, ConfigManager
 from layer.context import Context
 from layer.contracts.entities import EntityType
-from layer.contracts.projects import Project, ProjectFullName
+from layer.contracts.project_full_name import ProjectFullName
+from layer.contracts.projects import Project
 from layer.contracts.runs import ResourceTransferState, Run
 from layer.exceptions.exceptions import (
     ConfigError,

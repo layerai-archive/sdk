@@ -14,7 +14,7 @@ from layerapi.api.service.flowmanager.project_api_pb2 import (
 
 from layer.clients.project_service import ProjectServiceClient
 from layer.config import ClientConfig, ProjectServiceConfig
-from layer.contracts.projects import ProjectFullName
+from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientResourceNotFoundException,

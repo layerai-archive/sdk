@@ -14,7 +14,7 @@ from layer.contracts.asset import AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
-from layer.contracts.projects import ProjectFullName
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.decorators import dataset, fabric, pip_requirements
 from layer.exceptions.exceptions import (

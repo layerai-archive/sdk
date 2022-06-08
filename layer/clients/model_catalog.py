@@ -46,7 +46,7 @@ from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
 from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
-from layer.contracts.projects import ProjectFullName
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import ModelFunctionDefinition, ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
