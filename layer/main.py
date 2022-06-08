@@ -323,7 +323,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         state = ResourceTransferState(model.name)
 
         def callback() -> Model:
-            return _load_model_artifact(client, model, state, no_cache)
+            return _load_model_runtime_objects(client, model, state, no_cache)
 
         if not within_run:
             try:
@@ -362,18 +362,18 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         return model
 
 
-def _load_model_artifact(
+def _load_model_runtime_objects(
     client: LayerClient,
     model: Model,
     state: ResourceTransferState,
     no_cache: bool,
 ) -> Model:
-    model_artifact = client.model_catalog.load_model_artifact(
+    model_runtime_objects = client.model_catalog.load_model_runtime_objects(
         model,
         state=state,
         no_cache=no_cache,
     )
-    model.set_artifact(model_artifact)
+    model.set_model_runtime_objects(model_runtime_objects)
     parameters = client.model_catalog.get_model_train_parameters(
         ModelTrainId(value=str(model.id)),
     )
@@ -630,6 +630,7 @@ def log(
             float,
             bool,
             int,
+            Dict[str, Any],
             "pandas.DataFrame",
             "PIL.Image.Image",
             "matplotlib.figure.Figure",
@@ -685,12 +686,13 @@ def log(
 
     Accepted Types:
     ``pandas.DataFrame``
+    ``dict`` (the key should be a string. The value either needs to be a primitive type or it will be converted to str)
 
     .. code-block:: python
 
+        import layer
         import matplotlib.pyplot as plt
         import pandas as pd
-        from layer
         from layer.decorators import dataset, model
 
         # Define a new function for dataset generation
@@ -708,7 +710,7 @@ def log(
                 "my-int-tag": 123, # any number
                 "foo-bool": True,
                 "some-sample-dataframe-tag": ..., # Pandas data frame
-                "some-local-image-file: Path.home() / "images/foo.png",
+                "some-local-image-file": Path.home() / "images/foo.png",
                 "some-matplot-lib-figure": fig, # You could alternatively just passed plt as well, and Layer would just get the current/active figure.
             })
 

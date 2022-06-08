@@ -1,12 +1,12 @@
 # type: ignore
 import logging
-import platform
 from pathlib import Path
 
 import pytest
 
 from layer.flavors import (
     CatBoostModelFlavor,
+    CustomModelFlavor,
     HuggingFaceModelFlavor,
     KerasModelFlavor,
     LightGBMModelFlavor,
@@ -17,12 +17,14 @@ from layer.flavors import (
 )
 from layer.flavors.utils import get_flavor_for_model
 
+from .. import IS_DARWIN_ARM64
+
 
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.skipif(IS_DARWIN_ARM64, reason="Segfaults on Mac M1")
 class TestModelFlavors:
-    @pytest.mark.skipif(platform.system() == "Darwin", reason="Segfaults on Mac")
     def test_lightgbm_flavor(self):
         import lightgbm as lgb
         import numpy as np
@@ -35,7 +37,6 @@ class TestModelFlavors:
         flavor = get_flavor_for_model(model)
         assert type(flavor).__name__ == LightGBMModelFlavor.__name__
 
-    @pytest.mark.skipif(platform.system() == "Darwin", reason="Segfaults on Mac")
     def test_xgboost_flavor(self):
         import numpy as np
         import xgboost as xgb
@@ -45,6 +46,13 @@ class TestModelFlavors:
         dtrain = xgb.DMatrix(x_train, label=y_train)
         model = xgb.train({}, dtrain, num_boost_round=2)
 
+        flavor = get_flavor_for_model(model)
+        assert type(flavor).__name__ == XGBoostModelFlavor.__name__
+
+    def test_xgboost_regressor_flavor(self):
+        import xgboost as xgb
+
+        model = xgb.XGBRegressor()
         flavor = get_flavor_for_model(model)
         assert type(flavor).__name__ == XGBoostModelFlavor.__name__
 
@@ -169,21 +177,21 @@ class TestModelFlavors:
         tmp_path = tmp_path / "model1"
         model = TFBertForSequenceClassification(BertConfig())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_object
         assert isinstance(loaded_model, TFBertForSequenceClassification)
 
         # Bert Pytorch Model
         tmp_path = tmp_path / "model2"
         model = BertForSequenceClassification(BertConfig())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_object
         assert isinstance(loaded_model, BertForSequenceClassification)
 
         # GPT2 LMHEad Tensorflow Model
         tmp_path = tmp_path / "model3"
         model = TFGPT2LMHeadModel(GPT2Config())
         hf_flavor.save_model_to_directory(model, tmp_path)
-        loaded_model = hf_flavor.load_model_from_directory(tmp_path)
+        loaded_model = hf_flavor.load_model_from_directory(tmp_path).model_object
 
         assert isinstance(loaded_model, TFGPT2LMHeadModel)
 
@@ -201,7 +209,7 @@ class TestModelFlavors:
         pt_flavor = PyTorchModelFlavor()
         pt_model = torch.nn.Sequential()
         pt_flavor.save_model_to_directory(pt_model, tmp_path)
-        loaded_model = pt_flavor.load_model_from_directory(tmp_path)
+        loaded_model = pt_flavor.load_model_from_directory(tmp_path).model_object
         assert isinstance(loaded_model, torch.nn.Module)
 
     def test_yolo_save_load(self, tmp_path):
@@ -232,5 +240,12 @@ class TestModelFlavors:
             del sys.modules["yolov5"]
 
         # Load and check the type of the model
-        model = pt_flavor.load_model_from_directory(tmp_path)
+        model = pt_flavor.load_model_from_directory(tmp_path).model_object
         assert model.__class__.__name__ == "AutoShape"
+
+    def test_custom_flavor(self, tmp_path):
+        from .common.dummy_model import DummyModel
+
+        model = DummyModel()
+        flavor = get_flavor_for_model(model)
+        assert type(flavor).__name__ == CustomModelFlavor.__name__

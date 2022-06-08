@@ -2,10 +2,13 @@ __version__ = "0.0.1b1"
 
 from .context import Context  # noqa
 from .contracts.datasets import Dataset  # noqa
+from .contracts.logged_data import Markdown  # noqa
 from .contracts.models import Model  # noqa
 from .contracts.projects import Project  # noqa
 from .contracts.runs import Run  # noqa
+from .flavors.custom import CustomModel  # noqa
 from .global_context import current_project_name  # noqa
+from .logged_data.callbacks import KerasCallback, XGBoostCallback  # noqa
 from .main import clear_cache  # noqa
 from .main import get_dataset  # noqa
 from .main import get_model  # noqa

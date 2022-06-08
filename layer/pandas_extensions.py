@@ -13,6 +13,7 @@ from typing import (
 )
 
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 from pandas._typing import PositionalIndexer  # type: ignore
 from pandas.core.arrays.base import ExtensionArray  # type: ignore
@@ -96,6 +97,25 @@ def _load_image(binary: Union[pa.BinaryScalar, pa.ExtensionScalar]) -> "Image":
 
 
 class Images(ExtensionArray):
+    """
+    Extends `pandas.ExtensionArray` to provide automatic conversion between `PIL.Image.Image` class and `pyarrow`.
+    The conversion is required to store images in layer datasets.
+
+    .. code-block:: python
+
+        def make_image(n: int) -> Image:
+            image = PIL.Image.new("RGB", (160, 40), color=(73, 109, 137))
+            draw = ImageDraw.Draw(image)
+            draw.text((11, 10), f"Image #{n}", fill=(255, 255, 0))
+            return image
+
+        image_1 = make_image(1)
+        image_2 = make_image(2)
+        image_3 = make_image(3)
+
+        pandas.DataFrame({"images": layer.Images([image_1, image_2, image_3])})
+    """
+
     def __init__(self, images: Sequence["Image"]):
         self._images = images
         self._dtype = _ImageDtype()
@@ -107,12 +127,12 @@ class Images(ExtensionArray):
         *,
         dtype: Optional[ExtensionDtype] = None,
         copy: bool = False,
-    ) -> "Images":
-        return Images(scalars)
+    ) -> Any:
+        return cls(scalars)
 
     @classmethod
-    def _concat_same_type(cls, to_concat: Sequence["Images"]) -> "Images":
-        return Images(tuple(itertools.chain(*to_concat)))
+    def _concat_same_type(cls, to_concat: Sequence["Images"]) -> Any:
+        return cls(tuple(itertools.chain(*to_concat)))
 
     @property
     def dtype(self) -> ExtensionDtype:
@@ -122,7 +142,7 @@ class Images(ExtensionArray):
         return Images(tuple(image.copy() for image in self._images))
 
     def isna(self) -> np.ndarray:  # type: ignore
-        return np.array([image is not None for image in self._images], dtype=bool)
+        return np.array([image is None for image in self._images], dtype=bool)
 
     def __len__(self) -> int:
         return len(self._images)
@@ -164,7 +184,9 @@ class Images(ExtensionArray):
         if not isinstance(other, Images):
             return eq_arr
         for i in range(min(len(self), len(other))):
-            if _image_bytes(self._images[i]) == _image_bytes(other._images[i]):
+            if np.array_equal(
+                np.asarray(self._images[i]), np.asarray(other._images[i])
+            ):
                 eq_arr[i] = True
         return eq_arr
 
@@ -179,6 +201,17 @@ class Images(ExtensionArray):
         for buf in self._images_byte_arr():
             total_bytes += len(buf)
         return total_bytes
+
+    def value_counts(
+        values: Sequence[Any],
+        sort: bool = True,
+        ascending: bool = False,
+        normalize: bool = False,
+        bins: Any = None,
+        dropna: bool = True,
+    ) -> pd.Series:  # type: ignore
+        # make all values unique for now
+        return pd.Series(np.ones(len(values), dtype=np.int64))
 
 
 def _image_bytes(image: "Image") -> bytes:
@@ -243,6 +276,24 @@ def _load_array(binary: Union[pa.BinaryScalar, pa.ExtensionScalar]) -> np.ndarra
 
 
 class Arrays(ExtensionArray):
+    """
+    Extends `pandas.ExtensionArray` to provide automatic conversion between `numpy.ndarray` class and `pyarrow`.
+    The conversion is required to store multi-dimensional arrays in layer datasets.
+
+    .. code-block:: python
+
+        pd.DataFrame(
+        {
+            "array": layer.Arrays(
+                (
+                    np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int64),
+                    np.array([[7, 8, 9], [10, 11, 12]], dtype=np.int64),
+                    np.array([[13, 14, 15], [16, 17, 18]], dtype=np.int64),
+                )
+            )
+        })
+    """
+
     def __init__(self, arrays: Sequence[np.ndarray]):  # type: ignore
         self._arrays = arrays
         self._dtype = _ArrayDtype()
@@ -265,7 +316,7 @@ class Arrays(ExtensionArray):
         return Arrays(tuple(arr.copy() for arr in self._arrays))
 
     def isna(self) -> np.ndarray:  # type: ignore
-        return np.array([arr is not None for arr in self._arrays], dtype=bool)
+        return np.array([arr is None for arr in self._arrays], dtype=bool)
 
     def __len__(self) -> int:
         return len(self._arrays)
@@ -306,6 +357,17 @@ class Arrays(ExtensionArray):
             total_bytes += arr.nbytes
         return total_bytes
 
+    def value_counts(
+        values: Sequence[Any],
+        sort: bool = True,
+        ascending: bool = False,
+        normalize: bool = False,
+        bins: Any = None,
+        dropna: bool = True,
+    ) -> pd.Series:  # type: ignore
+        # make all values unique for now
+        return pd.Series(np.ones(len(values), dtype=np.int64))
+
 
 def _array_bytes(arr: np.ndarray) -> bytes:  # type: ignore
     with io.BytesIO() as buf:
@@ -321,3 +383,21 @@ def _register_type_extensions() -> None:
     # register pandas extension types
     register_extension_dtype(_ImageDtype)
     register_extension_dtype(_ArrayDtype)
+
+
+def _infer_custom_types(data: pd.DataFrame) -> pd.DataFrame:
+    if len(data) == 0:
+        return data
+    first_row = data.head(n=1)
+    try:
+        from PIL.Image import Image
+
+        for col in first_row:
+            value = data[col][0]
+            if isinstance(value, Image):
+                data[col] = Images(data[col])
+            elif isinstance(value, np.ndarray) and value.ndim > 1:
+                data[col] = Arrays(data[col])
+    except ImportError:
+        pass
+    return data

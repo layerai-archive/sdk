@@ -100,7 +100,7 @@ First, install these prerequisite tools on your development environment:
   - [poetry](https://python-poetry.org/)
   - [make](https://www.gnu.org/software/make/manual/make.html)
 
-Then, run `pyenv install` in the root of this repo to ensure you have the preferred Python version installed.
+Then, run `pyenv install $(cat .python-version)` in the root of this repo to ensure you have the preferred Python version installed.
 
 ### Running in development
 
@@ -109,7 +109,7 @@ This repo uses `make` as the build system. The following targets can be used thr
 
 - `install` - prepares the `poetry` virtual environment. Most of the other tasks will do that automatically for you
 - `format` - formats the code
-- `test` - runs unit testsru
+- `test` - runs unit tests
 - `lint` - runs linters
 - `check` - runs `test` and `lint`
 - `publish` - publishes the project to PyPi. This is intended to be used in CI only.
@@ -119,11 +119,14 @@ This repo uses `make` as the build system. The following targets can be used thr
 ### Python setup
 We recommend using `pyenv`
 
-Please run `pyenv install` in the root of this repository to setup the recommended python version.
+Please run `pyenv install $(cat .python-version)` in the root of this repository to setup the recommended python version.
 
-If you are using an M1 machine, we recommend using `conda`. Please run
+If you are using an M1 machine, we recommend using `conda` via [Miniforge3](https://github.com/conda-forge/miniforge/). Please run
 
 ```
+# Install Miniforge3 if required
+/bin/bash -c "$(curl -fsSL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh)"
+# Create and activate conda environment
 conda create -yq -n sdk python=3.8 tokenizers==0.12.1 xgboost==1.5.1 lightgbm==3.3.2 poetry h5py==3.6.0 pyarrow==7.0.0
 conda activate sdk
 ```
@@ -241,11 +244,7 @@ Set these up with your IDE to have a smoother development experience and fewer f
 
 The final step after developing and testing your changes locally is to submit a pull request and get your contribution merged back into `layerai/sdk`. Please follow the instructions in the GitHub template when creating your PR and fix any status checks that are failing.
 
-When the PR passes all checks, a `layerai/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests.
-
-#### Merge Queue
-
-We use a merge queue to merge pull requests in, so once your PR has been approved by a maintainer and all checks are passing, our merge queue will automatically merge your PR into the `main` branch.
+When the PR passes all checks, a `layerai/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests. When everything is satisfied, the PR can then be merged onto the `main` branch.
 
 That's it! We are looking forward to your contributions!
 

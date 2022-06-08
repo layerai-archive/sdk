@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 from yarl import URL
 
 from layer.clients.model_catalog import ModelCatalogClient
@@ -11,7 +11,7 @@ from layer.config.config import ClientConfig
 from layer.contracts.models import Model
 from layer.contracts.tracker import ResourceTransferState
 from layer.flavors.base import ModelFlavor
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def test_model_load_from_cache(tmp_path: Path) -> None:
 
     with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
         s3_download.side_effect = download_model_files_from_s3
-        model_catalog.load_model_artifact(model, state=ResourceTransferState())
+        model_catalog.load_model_runtime_objects(model, state=ResourceTransferState())
         # assert model was downloaded and not loaded from the cache dir
         s3_download.assert_called_once()
         model_flavor.model_impl.assert_called_once_with(model_cache_dir.as_uri())
@@ -45,7 +45,7 @@ def test_model_load_from_cache(tmp_path: Path) -> None:
     model_flavor.model_impl.reset_mock()
 
     with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
-        model_catalog.load_model_artifact(model, state=ResourceTransferState())
+        model_catalog.load_model_runtime_objects(model, state=ResourceTransferState())
         # assert model was loaded from the cache dir without downloading
         s3_download.assert_not_called()
         model_flavor.model_impl.assert_called_once_with(model_cache_dir.as_uri())
@@ -69,7 +69,7 @@ def test_model_load_from_cache_does_not_cache_if_no_cache_true(tmp_path: Path) -
 
     with patch("layer.utils.s3.S3Util.download_dir") as s3_download:
         s3_download.side_effect = download_model_files_from_s3
-        model_catalog.load_model_artifact(
+        model_catalog.load_model_runtime_objects(
             model, state=ResourceTransferState(), no_cache=True
         )
         model_download_dir = s3_download.call_args[1]["local_dir"]
@@ -86,16 +86,16 @@ def download_model_files_from_s3(*args, **kwargs) -> None:
 
 class DummyModelFlavor(ModelFlavor):
     MODULE_KEYWORD = "dummy"
-    PROTO_FLAVOR = ModelVersion.ModelFlavor.Value("MODEL_FLAVOR_INVALID")
+    PROTO_FLAVOR = PbModelFlavor.Value("MODEL_FLAVOR_INVALID")
 
     def __init__(self) -> None:
         super().__init__()
         self.model_impl = Mock(name="dummy_model_impl")
 
     def save_model_to_directory(
-        self, model_artifact: ModelArtifact, directory: Path
+        self, model_object: ModelObject, directory: Path
     ) -> None:
         return
 
-    def load_model_from_directory(self, directory: Path) -> ModelArtifact:
+    def load_model_from_directory(self, directory: Path) -> ModelObject:
         return self.model_impl(directory.as_uri())

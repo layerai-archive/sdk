@@ -1,12 +1,12 @@
 from typing import Dict, List, Optional
 
-from layerapi.api.entity.model_version_pb2 import ModelVersion
+from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 
-from layer.flavors.base import ModelFlavor
-from layer.types import ModelArtifact
+from layer.types import ModelObject
 
 from .base import ModelFlavor  # noqa
 from .catboost import CatBoostModelFlavor  # noqa
+from .custom import CustomModelFlavor  # noqa
 from .huggingface import HuggingFaceModelFlavor  # noqa
 from .keras import KerasModelFlavor  # noqa
 from .lightgbm import LightGBMModelFlavor  # noqa
@@ -23,23 +23,25 @@ PYTHON_FLAVORS: List[ModelFlavor] = [
     KerasModelFlavor(),
     PyTorchModelFlavor(),
     TensorFlowModelFlavor(),
-    ScikitLearnModelFlavor(),
+    # XGB Flavor should come before sklearn since it uses it as back bone
     XGBoostModelFlavor(),
+    ScikitLearnModelFlavor(),
     LightGBMModelFlavor(),
     CatBoostModelFlavor(),
+    CustomModelFlavor(),
 ]
 
 # mypy proto enum typing issue https://github.com/protocolbuffers/protobuf/issues/8175
-PYTHON_CLASS_NAME_TO_PROTO_FLAVORS: Dict[str, ModelVersion.ModelFlavor.ValueType] = {
+PYTHON_CLASS_NAME_TO_PROTO_FLAVORS: Dict[str, PbModelFlavor.ValueType] = {
     flavor.__class__.__name__: flavor.PROTO_FLAVOR for flavor in PYTHON_FLAVORS
 }
 
-PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict[
-    ModelVersion.ModelFlavor.ValueType, ModelFlavor
-] = {flavor.PROTO_FLAVOR: flavor for flavor in PYTHON_FLAVORS}
+PROTO_TO_PYTHON_OBJECT_FLAVORS: Dict[PbModelFlavor.ValueType, ModelFlavor] = {
+    flavor.PROTO_FLAVOR: flavor for flavor in PYTHON_FLAVORS
+}
 
 
-def get_flavor_for_model(model_object: ModelArtifact) -> Optional[ModelFlavor]:
+def get_flavor_for_model(model_object: ModelObject) -> Optional[ModelFlavor]:
     matching_flavor: Optional[ModelFlavor] = None
     for flavor in PYTHON_FLAVORS:
         if flavor.can_interpret_object(model_object):
@@ -49,6 +51,6 @@ def get_flavor_for_model(model_object: ModelArtifact) -> Optional[ModelFlavor]:
 
 
 def get_flavor_for_proto(
-    proto_flavor: ModelVersion.ModelFlavor.ValueType,
+    proto_flavor: PbModelFlavor.ValueType,
 ) -> Optional[ModelFlavor]:
     return PROTO_TO_PYTHON_OBJECT_FLAVORS.get(proto_flavor)

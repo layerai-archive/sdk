@@ -1,5 +1,6 @@
 from .base import ModelFlavor  # noqa
 from .catboost import CatBoostModelFlavor  # noqa
+from .custom import CustomModelFlavor  # noqa
 from .huggingface import HuggingFaceModelFlavor  # noqa
 from .keras import KerasModelFlavor  # noqa
 from .lightgbm import LightGBMModelFlavor  # noqa

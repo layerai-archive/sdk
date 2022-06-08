@@ -9,8 +9,10 @@ import numpy as np
 import pandas as pd
 import PIL.Image
 import pytest
+from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 from requests import Session
 
+import layer
 from layer.clients.layer import LayerClient
 from layer.clients.logged_data_service import LoggedDataClient, ModelMetricPoint
 from layer.logged_data.log_data_runner import LogDataRunner
@@ -147,6 +149,72 @@ def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() 
 @pytest.mark.parametrize(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
+def test_given_runner_when_log_dict_then_calls_log_table(
+    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+    tag = "dict-tag"
+    parameters = {
+        "tom": 10,
+        "nick": 15,
+        "juli": 14,
+        "jack": [1, 2, 3],
+    }
+
+    # when
+    runner.log({tag: parameters})
+
+    # then
+    expected_dataframe = pd.DataFrame(
+        [["tom", 10], ["nick", 15], ["juli", 14], ["jack", "[1, 2, 3]"]],
+        columns=["name", "value"],
+    )
+    expected_dataframe = expected_dataframe.set_index("name")
+    expected_dataframe_in_json = expected_dataframe.to_json(orient="table")
+    logged_data_client.log_table_data.assert_called_with(
+        train_id=train_id,
+        tag=tag,
+        data=expected_dataframe_in_json,
+        dataset_build_id=dataset_build_id,
+    )
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
+def test_given_runner_when_log_invalid_dict_then_raises(
+    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+    tag = "dict-tag"
+
+    with pytest.raises(
+        ValueError, match=r".*Unsupported value type -> <class 'dict'>.*"
+    ):
+        runner.log({tag: {10: 20}})
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
 def test_given_runner_when_log_pandas_dataframe_then_calls_log_table(
     train_id: Optional[UUID], dataset_build_id: Optional[UUID]
 ) -> None:
@@ -230,7 +298,10 @@ def test_given_runner_when_log_image_then_calls_log_binary(
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id, tag=tag, dataset_build_id=dataset_build_id
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -302,7 +373,10 @@ def test_given_runner_when_log_matplotlib_figure_then_calls_log_binary(
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id, tag=tag, dataset_build_id=dataset_build_id
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -358,7 +432,10 @@ def test_given_runner_when_log_matplotlib_module_then_calls_log_binary(
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id, tag=tag, dataset_build_id=dataset_build_id
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -391,6 +468,102 @@ def test_given_runner_when_log_image_by_path_then_calls_log_binary(
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id, tag=tag, dataset_build_id=dataset_build_id
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
+@patch.object(Session, "put")
+def test_given_runner_when_log_video_by_path_then_calls_log_binary(
+    mock_put, tmpdir, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+    tag = "video-by-path"
+    path = tmpdir.join("temp.mp4")
+    Path(str(path)).touch()
+
+    # when
+    runner.log({tag: Path(str(path))})
+
+    # then
+    logged_data_client.log_binary_data.assert_called_with(
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_VIDEO,
+    )
+    mock_put.assert_called_with("http://path/for/upload", data=ANY)
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
+def test_given_runner_when_log_image_by_path_with_unsupported_extension_then_raise(
+    tmpdir, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+    tag = "image-by-path"
+    image_data = np.random.rand(100, 100, 3) * 255
+    image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
+    path = tmpdir.join("image.webp")
+    image.save(str(path))
+
+    # when
+    with pytest.raises(ValueError, match=r".*Unsupported value type ->.*"):
+        runner.log({tag: Path(str(path))})
+
+    # then
+    logged_data_client.log_binary_data.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
+def test_given_runner_when_log_markdown_then_calls_log_markdown(
+    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+    tag = "markdown-tag"
+    md = layer.Markdown("# Foo bar")
+    # when
+    runner.log({tag: md})
+
+    # then
+    logged_data_client.log_markdown_data.assert_called_with(
+        train_id=train_id,
+        tag=tag,
+        data=md.data,
+        dataset_build_id=dataset_build_id,
+    )

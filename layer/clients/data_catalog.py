@@ -58,6 +58,7 @@ from layer.contracts.datasets import (
 )
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.exceptions.exceptions import LayerClientException
+from layer.pandas_extensions import _infer_custom_types
 from layer.utils.file_utils import tar_directory
 from layer.utils.grpc import create_grpc_channel, generate_client_error_from_grpc_error
 from layer.utils.s3 import S3Util
@@ -168,7 +169,9 @@ class DataCatalogClient:
         """
 
         # Creates a Record batch from the pandas dataframe
-        batch = pyarrow.RecordBatch.from_pandas(data, preserve_index=False)
+        batch = pyarrow.RecordBatch.from_pandas(
+            _infer_custom_types(data), preserve_index=False
+        )
         try:
             writer, _ = self._get_dataset_writer(name, build_id, batch.schema)
             try:

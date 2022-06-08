@@ -11,6 +11,8 @@ from layer.config import ClientConfig
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.training.train import Train
 
+from .. import IS_DARWIN
+
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +109,7 @@ def test_train_raises_exception_if_error_happens() -> None:
         set(),
     ],
 )
+@pytest.mark.skipif(IS_DARWIN, reason="Segfaults on Mac")
 def test_when_save_model_gets_invalid_object_then_throw_exception(
     invalid_model_object: Any,
 ) -> None:

@@ -70,7 +70,7 @@ def test_given_tag_not_exists_when_log_table_then_calls_log_data_with_table_type
     )
 
 
-def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_blob_type():  # noqa
+def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_type():  # noqa
     # given
     mock_logged_data_api = MagicMock()
     mock_logged_data_api.LogData.return_value = LogDataResponse(
@@ -81,17 +81,21 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_blob_type
         logged_data_api_stub=mock_logged_data_api
     )
     train_id = uuid.uuid4()
-    tag = "blob-test-tag"
+    tag = "image-test-tag"
 
     # when
-    s3_path = logged_data_client.log_binary_data(train_id=train_id, tag=tag)
+    s3_path = logged_data_client.log_binary_data(
+        train_id=train_id,
+        tag=tag,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+    )
 
     # then
     mock_logged_data_api.LogData.assert_called_with(
         request=LogDataRequest(
             model_train_id=ModelTrainId(value=str(train_id)),
             unique_tag=tag,
-            type=LoggedDataType.LOGGED_DATA_TYPE_BLOB,
+            type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
             text=None,
         )
     )
@@ -108,7 +112,7 @@ def test_given_tag_not_exists_when_log_model_metric_then_calls_log_metric():  # 
         logged_data_api_stub=mock_logged_data_api
     )
     train_id = uuid.uuid4()
-    tag = "blob-test-tag"
+    tag = "foo-test-tag"
     points = [ModelMetricPoint(epoch=1, value=1), ModelMetricPoint(epoch=2, value=2)]
 
     # when
