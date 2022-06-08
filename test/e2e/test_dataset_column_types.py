@@ -40,6 +40,11 @@ def test_remote_run_with_supported_column_types_succeeds_and_registers_metadata(
                     datetime.time(3, 45, 12, 1),
                     datetime.time(3, 45, 12, 3),
                 ],
+                "datetime_ns": pd.Series(
+                    pd.date_range(
+                        "2000", freq="D", periods=3
+                    )  # pandas type datetime64[ns]
+                ),
                 "int64_arr": [
                     np.array([-1, -2, 0, 1, 2, 42], dtype=np.dtype(np.int64)),
                     np.array(
@@ -101,9 +106,6 @@ def test_remote_run_with_supported_column_types_succeeds_and_registers_metadata(
                     np.array([], dtype=np.dtype(np.str_)),
                     None,
                 ],
-                "datetime_ns": pd.Series(
-                    pd.date_range("2000", freq="D", periods=3)
-                ),  # pandas type datetime64[ns]
             }
         )
         return pandas_df
