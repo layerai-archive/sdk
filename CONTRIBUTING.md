@@ -127,7 +127,7 @@ If you are using an M1 machine, we recommend using `conda` via [Miniforge3](http
 # Install Miniforge3 if required
 /bin/bash -c "$(curl -fsSL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh)"
 # Create and activate conda environment
-conda create -yq -n sdk python=3.8 tokenizers==0.12.1 xgboost==1.5.1 lightgbm==3.3.2 poetry h5py==3.6.0 pyarrow==7.0.0
+conda create -yq -n sdk python=3.8
 conda activate sdk
 ```
 

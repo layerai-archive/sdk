@@ -4,12 +4,36 @@ E2E_TEST_HOME := $(ROOT_DIR)/build/e2e-home
 TEST_TOKEN_FILE := .test-token
 POETRY := $(shell command -v poetry 2> /dev/null)
 IN_VENV := $(shell echo $(CONDA_DEFAULT_ENV)$(CONDA_PREFIX)$(VIRTUAL_ENV))
+CONDA_ENV_NAME := $(shell echo $(CONDA_DEFAULT_ENV))
+UNAME_SYS := $(shell uname -s)
+UNAME_ARCH := $(shell uname -m)
 
 .DEFAULT_GOAL:=help
 
 install: $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock
 	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. See https://python-poetry.org/docs/"; exit 2; fi
+ifeq ($(UNAME_SYS), Darwin)
+ifeq ($(UNAME_ARCH), arm64)
+ifdef CONDA_ENV_NAME
+ifeq ($(CONDA_ENV_NAME), base)
+	@echo 'Please create a conda environment and make it active'
+	@exit 1
+else
+	$(eval TOKENIZERS_VERSION := $(shell poetry show tokenizers --no-ansi --no-dev | grep version | awk '{print $$3}'))
+	$(eval XGBOOST_VERSION := $(shell poetry show xgboost --no-ansi --no-dev | grep version | awk '{print $$3}'))
+	$(eval LIGHTGBM_VERSION := $(shell poetry show lightgbm --no-ansi --no-dev | grep version | awk '{print $$3}'))
+	$(eval H5PY_VERSION := $(shell poetry show h5py --no-ansi --no-dev | grep version | awk '{print $$3}'))
+	$(eval PYARROW_VERSION := $(shell poetry show pyarrow --no-ansi --no-dev | grep version | awk '{print $$3}'))
+	@conda install -y tokenizers==$(TOKENIZERS_VERSION) xgboost==$(XGBOOST_VERSION) lightgbm==$(LIGHTGBM_VERSION) h5py==$(H5PY_VERSION) pyarrow==$(PYARROW_VERSION)
+endif
+else
+	@echo 'Not inside a conda environment or conda not installed, this is a requirement for Apple arm processors'
+	@echo 'See https://github.com/conda-forge/miniforge/'
+	@exit 1
+endif
+endif
+endif
 ifdef IN_VENV
 	$(POETRY) install
 else
