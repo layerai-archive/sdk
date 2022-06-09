@@ -115,6 +115,7 @@ def _model_wrapper(
             with LayerClient(config.client, logger).init() as client:
                 progress_tracker = LocalExecutionRunProgressTracker(
                     config=config,
+                    project_name=current_project_full_name_.project_name,
                     account_name=current_project_full_name_.account_name,
                 )
 
