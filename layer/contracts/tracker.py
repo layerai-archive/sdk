@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Union
 
 from yarl import URL
 
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 
 
 class ResourceTransferState:

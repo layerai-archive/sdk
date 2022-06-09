@@ -25,7 +25,7 @@ from layer.clients.layer import LayerClient
 from layer.config import DEFAULT_PATH, DEFAULT_URL, ConfigManager
 from layer.config.config import Config
 from layer.context import Context
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model

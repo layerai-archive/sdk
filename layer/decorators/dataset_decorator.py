@@ -9,7 +9,7 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.context import Context
 from layer.contracts.assertions import Assertion
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.contracts.tracker import DatasetTransferState

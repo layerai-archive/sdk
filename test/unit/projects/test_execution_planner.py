@@ -3,7 +3,7 @@ from typing import Optional, Sequence, Type
 
 import pytest
 
-from layer.contracts.asset import AssetPath
+from layer.contracts.assets import AssetPath
 from layer.contracts.fabrics import Fabric
 from layer.contracts.runs import (
     DatasetFunctionDefinition,

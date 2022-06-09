@@ -18,7 +18,7 @@ from layer.config import DEFAULT_FUNC_PATH
 from layer.exceptions.exceptions import LayerClientException
 
 from .accounts import Account
-from .assets import AssetPath, AssetType
+from .asset import AssetPath, AssetType
 from .fabrics import Fabric
 
 

@@ -49,7 +49,7 @@ from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket
 from pyarrow import flight
 
 from layer.config import ClientConfig
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.datasets import (
     Dataset,
     DatasetBuild,
