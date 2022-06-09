@@ -5,6 +5,7 @@ import pytest
 
 from layer.contracts.asset import AssetPath
 from layer.contracts.fabrics import Fabric
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import (
     DatasetFunctionDefinition,
     FunctionDefinition,
@@ -20,6 +21,9 @@ from layer.projects.execution_planner import (
     drop_independent_entities,
 )
 from layer.settings import LayerSettings
+
+
+TEST_PROJECT_FULL_NAME = ProjectFullName(project_name="test", account_name="test-acc")
 
 
 class TestProjectExecutionPlanner:
@@ -70,27 +74,27 @@ class TestProjectExecutionPlanner:
 
         assert drop_independent_entities(
             funcs,
-            AssetPath.parse("test/datasets/ds1"),
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds1"),
         ) == [ds1]
         assert drop_independent_entities(
             funcs,
-            AssetPath.parse("test/datasets/ds3"),
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds3"),
         ) == [ds2, ds3]
         assert drop_independent_entities(
             funcs,
-            AssetPath.parse("test/models/m3"),
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m3"),
         ) == [m3]
         assert drop_independent_entities(
             funcs,
-            AssetPath.parse("test/models/m2"),
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m2"),
         ) == [ds1, m2, m3]
         assert drop_independent_entities(
             funcs,
-            AssetPath.parse("test/models/m1"),
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m1"),
         ) == [ds2, ds1, m2, m3, m1]
         assert drop_independent_entities(
             funcs,
-            AssetPath.parse("test/models/m4"),
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m4"),
         ) == [m3, m4]
 
     def test_drop_independent_entities_no_dependencies(self) -> None:
@@ -100,11 +104,15 @@ class TestProjectExecutionPlanner:
         funcs = [ds1, m1]
 
         assert drop_independent_entities(
-            funcs, AssetPath.parse("test/datasets/ds1"), keep_dependencies=False
+            funcs,
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds1"),
+            keep_dependencies=False,
         ) == [ds1.drop_dependencies()]
 
         assert drop_independent_entities(
-            funcs, AssetPath.parse("test/models/m1"), keep_dependencies=False
+            funcs,
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m1"),
+            keep_dependencies=False,
         ) == [m1.drop_dependencies()]
 
     def test_build_execution_plan_linear(self) -> None:
@@ -124,9 +132,15 @@ class TestProjectExecutionPlanner:
         assert ops[4].sequential.model_train.model_version_id.value == str(
             r1.definitions[4].version_id
         )
-        assert ops[1].sequential.dataset_build.dependency == ["test/datasets/ds1"]
-        assert ops[3].sequential.model_train.dependency == ["test/datasets/ds3"]
-        assert ops[4].sequential.model_train.dependency == ["test/models/m1"]
+        assert ops[1].sequential.dataset_build.dependency == [
+            f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds1"
+        ]
+        assert ops[3].sequential.model_train.dependency == [
+            f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds3"
+        ]
+        assert ops[4].sequential.model_train.dependency == [
+            f"{TEST_PROJECT_FULL_NAME.path}/models/m1"
+        ]
 
     def test_build_execution_plan_parallel(self) -> None:
         r1 = self._create_mock_run_parallel()
@@ -153,7 +167,7 @@ class TestProjectExecutionPlanner:
         r2 = r1.with_definitions(
             drop_independent_entities(
                 r1.definitions,
-                AssetPath.parse("test/datasets/ds2"),
+                AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds2"),
                 keep_dependencies=False,
             )
         )
@@ -175,7 +189,7 @@ class TestProjectExecutionPlanner:
         m1 = self._create_mock_model("m1", ["datasets/ds3"])
         m2 = self._create_mock_model("m2", ["models/m1"])
 
-        return Run(uuid.uuid4(), "test", definitions=[ds1, ds2, ds3, m1, m2])
+        return Run(TEST_PROJECT_FULL_NAME, definitions=[ds1, ds2, ds3, m1, m2])
 
     def _create_mock_run_parallel(self) -> Run:
         ds1 = self._create_mock_dataset("ds1")
@@ -184,7 +198,7 @@ class TestProjectExecutionPlanner:
         m1 = self._create_mock_model("m1")
         m2 = self._create_mock_model("m2")
 
-        return Run(uuid.uuid4(), "test", definitions=[ds1, ds2, ds3, m1, m2])
+        return Run(TEST_PROJECT_FULL_NAME, definitions=[ds1, ds2, ds3, m1, m2])
 
     def _create_mock_run_mixed(self) -> Run:
         ds1 = self._create_mock_dataset("ds1", project_name="other-project")
@@ -195,13 +209,13 @@ class TestProjectExecutionPlanner:
         ds4 = self._create_mock_dataset("ds4", ["datasets/ds2"])
         m1 = self._create_mock_model("m1", ["datasets/ds3", "datasets/ds4"])
 
-        return Run(uuid.uuid4(), "test", definitions=[ds1, ds2, ds3, ds4, m1])
+        return Run(TEST_PROJECT_FULL_NAME, definitions=[ds1, ds2, ds3, ds4, m1])
 
     @staticmethod
     def _create_mock_dataset(
         name: str,
         dependencies: Optional[Sequence[str]] = None,
-        project_name: str = "test",
+        project_name: str = TEST_PROJECT_FULL_NAME.project_name,
     ) -> FunctionDefinition:
         return TestProjectExecutionPlanner._create_mock_entity(
             DatasetFunctionDefinition, name, dependencies, project_name
@@ -211,7 +225,7 @@ class TestProjectExecutionPlanner:
     def _create_mock_model(
         name: str,
         dependencies: Optional[Sequence[str]] = None,
-        project_name: str = "test",
+        project_name: str = TEST_PROJECT_FULL_NAME.project_name,
     ) -> FunctionDefinition:
         return TestProjectExecutionPlanner._create_mock_entity(
             ModelFunctionDefinition, name, dependencies, project_name
@@ -222,17 +236,13 @@ class TestProjectExecutionPlanner:
         entity_type: Type[FunctionDefinition],
         name: str,
         dependencies: Optional[Sequence[str]] = None,
-        project_name: str = "test",
+        project_name: str = TEST_PROJECT_FULL_NAME.project_name,
+        account_name: str = TEST_PROJECT_FULL_NAME.account_name,
     ) -> FunctionDefinition:
         if dependencies is None:
             dependencies = []
 
-        dependency_paths = []
-        for dependency in dependencies:
-            path = AssetPath.parse(dependency)
-            if path.project_name is None:
-                path = path.with_project_name(project_name)
-            dependency_paths.append(path)
+        dependency_paths = [AssetPath.parse(d) for d in dependencies]
 
         def func() -> None:
             pass
@@ -244,4 +254,9 @@ class TestProjectExecutionPlanner:
 
         func.layer = settings  # type: ignore
 
-        return entity_type(func, project_name, version_id=uuid.uuid4())
+        return entity_type(
+            func,
+            project_name=project_name,
+            account_name=account_name,
+            version_id=uuid.uuid4(),
+        )

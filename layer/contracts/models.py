@@ -13,6 +13,7 @@ from layer.flavors.base import ModelFlavor, ModelRuntimeObjects
 from layer.types import ModelObject
 
 from .asset import AssetPath, AssetType, BaseAsset
+from .project_full_name import ProjectFullName
 
 
 @dataclass(frozen=True)
@@ -142,8 +143,8 @@ class Model(BaseAsset):
         new_model._set_dependencies(dependencies)  # pylint: disable=protected-access
         return new_model
 
-    def with_project_name(self, project_name: str) -> "Model":
-        new_asset = super().with_project_name(project_name=project_name)
+    def with_project_full_name(self, project_full_name: ProjectFullName) -> "Model":
+        new_asset = super().with_project_full_name(project_full_name)
         new_model = copy.deepcopy(self)
         new_model._update_with(new_asset)  # pylint: disable=protected-access
         return new_model

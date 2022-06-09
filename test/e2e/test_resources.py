@@ -1,7 +1,6 @@
 import filecmp
 import os.path
 import tempfile
-import uuid
 
 import pandas as pd
 
@@ -20,8 +19,11 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
     def func() -> None:
         return None
 
-    definition = ModelFunctionDefinition(func, initialized_project.name)
-    run = Run(uuid.uuid4(), initialized_project.name).with_definitions([definition])
+    project_full_name = initialized_project.full_name
+    definition = ModelFunctionDefinition(
+        func, project_full_name.project_name, project_full_name.account_name
+    )
+    run = Run(project_full_name).with_definitions([definition])
     resource_manager = ResourceManager(asserter.client)
 
     resource_manager.wait_resource_upload(run, RunProgressTracker())

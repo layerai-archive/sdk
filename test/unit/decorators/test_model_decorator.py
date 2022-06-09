@@ -9,7 +9,7 @@ from layer.contracts.asset import AssetType
 from layer.decorators.model_decorator import model
 from layer.decorators.pip_requirements_decorator import pip_requirements
 from layer.exceptions.exceptions import ProjectInitializationException
-from layer.global_context import set_current_project_name
+from layer.global_context import reset_to
 from test.unit.decorators.util import project_client_mock
 
 
@@ -36,7 +36,7 @@ class TestModelDecorator:
         assert func.layer.get_asset_type() == AssetType.MODEL
 
     def test_model_decorator_given_no_current_project_set_raise_exception(self) -> None:
-        set_current_project_name(None)
+        reset_to(None)
 
         func = _make_test_model_function("forest2")
 
@@ -49,7 +49,7 @@ class TestModelDecorator:
     @pytest.mark.parametrize(("name",), [("model1",)])
     def test_model_definition_created_correctly(self, name: str) -> None:
         func = _make_test_model_function(name)
-        set_current_project_name("foo-test")
+        reset_to("acc-name/foo-test")
         with project_client_mock(), patch.object(
             func, "_train_model_locally_and_store_remotely"
         ) as mock_create_model:

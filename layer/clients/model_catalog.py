@@ -46,6 +46,7 @@ from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
 from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import ModelFunctionDefinition, ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
@@ -83,18 +84,18 @@ class ModelCatalogClient:
 
     def create_model_version(
         self,
-        project_name: str,
+        project_full_name: ProjectFullName,
         model: ModelFunctionDefinition,
         is_local: bool,
     ) -> CreateModelVersionResponse:
         """
         Given a model metadata it makes a request to the backend
         and creates a corresponding entity.
-        :param project_name: the project name of the model
+        :param project_full_name: the project full name of the model
         :param model: the structured of the parsed entity
         :return: the created model version entity
         """
-        model_path = f"{project_name}/models/{model.name}"
+        model_path = f"{project_full_name.path}/models/{model.name}"
         self._logger.debug(
             f"Creating model version for the following model: {model_path}"
         )

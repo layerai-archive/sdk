@@ -8,6 +8,7 @@ from typing import Any, Optional, Sequence, Union
 from yarl import URL
 
 from layer.cache.cache import Cache
+from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import LayerClientException
 
 
@@ -25,6 +26,7 @@ class AssetType(Enum):
 class AssetPath:
     entity_name: str
     asset_type: AssetType
+    # TODO rename to 'account_name'
     org_name: Optional[str] = None
     project_name: Optional[str] = None
     entity_version: Optional[str] = None
@@ -79,6 +81,9 @@ class AssetPath:
             org_name=optional_org,
         )
 
+    def is_relative(self) -> bool:
+        return self.org_name is None or self.project_name is None
+
     def has_project(self) -> bool:
         return self.project_name is not None and self.project_name != ""
 
@@ -100,11 +105,12 @@ class AssetPath:
 
         return p
 
-    def with_project_name(self, project_name: str) -> "AssetPath":
-        return replace(self, project_name=project_name)
-
-    def with_org_name(self, org_name: str) -> "AssetPath":
-        return replace(self, org_name=org_name)
+    def with_project_full_name(self, project_full_name: ProjectFullName) -> "AssetPath":
+        return replace(
+            self,
+            project_name=project_full_name.project_name,
+            org_name=project_full_name.account_name,
+        )
 
     def url(self, base_url: URL) -> URL:
         if self.org_name is None:
@@ -172,8 +178,8 @@ class BaseAsset:
     def project_name(self) -> Optional[str]:
         return self._path.project_name
 
-    def with_project_name(self, project_name: str) -> "BaseAsset":
-        new_path = self._path.with_project_name(project_name=project_name)
+    def with_project_full_name(self, project_full_name: ProjectFullName) -> "BaseAsset":
+        new_path = self._path.with_project_full_name(project_full_name)
         return BaseAsset(
             path=new_path,
             id=self.id,

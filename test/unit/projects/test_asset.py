@@ -3,6 +3,7 @@ from typing import Optional
 import pytest
 
 from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.project_full_name import ProjectFullName
 
 
 class TestCompositeEntityName:
@@ -212,18 +213,29 @@ class TestCompositeEntityName:
 
         assert result == expected
 
-    def test_composite_with_project_name(self) -> None:
+    def test_composite_with_project_full_name(self) -> None:
         src = AssetPath(
             entity_name="test_entity",
             asset_type=AssetType.DATASET,
             project_name="The_Project",
             org_name="The-org",
-            entity_version=12,
+            entity_version="12",
             entity_build=8,
         )
-        result = src.with_project_name("new-project-name")
+        result = src.with_project_full_name(
+            ProjectFullName(
+                project_name="new-project-name",
+                account_name="new-account-name",
+            )
+        )
 
+        assert result.org_name == "new-account-name"
         assert result.project_name == "new-project-name"
 
-        src_back = result.with_project_name("The_Project")
+        src_back = result.with_project_full_name(
+            ProjectFullName(
+                project_name="The_Project",
+                account_name="The-org",
+            )
+        )
         assert src == src_back

@@ -5,6 +5,7 @@ from typing import Any, Iterator
 import pytest
 
 from layer import global_context
+from layer.contracts.project_full_name import ProjectFullName
 
 
 @pytest.fixture()
@@ -14,9 +15,12 @@ def tmp_dir(tmpdir: Any) -> Path:
 
 @pytest.fixture(autouse=True)
 def test_project_name(request: pytest.FixtureRequest) -> Iterator[str]:
-    test_project_name = _pseudo_random_project_name(request)
-    global_context.reset_to(test_project_name)
-    yield test_project_name
+    project_full_name = ProjectFullName(
+        account_name="test-acc-from-conftest",
+        project_name=_pseudo_random_project_name(request),
+    )
+    global_context.reset_to(project_full_name)
+    yield project_full_name.project_name
     global_context.reset_to(None)
 
 
