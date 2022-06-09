@@ -16,7 +16,6 @@ from typing import (
 )
 from uuid import UUID
 
-from layerapi.api.ids_pb2 import ModelTrainId
 from yarl import URL
 
 from layer.cache.cache import Cache
@@ -376,10 +375,6 @@ def _load_model_runtime_objects(
         no_cache=no_cache,
     )
     model.set_model_runtime_objects(model_runtime_objects)
-    parameters = client.model_catalog.get_model_train_parameters(
-        ModelTrainId(value=str(model.id)),
-    )
-    model.set_parameters(parameters)
     return model
 
 
@@ -466,7 +461,6 @@ def start_train(
     import layer
 
     with layer.start_train(name="model_name", version=2) as train:
-        train.log_parameter("param_name", "param_val")
         train.register_input(x_train)
         train.register_output(y_train)
         trained_model = .....
