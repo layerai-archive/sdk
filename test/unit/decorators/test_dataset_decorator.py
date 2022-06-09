@@ -22,7 +22,7 @@ from layer.exceptions.exceptions import (
     LayerClientResourceNotFoundException,
     ProjectInitializationException,
 )
-from layer.global_context import reset_to, set_current_project_name, set_default_fabric
+from layer.global_context import reset_to, set_default_fabric
 from test.unit.decorators.util import project_client_mock
 
 
@@ -64,7 +64,7 @@ class TestDatasetDecorator:
     def test_dataset_decorator_given_no_current_project_set_raise_exception(
         self,
     ) -> None:
-        set_current_project_name(None)
+        reset_to(None)
 
         @dataset("foo1")
         def create_my_dataset() -> pd.DataFrame:
@@ -94,7 +94,7 @@ class TestDatasetDecorator:
                 ProjectInitializationException,
                 match="Project 'acc-name/foo-test' does not exist.",
             ):
-                reset_to(project_name="foo-test", account_name="acc-name")
+                reset_to("acc-name/foo-test")
                 create_my_dataset()
 
     @pytest.mark.parametrize(("name",), [("foo1",), ("foo2",)])

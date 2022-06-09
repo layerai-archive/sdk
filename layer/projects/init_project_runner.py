@@ -78,10 +78,7 @@ class InitProjectRunner:
 
             self._update_readme(self._project_full_name, layer_client)
 
-        global_context.reset_to(
-            project_name=self._project_full_name.project_name,
-            account_name=self._project_full_name.account_name,
-        )
+        global_context.reset_to(self._project_full_name)
         if fabric:
             set_default_fabric(fabric)
         if pip_packages:

@@ -7,8 +7,8 @@ class ProjectFullName:
     Represents the project name and its owning account name
     """
 
-    project_name: str
     account_name: str
+    project_name: str
 
     @property
     def path(self) -> str:

@@ -526,10 +526,7 @@ def init(
 
     project_full_name = _get_project_full_name(layer_config, project_name)
 
-    reset_to(
-        project_name=project_full_name.project_name,
-        account_name=project_full_name.account_name,
-    )
+    reset_to(project_full_name)
 
     init_project_runner = InitProjectRunner(project_full_name, logger=logger)
     fabric_to_set = Fabric(fabric) if fabric else None
