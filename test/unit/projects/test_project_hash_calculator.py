@@ -14,8 +14,12 @@ def test_given_same_function_when_hash_calculated_then_hash_equal():
     def func2():
         return pandas.DataFrame({})
 
-    def_1 = ModelFunctionDefinition(func=func1, project_name="project-name")
-    def_2 = ModelFunctionDefinition(func=func1, project_name="project-name")
+    def_1 = ModelFunctionDefinition(
+        func=func1, project_name="project-name", account_name="acc-name"
+    )
+    def_2 = ModelFunctionDefinition(
+        func=func1, project_name="project-name", account_name="acc-name"
+    )
 
     # when
     first_hash = calculate_hash_by_definitions([def_1, def_1])
@@ -38,8 +42,12 @@ def test_given_different_function_when_hash_calculated_then_hash_different():
     def func3():
         return pandas.DataFrame({})
 
-    def_1 = ModelFunctionDefinition(func=func1, project_name="project-name")
-    def_2 = ModelFunctionDefinition(func=func2, project_name="project-name")
+    def_1 = ModelFunctionDefinition(
+        func=func1, project_name="project-name", account_name="acc-name"
+    )
+    def_2 = ModelFunctionDefinition(
+        func=func2, project_name="project-name", account_name="acc-name"
+    )
 
     # when
     first_hash = calculate_hash_by_definitions([def_1, def_1])

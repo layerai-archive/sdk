@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 import pandas as pd
 from layerapi.api.ids_pb2 import ModelTrainId
@@ -45,7 +45,6 @@ class Model(BaseAsset):
         description: str = "",
         flavor: Optional[ModelFlavor] = None,
         storage_config: Optional[TrainStorageConfiguration] = None,
-        parameters: Optional[Dict[str, Any]] = None,
         model_runtime_objects: Optional[ModelRuntimeObjects] = None,
     ):
         super().__init__(
@@ -57,22 +56,11 @@ class Model(BaseAsset):
         self._description = description
         self._flavor = flavor
         self._storage_config = storage_config
-        self.parameters = parameters or {}
         self._model_runtime_objects = model_runtime_objects
 
     @property
     def asset_type(self) -> AssetType:
         return AssetType.MODEL
-
-    def set_parameters(self, parameters: Dict[str, Any]) -> "Model":
-        self.parameters = parameters
-        return self
-
-    def set_model_runtime_objects(
-        self, model_runtime_objects: ModelRuntimeObjects
-    ) -> "Model":
-        self._model_runtime_objects = model_runtime_objects
-        return self
 
     @property
     def version_id(self) -> uuid.UUID:
@@ -118,23 +106,8 @@ class Model(BaseAsset):
             raise Exception("No predict function provided")
         return self._model_runtime_objects.prediction_function(input_df)
 
-    def get_parameters(self) -> Dict[str, Any]:
-        """
-        Returns a dictionary of the parameters of the model.
-
-        :return: The mapping from a parameter that defines the model to the value of that parameter.
-
-        You could enter this in a Jupyter Notebook:
-
-        .. code-block:: python
-
-            model = layer.get_model("survival_model")
-            parameters = model.get_parameters()
-            parameters
-
-        .. code-block:: python
-
-            {'test_size': '0.2', 'n_estimators': '100'}
-
-        """
-        return self.parameters
+    def set_model_runtime_objects(
+        self, model_runtime_objects: ModelRuntimeObjects
+    ) -> "Model":
+        self._model_runtime_objects = model_runtime_objects
+        return self

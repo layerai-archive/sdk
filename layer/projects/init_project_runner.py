@@ -1,12 +1,13 @@
 import os
 from logging import Logger
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from layer import global_context
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.contracts.fabrics import Fabric
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project, ProjectLoader
 from layer.global_context import (
     set_default_fabric,
@@ -24,12 +25,12 @@ class InitProjectRunner:
 
     def __init__(
         self,
-        project_name: str,
-        project_root_path: Optional[str] = None,
+        project_full_name: ProjectFullName,
+        project_root_path: Optional[Union[str, Path]] = None,
         logger: Optional[Logger] = None,
         config_manager: Optional[ConfigManager] = None,
     ):
-        self._project_name = project_name
+        self._project_full_name = project_full_name
         self._project_root_path = project_root_path
         self._config_manager = (
             config_manager if config_manager is not None else ConfigManager()
@@ -42,7 +43,9 @@ class InitProjectRunner:
         login_config = asyncio_run_in_thread(self._config_manager.refresh())
         return login_config
 
-    def _update_readme(self, project_name: str, layer_client: LayerClient) -> None:
+    def _update_readme(
+        self, project_full_name: ProjectFullName, layer_client: LayerClient
+    ) -> None:
         readme_discover_path = self._project_root_path
         if not readme_discover_path:
             # We expect README file in the running directory unless told otherwise
@@ -52,7 +55,9 @@ class InitProjectRunner:
         readme_contents = ProjectLoader.load_project_readme(project_root_path)
         if readme_contents:
             layer_client.project_service_client.update_project_readme(
-                project_name=project_name, readme=readme_contents
+                # TODO Use project path
+                project_name=project_full_name.project_name,
+                readme=readme_contents,
             )
 
     def setup_project(
@@ -68,12 +73,12 @@ class InitProjectRunner:
 
         with layer_client.init() as initialized_client:
             project = get_or_create_remote_project(
-                initialized_client, self._project_name
+                initialized_client, self._project_full_name
             )
 
-            self._update_readme(self._project_name, layer_client)
+            self._update_readme(self._project_full_name, layer_client)
 
-        global_context.reset_to(self._project_name)
+        global_context.reset_to(self._project_full_name)
         if fabric:
             set_default_fabric(fabric)
         if pip_packages:

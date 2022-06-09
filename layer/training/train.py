@@ -1,6 +1,6 @@
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from layerapi.api.ids_pb2 import ModelTrainId
@@ -67,85 +67,6 @@ class Train(BaseTrain):
         assert self.__train_index
         return self.__train_index
 
-    def log_parameter(self, name: str, value: Any) -> None:
-        """
-        Logs a parameter under the current train during model training.
-
-        :param name: Name of the parameter.
-        :param value: Value to log, stored as a string by calling `str()` on it.
-
-        .. code-block:: python
-
-            def train_model(train: Train, tf: Featureset("transaction_features")):
-                # Split dataset into training set and test set
-                test_size = 0.2
-                train.log_parameter("test_size", test_size)
-
-        """
-        assert self.__train_id
-        self.__layer_client.model_catalog.log_parameter(
-            train_id=self.__train_id, name=str(name), value=str(value)
-        )
-
-    def log_parameters(self, parameters: Dict[str, Any]) -> None:
-        """
-        Logs a batch of parameters under the current train during model training.
-
-        :param parameters: A dictionary containing all the parameter keys and values. Values are stored as strings by calling str() on each one.
-
-        .. code-block:: python
-
-            def train_model(train: Train, tf: Featureset("transaction_features")):
-                parameters = { "test_size" : 0.2, "iteration_count": 3}
-                train.log_parameters(parameters)
-
-        """
-        assert self.__train_id
-        parameters = {str(x): str(y) for x, y in parameters.items()}
-        self.__layer_client.model_catalog.log_parameters(
-            train_id=self.__train_id, parameters=parameters
-        )
-
-    def get_parameter(self, name: str) -> Optional[Any]:
-        """
-        Retrieves a training parameter to use during model training.
-
-        :param name: Name of the parameter
-        :return: Layer attempts to parse the stored stringified parameter value as a number first, otherwise returned as a string.
-
-        .. code-block:: python
-
-            def train_model(train: Train, tf: Featureset("transaction_features")):
-                estimators = train.get_parameter("n_estimators")
-                max_depth = train.get_parameter("max_depth")
-                max_samples = train.get_parameter("max_samples")
-
-        """
-        assert self.__train_id
-        return self.get_parameters().get(name, None)
-
-    def get_parameters(self) -> Dict[str, Any]:
-        """
-        Retrieves all the training parameters to use during model training.
-
-        :return: A dictionary containing all the parameter keys and values.
-
-        .. code-block:: python
-
-            def train_model(train: Train, tf: Featureset("transaction_features")):
-                # Return previously logged parameters.
-                parameters = train.get_parameters()
-
-        """
-        assert self.__train_id
-        params = self.__layer_client.model_catalog.get_model_train_parameters(
-            train_id=self.__train_id
-        )
-        return {
-            param_name: self.__parse_parameter(param_val)
-            for param_name, param_val in params.items()
-        }
-
     def save_model(
         self,
         model_object: ModelObject,
@@ -173,17 +94,6 @@ class Train(BaseTrain):
         self.__layer_client.model_catalog.save_model_object(
             model, model_object, tracker=tracker
         )
-
-    def __parse_parameter(self, value: str) -> Any:
-        try:
-            return int(value)
-        except ValueError:
-            pass
-        try:
-            return float(value)
-        except ValueError:
-            pass
-        return value
 
     def __start_train(self) -> None:
         if self.__train_id is None:

@@ -16,7 +16,6 @@ from typing import (
 )
 from uuid import UUID
 
-from layerapi.api.ids_pb2 import ModelTrainId
 from yarl import URL
 
 from layer.cache.cache import Cache
@@ -29,6 +28,7 @@ from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.contracts.runs import Run
 from layer.contracts.tracker import ResourceTransferState
@@ -40,9 +40,11 @@ from layer.exceptions.exceptions import (
     UserWithoutAccountError,
 )
 from layer.global_context import (
+    current_account_name,
     current_project_name,
     get_active_context,
     reset_active_context,
+    reset_to,
     set_active_context,
 )
 from layer.logged_data.log_data_runner import LogDataRunner
@@ -232,7 +234,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
     """
     config: Config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
     asset_path = AssetPath.parse(name, expected_asset_type=AssetType.DATASET)
-    asset_path = _ensure_asset_path_has_project_name(asset_path)
+    asset_path = _ensure_asset_path_is_absolute(asset_path)
 
     def fetch_dataset() -> "pandas.DataFrame":
         context = get_active_context()
@@ -311,7 +313,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
     """
     config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
     asset_path = AssetPath.parse(name, expected_asset_type=AssetType.MODEL)
-    asset_path = _ensure_asset_path_has_project_name(asset_path)
+    asset_path = _ensure_asset_path_is_absolute(asset_path)
     context = get_active_context()
 
     with LayerClient(config.client, logger).init() as client:
@@ -374,10 +376,6 @@ def _load_model_runtime_objects(
         no_cache=no_cache,
     )
     model.set_model_runtime_objects(model_runtime_objects)
-    parameters = client.model_catalog.get_model_train_parameters(
-        ModelTrainId(value=str(model.id)),
-    )
-    model.set_parameters(parameters)
     return model
 
 
@@ -427,19 +425,26 @@ def _ui_progress_with_tracker(
     return result
 
 
-def _ensure_asset_path_has_project_name(
-    composite: AssetPath,
+def _ensure_asset_path_is_absolute(
+    path: AssetPath,
 ) -> AssetPath:
-    if composite.has_project():
-        return composite
-    elif not current_project_name():
+    if not path.is_relative():
+        return path
+    project_name = path.project_name if path.has_project() else current_project_name()
+    account_name = (
+        path.org_name if path.org_name is not None else current_account_name()
+    )
+
+    if not project_name or not account_name:
         raise ProjectInitializationException(
-            "Please specify the project name globally with layer.init('project-name')"
-            "or have it in the asset full name like 'the-project/models/the-model-name'"
+            "Please specify the project full name globally with layer.init('account-name/project-name')"
+            "or have it in the asset full name like 'the-account/the-project/models/the-model-name'"
         )
 
-    composite = composite.with_project_name(str(current_project_name()))
-    return composite
+    path = path.with_project_full_name(
+        ProjectFullName(account_name=account_name, project_name=project_name)
+    )
+    return path
 
 
 @contextmanager
@@ -457,7 +462,6 @@ def start_train(
     import layer
 
     with layer.start_train(name="model_name", version=2) as train:
-        train.log_parameter("param_name", "param_val")
         train.register_input(x_train)
         train.register_output(y_train)
         trained_model = .....
@@ -513,7 +517,13 @@ def init(
         raise ValueError(
             "either pip_requirements_file or pip_packages should be provided, not both"
         )
-    init_project_runner = InitProjectRunner(project_name, logger=logger)
+    layer_config = asyncio_run_in_thread(ConfigManager().refresh())
+
+    project_full_name = _get_project_full_name(layer_config, project_name)
+
+    reset_to(project_full_name)
+
+    init_project_runner = InitProjectRunner(project_full_name, logger=logger)
     fabric_to_set = Fabric(fabric) if fabric else None
     return init_project_runner.setup_project(
         fabric=fabric_to_set,
@@ -556,18 +566,46 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     """
     _ensure_all_functions_are_decorated(functions)
 
-    project_name = get_current_project_name()
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
+
+    project_full_name = _get_project_full_name(layer_config, get_current_project_name())
     project_runner = ProjectRunner(
         config=layer_config,
         progress_tracker_factory=RemoteExecutionRunProgressTracker,
     )
-    run = project_runner.with_functions(project_name, functions)
+    run = project_runner.with_functions(project_full_name, functions)
     run = project_runner.run(run, debug=debug)
 
     _make_notebook_links_open_in_new_tab()
 
     return run
+
+
+def _get_project_full_name(
+    layer_config: Config, user_input_project_name: str
+) -> ProjectFullName:
+    """
+    Will first try to extract account_name/project_name from :user_input_project_name
+
+    If no account name can be extracted, will try to get it from global context.
+
+    If that too fails, will fetch the personal account.
+    """
+    parts = user_input_project_name.split("/")
+    account_name: Optional[str]
+    project_name: str
+    if len(parts) == 1:
+        project_name = user_input_project_name
+        with LayerClient(layer_config.client, logger).init() as client:
+            account_name = client.account.get_my_account().name
+    else:
+        account_name = parts[0]
+        project_name = parts[1]
+
+    return ProjectFullName(
+        project_name=project_name,
+        account_name=account_name,
+    )
 
 
 # Normally, Colab/IPython opens links as an IFrame. One can open them as new tabs through the right-click menu or using shift+click.

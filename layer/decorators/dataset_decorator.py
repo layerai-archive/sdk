@@ -18,7 +18,7 @@ from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
 from layer.projects.project_runner import register_dataset_function
 from layer.projects.utils import (
-    get_current_project_name,
+    get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
@@ -137,18 +137,19 @@ def _dataset_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             self.__wrapped__.layer.validate()
-            current_project_name_ = get_current_project_name()
+            current_project_full_name_ = get_current_project_full_name()
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
-                account_name = client.account.get_my_account().name
                 progress_tracker = LocalExecutionRunProgressTracker(
                     config=config,
-                    project_name=current_project_name_,
-                    account_name=account_name,
+                    project_name=current_project_full_name_.project_name,
+                    account_name=current_project_full_name_.account_name,
                 )
                 with progress_tracker.track() as tracker:
                     dataset_definition = DatasetFunctionDefinition(
-                        self.__wrapped__, current_project_name_
+                        self.__wrapped__,
+                        project_name=current_project_full_name_.project_name,
+                        account_name=current_project_full_name_.account_name,
                     )
                     result = _build_dataset_locally_and_store_remotely(
                         lambda: super(  # pylint: disable=super-with-arguments
@@ -175,20 +176,13 @@ def _build_dataset_locally_and_store_remotely(
 ) -> Any:
     tracker.add_build(layer.get_asset_name())  # type: ignore
 
-    current_project_uuid = verify_project_exists_and_retrieve_project_id(
-        client, get_current_project_name()
-    )
-
-    dataset = register_dataset_function(
-        client, current_project_uuid, dataset, True, tracker
-    )
+    dataset = register_dataset_function(client, dataset, True, tracker)
     tracker.mark_dataset_building(layer.get_asset_name())  # type: ignore
 
     (result, build_uuid) = _build_locally_update_remotely(
         client,
         building_func,
         dataset,
-        current_project_uuid,
         tracker,
         assertions,
     )
@@ -211,12 +205,15 @@ def _build_locally_update_remotely(
     client: LayerClient,
     function_that_builds_dataset: Callable[..., Any],
     dataset: DatasetFunctionDefinition,
-    current_project_uuid: UUID,
     tracker: LocalExecutionRunProgressTracker,
     assertions: List[Assertion],
 ) -> Tuple[Any, UUID]:
     try:
         with Context() as context:
+            # TODO pass path to API instead
+            current_project_uuid = verify_project_exists_and_retrieve_project_id(
+                client, dataset.project_full_name
+            )
             initiate_build_response = client.data_catalog.initiate_build(
                 dataset,
                 current_project_uuid,

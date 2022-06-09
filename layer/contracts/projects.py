@@ -11,6 +11,7 @@ from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layer.exceptions.exceptions import ProjectException
 
 from .accounts import Account
+from .project_full_name import ProjectFullName
 
 
 logger = logging.getLogger()
@@ -34,14 +35,17 @@ class Project:
     """
 
     name: str
-    account: Optional[Account] = None
-    _id: Optional[uuid.UUID] = None
+    id: uuid.UUID
+    account: Account
 
     @property
-    def id(self) -> uuid.UUID:
-        if self._id is None:
-            raise ProjectException("project has no id defined")
-        return self._id
+    def full_name(self) -> ProjectFullName:
+        if self.account is None:
+            raise ProjectException("project has no account defined")
+        return ProjectFullName(
+            project_name=self.name,
+            account_name=self.account.name,
+        )
 
     def with_name(self, name: str) -> "Project":
         """
@@ -53,19 +57,10 @@ class Project:
         """
         :return: A new object that has a new id but all other fields are the same.
         """
-        return replace(self, _id=project_id)
+        return replace(self, id=project_id)
 
     def with_account(self, account: Account) -> "Project":
         return replace(self, account=account)
-
-    def with_path(self, path: Path) -> "Project":
-        return replace(self, path=path)
-
-    def with_files_hash(self, new_hash: str) -> "Project":
-        return replace(self, project_files_hash=new_hash)
-
-    def with_readme(self, readme: Optional[str]) -> "Project":
-        return replace(self, readme=readme)
 
     def __str__(self) -> str:
         if self.account:

@@ -103,11 +103,10 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
         return asset
 
     def _get_url(self, asset_type: AssetType, name: str) -> URL:
-        assert self._run.account
         return AssetPath(
             asset_name=name,
             asset_type=asset_type,
-            org_name=self._run.account.name,
+            org_name=self._run.account_name,
             project_name=self._run.project_name,
         ).url(self._config.url)
 

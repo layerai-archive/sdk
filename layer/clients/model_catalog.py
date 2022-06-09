@@ -3,7 +3,7 @@ import warnings
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import Dict, Iterator, Optional
+from typing import Iterator, Optional
 
 from layerapi.api.entity.model_pb2 import Model as PBModel
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
@@ -21,15 +21,12 @@ from layerapi.api.service.modelcatalog.model_catalog_api_pb2 import (
     CreateModelVersionResponse,
     GetModelByPathRequest,
     GetModelByPathResponse,
-    GetModelTrainParametersRequest,
     GetModelTrainRequest,
     GetModelTrainResponse,
     GetModelTrainStorageConfigurationRequest,
     GetModelVersionRequest,
     GetModelVersionResponse,
     LoadModelTrainDataByPathRequest,
-    LogModelTrainParametersRequest,
-    LogModelTrainParametersResponse,
     StartModelTrainRequest,
     StoreTrainingMetadataRequest,
     UpdateModelTrainStatusRequest,
@@ -46,6 +43,7 @@ from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
 from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import ModelFunctionDefinition
 from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
@@ -84,18 +82,18 @@ class ModelCatalogClient:
 
     def create_model_version(
         self,
-        project_name: str,
+        project_full_name: ProjectFullName,
         model: ModelFunctionDefinition,
         is_local: bool,
     ) -> CreateModelVersionResponse:
         """
         Given a model metadata it makes a request to the backend
         and creates a corresponding entity.
-        :param project_name: the project name of the model
+        :param project_full_name: the project full name of the model
         :param model: the structured of the parsed entity
         :return: the created model version entity
         """
-        model_path = f"{project_name}/models/{model.name}"
+        model_path = f"{project_full_name.path}/models/{model.name}"
         self._logger.debug(
             f"Creating model version for the following model: {model_path}"
         )
@@ -305,35 +303,6 @@ class ModelCatalogClient:
             CompleteModelTrainRequest(id=train_id, flavor=flavor),
         )
 
-    def log_parameter(self, train_id: ModelTrainId, name: str, value: str) -> None:
-        """
-        Logs given parameter to the model catalog service
-
-        :param train_id: id of the train to associate params with
-        :param name: parameter name
-        :param value: parameter value
-        """
-        self.log_parameters(train_id, {name: value})
-
-    def log_parameters(
-        self, train_id: ModelTrainId, parameters: Dict[str, str]
-    ) -> None:
-        """
-        Logs given parameters to the model catalog service
-
-        :param train_id: id of the train to associate params with
-        :param parameters: map of parameter name to its value
-        """
-        response: LogModelTrainParametersResponse = (
-            self._service.LogModelTrainParameters(
-                LogModelTrainParametersRequest(
-                    train_id=train_id,
-                    parameters=parameters,
-                ),
-            )
-        )
-        self._logger.debug(f"LogModelTrainParameters response: {str(response)}")
-
     def get_model_by_path(self, model_path: str) -> PBModel:
         response: GetModelByPathResponse = self._service.GetModelByPath(
             GetModelByPathRequest(
@@ -366,12 +335,3 @@ class ModelCatalogClient:
                 model_train_id=train_id, train_status=train_status
             )
         )
-
-    def get_model_train_parameters(self, train_id: ModelTrainId) -> Dict[str, str]:
-        parameters = self._service.GetModelTrainParameters(
-            GetModelTrainParametersRequest(model_train_id=train_id)
-        ).parameters
-        parameters_dict = {}
-        for param in parameters:
-            parameters_dict[param.name] = param.value
-        return parameters_dict

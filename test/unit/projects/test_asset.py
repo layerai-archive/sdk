@@ -3,6 +3,7 @@ from typing import Optional
 import pytest
 
 from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.project_full_name import ProjectFullName
 
 
 class TestCompositeAssetName:
@@ -134,7 +135,7 @@ class TestCompositeAssetName:
 
         assert result == expected
 
-    def test_parse_composite_name_with_missing_asset_type(self):
+    def test_parse_composite_name_with_missing_asset_type(self) -> None:
         with pytest.raises(
             ValueError, match="Please specify full path or specify asset type"
         ):
@@ -158,7 +159,7 @@ class TestCompositeAssetName:
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    asset_version=12,
+                    asset_version="12",
                 ),
                 "The-org/The_Project/datasets/test_asset:12",
             ),
@@ -168,7 +169,7 @@ class TestCompositeAssetName:
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    asset_version=12,
+                    asset_version="12",
                     asset_build=8,
                 ),
                 "The-org/The_Project/datasets/test_asset:12.8",
@@ -188,7 +189,7 @@ class TestCompositeAssetName:
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    asset_version=12,
+                    asset_version="12",
                 ),
                 "The-org/The_Project/datasets/test_asset#feature:12",
             ),
@@ -198,7 +199,7 @@ class TestCompositeAssetName:
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
-                    asset_version=12,
+                    asset_version="12",
                     asset_build=8,
                 ),
                 "The-org/The_Project/datasets/test_asset#feature:12.8",
@@ -212,18 +213,29 @@ class TestCompositeAssetName:
 
         assert result == expected
 
-    def test_composite_with_project_name(self) -> None:
+    def test_composite_with_project_full_name(self) -> None:
         src = AssetPath(
             asset_name="test_asset",
             asset_type=AssetType.DATASET,
             project_name="The_Project",
             org_name="The-org",
-            asset_version=12,
+            asset_version="12",
             asset_build=8,
         )
-        result = src.with_project_name("new-project-name")
+        result = src.with_project_full_name(
+            ProjectFullName(
+                project_name="new-project-name",
+                account_name="new-account-name",
+            )
+        )
 
+        assert result.org_name == "new-account-name"
         assert result.project_name == "new-project-name"
 
-        src_back = result.with_project_name("The_Project")
+        src_back = result.with_project_full_name(
+            ProjectFullName(
+                project_name="The_Project",
+                account_name="The-org",
+            )
+        )
         assert src == src_back
