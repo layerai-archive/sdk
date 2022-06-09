@@ -18,10 +18,6 @@ class RuntimeMemoryException(Exception):
         super().__init__(f"Memory error: {err_details}")
 
 
-class FunctionParameterException(Exception):
-    pass
-
-
 class ConfigError(Exception):
     pass
 

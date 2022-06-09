@@ -95,17 +95,6 @@ class Train(BaseTrain):
             model, model_object, tracker=tracker
         )
 
-    def __parse_parameter(self, value: str) -> Any:
-        try:
-            return int(value)
-        except ValueError:
-            pass
-        try:
-            return float(value)
-        except ValueError:
-            pass
-        return value
-
     def __start_train(self) -> None:
         if self.__train_id is None:
             self.__train_id = self.__layer_client.model_catalog.create_model_train(
