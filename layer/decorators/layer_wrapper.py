@@ -39,7 +39,7 @@ class LayerFunctionWrapper(wrapt.FunctionWrapper):
         pass
 
 
-class LayerEntityFunctionWrapper(LayerFunctionWrapper):
+class LayerAssetFunctionWrapper(LayerFunctionWrapper):
     def __init__(
         self,
         wrapped: Any,

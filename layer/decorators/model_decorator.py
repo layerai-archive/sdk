@@ -9,7 +9,7 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.contracts.assets import AssetType
 from layer.contracts.runs import ModelFunctionDefinition
-from layer.decorators.layer_wrapper import LayerEntityFunctionWrapper
+from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.projects.utils import (
     get_current_project_name,
     verify_project_exists_and_retrieve_project_id,
@@ -96,7 +96,7 @@ def _model_wrapper(
     name: str,
     dependencies: Optional[List[Union[str, Dataset, Model]]] = None,
 ) -> Any:
-    class FunctionWrapper(LayerEntityFunctionWrapper):
+    class FunctionWrapper(LayerAssetFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(
                 wrapped,

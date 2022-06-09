@@ -214,7 +214,7 @@ def _stringify_asset_cycle(asset_cycle_path: List[AssetPath]) -> str:
         return list(rotated)
 
     stringified = rotate_list(
-        [str(entity) for entity in asset_cycle_path]
+        [str(asset) for asset in asset_cycle_path]
     )  # Ensure stability within a cycle path across runs
     stringified.append(stringified[0])  # Add dependency to first node in cycle
     return " -> ".join(stringified)

@@ -14,7 +14,7 @@ from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
 from layer.decorators.assertions import get_assertion_functions_data
-from layer.decorators.layer_wrapper import LayerEntityFunctionWrapper
+from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
 from layer.projects.project_runner import register_dataset_function
 from layer.projects.utils import (
@@ -122,7 +122,7 @@ def dataset(
 def _dataset_wrapper(
     name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
 ) -> Any:
-    class DatasetFunctionWrapper(LayerEntityFunctionWrapper):
+    class DatasetFunctionWrapper(LayerAssetFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(
                 wrapped,

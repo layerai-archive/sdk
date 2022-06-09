@@ -35,7 +35,7 @@ class TestProjectExecutionPlanner:
         try:
             check_asset_dependencies([m1])
         except Exception as e:
-            pytest.fail(f"External entity dependency raised an exception: {e}")
+            pytest.fail(f"External asset dependency raised an exception: {e}")
 
     def test_build_graph_fails_if_project_contains_cycle(self) -> None:
         m1 = self._create_mock_model("m1", ["datasets/ds1"])
@@ -203,7 +203,7 @@ class TestProjectExecutionPlanner:
         dependencies: Optional[Sequence[str]] = None,
         project_name: str = "test",
     ) -> FunctionDefinition:
-        return TestProjectExecutionPlanner._create_mock_entity(
+        return TestProjectExecutionPlanner._create_mock_asset(
             DatasetFunctionDefinition, name, dependencies, project_name
         )
 
@@ -213,12 +213,12 @@ class TestProjectExecutionPlanner:
         dependencies: Optional[Sequence[str]] = None,
         project_name: str = "test",
     ) -> FunctionDefinition:
-        return TestProjectExecutionPlanner._create_mock_entity(
+        return TestProjectExecutionPlanner._create_mock_asset(
             ModelFunctionDefinition, name, dependencies, project_name
         )
 
     @staticmethod
-    def _create_mock_entity(
+    def _create_mock_asset(
         asset_type: Type[FunctionDefinition],
         name: str,
         dependencies: Optional[Sequence[str]] = None,

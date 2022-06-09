@@ -158,9 +158,9 @@ class AssetTrackerStatus(str, Enum):
     ASSERTING = "asserting"
     RESOURCE_UPLOADING = "uploading resources"
     RESULT_UPLOADING = "uploading result"
-    ASSET_DOWNLOADING = "downloading entity"
-    ASSET_FROM_CACHE = "entity from cache"
-    ASSET_LOADED = "entity loaded"
+    ASSET_DOWNLOADING = "downloading asset"
+    ASSET_FROM_CACHE = "asset from cache"
+    ASSET_LOADED = "asset loaded"
 
     @property
     def is_running(self) -> bool:
@@ -197,7 +197,7 @@ class AssetTracker:
     asset_download_transfer_state: Optional[
         Union[ResourceTransferState, DatasetTransferState]
     ] = None
-    loading_cache_entity: Optional[str] = None
+    loading_cache_asset: Optional[str] = None
     version: Optional[str] = None
     build_idx: Optional[str] = None
 

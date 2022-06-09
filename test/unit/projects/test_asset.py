@@ -5,7 +5,7 @@ import pytest
 from layer.contracts.assets import AssetPath, AssetType
 
 
-class TestCompositeEntityName:
+class TestCompositeAssetName:
     @pytest.mark.parametrize(
         "bad_format",
         [
@@ -87,20 +87,20 @@ class TestCompositeEntityName:
                 ),
             ),
             (
-                "The-org/The_Project/datasets/test_entity",
+                "The-org/The_Project/datasets/test_asset",
                 None,
                 AssetPath(
-                    asset_name="test_entity",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
                 ),
             ),
             (
-                "The-org/The_Project/datasets/test_entity#the_selected",
+                "The-org/The_Project/datasets/test_asset#the_selected",
                 None,
                 AssetPath(
-                    asset_name="test_entity",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
@@ -108,10 +108,10 @@ class TestCompositeEntityName:
                 ),
             ),
             (
-                "The-org/The_Project/datasets/test_entity:the_tag.12#the_selected",
+                "The-org/The_Project/datasets/test_asset:the_tag.12#the_selected",
                 None,
                 AssetPath(
-                    asset_name="test_entity",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
@@ -145,63 +145,63 @@ class TestCompositeEntityName:
         [
             (
                 AssetPath(
-                    asset_name="test_entity",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
                 ),
-                "The-org/The_Project/datasets/test_entity",
+                "The-org/The_Project/datasets/test_asset",
             ),
             (
                 AssetPath(
-                    asset_name="test_entity",
-                    asset_type=AssetType.DATASET,
-                    project_name="The_Project",
-                    org_name="The-org",
-                    asset_version=12,
-                ),
-                "The-org/The_Project/datasets/test_entity:12",
-            ),
-            (
-                AssetPath(
-                    asset_name="test_entity",
-                    asset_type=AssetType.DATASET,
-                    project_name="The_Project",
-                    org_name="The-org",
-                    asset_version=12,
-                    asset_build=8,
-                ),
-                "The-org/The_Project/datasets/test_entity:12.8",
-            ),
-            (
-                AssetPath(
-                    asset_name="test_entity#feature",
-                    asset_type=AssetType.DATASET,
-                    project_name="The_Project",
-                    org_name="The-org",
-                ),
-                "The-org/The_Project/datasets/test_entity#feature",
-            ),
-            (
-                AssetPath(
-                    asset_name="test_entity#feature",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
                     asset_version=12,
                 ),
-                "The-org/The_Project/datasets/test_entity#feature:12",
+                "The-org/The_Project/datasets/test_asset:12",
             ),
             (
                 AssetPath(
-                    asset_name="test_entity#feature",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
                     asset_version=12,
                     asset_build=8,
                 ),
-                "The-org/The_Project/datasets/test_entity#feature:12.8",
+                "The-org/The_Project/datasets/test_asset:12.8",
+            ),
+            (
+                AssetPath(
+                    asset_name="test_asset#feature",
+                    asset_type=AssetType.DATASET,
+                    project_name="The_Project",
+                    org_name="The-org",
+                ),
+                "The-org/The_Project/datasets/test_asset#feature",
+            ),
+            (
+                AssetPath(
+                    asset_name="test_asset#feature",
+                    asset_type=AssetType.DATASET,
+                    project_name="The_Project",
+                    org_name="The-org",
+                    asset_version=12,
+                ),
+                "The-org/The_Project/datasets/test_asset#feature:12",
+            ),
+            (
+                AssetPath(
+                    asset_name="test_asset#feature",
+                    asset_type=AssetType.DATASET,
+                    project_name="The_Project",
+                    org_name="The-org",
+                    asset_version=12,
+                    asset_build=8,
+                ),
+                "The-org/The_Project/datasets/test_asset#feature:12.8",
             ),
         ],
     )
@@ -214,7 +214,7 @@ class TestCompositeEntityName:
 
     def test_composite_with_project_name(self) -> None:
         src = AssetPath(
-            asset_name="test_entity",
+            asset_name="test_asset",
             asset_type=AssetType.DATASET,
             project_name="The_Project",
             org_name="The-org",
