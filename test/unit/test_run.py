@@ -18,7 +18,7 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
 from layer.contracts.runs import DatasetFunctionDefinition, ModelFunctionDefinition
 from layer.exceptions.exceptions import ProjectRunnerError
 from layer.projects.project_runner import ProjectRunner
-from layer.tracker.remote_execution_project_progress_tracker import (
+from layer.tracker.remote_execution_progress_tracker import (
     RemoteExecutionRunProgressTracker,
 )
 from layer.utils.grpc.interceptors import (
@@ -191,7 +191,7 @@ class TestProjectRun:
     def test_project_run_fails_when_max_active_run_exceeds(self) -> None:
         runner = ProjectRunner(
             config=MagicMock(),
-            project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
+            progress_tracker_factory=RemoteExecutionRunProgressTracker,
         )
         error = rpc_error(
             metadata=(),
@@ -216,7 +216,7 @@ class TestProjectRun:
     def test_get_user_command_returns_the_command_correctly(self) -> None:
         runner = ProjectRunner(
             config=MagicMock(),
-            project_progress_tracker_factory=RemoteExecutionRunProgressTracker,
+            progress_tracker_factory=RemoteExecutionRunProgressTracker,
         )
 
         func1: DatasetFunctionDefinition = MagicMock()

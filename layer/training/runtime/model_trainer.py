@@ -21,7 +21,7 @@ from layer.global_context import (
     set_active_context,
 )
 from layer.resource_manager import ResourceManager
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
 from .common import import_function, update_train_status
@@ -159,7 +159,7 @@ class ModelTrainer:
             ) as train:
                 context.with_train(train)
                 context.with_tracker(self.tracker)
-                context.with_entity_name(self.train_context.model_name)
+                context.with_asset_name(self.train_context.model_name)
                 self.train_context.init_or_save_context(context)
                 update_train_status(
                     self.client.model_catalog,

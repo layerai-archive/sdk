@@ -49,7 +49,7 @@ from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket
 from pyarrow import flight
 
 from layer.config import ClientConfig
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.datasets import (
     Dataset,
     DatasetBuild,
@@ -306,7 +306,7 @@ class DataCatalogClient:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             archive_path = f"{tmp_dir}/{archive_name}"
-            tar_directory(archive_path, dataset.entity_path)
+            tar_directory(archive_path, dataset.pickle_dir)
             S3Util.upload_dir(
                 Path(tmp_dir),
                 response.credentials,
@@ -378,8 +378,8 @@ class DataCatalogClient:
 
         asset_path = AssetPath(
             asset_type=AssetType.DATASET,
-            entity_name=dataset.name,
-            entity_version=version.name,
+            asset_name=dataset.name,
+            asset_version=version.name,
             project_name=dataset.project_name,
         )
         return Dataset(

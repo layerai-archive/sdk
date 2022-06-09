@@ -9,7 +9,7 @@ from layer.contracts.projects import Project
 from layer.contracts.runs import ModelFunctionDefinition, Run
 from layer.decorators import dataset, model, pip_requirements, resources
 from layer.resource_manager import ResourceManager
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from test.e2e.assertion_utils import E2ETestAsserter
 
 

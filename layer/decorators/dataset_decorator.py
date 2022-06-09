@@ -9,9 +9,10 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.context import Context
 from layer.contracts.assertions import Assertion
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
-from layer.contracts.runs import DatasetFunctionDefinition, DatasetTransferState
+from layer.contracts.runs import DatasetFunctionDefinition
+from layer.contracts.tracker import DatasetTransferState
 from layer.decorators.assertions import get_assertion_functions_data
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
@@ -21,7 +22,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
-from layer.tracker.local_execution_project_progress_tracker import (
+from layer.tracker.local_execution_progress_tracker import (
     LocalExecutionRunProgressTracker,
 )
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -139,12 +140,12 @@ def _dataset_wrapper(
             current_project_full_name_ = get_current_project_full_name()
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
-                project_progress_tracker = LocalExecutionRunProgressTracker(
+                progress_tracker = LocalExecutionRunProgressTracker(
                     config=config,
                     project_name=current_project_full_name_.project_name,
                     account_name=current_project_full_name_.account_name,
                 )
-                with project_progress_tracker.track() as tracker:
+                with progress_tracker.track() as tracker:
                     dataset_definition = DatasetFunctionDefinition(
                         self.__wrapped__,
                         project_name=current_project_full_name_.project_name,
@@ -173,10 +174,10 @@ def _build_dataset_locally_and_store_remotely(
     client: LayerClient,
     assertions: List[Assertion],
 ) -> Any:
-    tracker.add_build(layer.get_entity_name())  # type: ignore
+    tracker.add_build(layer.get_asset_name())  # type: ignore
 
     dataset = register_dataset_function(client, dataset, True, tracker)
-    tracker.mark_derived_dataset_building(layer.get_entity_name())  # type: ignore
+    tracker.mark_dataset_building(layer.get_asset_name())  # type: ignore
 
     (result, build_uuid) = _build_locally_update_remotely(
         client,
@@ -196,7 +197,7 @@ def _build_dataset_locally_and_store_remotely(
         build_id=build_uuid,
         progress_callback=transfer_state.increment_num_transferred_rows,
     )
-    tracker.mark_derived_dataset_built(dataset.name)
+    tracker.mark_dataset_built(dataset.name)
     return result
 
 
@@ -223,7 +224,7 @@ def _build_locally_update_remotely(
                 DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.STARTED)
             )
             context.with_tracker(tracker)
-            context.with_entity_name(dataset.name)
+            context.with_asset_name(dataset.name)
             set_active_context(context)
             try:
                 result = function_that_builds_dataset()
@@ -247,21 +248,21 @@ def _build_locally_update_remotely(
 
 
 def _run_assertions(
-    entity_name: str,
+    asset_name: str,
     result: Any,
     assertions: List[Assertion],
     tracker: LocalExecutionRunProgressTracker,
 ) -> None:
     failed_assertions = []
-    tracker.mark_dataset_running_assertions(entity_name)
+    tracker.mark_dataset_running_assertions(asset_name)
     for assertion in reversed(assertions):
         try:
-            tracker.mark_dataset_running_assertion(entity_name, assertion)
+            tracker.mark_dataset_running_assertion(asset_name, assertion)
             assertion.function(result)
         except Exception:
             failed_assertions.append(assertion)
     if len(failed_assertions) > 0:
-        tracker.mark_dataset_failed_assertions(entity_name, failed_assertions)
+        tracker.mark_dataset_failed_assertions(asset_name, failed_assertions)
         raise Exception(f"Failed assertions {failed_assertions}\n")
     else:
-        tracker.mark_dataset_completed_assertions(entity_name)
+        tracker.mark_dataset_completed_assertions(asset_name)

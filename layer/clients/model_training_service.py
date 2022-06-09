@@ -61,7 +61,7 @@ class ModelTrainingClient:
         response = self.get_source_code_upload_credentials(source_name=source_name)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            tar_directory(f"{tmp_dir}/{model.name}.tgz", model.entity_path)
+            tar_directory(f"{tmp_dir}/{model.name}.tgz", model.pickle_dir)
             S3Util.upload_dir(
                 Path(tmp_dir),
                 response.credentials,

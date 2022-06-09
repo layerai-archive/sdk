@@ -5,22 +5,10 @@ import os
 import pickle  # nosec import_pickle
 import shutil
 import sys
-import time
 import uuid
-from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-)
+from typing import Any, Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar
 
 import cloudpickle  # type: ignore
 from layerapi.api.entity.run_pb2 import Run as PBRun
@@ -96,7 +84,7 @@ class FunctionDefinition(abc.ABC):
         self.language_version = language_version
 
         layer_settings = func.layer
-        name = layer_settings.get_entity_name()
+        name = layer_settings.get_asset_name()
         if name is None:
             raise LayerClientException("Name cannot be empty")
         self.name = name
@@ -136,7 +124,7 @@ class FunctionDefinition(abc.ABC):
     def asset_path(self) -> AssetPath:
         return AssetPath(
             asset_type=self.asset_type,
-            entity_name=self.name,
+            asset_name=self.name,
             project_name=self.project_name,
             org_name=self.account_name,
         )
@@ -173,12 +161,12 @@ class FunctionDefinition(abc.ABC):
         return f"{self.name}.pkl"
 
     @property
-    def entity_path(self) -> Path:
+    def pickle_dir(self) -> Path:
         return DEFAULT_FUNC_PATH / self.project_name / self.name
 
     @property
     def pickle_path(self) -> Path:
-        return self.entity_path / self.entrypoint
+        return self.pickle_dir / self.entrypoint
 
     @property
     def environment(self) -> str:
@@ -190,7 +178,7 @@ class FunctionDefinition(abc.ABC):
 
     @property
     def environment_path(self) -> Path:
-        return self.entity_path / self.environment
+        return self.pickle_dir / self.environment
 
     def get_fabric(self, is_local: bool) -> str:
         if is_local:
@@ -200,15 +188,15 @@ class FunctionDefinition(abc.ABC):
 
     def _clean_pickle_folder(self) -> None:
         # Remove directory to clean leftovers from previous runs
-        entity_path = self.entity_path
-        if entity_path.exists():
-            shutil.rmtree(entity_path)
-        os.makedirs(entity_path)
+        pickle_dir = self.pickle_dir
+        if pickle_dir.exists():
+            shutil.rmtree(pickle_dir)
+        os.makedirs(pickle_dir)
 
     def _pack(self) -> None:
         self._clean_pickle_folder()
 
-        # Dump pickled function to entity_name.pkl
+        # Dump pickled function to asset_name.pkl
         with open(self.pickle_path, mode="wb") as file:
             cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
 
@@ -296,141 +284,3 @@ class Run:
 
     def with_definitions(self, definitions: Sequence[FunctionDefinition]) -> "Run":
         return replace(self, definitions=definitions)
-
-
-class ResourceTransferState:
-    def __init__(self, name: Optional[str] = None) -> None:
-        self._name: Optional[str] = name
-        self._total_num_files: int = 0
-        self._transferred_num_files: int = 0
-        self._total_resource_size_bytes: int = 0
-        self._transferred_resource_size_bytes: int = 0
-        self._timestamp_to_bytes_sent: Dict[Any, int] = defaultdict(int)
-        self._how_many_previous_seconds = 20
-
-    def increment_num_transferred_files(self, increment_with: int) -> None:
-        self._transferred_num_files += increment_with
-
-    def increment_transferred_resource_size_bytes(self, increment_with: int) -> None:
-        self._transferred_resource_size_bytes += increment_with
-        self._timestamp_to_bytes_sent[self._get_current_timestamp()] += increment_with
-
-    def get_bandwidth_in_previous_seconds(self) -> int:
-        curr_timestamp = self._get_current_timestamp()
-        valid_seconds = 0
-        bytes_transferred = 0
-        # Exclude start and current sec as otherwise result would not account for data that will be sent
-        # within current second after the call of this func
-        for i in range(1, self._how_many_previous_seconds + 1):
-            look_at = curr_timestamp - i
-            if look_at >= 0 and look_at in self._timestamp_to_bytes_sent:
-                valid_seconds += 1
-                bytes_transferred += self._timestamp_to_bytes_sent[look_at]
-        if valid_seconds == 0:
-            return 0
-        return round(bytes_transferred / valid_seconds)
-
-    def get_eta_seconds(self) -> int:
-        bandwidth = self.get_bandwidth_in_previous_seconds()
-        if bandwidth == 0:
-            return 0
-        return round(
-            (self._total_resource_size_bytes - self._transferred_resource_size_bytes)
-            / bandwidth
-        )
-
-    @staticmethod
-    def _get_current_timestamp() -> int:
-        return round(time.time())
-
-    @property
-    def transferred_num_files(self) -> int:
-        return self._transferred_num_files
-
-    @property
-    def total_num_files(self) -> int:
-        return self._total_num_files
-
-    @total_num_files.setter
-    def total_num_files(self, value: int) -> None:
-        self._total_num_files = value
-
-    @property
-    def total_resource_size_bytes(self) -> int:
-        return self._total_resource_size_bytes
-
-    @total_resource_size_bytes.setter
-    def total_resource_size_bytes(self, value: int) -> None:
-        self._total_resource_size_bytes = value
-
-    @property
-    def transferred_resource_size_bytes(self) -> int:
-        return self._transferred_resource_size_bytes
-
-    @property
-    def name(self) -> Optional[str]:
-        return self._name
-
-    @name.setter
-    def name(self, name: str) -> None:
-        self._name = name
-
-    def __str__(self) -> str:
-        return str(self.__dict__)
-
-
-class DatasetTransferState:
-    def __init__(self, total_num_rows: int, name: Optional[str] = None) -> None:
-        self._name: Optional[str] = name
-        self._total_num_rows: int = total_num_rows
-        self._transferred_num_rows: int = 0
-        self._timestamp_to_rows_sent: Dict[Any, int] = defaultdict(int)
-        self._how_many_previous_seconds = 20
-
-    def increment_num_transferred_rows(self, increment_with: int) -> None:
-        self._transferred_num_rows += increment_with
-        self._timestamp_to_rows_sent[self._get_current_timestamp()] += increment_with
-
-    def _get_rows_per_sec(self) -> int:
-        curr_timestamp = self._get_current_timestamp()
-        valid_seconds = 0
-        rows_transferred = 0
-        # Exclude start and current sec as otherwise result would not account for data that will be sent
-        # within current second after the call of this func
-        for i in range(1, self._how_many_previous_seconds + 1):
-            look_at = curr_timestamp - i
-            if look_at >= 0 and look_at in self._timestamp_to_rows_sent:
-                valid_seconds += 1
-                rows_transferred += self._timestamp_to_rows_sent[look_at]
-        if valid_seconds == 0:
-            return 0
-        return round(rows_transferred / valid_seconds)
-
-    def get_eta_seconds(self) -> int:
-        rows_per_sec = self._get_rows_per_sec()
-        if rows_per_sec == 0:
-            return 0
-        return round((self._total_num_rows - self._transferred_num_rows) / rows_per_sec)
-
-    @staticmethod
-    def _get_current_timestamp() -> int:
-        return round(time.time())
-
-    @property
-    def transferred_num_rows(self) -> int:
-        return self._transferred_num_rows
-
-    @property
-    def total_num_rows(self) -> int:
-        return self._total_num_rows
-
-    @property
-    def name(self) -> Optional[str]:
-        return self._name
-
-    @name.setter
-    def name(self, value: str) -> None:
-        self._name = value
-
-    def __str__(self) -> str:
-        return str(self.__dict__)

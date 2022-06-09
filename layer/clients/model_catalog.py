@@ -35,7 +35,7 @@ from layerapi.api.service.modelcatalog.model_catalog_api_pb2_grpc import (
     ModelCatalogAPIStub,
 )
 from layerapi.api.value.dependency_pb2 import DependencyFile
-from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
+from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PBModelFlavor
 from layerapi.api.value.s3_path_pb2 import S3Path
 from layerapi.api.value.sha256_pb2 import Sha256
 from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
@@ -44,11 +44,12 @@ from layer.cache.cache import Cache
 from layer.config import ClientConfig
 from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import ModelFunctionDefinition, ResourceTransferState
+from layer.contracts.runs import ModelFunctionDefinition
+from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
 from layer.flavors.utils import get_flavor_for_proto
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.grpc import create_grpc_channel
 from layer.utils.s3 import S3Util
 
@@ -296,7 +297,7 @@ class ModelCatalogClient:
     def complete_model_train(
         self,
         train_id: ModelTrainId,
-        flavor: Optional[PbModelFlavor.ValueType],
+        flavor: Optional[PBModelFlavor.ValueType],
     ) -> None:
         self._service.CompleteModelTrain(
             CompleteModelTrainRequest(id=train_id, flavor=flavor),

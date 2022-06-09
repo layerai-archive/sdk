@@ -9,7 +9,7 @@ from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
 from layer.config import Config
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import ApplyResult
 from layer.contracts.runs import (
@@ -31,7 +31,7 @@ from layer.exceptions.exceptions import (
 )
 from layer.projects.execution_planner import (
     build_execution_plan,
-    check_entity_dependencies,
+    check_asset_dependencies,
 )
 from layer.projects.progress_tracker_updater import (
     PollingStepFunction,
@@ -44,8 +44,8 @@ from layer.projects.utils import (
 )
 from layer.resource_manager import ResourceManager
 from layer.settings import LayerSettings
-from layer.tracker.project_progress_tracker import RunProgressTracker
-from layer.tracker.remote_execution_project_progress_tracker import (
+from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.remote_execution_progress_tracker import (
     RemoteExecutionRunProgressTracker,
 )
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
@@ -88,17 +88,17 @@ class RunContext:
 
 class ProjectRunner:
     _tracker: RunProgressTracker
-    _project_progress_tracker_factory: Type[RemoteExecutionRunProgressTracker]
+    _progress_tracker_factory: Type[RemoteExecutionRunProgressTracker]
 
     def __init__(
         self,
         config: Config,
-        project_progress_tracker_factory: Type[
+        progress_tracker_factory: Type[
             RemoteExecutionRunProgressTracker
         ] = RemoteExecutionRunProgressTracker,
     ) -> None:
         self._config = config
-        self._project_progress_tracker_factory = project_progress_tracker_factory
+        self._progress_tracker_factory = progress_tracker_factory
 
     def get_tracker(self) -> RunProgressTracker:
         return self._tracker
@@ -157,12 +157,10 @@ class ProjectRunner:
         debug: bool = False,
         printer: Callable[[str], Any] = print,
     ) -> Run:
-        check_entity_dependencies(run.definitions)
+        check_asset_dependencies(run.definitions)
         with LayerClient(self._config.client, logger).init() as client:
             get_or_create_remote_project(client, run.project_full_name)
-            with self._project_progress_tracker_factory(
-                self._config, run
-            ).track() as tracker:
+            with self._progress_tracker_factory(self._config, run).track() as tracker:
                 self._tracker = tracker
                 try:
                     metadata = self._apply(client, run)
@@ -280,13 +278,13 @@ def register_dataset_function(
         )
         dataset = client.data_catalog.add_dataset(project_id, dataset, is_local)
         assert dataset.repository_id
-        tracker.mark_derived_dataset_saved(dataset.name, id_=dataset.repository_id)
+        tracker.mark_dataset_saved(dataset.name, id_=dataset.repository_id)
         return dataset
     except LayerClientServiceUnavailableException as e:
-        tracker.mark_derived_dataset_failed(dataset.name, "")
+        tracker.mark_dataset_failed(dataset.name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
     except LayerClientException as e:
-        tracker.mark_derived_dataset_failed(dataset.name, "")
+        tracker.mark_dataset_failed(dataset.name, "")
         raise ProjectInitializationException(
             f"Failed to save derived dataset {dataset.name!r}: {e}",
             "Please retry",

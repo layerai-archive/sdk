@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
-from layer.tracker.project_progress_tracker import RunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 
 
 if TYPE_CHECKING:

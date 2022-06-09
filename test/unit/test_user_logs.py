@@ -3,7 +3,8 @@ from datetime import datetime
 from google.protobuf.timestamp_pb2 import Timestamp
 from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
 
-from layer.user_logs import EntityType, __convert_log_line
+from layer.contracts.assets import AssetType
+from layer.user_logs import __convert_log_line
 
 
 def test_convert_pb_log_line() -> None:
@@ -19,8 +20,8 @@ def test_convert_pb_log_line() -> None:
     )
 
     line = __convert_log_line(pb_user_log_line)
-    assert line.entity_name == "test"
+    assert line.asset_name == "test"
     assert line.host_name == "127.0.0.1"
     assert line.time == now
     assert line.log == "test-log-line"
-    assert line.type == EntityType.DATASET_BUILD.name
+    assert line.type == AssetType.DATASET.name

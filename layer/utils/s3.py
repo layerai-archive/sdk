@@ -8,7 +8,7 @@ from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
 from yarl import URL
 
-from layer.contracts.runs import ResourceTransferState
+from layer.contracts.tracker import ResourceTransferState
 
 
 class S3Util:

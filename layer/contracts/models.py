@@ -1,4 +1,3 @@
-import copy
 import uuid
 from dataclasses import dataclass
 from typing import Optional, Sequence, Union
@@ -13,7 +12,6 @@ from layer.flavors.base import ModelFlavor, ModelRuntimeObjects
 from layer.types import ModelObject
 
 from .asset import AssetPath, AssetType, BaseAsset
-from .project_full_name import ProjectFullName
 
 
 @dataclass(frozen=True)
@@ -50,7 +48,6 @@ class Model(BaseAsset):
         model_runtime_objects: Optional[ModelRuntimeObjects] = None,
     ):
         super().__init__(
-            asset_type=AssetType.MODEL,
             path=asset_path,
             id=id,
             dependencies=dependencies,
@@ -61,11 +58,9 @@ class Model(BaseAsset):
         self._storage_config = storage_config
         self._model_runtime_objects = model_runtime_objects
 
-    def set_model_runtime_objects(
-        self, model_runtime_objects: ModelRuntimeObjects
-    ) -> "Model":
-        self._model_runtime_objects = model_runtime_objects
-        return self
+    @property
+    def asset_type(self) -> AssetType:
+        return AssetType.MODEL
 
     @property
     def version_id(self) -> uuid.UUID:
@@ -111,19 +106,8 @@ class Model(BaseAsset):
             raise Exception("No predict function provided")
         return self._model_runtime_objects.prediction_function(input_df)
 
-    def with_dependencies(self, dependencies: Sequence[BaseAsset]) -> "Model":
-        new_model = copy.deepcopy(self)
-        new_model._set_dependencies(dependencies)  # pylint: disable=protected-access
-        return new_model
-
-    def with_project_full_name(self, project_full_name: ProjectFullName) -> "Model":
-        new_asset = super().with_project_full_name(project_full_name)
-        new_model = copy.deepcopy(self)
-        new_model._update_with(new_asset)  # pylint: disable=protected-access
-        return new_model
-
-    def drop_dependencies(self) -> "Model":
-        return self.with_dependencies(())
-
-    def __str__(self) -> str:
-        return f"Model({self.name})"
+    def set_model_runtime_objects(
+        self, model_runtime_objects: ModelRuntimeObjects
+    ) -> "Model":
+        self._model_runtime_objects = model_runtime_objects
+        return self

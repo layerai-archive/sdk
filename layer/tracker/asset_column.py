@@ -10,8 +10,12 @@ from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
 
-from layer.contracts.entities import Entity, EntityStatus
-from layer.contracts.runs import DatasetTransferState, ResourceTransferState
+from layer.contracts.tracker import (
+    AssetTracker,
+    AssetTrackerStatus,
+    DatasetTransferState,
+    ResourceTransferState,
+)
 
 
 class ProgressStyle(str, Enum):
@@ -31,24 +35,24 @@ class ProgressStyle(str, Enum):
     ERROR = ORANGE
 
 
-class EntityColumn(ProgressColumn):
+class AssetColumn(ProgressColumn):
     _status_style_map = {
-        EntityStatus.PENDING: ProgressStyle.NONE,
-        EntityStatus.SAVING: ProgressStyle.NONE,
-        EntityStatus.BUILDING: ProgressStyle.NONE,
-        EntityStatus.TRAINING: ProgressStyle.NONE,
-        EntityStatus.DONE: ProgressStyle.DONE,
-        EntityStatus.ERROR: ProgressStyle.ERROR,
-        EntityStatus.ASSERTING: ProgressStyle.NONE,
-        EntityStatus.RESOURCE_UPLOADING: ProgressStyle.NONE,
-        EntityStatus.RESULT_UPLOADING: ProgressStyle.NONE,
-        EntityStatus.ENTITY_DOWNLOADING: ProgressStyle.BLUE,
-        EntityStatus.ENTITY_FROM_CACHE: ProgressStyle.BLUE,
-        EntityStatus.ENTITY_LOADED: ProgressStyle.DONE,
+        AssetTrackerStatus.PENDING: ProgressStyle.NONE,
+        AssetTrackerStatus.SAVING: ProgressStyle.NONE,
+        AssetTrackerStatus.BUILDING: ProgressStyle.NONE,
+        AssetTrackerStatus.TRAINING: ProgressStyle.NONE,
+        AssetTrackerStatus.DONE: ProgressStyle.DONE,
+        AssetTrackerStatus.ERROR: ProgressStyle.ERROR,
+        AssetTrackerStatus.ASSERTING: ProgressStyle.NONE,
+        AssetTrackerStatus.RESOURCE_UPLOADING: ProgressStyle.NONE,
+        AssetTrackerStatus.RESULT_UPLOADING: ProgressStyle.NONE,
+        AssetTrackerStatus.ASSET_DOWNLOADING: ProgressStyle.BLUE,
+        AssetTrackerStatus.ASSET_FROM_CACHE: ProgressStyle.BLUE,
+        AssetTrackerStatus.ASSET_LOADED: ProgressStyle.DONE,
     }
 
     def render(self, task: Task) -> RenderableType:
-        entity = self._get_entity(task)
+        asset = self._get_asset(task)
         description_text = self._render_description(task)
         stats_text = self._render_stats(task)
 
@@ -58,21 +62,21 @@ class EntityColumn(ProgressColumn):
         table.add_column(width=len(description_text))  # task description
         table.add_column()  # stats
         table.add_row(
-            entity.name,
+            asset.name,
             self._render_progress_bar(task),
             description_text,
             stats_text,
         )
         renderables: List[RenderableType] = [table]
-        if entity.base_url:
+        if asset.base_url:
             table = Table.grid(padding=(0, 1, 0, 1), pad_edge=True)
             table.add_column()
-            table.add_row(self._render_url(entity))
+            table.add_row(self._render_url(asset))
             renderables.append(table)
-        if entity.error_reason:
+        if asset.error_reason:
             table = Table.grid(padding=(0, 1, 0, 1), pad_edge=True)
             table.add_column(overflow="fold")
-            table.add_row(Text.from_markup(f"[red]{escape(entity.error_reason)}[/red]"))
+            table.add_row(Text.from_markup(f"[red]{escape(asset.error_reason)}[/red]"))
             table.add_row(Text("Aborting...", style="bold"))
             renderables.append(table)
 
@@ -106,61 +110,85 @@ class EntityColumn(ProgressColumn):
 
     def _render_progress_bar(self, task: Task) -> RenderableType:
         # Set task.completed = min(..., int(task.total -  1)) to prevent task timer from stopping
-        entity = self._get_entity(task)
+        asset = self._get_asset(task)
         style_map = {
-            EntityStatus.PENDING: (True, ProgressStyle.DEFAULT, ProgressStyle.DONE),
-            EntityStatus.SAVING: (True, ProgressStyle.DEFAULT, ProgressStyle.DONE),
-            EntityStatus.BUILDING: (False, ProgressStyle.DEFAULT, ProgressStyle.BLACK),
-            EntityStatus.TRAINING: (False, ProgressStyle.DEFAULT, ProgressStyle.BLACK),
-            EntityStatus.DONE: (False, ProgressStyle.DONE, ProgressStyle.DONE),
-            EntityStatus.ERROR: (False, ProgressStyle.ERROR, ProgressStyle.ERROR),
-            EntityStatus.ASSERTING: (True, ProgressStyle.DEFAULT, ProgressStyle.DONE),
-            EntityStatus.RESOURCE_UPLOADING: (
-                False,
-                ProgressStyle.DEFAULT,
-                ProgressStyle.BLUE,
-            ),
-            EntityStatus.RESULT_UPLOADING: (
-                False,
-                ProgressStyle.DEFAULT,
-                ProgressStyle.BLUE,
-            ),
-            EntityStatus.ENTITY_DOWNLOADING: (
-                False,
-                ProgressStyle.DEFAULT,
-                ProgressStyle.BLUE,
-            ),
-            EntityStatus.ENTITY_FROM_CACHE: (
+            AssetTrackerStatus.PENDING: (
                 True,
                 ProgressStyle.DEFAULT,
                 ProgressStyle.DONE,
             ),
-            EntityStatus.ENTITY_LOADED: (
+            AssetTrackerStatus.SAVING: (
+                True,
+                ProgressStyle.DEFAULT,
+                ProgressStyle.DONE,
+            ),
+            AssetTrackerStatus.BUILDING: (
+                False,
+                ProgressStyle.DEFAULT,
+                ProgressStyle.BLACK,
+            ),
+            AssetTrackerStatus.TRAINING: (
+                False,
+                ProgressStyle.DEFAULT,
+                ProgressStyle.BLACK,
+            ),
+            AssetTrackerStatus.DONE: (False, ProgressStyle.DONE, ProgressStyle.DONE),
+            AssetTrackerStatus.ERROR: (
+                False,
+                ProgressStyle.ERROR,
+                ProgressStyle.ERROR,
+            ),
+            AssetTrackerStatus.ASSERTING: (
+                True,
+                ProgressStyle.DEFAULT,
+                ProgressStyle.DONE,
+            ),
+            AssetTrackerStatus.RESOURCE_UPLOADING: (
+                False,
+                ProgressStyle.DEFAULT,
+                ProgressStyle.BLUE,
+            ),
+            AssetTrackerStatus.RESULT_UPLOADING: (
+                False,
+                ProgressStyle.DEFAULT,
+                ProgressStyle.BLUE,
+            ),
+            AssetTrackerStatus.ASSET_DOWNLOADING: (
+                False,
+                ProgressStyle.DEFAULT,
+                ProgressStyle.BLUE,
+            ),
+            AssetTrackerStatus.ASSET_FROM_CACHE: (
+                True,
+                ProgressStyle.DEFAULT,
+                ProgressStyle.DONE,
+            ),
+            AssetTrackerStatus.ASSET_LOADED: (
                 False,
                 ProgressStyle.DEFAULT,
                 ProgressStyle.DONE,
             ),
         }
         pulse, style, completed_style = style_map.get(
-            entity.status, (False, ProgressStyle.DEFAULT, ProgressStyle.DONE)
+            asset.status, (False, ProgressStyle.DEFAULT, ProgressStyle.DONE)
         )
-        if entity.status == EntityStatus.ENTITY_DOWNLOADING and isinstance(
-            entity.entity_download_transfer_state, DatasetTransferState
+        if asset.status == AssetTrackerStatus.ASSET_DOWNLOADING and isinstance(
+            asset.asset_download_transfer_state, DatasetTransferState
         ):
             pulse = True  # Pulsing bar as we currently cannot closely track the downloading of a dataset
 
         assert task.total is not None
         if (
-            entity.status == EntityStatus.TRAINING
-            or entity.status == EntityStatus.BUILDING
+            asset.status == AssetTrackerStatus.TRAINING
+            or asset.status == AssetTrackerStatus.BUILDING
         ):
             fraction = round(task.total * 0.05)
             task.completed = min(
                 (task.completed + fraction) % task.total, task.total - 1
             )
-        elif entity.status == EntityStatus.RESOURCE_UPLOADING:
-            assert entity.resource_transfer_state
-            state = entity.resource_transfer_state
+        elif asset.status == AssetTrackerStatus.RESOURCE_UPLOADING:
+            assert asset.resource_transfer_state
+            state = asset.resource_transfer_state
             completed = (
                 (
                     state.transferred_resource_size_bytes
@@ -170,13 +198,13 @@ class EntityColumn(ProgressColumn):
                 else 0
             )
             task.completed = min(int(task.total * completed), int(task.total - 1))
-        elif entity.status == EntityStatus.ENTITY_LOADED:
+        elif asset.status == AssetTrackerStatus.ASSET_LOADED:
             task.completed = task.total
         elif (
-            entity.status == EntityStatus.RESULT_UPLOADING
-            and entity.dataset_transfer_state
+            asset.status == AssetTrackerStatus.RESULT_UPLOADING
+            and asset.dataset_transfer_state
         ):
-            dataset_state = entity.dataset_transfer_state
+            dataset_state = asset.dataset_transfer_state
             completed = (
                 (dataset_state.transferred_num_rows / dataset_state.total_num_rows)
                 if dataset_state.total_num_rows > 0
@@ -184,9 +212,9 @@ class EntityColumn(ProgressColumn):
             )
             task.completed = min(int(task.total * completed), int(task.total - 1))
         elif (
-            entity.status == EntityStatus.RESULT_UPLOADING
-        ) and entity.model_transfer_state:
-            model_state = entity.model_transfer_state
+            asset.status == AssetTrackerStatus.RESULT_UPLOADING
+        ) and asset.model_transfer_state:
+            model_state = asset.model_transfer_state
             completed = (
                 (
                     model_state.transferred_resource_size_bytes
@@ -197,11 +225,11 @@ class EntityColumn(ProgressColumn):
             )
             task.completed = min(int(task.total * completed), int(task.total - 1))
         elif (
-            (entity.status == EntityStatus.ENTITY_DOWNLOADING)
-            and entity.entity_download_transfer_state
-            and isinstance(entity.entity_download_transfer_state, ResourceTransferState)
+            (asset.status == AssetTrackerStatus.ASSET_DOWNLOADING)
+            and asset.asset_download_transfer_state
+            and isinstance(asset.asset_download_transfer_state, ResourceTransferState)
         ):
-            model_state = entity.entity_download_transfer_state
+            model_state = asset.asset_download_transfer_state
             completed = (
                 (
                     model_state.transferred_resource_size_bytes
@@ -224,8 +252,8 @@ class EntityColumn(ProgressColumn):
         )
 
     @staticmethod
-    def _get_entity(task: Task) -> Entity:
-        return task.fields["entity"]
+    def _get_asset(task: Task) -> AssetTracker:
+        return task.fields["asset"]
 
     @staticmethod
     def _get_elapsed_time_s(task: Task) -> int:
@@ -233,66 +261,66 @@ class EntityColumn(ProgressColumn):
         return int(elapsed_time) if elapsed_time else 0
 
     def _compute_time_string(self, task: Task) -> str:
-        entity = self._get_entity(task)
+        asset = self._get_asset(task)
         delta: Any = timedelta(seconds=self._get_elapsed_time_s(task))
-        if entity.status == EntityStatus.RESOURCE_UPLOADING:
-            assert entity.resource_transfer_state
-            delta = timedelta(seconds=entity.resource_transfer_state.get_eta_seconds())
+        if asset.status == AssetTrackerStatus.RESOURCE_UPLOADING:
+            assert asset.resource_transfer_state
+            delta = timedelta(seconds=asset.resource_transfer_state.get_eta_seconds())
         elif (
-            entity.status == EntityStatus.RESULT_UPLOADING
-            and entity.dataset_transfer_state
+            asset.status == AssetTrackerStatus.RESULT_UPLOADING
+            and asset.dataset_transfer_state
         ):
-            delta = timedelta(seconds=entity.dataset_transfer_state.get_eta_seconds())
+            delta = timedelta(seconds=asset.dataset_transfer_state.get_eta_seconds())
         elif (
-            entity.status == EntityStatus.RESULT_UPLOADING
-            and entity.model_transfer_state
+            asset.status == AssetTrackerStatus.RESULT_UPLOADING
+            and asset.model_transfer_state
         ):
-            delta = timedelta(seconds=entity.model_transfer_state.get_eta_seconds())
-        elif entity.status == EntityStatus.ENTITY_DOWNLOADING:
-            assert entity.entity_download_transfer_state
-            if isinstance(entity.entity_download_transfer_state, ResourceTransferState):
+            delta = timedelta(seconds=asset.model_transfer_state.get_eta_seconds())
+        elif asset.status == AssetTrackerStatus.ASSET_DOWNLOADING:
+            assert asset.asset_download_transfer_state
+            if isinstance(asset.asset_download_transfer_state, ResourceTransferState):
                 delta = timedelta(
-                    seconds=entity.entity_download_transfer_state.get_eta_seconds()
+                    seconds=asset.asset_download_transfer_state.get_eta_seconds()
                 )
             else:
                 delta = "-:--:--"
         elif (
-            entity.status == EntityStatus.PENDING
-            or entity.status == EntityStatus.ENTITY_FROM_CACHE
+            asset.status == AssetTrackerStatus.PENDING
+            or asset.status == AssetTrackerStatus.ASSET_FROM_CACHE
         ):
             delta = "-:--:--"
         elif (
-            entity.status == EntityStatus.TRAINING
-            or entity.status == EntityStatus.BUILDING
+            asset.status == AssetTrackerStatus.TRAINING
+            or asset.status == AssetTrackerStatus.BUILDING
         ):
             delta = timedelta(seconds=self._get_elapsed_time_s(task))
         return str(delta)
 
     def _render_stats(self, task: Task) -> RenderableType:
-        entity = self._get_entity(task)
+        asset = self._get_asset(task)
         rendered_time: str = self._compute_time_string(task)
         rendered_state = None
 
         if (
-            entity.resource_transfer_state
-            and entity.status == EntityStatus.RESOURCE_UPLOADING
+            asset.resource_transfer_state
+            and asset.status == AssetTrackerStatus.RESOURCE_UPLOADING
         ):
-            rendered_state = self._render_state(entity.resource_transfer_state)
+            rendered_state = self._render_state(asset.resource_transfer_state)
         elif (
-            entity.dataset_transfer_state
-            and entity.status == EntityStatus.RESULT_UPLOADING
+            asset.dataset_transfer_state
+            and asset.status == AssetTrackerStatus.RESULT_UPLOADING
         ):
-            rendered_state = self._render_dataset_state(entity.dataset_transfer_state)
+            rendered_state = self._render_dataset_state(asset.dataset_transfer_state)
         elif (
-            entity.model_transfer_state
-            and entity.status == EntityStatus.RESULT_UPLOADING
+            asset.model_transfer_state
+            and asset.status == AssetTrackerStatus.RESULT_UPLOADING
         ):
-            rendered_state = self._render_state(entity.model_transfer_state, False)
-        elif entity.status == EntityStatus.ENTITY_DOWNLOADING:
-            assert entity.entity_download_transfer_state
-            if isinstance(entity.entity_download_transfer_state, ResourceTransferState):
+            rendered_state = self._render_state(asset.model_transfer_state, False)
+        elif asset.status == AssetTrackerStatus.ASSET_DOWNLOADING:
+            assert asset.asset_download_transfer_state
+            if isinstance(asset.asset_download_transfer_state, ResourceTransferState):
                 rendered_state = self._render_state(
-                    entity.entity_download_transfer_state, False
+                    asset.asset_download_transfer_state, False
                 )
 
         color = ProgressStyle.GRAY
@@ -307,29 +335,29 @@ class EntityColumn(ProgressColumn):
         return Text.from_markup(f"[{text}]", style="default", justify="center")
 
     def _render_description(self, task: Task) -> Text:
-        entity = self._get_entity(task)
+        asset = self._get_asset(task)
         if (
-            entity.status == EntityStatus.RESOURCE_UPLOADING
-            or entity.status == EntityStatus.RESULT_UPLOADING
+            asset.status == AssetTrackerStatus.RESOURCE_UPLOADING
+            or asset.status == AssetTrackerStatus.RESULT_UPLOADING
         ):
             text = "uploading"
-        elif entity.status == EntityStatus.ENTITY_DOWNLOADING:
+        elif asset.status == AssetTrackerStatus.ASSET_DOWNLOADING:
             text = "downloading"
-        elif entity.status == EntityStatus.ENTITY_FROM_CACHE:
+        elif asset.status == AssetTrackerStatus.ASSET_FROM_CACHE:
             text = "from cache"
-        elif entity.status == EntityStatus.ENTITY_LOADED:
+        elif asset.status == AssetTrackerStatus.ASSET_LOADED:
             text = "loaded"
         else:
             text = task.description
         if (
-            entity.status == EntityStatus.RESOURCE_UPLOADING
-            or entity.status == EntityStatus.RESULT_UPLOADING
-            or entity.status == EntityStatus.ENTITY_DOWNLOADING
-            or entity.status == EntityStatus.ENTITY_FROM_CACHE
+            asset.status == AssetTrackerStatus.RESOURCE_UPLOADING
+            or asset.status == AssetTrackerStatus.RESULT_UPLOADING
+            or asset.status == AssetTrackerStatus.ASSET_DOWNLOADING
+            or asset.status == AssetTrackerStatus.ASSET_FROM_CACHE
         ):
             style = ProgressStyle.BLACK
         else:
-            style = self._status_style_map[entity.status]
+            style = self._status_style_map[asset.status]
         return Text(
             text.upper(),
             overflow="fold",
@@ -338,11 +366,11 @@ class EntityColumn(ProgressColumn):
         )
 
     @staticmethod
-    def _render_url(entity: Entity) -> RenderableType:
+    def _render_url(asset: AssetTracker) -> RenderableType:
         link = (
-            f"{entity.base_url}?v={entity.version}.{entity.build_idx}"
-            if (entity.version and entity.build_idx)
-            else entity.base_url
+            f"{asset.base_url}?v={asset.version}.{asset.build_idx}"
+            if (asset.version and asset.build_idx)
+            else asset.base_url
         )
         return Group(
             *[

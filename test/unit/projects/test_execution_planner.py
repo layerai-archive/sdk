@@ -3,7 +3,7 @@ from typing import Optional, Sequence, Type
 
 import pytest
 
-from layer.contracts.asset import AssetPath
+from layer.contracts.assets import AssetPath
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import (
@@ -17,7 +17,7 @@ from layer.projects.execution_planner import (
     _build_graph,
     _find_cycles,
     build_execution_plan,
-    check_entity_dependencies,
+    check_asset_dependencies,
     drop_independent_entities,
 )
 from layer.settings import LayerSettings
@@ -27,19 +27,19 @@ TEST_PROJECT_FULL_NAME = ProjectFullName(project_name="test", account_name="test
 
 
 class TestProjectExecutionPlanner:
-    def test_check_entity_external_dependency(self) -> None:
+    def test_check_asset_external_dependency(self) -> None:
         ds1 = self._create_mock_dataset("ds1", project_name="another-project-x")
         m1 = self._create_mock_model("m1", ["another-project-x/datasets/ds1"])
 
-        check_entity_dependencies([m1, ds1])
+        check_asset_dependencies([m1, ds1])
 
-    def test_external_entity_dependencies_is_not_checked(self) -> None:
+    def test_external_asset_dependencies_is_not_checked(self) -> None:
         m1 = self._create_mock_model("m1", ["external_project/datasets/ds1"])
 
         try:
-            check_entity_dependencies([m1])
+            check_asset_dependencies([m1])
         except Exception as e:
-            pytest.fail(f"External entity dependency raised an exception: {e}")
+            pytest.fail(f"External asset dependency raised an exception: {e}")
 
     def test_build_graph_fails_if_project_contains_cycle(self) -> None:
         m1 = self._create_mock_model("m1", ["datasets/ds1"])
@@ -48,7 +48,7 @@ class TestProjectExecutionPlanner:
         with pytest.raises(
             ProjectCircularDependenciesException,
         ):
-            check_entity_dependencies([ds1, m1])
+            check_asset_dependencies([ds1, m1])
 
     def test_project_find_cycles_returns_correct_cycles(self) -> None:
         m = self._create_mock_model("m", ["datasets/a", "datasets/e"])
@@ -217,7 +217,7 @@ class TestProjectExecutionPlanner:
         dependencies: Optional[Sequence[str]] = None,
         project_name: str = TEST_PROJECT_FULL_NAME.project_name,
     ) -> FunctionDefinition:
-        return TestProjectExecutionPlanner._create_mock_entity(
+        return TestProjectExecutionPlanner._create_mock_asset(
             DatasetFunctionDefinition, name, dependencies, project_name
         )
 
@@ -227,13 +227,13 @@ class TestProjectExecutionPlanner:
         dependencies: Optional[Sequence[str]] = None,
         project_name: str = TEST_PROJECT_FULL_NAME.project_name,
     ) -> FunctionDefinition:
-        return TestProjectExecutionPlanner._create_mock_entity(
+        return TestProjectExecutionPlanner._create_mock_asset(
             ModelFunctionDefinition, name, dependencies, project_name
         )
 
     @staticmethod
-    def _create_mock_entity(
-        entity_type: Type[FunctionDefinition],
+    def _create_mock_asset(
+        asset_type: Type[FunctionDefinition],
         name: str,
         dependencies: Optional[Sequence[str]] = None,
         project_name: str = TEST_PROJECT_FULL_NAME.project_name,
@@ -248,13 +248,13 @@ class TestProjectExecutionPlanner:
             pass
 
         settings = LayerSettings()
-        settings.set_entity_name(name)
+        settings.set_asset_name(name)
         settings.set_dependencies(dependency_paths)
         settings.set_fabric(Fabric.F_LOCAL.value)
 
         func.layer = settings  # type: ignore
 
-        return entity_type(
+        return asset_type(
             func,
             project_name=project_name,
             account_name=account_name,

@@ -7,14 +7,14 @@ import wrapt  # type: ignore
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.runs import ModelFunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.projects.utils import (
     get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
 )
-from layer.tracker.local_execution_project_progress_tracker import (
+from layer.tracker.local_execution_progress_tracker import (
     LocalExecutionRunProgressTracker,
 )
 from layer.training.runtime.model_train_failure_reporter import (
@@ -113,14 +113,14 @@ def _model_wrapper(
             current_project_full_name_ = get_current_project_full_name()
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
-                project_progress_tracker = LocalExecutionRunProgressTracker(
-                    project_name=current_project_full_name_.project_name,
+                progress_tracker = LocalExecutionRunProgressTracker(
                     config=config,
+                    project_name=current_project_full_name_.project_name,
                     account_name=current_project_full_name_.account_name,
                 )
 
-                with project_progress_tracker.track() as tracker:
-                    tracker.add_model(self.__wrapped__.layer.get_entity_name())
+                with progress_tracker.track() as tracker:
+                    tracker.add_model(self.__wrapped__.layer.get_asset_name())
                     model_definition = ModelFunctionDefinition(
                         self.__wrapped__,
                         project_name=current_project_full_name_.project_name,
@@ -161,7 +161,7 @@ def _model_wrapper(
                 model_name=model_definition.name,
                 model_version=model_version.name,
                 train_id=UUID(train_id.value),
-                source_folder=model_definition.entity_path,
+                source_folder=model_definition.pickle_dir,
                 source_entrypoint=model_definition.entrypoint,
                 train_index=str(train.index),
             )

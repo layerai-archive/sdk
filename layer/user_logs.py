@@ -2,28 +2,22 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum, unique
 from typing import Any, Callable, List, Tuple
 
 from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
 from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
+from layer.contracts.assets import AssetType
 
 
 POLLING_INTERVAL_SEC = 3
 LOGS_BUFFER_INTERVAL = 20  # Minimum amount of time to have as a buffer for logs
 
 
-@unique
-class EntityType(Enum):
-    MODEL_TRAIN = 2
-    DATASET_BUILD = 4
-
-
 @dataclass(frozen=True)
 class UserLogLine:
-    entity_name: str = field(default_factory=str)
+    asset_name: str = field(default_factory=str)
     type: str = field(default_factory=str)
     host_name: str = field(default_factory=str)
     time: datetime = datetime.utcfromtimestamp(0)
@@ -33,18 +27,18 @@ class UserLogLine:
 def __convert_log_line(line: PBUserLogLine) -> UserLogLine:
     return UserLogLine(
         type=__convert_entity(line.type).name,
-        entity_name=line.entity_name,
+        asset_name=line.entity_name,
         host_name=line.host_name,
         time=line.time.ToDatetime(),
         log=line.log,
     )
 
 
-def __convert_entity(entity: PBUserLogLine.TaskType.ValueType) -> EntityType:
+def __convert_entity(entity: PBUserLogLine.TaskType.ValueType) -> AssetType:
     if entity == PBUserLogLine.TASK_TYPE_MODEL_TRAIN:
-        return EntityType.MODEL_TRAIN
+        return AssetType.MODEL
     elif entity == PBUserLogLine.TASK_TYPE_DATASET_BUILD:
-        return EntityType.DATASET_BUILD
+        return AssetType.DATASET
     else:
         raise Exception(f"Unable to convert {entity}")
 
@@ -61,7 +55,7 @@ def __get_lines(
 
 def __format_line(line: UserLogLine) -> str:
     time_str = line.time.strftime("%H:%M:%S")
-    return f"\033[0;33m{time_str} \033[1;32m{line.entity_name}\033[0m: {line.log}"
+    return f"\033[0;33m{time_str} \033[1;32m{line.asset_name}\033[0m: {line.log}"
 
 
 def show_pipeline_run_logs(

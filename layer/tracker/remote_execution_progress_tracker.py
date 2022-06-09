@@ -7,19 +7,24 @@ from rich.text import Text
 from yarl import URL
 
 from layer.config import Config
-from layer.contracts.asset import AssetPath, AssetType
-from layer.contracts.entities import Entity, EntityStatus, EntityType
-from layer.contracts.runs import ResourceTransferState, Run
+from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.runs import Run
+from layer.contracts.tracker import (
+    AssetTracker,
+    AssetTrackerStatus,
+    ResourceTransferState,
+)
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
-from layer.tracker.output import get_progress_ui
-from layer.tracker.project_progress_tracker import RunProgressTracker
+
+from .output import get_progress_ui
+from .progress_tracker import RunProgressTracker
 
 
 class RemoteExecutionRunProgressTracker(RunProgressTracker):
     def __init__(self, config: Config, run: Run) -> None:
         self._config = config
         self._run = run
-        self._task_ids: Dict[Tuple[EntityType, str], TaskID] = {}
+        self._task_ids: Dict[Tuple[AssetType, str], TaskID] = {}
         self._progress = get_progress_ui()
 
     @contextmanager
@@ -30,31 +35,23 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
 
     def _init_tasks(self) -> None:
         for definition in self._run.definitions:
-            entity_type: Optional[EntityType] = None
-            if definition.asset_type == AssetType.DATASET:
-                entity_type = EntityType.DERIVED_DATASET
-            elif definition.asset_type == AssetType.MODEL:
-                entity_type = EntityType.MODEL
-            else:
-                continue
-
             task_id = self._progress.add_task(
-                EntityStatus.PENDING,
+                AssetTrackerStatus.PENDING,
                 start=False,
-                entity=Entity(
-                    type=entity_type,
+                asset=AssetTracker(
+                    type=definition.asset_type,
                     name=definition.name,
-                    status=EntityStatus.PENDING,
+                    status=AssetTrackerStatus.PENDING,
                 ),
             )
-            self._task_ids[(entity_type, definition.name)] = task_id
+            self._task_ids[(definition.asset_type, definition.name)] = task_id
 
-    def _update_entity(
+    def _update_asset(
         self,
-        type_: EntityType,
+        type_: AssetType,
         name: str,
         *,
-        status: Optional[EntityStatus] = None,
+        status: Optional[AssetTrackerStatus] = None,
         url: Optional[URL] = None,
         version: Optional[str] = None,
         build_idx: Optional[str] = None,
@@ -65,49 +62,49 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
         task_id = self._task_ids[(type_, name)]
         # noinspection PyProtectedMember
         task = self._progress._tasks[task_id]  # pylint: disable=protected-access
-        entity = task.fields["entity"]
+        asset = task.fields["asset"]
 
         task_description = description if description is not None else status
         if status:
-            entity.status = status
+            asset.status = status
         if url:
-            entity.base_url = url
+            asset.base_url = url
         if version:
-            entity.version = version
+            asset.version = version
         if build_idx:
-            entity.build_idx = build_idx
+            asset.build_idx = build_idx
         if error_reason:
-            entity.error_reason = error_reason
+            asset.error_reason = error_reason
         if state:
-            entity.resource_transfer_state = state
+            asset.resource_transfer_state = state
 
         self._progress.update(task_id, description=task_description)
 
-        if status == EntityStatus.PENDING:
+        if status == AssetTrackerStatus.PENDING:
             self._progress.stop_task(task_id)
             task.start_time = task.stop_time = None
-        elif status in (EntityStatus.BUILDING, EntityStatus.TRAINING):
+        elif status in (AssetTrackerStatus.BUILDING, AssetTrackerStatus.TRAINING):
             if not task.started:
                 task.start_time = task.stop_time = None
                 self._progress.start_task(task_id)
                 assert task.total is not None
                 self._progress.update(task_id, completed=task.total * 0.1)
-        elif status == EntityStatus.DONE:
+        elif status == AssetTrackerStatus.DONE:
             self._progress.update(task_id, completed=task.total)
-        elif status == EntityStatus.ERROR:
+        elif status == AssetTrackerStatus.ERROR:
             self._progress.stop_task(task_id)
             self._progress.update(task_id, completed=0)
 
-    def _get_entity(self, type_: EntityType, name: str) -> Entity:
+    def _get_asset(self, type_: AssetType, name: str) -> AssetTracker:
         task_id = self._task_ids[(type_, name)]
         # noinspection PyProtectedMember
         task = self._progress._tasks[task_id]  # pylint: disable=protected-access
-        entity = task.fields["entity"]
-        return entity
+        asset = task.fields["asset"]
+        return asset
 
     def _get_url(self, asset_type: AssetType, name: str) -> URL:
         return AssetPath(
-            entity_name=name,
+            asset_name=name,
             asset_type=asset_type,
             org_name=self._run.account_name,
             project_name=self._run.project_name,
@@ -141,64 +138,64 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
                 )
             )
 
-    def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
-        status = EntityStatus.PENDING
-        self._update_entity(
-            EntityType.DERIVED_DATASET,
+    def mark_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
+        status = AssetTrackerStatus.PENDING
+        self._update_asset(
+            AssetType.DATASET,
             name,
             url=self._get_url(AssetType.DATASET, name),
             status=status,
         )
 
-    def mark_derived_dataset_building(
+    def mark_dataset_building(
         self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
     ) -> None:
         # For some reason, this function is called even after the dataset is successfully built and
         # it causes a flicker in the progress bar. This is a workaround.
-        entity = self._get_entity(EntityType.DERIVED_DATASET, name)
-        if entity.status == EntityStatus.DONE:
+        asset = self._get_asset(AssetType.DATASET, name)
+        if asset.status == AssetTrackerStatus.DONE:
             return
 
-        self._update_entity(
-            EntityType.DERIVED_DATASET,
+        self._update_asset(
+            AssetType.DATASET,
             name,
-            status=EntityStatus.BUILDING,
+            status=AssetTrackerStatus.BUILDING,
             url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_idx,
         )
 
-    def mark_derived_dataset_failed(self, name: str, reason: str) -> None:
-        self._update_entity(
-            EntityType.DERIVED_DATASET,
+    def mark_dataset_failed(self, name: str, reason: str) -> None:
+        self._update_asset(
+            AssetType.DATASET,
             name,
-            status=EntityStatus.ERROR,
+            status=AssetTrackerStatus.ERROR,
             error_reason=f"{reason}",
         )
 
-    def mark_derived_dataset_built(
+    def mark_dataset_built(
         self,
         name: str,
         *,
         version: Optional[str] = None,
         build_index: Optional[str] = None,
     ) -> None:
-        self._update_entity(
-            EntityType.DERIVED_DATASET,
+        self._update_asset(
+            AssetType.DATASET,
             name,
-            status=EntityStatus.DONE,
+            status=AssetTrackerStatus.DONE,
             url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_index,
         )
 
     def mark_model_saving(self, name: str) -> None:
-        self._update_entity(EntityType.MODEL, name, status=EntityStatus.SAVING)
+        self._update_asset(AssetType.MODEL, name, status=AssetTrackerStatus.SAVING)
 
     def mark_model_saved(self, name: str) -> None:
-        status = EntityStatus.PENDING
-        self._update_entity(
-            EntityType.MODEL,
+        status = AssetTrackerStatus.PENDING
+        self._update_asset(
+            AssetType.MODEL,
             name,
             status=status,
         )
@@ -208,14 +205,14 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
     ) -> None:
         # For some reason, this function is called even after the model is successfully trained and
         # it causes a flicker in the progress bar. This is a workaround.
-        entity = self._get_entity(EntityType.MODEL, name)
-        if entity.status == EntityStatus.DONE:
+        asset = self._get_asset(AssetType.MODEL, name)
+        if asset.status == AssetTrackerStatus.DONE:
             return
 
-        self._update_entity(
-            EntityType.MODEL,
+        self._update_asset(
+            AssetType.MODEL,
             name,
-            status=EntityStatus.TRAINING,
+            status=AssetTrackerStatus.TRAINING,
             url=self._get_url(AssetType.MODEL, name),
             version=version,
             build_idx=train_idx,
@@ -228,54 +225,57 @@ class RemoteExecutionRunProgressTracker(RunProgressTracker):
         version: Optional[str] = None,
         train_index: Optional[str] = None,
     ) -> None:
-        self._update_entity(
-            EntityType.MODEL,
+        self._update_asset(
+            AssetType.MODEL,
             name,
-            status=EntityStatus.DONE,
+            status=AssetTrackerStatus.DONE,
             url=self._get_url(AssetType.MODEL, name),
             version=version,
             build_idx=train_index,
         )
 
     def mark_model_train_failed(self, name: str, reason: str) -> None:
-        self._update_entity(
-            EntityType.MODEL,
+        self._update_asset(
+            AssetType.MODEL,
             name,
-            status=EntityStatus.ERROR,
+            status=AssetTrackerStatus.ERROR,
             error_reason=f"{reason}",
         )
 
     def mark_model_resources_uploading(
         self, name: str, state: ResourceTransferState
     ) -> None:
-        self._update_entity(
-            EntityType.MODEL,
+        self._update_asset(
+            AssetType.MODEL,
             name,
             description="uploading",
             state=state,
-            status=EntityStatus.RESOURCE_UPLOADING,
+            status=AssetTrackerStatus.RESOURCE_UPLOADING,
         )
 
     def mark_model_resources_uploaded(self, name: str) -> None:
-        self._update_entity(
-            EntityType.MODEL, name, description="uploaded", status=EntityStatus.PENDING
+        self._update_asset(
+            AssetType.MODEL,
+            name,
+            description="uploaded",
+            status=AssetTrackerStatus.PENDING,
         )
 
     def mark_dataset_resources_uploading(
         self, name: str, state: ResourceTransferState
     ) -> None:
-        self._update_entity(
-            EntityType.DERIVED_DATASET,
+        self._update_asset(
+            AssetType.DATASET,
             name,
             description="uploading",
             state=state,
-            status=EntityStatus.RESOURCE_UPLOADING,
+            status=AssetTrackerStatus.RESOURCE_UPLOADING,
         )
 
     def mark_dataset_resources_uploaded(self, name: str) -> None:
-        self._update_entity(
-            EntityType.DERIVED_DATASET,
+        self._update_asset(
+            AssetType.DATASET,
             name,
             description="uploaded",
-            status=EntityStatus.PENDING,  # Pending here meaning that training has not started yet
+            status=AssetTrackerStatus.PENDING,  # Pending here meaning that training has not started yet
         )

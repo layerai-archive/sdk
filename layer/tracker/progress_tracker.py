@@ -5,7 +5,7 @@ from typing import Iterator, List, Optional, Union
 from layerapi.api.ids_pb2 import RunId
 
 from layer.contracts.assertions import Assertion
-from layer.contracts.runs import DatasetTransferState, ResourceTransferState
+from layer.contracts.tracker import DatasetTransferState, ResourceTransferState
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 
 
@@ -22,18 +22,18 @@ class RunProgressTracker:
     def mark_start_running(self, run_id: RunId) -> None:
         pass
 
-    def mark_derived_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
+    def mark_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
         pass
 
-    def mark_derived_dataset_building(
+    def mark_dataset_building(
         self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
     ) -> None:
         pass
 
-    def mark_derived_dataset_failed(self, name: str, reason: str) -> None:
+    def mark_dataset_failed(self, name: str, reason: str) -> None:
         pass
 
-    def mark_derived_dataset_built(
+    def mark_dataset_built(
         self,
         name: str,
         *,
@@ -65,7 +65,7 @@ class RunProgressTracker:
     def mark_model_train_failed(self, name: str, reason: str) -> None:
         pass
 
-    def update_derived_dataset_saving_progress(
+    def update_dataset_saving_progress(
         self, name: str, cur_step: int, total_steps: int
     ) -> None:
         pass
@@ -125,28 +125,28 @@ class RunProgressTracker:
     def mark_model_getting_model(
         self,
         name: str,
-        getting_entity_name: str,
+        getting_asset_name: str,
         state: Optional[ResourceTransferState],
         from_cache: bool,
     ) -> None:
         pass
 
     def mark_model_getting_dataset(
-        self, name: str, getting_entity_name: str, from_cache: bool
+        self, name: str, getting_asset_name: str, from_cache: bool
     ) -> None:
         pass
 
     def mark_dataset_getting_model(
         self,
         name: str,
-        getting_entity_name: str,
+        getting_asset_name: str,
         state: Optional[ResourceTransferState],
         from_cache: bool,
     ) -> None:
         pass
 
     def mark_dataset_getting_dataset(
-        self, name: str, getting_entity_name: str, from_cache: bool
+        self, name: str, getting_asset_name: str, from_cache: bool
     ) -> None:
         pass
 
