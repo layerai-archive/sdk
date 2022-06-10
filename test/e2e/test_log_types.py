@@ -1,10 +1,11 @@
 import pandas as pd
+from sklearn.svm import SVC
 
 import layer
 from layer.clients.layer import LayerClient
 from layer.contracts.logged_data import LoggedDataType
 from layer.contracts.projects import Project
-from layer.decorators import dataset, model
+from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
@@ -169,15 +170,24 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     assert logged_data.data.endswith(video_path_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
 
+    @pip_requirements(packages=["scikit-learn==0.23.2"])
     @model(model_name)
     def train_model():
         import os
 
         from PIL import Image
+        from sklearn import datasets
+
+        iris = datasets.load_iris()
+        clf = SVC()
+        result = clf.fit(iris.data, iris.target)
 
         image = Image.open(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_logo.jpeg")
         for step in range(4, 6):
             layer.log({stepped_pil_image_tab: image}, step=step)
+
+        print("model1 computed")
+        return result
 
     train_model()
 
