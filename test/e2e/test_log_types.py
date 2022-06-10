@@ -188,7 +188,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
         for step in range(4, 6):
             layer.log({stepped_pil_image_tab: image}, step=step)
 
-        print("model1 computed")
+        print("model1 computed fully")
         return result
 
     train_model()
