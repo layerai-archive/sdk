@@ -4,12 +4,15 @@ from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
+from layerapi.api.entity.account_view_pb2 import AccountView
 from layerapi.api.entity.project_pb2 import Project
-from layerapi.api.ids_pb2 import OrganizationId, ProjectId
+from layerapi.api.entity.project_view_pb2 import ProjectView
+from layerapi.api.ids_pb2 import AccountId, OrganizationId, ProjectId
 from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
     CreateProjectResponse,
     GetProjectByPathResponse,
+    GetProjectViewByIdResponse,
 )
 
 from layer.clients.project_service import ProjectServiceClient
@@ -47,6 +50,70 @@ def _get_mock_project() -> Project:
         organization_id=proto_org_id,
         visibility=Project.VISIBILITY_PRIVATE,
     )
+
+
+def _get_mock_project_view() -> ProjectView:
+    expected_project_uuid = str(uuid.uuid4())
+    proto_project_id = ProjectId(value=expected_project_uuid)
+    account_id = AccountId(value=str(uuid.uuid4()))
+    return ProjectView(
+        id=proto_project_id,
+        name="name",
+        account=AccountView(
+            id=account_id, name="test-acc", display_name="Test Account"
+        ),
+    )
+
+
+def test_given_project_exists_when_get_project_by_id_then_project_returned():
+    # given
+    mock_project = _get_mock_project_view()
+    mock_project_api = MagicMock()
+    mock_project_api.GetProjectViewById.return_value = GetProjectViewByIdResponse(
+        project=mock_project
+    )
+    project_service_client = _get_project_service_client_with_mocks(
+        project_api_stub=mock_project_api
+    )
+
+    # when
+    project = project_service_client.get_project_by_id(uuid.UUID(mock_project.id.value))
+
+    # then
+    assert str(project.id) == mock_project.id.value
+    assert str(project.name) == mock_project.name
+    assert str(project.account.name) == mock_project.account.name
+    assert str(project.account.id) == mock_project.account.id.value
+
+
+def test_given_project_not_exists_when_get_project_by_id_then_returns_none():
+    # given
+    mock_project_api = MagicMock()
+    mock_project_api.GetProjectViewById.side_effect = (
+        LayerClientResourceNotFoundException
+    )
+    project_service_client = _get_project_service_client_with_mocks(
+        project_api_stub=mock_project_api
+    )
+
+    # when
+    project = project_service_client.get_project_by_id(uuid.uuid4())
+
+    # then
+    assert project is None
+
+
+def test_given_unknown_error_when_get_project_by_id_raises_unhandled_grpc_error():  # noqa
+    # given
+    mock_project_api = MagicMock()
+    mock_project_api.GetProjectById.side_effect = Exception
+    project_service_client = _get_project_service_client_with_mocks(
+        project_api_stub=mock_project_api
+    )
+
+    # when + then
+    with pytest.raises(LayerClientException):
+        project_service_client.get_project_by_id(uuid.uuid4())
 
 
 def test_given_project_exists_when_get_project_by_path_then_project_returned():
