@@ -4,10 +4,17 @@ E2E_TEST_HOME := $(ROOT_DIR)/build/e2e-home
 TEST_TOKEN_FILE := .test-token
 POETRY := $(shell command -v poetry 2> /dev/null)
 IN_VENV := $(shell echo $(CONDA_DEFAULT_ENV)$(CONDA_PREFIX)$(VIRTUAL_ENV))
+CONDA_ENV_NAME := $(shell echo $(CONDA_DEFAULT_ENV))
+UNAME_SYS := $(shell uname -s)
+UNAME_ARCH := $(shell uname -m)
 
 .DEFAULT_GOAL:=help
 
-install: $(INSTALL_STAMP) ## Install dependencies
+define get_python_package_version
+  $(1)==$(shell $(POETRY) show $1 --no-ansi --no-dev | grep version | awk '{print $$3}')
+endef
+
+install: apple-arm-prereq-install $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock
 	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. See https://python-poetry.org/docs/"; exit 2; fi
 ifdef IN_VENV
@@ -16,6 +23,29 @@ else
 	$(POETRY) install --remove-untracked
 endif
 	touch $(INSTALL_STAMP)
+
+.PHONY: apple-arm-prereq-install
+apple-arm-prereq-install:
+ifeq ($(UNAME_SYS), Darwin)
+ifeq ($(UNAME_ARCH), arm64)
+ifdef CONDA_ENV_NAME
+ifeq ($(CONDA_ENV_NAME), base)
+	@echo 'Please create a conda environment and make it active'
+	@exit 1
+else
+	@conda install -y $(call get_python_package_version,tokenizers) \
+                         $(call get_python_package_version,xgboost) \
+                         $(call get_python_package_version,lightgbm) \
+                         $(call get_python_package_version,h5py) \
+                         $(call get_python_package_version,pyarrow)
+endif
+else
+	@echo 'Not inside a conda environment or conda not installed, this is a requirement for Apple arm processors'
+	@echo 'See https://github.com/conda-forge/miniforge/'
+	@exit 1
+endif
+endif
+endif
 
 .PHONY: test
 test: $(INSTALL_STAMP) ## Run unit tests
