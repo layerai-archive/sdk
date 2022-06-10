@@ -5,11 +5,14 @@ from typing import Iterator, Optional
 from uuid import UUID
 
 from layerapi.api.entity.project_pb2 import Project as ProjectMessage
+from layerapi.api.entity.project_view_pb2 import ProjectView
 from layerapi.api.ids_pb2 import ProjectId
 from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
     GetProjectByPathRequest,
     GetProjectByPathResponse,
+    GetProjectViewByIdRequest,
+    GetProjectViewByIdResponse,
     RemoveProjectByIdRequest,
     UpdateProjectRequest,
 )
@@ -65,6 +68,34 @@ class ProjectServiceClient:
                 id=account_id,
             ),
         )
+
+    @staticmethod
+    def _map_project_view_message_to_project_contract(
+        project_view: ProjectView,
+    ) -> Project:
+        project_id = UUID(project_view.id.value)
+        account_id = UUID(project_view.account.id.value)
+        return Project(
+            name=project_view.name,
+            id=project_id,
+            account=Account(
+                name=project_view.account.name,
+                id=account_id,
+            ),
+        )
+
+    def get_project_by_id(self, project_id: UUID) -> Optional[Project]:
+        try:
+            resp: GetProjectViewByIdResponse = self._service.GetProjectViewById(
+                GetProjectViewByIdRequest(project_id=ProjectId(value=str(project_id)))
+            )
+            if resp.project is not None:
+                return self._map_project_view_message_to_project_contract(resp.project)
+        except LayerClientResourceNotFoundException:
+            pass
+        except Exception as err:
+            raise generate_client_error_from_grpc_error(err, "internal")
+        return None
 
     def get_project(self, full_name: ProjectFullName) -> Optional[Project]:
         try:
