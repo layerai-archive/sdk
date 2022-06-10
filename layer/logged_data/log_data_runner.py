@@ -52,6 +52,8 @@ class LogDataRunner:
         ],
         epoch: Optional[int] = None,
     ) -> None:
+        LogDataRunner._check_epoch(epoch)
+
         for tag, value in data.items():
             if isinstance(value, str):
                 self._log_text(tag=tag, text=value)
@@ -79,13 +81,19 @@ class LogDataRunner:
             elif LogDataRunner._is_image(value):
                 if TYPE_CHECKING:
                     assert isinstance(value, Path)
-                self._log_image_from_path(tag=tag, path=value)
+                if self._train_id and epoch is not None:
+                    self._log_image_from_path(tag=tag, path=value, epoch=epoch)
+                else:
+                    self._log_image_from_path(tag=tag, path=value)
             elif self._is_pil_image(value):
                 if TYPE_CHECKING:
                     import PIL.Image
 
                     assert isinstance(value, PIL.Image.Image)
-                self._log_image(tag=tag, image=value)
+                if self._train_id and epoch is not None:
+                    self._log_image(tag=tag, image=value, epoch=epoch)
+                else:
+                    self._log_image(tag=tag, image=value)
             elif self._is_plot_figure(value):
                 if TYPE_CHECKING:
                     import matplotlib.figure
@@ -167,18 +175,28 @@ class LogDataRunner:
 
     def _log_video_from_path(self, tag: str, path: Path) -> None:
         self._log_binary_from_path(
-            tag, path, LoggedDataType.LOGGED_DATA_TYPE_VIDEO, 100
+            tag, path, LoggedDataType.LOGGED_DATA_TYPE_VIDEO, max_file_size_mb=100
         )
 
-    def _log_image_from_path(self, tag: str, path: Path) -> None:
-        self._log_binary_from_path(tag, path, LoggedDataType.LOGGED_DATA_TYPE_IMAGE, 1)
+    def _log_image_from_path(
+        self, tag: str, path: Path, epoch: Optional[int] = None
+    ) -> None:
+        self._log_binary_from_path(
+            tag,
+            path,
+            LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+            max_file_size_mb=1,
+            epoch=epoch,
+        )
 
     def _log_binary_from_path(
         self,
         tag: str,
         path: Path,
         logged_data_type: "LoggedDataType.V",
+        *,
         max_file_size_mb: int,
+        epoch: Optional[int] = None,
     ) -> None:
         file_size_in_bytes = path.stat().st_size
         self._check_size_less_than_mb(file_size_in_bytes, max_file_size_mb)
@@ -188,11 +206,14 @@ class LogDataRunner:
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,
                 logged_data_type=logged_data_type,
+                epoch=epoch,
             )
             resp = s.put(presigned_url, data=image_file)
             resp.raise_for_status()
 
-    def _log_image(self, tag: str, image: "PIL.Image.Image") -> None:
+    def _log_image(
+        self, tag: str, image: "PIL.Image.Image", *, epoch: Optional[int] = None
+    ) -> None:
         with requests.Session() as s, io.BytesIO() as buffer:
             if image.mode in ["RGBA", "P"]:
                 image.save(buffer, format="PNG")
@@ -204,6 +225,7 @@ class LogDataRunner:
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,
                 logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+                epoch=epoch,
             )
             resp = s.put(presigned_url, data=buffer.getvalue())
             resp.raise_for_status()
@@ -226,6 +248,14 @@ class LogDataRunner:
             self._log_plot_figure(tag, plt.gcf())
         else:
             raise ValueError("No figures in the current pyplot state!")
+
+    @staticmethod
+    def _check_epoch(epoch: Any) -> None:
+        if epoch is not None:
+            if not isinstance(epoch, int) or epoch < 1:
+                raise ValueError(
+                    f"epoch (i.e. step) can only be a positive integer, given value: {epoch}"
+                )
 
     @staticmethod
     def _has_allowed_extension(

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, unique
+from typing import Dict
 
 
 @unique
@@ -20,6 +21,7 @@ class LoggedData:
     logged_data_type: LoggedDataType
     tag: str
     data: str
+    epoched_data: Dict[int, str]
 
 
 @dataclass(frozen=True)

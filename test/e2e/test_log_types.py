@@ -123,6 +123,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     pil_image_tag = "pil_image_tag"
     image_path_tag = "image_path_tag"
     video_path_tag = "video_path_tag"
+    stepped_pil_image_tab = "stepped_pil_image_tag"
 
     @dataset(ds_name)
     def multimedia():
@@ -139,6 +140,9 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
 
         video_path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_video.mp4")
         layer.log({video_path_tag: video_path})
+
+        for step in range(4, 6):
+            layer.log({stepped_pil_image_tab: image}, step=step)
 
         return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
 
@@ -166,6 +170,16 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     assert logged_data.data.startswith("https://logged-data--layer")
     assert logged_data.data.endswith(video_path_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=stepped_pil_image_tab, dataset_build_id=ds.build.id
+    )
+    assert logged_data.logged_data_type == LoggedDataType.IMAGE
+    assert len(logged_data.epoched_data) == 2
+    assert logged_data.epoched_data[4].value.startswith("https://logged-data--layer")
+    assert logged_data.epoched_data[4].value.endswith(stepped_pil_image_tab)
+    assert logged_data.epoched_data[5].value.startswith("https://logged-data--layer")
+    assert logged_data.epoched_data[5].value.endswith(stepped_pil_image_tab)
 
 
 def test_matplotlib_objects_logged(initialized_project: Project, client: LayerClient):
