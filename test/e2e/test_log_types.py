@@ -4,7 +4,7 @@ import layer
 from layer.clients.layer import LayerClient
 from layer.contracts.logged_data import LoggedDataType
 from layer.contracts.projects import Project
-from layer.decorators import dataset
+from layer.decorators import dataset, model
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
@@ -120,6 +120,7 @@ def test_markdown_logged(initialized_project: Project, client: LayerClient):
 def test_image_and_video_logged(initialized_project: Project, client: LayerClient):
     # given
     ds_name = "multimedia"
+    model_name = "model_with_stepped_log"
     pil_image_tag = "pil_image_tag"
     image_path_tag = "image_path_tag"
     video_path_tag = "video_path_tag"
@@ -140,9 +141,6 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
 
         video_path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_video.mp4")
         layer.log({video_path_tag: video_path})
-
-        for step in range(4, 6):
-            layer.log({stepped_pil_image_tab: image}, step=step)
 
         return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
 
@@ -171,8 +169,21 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     assert logged_data.data.endswith(video_path_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
 
+    @model(model_name)
+    def train_model():
+        import os
+
+        from PIL import Image
+
+        image = Image.open(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_logo.jpeg")
+        for step in range(4, 6):
+            layer.log({stepped_pil_image_tab: image}, step=step)
+
+    train_model()
+
+    mdl = layer.get_model(model_name)
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=stepped_pil_image_tab, dataset_build_id=ds.build.id
+        tag=stepped_pil_image_tab, train_id=mdl.get_train().id
     )
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
     assert len(logged_data.epoched_data) == 2
