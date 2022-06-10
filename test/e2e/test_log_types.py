@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import pandas as pd
 from sklearn.svm import SVC
 
@@ -193,7 +195,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
 
     mdl = layer.get_model(model_name)
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=stepped_pil_image_tab, train_id=mdl.storage_config.train_id
+        tag=stepped_pil_image_tab, train_id=UUID(mdl.storage_config.train_id.value)
     )
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
     assert len(logged_data.epoched_data) == 2
