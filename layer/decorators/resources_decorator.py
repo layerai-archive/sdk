@@ -41,7 +41,7 @@ def resources(path: str, *paths: str) -> Callable[..., Any]:
     .. code-block:: python
 
         @dataset("titanic")
-        @resources("/data/titanic.csv")  # it's ok to use absolute paths as they're resolve on local machine
+        @resources("/data/titanic.csv")  # it's ok to use absolute paths as they're resolved on the local machine
         def titanic():
             return pd.read_csv("data/titanic.csv")  # while run inside function fabric, always use the relative paths!
 
