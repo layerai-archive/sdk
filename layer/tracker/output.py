@@ -67,7 +67,9 @@ class SpinnerColumn(ProgressColumn):
 
 def get_progress_ui() -> Progress:
     return Progress(
-        SpinnerColumn(finished_text=":white_heavy_check_mark:"), AssetColumn()
+        SpinnerColumn(finished_text=":white_heavy_check_mark:"),
+        AssetColumn(),
+        console=Console(force_jupyter=False),
     )
 
 
