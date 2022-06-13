@@ -16,7 +16,7 @@ from layer.decorators.assertions import get_assertion_functions_data
 from layer.exceptions.exception_handler import exception_handler
 from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.global_context import (
-    current_project_name,
+    current_project_full_name,
     reset_active_context,
     set_active_context,
 )
@@ -146,14 +146,14 @@ class ModelTrainer:
             "train_model",
         )
         self.logger.info("train_model_func function imported successfully")
-        project_name = current_project_name()
-        if not project_name:
-            raise Exception("Internal Error: missing current project name")
+        project_full_name = current_project_full_name()
+        if not project_full_name:
+            raise Exception("Internal Error: missing current project full name")
         with Context() as context:
             with Train(
                 layer_client=self.client,
                 name=self.train_context.model_name,
-                project_name=project_name,
+                project_name=project_full_name.project_name,
                 version=self.train_context.model_version,
                 train_id=self.train_context.train_id,
             ) as train:
@@ -179,7 +179,7 @@ class ModelTrainer:
                 os.chdir(work_dir)
                 self.logger.info("Downloading resources")
                 ResourceManager(self.client).wait_resource_download(
-                    project_name,
+                    project_full_name,
                     train_model_func.__name__,
                     target_dir=str(work_dir),
                 )

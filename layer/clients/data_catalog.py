@@ -63,11 +63,12 @@ from layer.utils.file_utils import tar_directory
 from layer.utils.grpc import create_grpc_channel, generate_client_error_from_grpc_error
 from layer.utils.s3 import S3Util
 
+# Number of rows to send in a single chunk, but still bounded by the gRPC max message size.
+# Allow to send rows on average up to 1MB, assuming default max gRPC message size is 4MB
+from ..contracts.project_full_name import ProjectFullName
 from .dataset_service import DatasetClient, DatasetClientError
 
 
-# Number of rows to send in a single chunk, but still bounded by the gRPC max message size.
-# Allow to send rows on average up to 1MB, assuming default max gRPC message size is 4MB
 _STORE_DATASET_MAX_CHUNK_SIZE = 4
 
 
@@ -319,10 +320,13 @@ class DataCatalogClient:
         )
 
     def get_resource_paths(
-        self, project_name: str, function_name: str, path: str = ""
+        self, project_full_name: ProjectFullName, function_name: str, path: str = ""
     ) -> List[str]:
+        # TODO Use project_full_name.path when layer-api published
         request = GetResourcePathsRequest(
-            project_name=project_name, function_name=function_name, path=path
+            project_name=project_full_name.project_name,
+            function_name=function_name,
+            path=path,
         )
         response = self._service.GetResourcePaths(request)
         return response.paths
