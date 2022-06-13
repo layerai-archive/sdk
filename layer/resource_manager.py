@@ -72,7 +72,7 @@ class ResourceManager:
     def _update_resource_paths_index(self, run: Run) -> None:
         for function in run.definitions:
             self._client.data_catalog.update_resource_paths_index(
-                project_name=run.project_name,
+                project_full_name=run.project_full_name,
                 function_name=function.func_name,
                 paths=[
                     local_path
