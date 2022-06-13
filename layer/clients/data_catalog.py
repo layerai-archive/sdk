@@ -333,10 +333,8 @@ class DataCatalogClient:
     def update_resource_paths_index(
         self, project_full_name: ProjectFullName, function_name: str, paths: List[str]
     ) -> None:
-        # TODO
-        # https://linear.app/layer/issue/LAY-3290/use-project-full-name-in-updateresourcepathsindexrequest
         request = UpdateResourcePathsIndexRequest(
-            project_name=project_full_name.project_name,
+            project_full_name=project_full_name.path,
             function_name=function_name,
             paths=paths,
         )
