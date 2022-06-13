@@ -322,9 +322,8 @@ class DataCatalogClient:
     def get_resource_paths(
         self, project_full_name: ProjectFullName, function_name: str, path: str = ""
     ) -> List[str]:
-        # TODO Use project_full_name.path when layer-api published
         request = GetResourcePathsRequest(
-            project_name=project_full_name.project_name,
+            project_full_name=project_full_name.path,
             function_name=function_name,
             path=path,
         )
