@@ -66,6 +66,7 @@ class LoggedDataClient:
             data=logged_data_pb.text,
             logged_data_type=LDType(logged_data_pb.type),
             tag=logged_data_pb.unique_tag,
+            epoched_data=logged_data_pb.epoched_data,
         )
 
     def log_model_metric(
@@ -91,12 +92,14 @@ class LoggedDataClient:
         logged_data_type: "LoggedDataType.V",
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
+        epoch: Optional[int] = None,
     ) -> str:
         return self._log_data(
             tag,
             logged_data_type,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
+            epoch=epoch,
         ).s3_path
 
     def log_text_data(
@@ -181,12 +184,17 @@ class LoggedDataClient:
         data: Optional[str] = None,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
+        epoch: Optional[int] = None,
     ) -> LogDataResponse:
         text = cast(str, data)
         request = LogDataRequest(
             unique_tag=tag,
             type=type,
             text=text,
+            # Given that protocol buffers do not allow differentiating between default value (0) or the actual value 0
+            # We use the convention that a minus value represents the absence of an epoch.
+            # See https://developers.google.com/protocol-buffers/docs/proto3#default for more information.
+            epoch=epoch if epoch is not None else -1,
             model_train_id=ModelTrainId(value=str(train_id))
             if train_id is not None
             else None,

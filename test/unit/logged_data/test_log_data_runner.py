@@ -127,7 +127,7 @@ def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() 
     numeric_value1 = 2.3
     tag2 = "numeric-value-tag-2"
     numeric_value2 = 2.5
-    epoch = 0
+    epoch = 123
 
     # when
     runner.log({tag1: numeric_value1, tag2: numeric_value2}, epoch=epoch)
@@ -302,6 +302,42 @@ def test_given_runner_when_log_image_then_calls_log_binary(
         tag=tag,
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+        epoch=None,
+    )
+    mock_put.assert_called_with("http://path/for/upload", data=ANY)
+
+
+@patch.object(Session, "put")
+def test_given_runner_when_log_image_with_step_for_model_train_then_calls_log_binary(
+    mock_put,
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
+    train_id = uuid.uuid4()
+    runner = LogDataRunner(
+        client=client,
+        train_id=train_id,
+        logger=None,
+    )
+    tag = "pillow-image-tag"
+    image_data = np.random.rand(400, 400, 3) * 255
+    image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
+
+    # when
+    runner.log({tag: image}, epoch=123)
+
+    # then
+    logged_data_client.log_binary_data.assert_called_with(
+        train_id=train_id,
+        dataset_build_id=None,
+        tag=tag,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+        epoch=123,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -472,6 +508,7 @@ def test_given_runner_when_log_image_by_path_then_calls_log_binary(
         tag=tag,
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+        epoch=None,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -506,6 +543,7 @@ def test_given_runner_when_log_video_by_path_then_calls_log_binary(
         tag=tag,
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_VIDEO,
+        epoch=None,
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -567,3 +605,25 @@ def test_given_runner_when_log_markdown_then_calls_log_markdown(
         data=md.data,
         dataset_build_id=dataset_build_id,
     )
+
+
+def test_given_runner_with_invalid_epoch_then_raises() -> None:
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+    train_id = uuid.uuid4()
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=None
+    )
+
+    with pytest.raises(
+        ValueError, match=r".*can only be a positive integer, given value: 0.*"
+    ):
+        runner.log({"foo": {10: 20}}, epoch=0)
+
+    with pytest.raises(
+        ValueError, match=r".*can only be a positive integer, given value: xyz.*"
+    ):
+        runner.log({"foo": {10: 20}}, epoch="xyz")

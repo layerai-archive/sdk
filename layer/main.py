@@ -681,7 +681,7 @@ def log(
 ) -> None:
     """
     :param data: A dictionary in which each key is a string tag (i.e. name/id). The value can have different types. See examples below for more details.
-    :param step: An optional integer that associates data with a particular step (epoch). This only takes effect it the logged data is to be associated with a model train (and *not* with a dataset build) and the data is a number.
+    :param step: An optional positive integer that associates data with a particular step (epoch). This only takes effect if the logged data is to be associated with a model train (and *not* with a dataset build), and the data is either a number or an image.
     :return: None
 
     Logs arbitrary data associated with a model train or a dataset build into Layer backend.

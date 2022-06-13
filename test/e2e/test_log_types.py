@@ -1,10 +1,13 @@
+from uuid import UUID
+
 import pandas as pd
+from sklearn.svm import SVC
 
 import layer
 from layer.clients.layer import LayerClient
 from layer.contracts.logged_data import LoggedDataType
 from layer.contracts.projects import Project
-from layer.decorators import dataset
+from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
@@ -120,9 +123,11 @@ def test_markdown_logged(initialized_project: Project, client: LayerClient):
 def test_image_and_video_logged(initialized_project: Project, client: LayerClient):
     # given
     ds_name = "multimedia"
+    model_name = "model_with_stepped_log"
     pil_image_tag = "pil_image_tag"
     image_path_tag = "image_path_tag"
     video_path_tag = "video_path_tag"
+    stepped_pil_image_tab = "stepped_pil_image_tag"
 
     @dataset(ds_name)
     def multimedia():
@@ -166,6 +171,38 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     assert logged_data.data.startswith("https://logged-data--layer")
     assert logged_data.data.endswith(video_path_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
+
+    @pip_requirements(packages=["scikit-learn==0.23.2"])
+    @model(model_name)
+    def train_model():
+        import os
+
+        from PIL import Image
+        from sklearn import datasets
+
+        iris = datasets.load_iris()
+        clf = SVC()
+        result = clf.fit(iris.data, iris.target)
+
+        image = Image.open(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_logo.jpeg")
+        for step in range(4, 6):
+            layer.log({stepped_pil_image_tab: image}, step=step)
+
+        print("model1 computed fully")
+        return result
+
+    train_model()
+
+    mdl = layer.get_model(model_name)
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=stepped_pil_image_tab, train_id=UUID(mdl.storage_config.train_id.value)
+    )
+    assert logged_data.logged_data_type == LoggedDataType.IMAGE
+    assert len(logged_data.epoched_data) == 2
+    assert logged_data.epoched_data[4].startswith("https://logged-data--layer")
+    assert logged_data.epoched_data[4].endswith(f"{stepped_pil_image_tab}/epoch/4")
+    assert logged_data.epoched_data[5].startswith("https://logged-data--layer")
+    assert logged_data.epoched_data[5].endswith(f"{stepped_pil_image_tab}/epoch/5")
 
 
 def test_matplotlib_objects_logged(initialized_project: Project, client: LayerClient):
