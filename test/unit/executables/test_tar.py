@@ -8,7 +8,13 @@ def func_simple() -> None:
     print("running simple function")
 
 
-def func_with_dependency() -> None:
+def func_with_resources() -> None:
+    with open("test/e2e/assets/data/test.csv", "r") as file:
+        contents = file.read()
+    print(f"reading file of size {len(contents)}")
+
+
+def func_with_dependencies() -> None:
     import click  # type: ignore
     import requests  # type: ignore
 
@@ -24,11 +30,24 @@ def test_executable_tar(tmpdir: Path) -> None:
     assert b"running simple function" in result.stdout
 
 
+def test_executable_tar_with_resources(tmpdir: Path) -> None:
+    executable_path = tmpdir / "test.bsx"
+
+    build_executable_tar(
+        executable_path,
+        func_with_resources,
+        resources=[Path("test/e2e/assets/data/test.csv")],
+    )
+
+    result = subprocess.run(["sh", executable_path], capture_output=True)
+    assert b"reading file of size 67" in result.stdout
+
+
 def test_executable_tar_with_dependencies(tmpdir: Path) -> None:
     executable_path = tmpdir / "test.bsx"
     build_executable_tar(
         executable_path,
-        func_with_dependency,
+        func_with_dependencies,
         pip_dependencies=["requests==2.28.0", "click==8.1.3"],
     )
 

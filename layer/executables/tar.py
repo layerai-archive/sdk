@@ -9,6 +9,7 @@ import cloudpickle
 
 
 ENTRYPOINT_FILE = Path(__file__).parent / "entrypoint.py"
+EXTRACTOR_PIP_DEPENDENCIES = ["cloudpickle"]
 
 
 def build_executable_tar(
@@ -20,14 +21,14 @@ def build_executable_tar(
 
     # add pip dependencies needed by the extractor
     pip_dependencies = pip_dependencies or []
-    pip_dependencies.append("cloudpickle")
+    pip_dependencies.extend(EXTRACTOR_PIP_DEPENDENCIES)
 
     curdir = Path()
     with open(path, "w+b") as target_file, tempfile.TemporaryDirectory() as tmp:
         build_directory = Path(tmp)
 
         # the beginning of the file needs to be the self-extracting header
-        target_file.write(HEADER.encode())
+        target_file.write(EXECUTABLE_TAR_HEADER.encode())
 
         with tarfile.open(fileobj=target_file, mode="w:gz") as tar:
             # Put pip_dependencies as requirements.txt
@@ -74,7 +75,7 @@ def _reset_user_info(tarinfo: tarfile.TarInfo) -> tarfile.TarInfo:
     return tarinfo
 
 
-HEADER = """
+EXECUTABLE_TAR_HEADER = """
 TMPDIR=`mktemp -d /tmp/selfextract.XXXXXX`
 CDIR=`pwd`
 
@@ -92,7 +93,7 @@ tail -n+$ARCHIVE $0 | tar xz -C $TMPDIR
 
 # run contents in temporary directory
 cd $TMPDIR
-python3 -m venv venv
+python3 -m venv --system-site-packages venv
 source venv/bin/activate
 pip install -r requirements.txt
 python entrypoint.py
