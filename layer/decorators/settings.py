@@ -2,6 +2,7 @@ from typing import Any, List, Optional
 
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
+from layer.contracts.runs import ResourcePath
 from layer.exceptions.exceptions import ConfigError, LayerClientException
 from layer.global_context import (
     default_fabric,
@@ -23,7 +24,7 @@ class LayerSettings:
     _fabric: Optional[Fabric] = None
     _pip_requirements_file: Optional[str] = None
     _pip_packages: Optional[List[str]] = None
-    _resource_paths: Optional[List[str]] = None
+    _resource_paths: Optional[List[ResourcePath]] = None
     _dependencies: Optional[List[AssetPath]] = None
     _assertions: Optional[List[Any]] = None
 
@@ -48,7 +49,7 @@ class LayerSettings:
     def get_pip_packages(self) -> List[str]:
         return _resolve_settings(self._pip_packages, get_pip_packages(), [])
 
-    def get_resource_paths(self) -> List[str]:
+    def get_resource_paths(self) -> List[ResourcePath]:
         return self._resource_paths or []
 
     def get_dependencies(self) -> List[AssetPath]:
@@ -79,7 +80,7 @@ class LayerSettings:
     def set_pip_packages(self, packages: Optional[List[str]]) -> None:
         self._pip_packages = packages
 
-    def set_resource_paths(self, paths: Optional[List[str]]) -> None:
+    def set_resource_paths(self, paths: Optional[List[ResourcePath]]) -> None:
         self._resource_paths = paths
 
     def set_dependencies(self, dependencies: List[AssetPath]) -> None:
