@@ -15,13 +15,13 @@ from layer.contracts.runs import DatasetFunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
 from layer.decorators.assertions import get_assertion_functions_data
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
+from layer.decorators.settings import LayerSettings
 from layer.global_context import reset_active_context, set_active_context
 from layer.projects.project_runner import register_dataset_function
 from layer.projects.utils import (
     get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
 )
-from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.async_utils import asyncio_run_in_thread
 

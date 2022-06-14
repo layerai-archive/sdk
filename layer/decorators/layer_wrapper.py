@@ -5,12 +5,7 @@ import wrapt  # type: ignore
 from layer.contracts.assets import AssetPath, AssetType, BaseAsset
 from layer.contracts.datasets import Dataset
 from layer.contracts.models import Model
-from layer.settings import LayerSettings
-
-
-def ensure_has_layer_settings(wrapped: Any) -> None:
-    if not hasattr(wrapped, "layer"):
-        wrapped.layer = LayerSettings()
+from layer.decorators.settings import LayerSettings
 
 
 # See https://wrapt.readthedocs.io/en/latest/wrappers.html#custom-function-wrappers for more.
@@ -22,7 +17,9 @@ class LayerFunctionWrapper(wrapt.FunctionWrapper):
         enabled: Any,
     ) -> None:
         super().__init__(wrapped, wrapper, enabled)
-        ensure_has_layer_settings(self.__wrapped__)
+        if not hasattr(wrapped, "layer"):
+            wrapped.layer = LayerSettings()
+        self.layer: LayerSettings = wrapped.layer
 
     # wrapt doesn't implement this method and based on this https://github.com/GrahamDumpleton/wrapt/issues/102#issuecomment-899937490
     # we give it a shot and it seems to be working
@@ -50,9 +47,8 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
         dependencies: Optional[List[Union[str, Dataset, Model]]],
     ) -> None:
         super().__init__(wrapped, wrapper, enabled)
-        ensure_has_layer_settings(self.__wrapped__)
-        self.__wrapped__.layer.set_asset_type(asset_type)
-        self.__wrapped__.layer.set_asset_name(name)
+        self.layer.set_asset_type(asset_type)
+        self.layer.set_asset_name(name)
 
         paths: List[AssetPath] = []
         if dependencies is not None:
@@ -65,4 +61,4 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
                     raise ValueError(
                         "Dependencies can only be a string, Dataset or Model."
                     )
-        self.__wrapped__.layer.set_dependencies(paths)
+        self.layer.set_dependencies(paths)

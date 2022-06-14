@@ -43,7 +43,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.resource_manager import ResourceManager
-from layer.settings import LayerSettings
+from layer.decorators.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
 

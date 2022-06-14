@@ -32,6 +32,7 @@ from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.contracts.runs import Run
 from layer.contracts.tracker import ResourceTransferState
+from layer.decorators.settings import LayerSettings
 from layer.exceptions.exceptions import (
     ConfigError,
     ProjectInitializationException,
@@ -51,7 +52,6 @@ from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.utils import get_current_project_name
-from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 from layer.utils.async_utils import asyncio_run_in_thread

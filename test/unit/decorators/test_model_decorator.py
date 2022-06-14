@@ -6,8 +6,8 @@ import pytest
 
 from layer import Dataset, Model
 from layer.contracts.assets import AssetType
-from layer.decorators.model_decorator import model
-from layer.decorators.pip_requirements_decorator import pip_requirements
+from layer.decorators.model import model
+from layer.decorators.pip_requirements import pip_requirements
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import reset_to
 from test.unit.decorators.util import project_client_mock

@@ -20,7 +20,7 @@ from layer.projects.execution_planner import (
     check_asset_dependencies,
     drop_independent_entities,
 )
-from layer.settings import LayerSettings
+from layer.decorators.settings import LayerSettings
 
 
 TEST_PROJECT_FULL_NAME = ProjectFullName(project_name="test", account_name="test-acc")
