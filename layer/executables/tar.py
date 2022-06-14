@@ -1,8 +1,7 @@
-import pickle
-import sys  # nosec: import_pickle
+import pickle  # nosec: import_pickle
+import sys
 import tarfile
 import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
@@ -12,29 +11,17 @@ import cloudpickle
 ENTRYPOINT_FILE = Path(__file__).parent / "entrypoint.py"
 
 
-@dataclass(frozen=True)
-class Environment:
-    ...
-
-
-#     # Add requirements to tarball
-#     if self.pip_requirements_file:
-#         shutil.copy(self.pip_requirements_file, self.environment_path)
-#     elif self.pip_packages:
-#         with open(self.environment_path, "w") as reqs_file:
-#             reqs_file.writelines(
-#                 list(map(lambda package: f"{package}\n", self.pip_packages))
-#             )
-
-
 def build_executable_tar(
     path: Path,
     entrypoint: Callable[..., Any],
     resources: Optional[List[Path]] = None,
-    poetry_file: Optional[
-        Path
-    ] = None,  # TODO(volkan) figure out how to save the environment
+    pip_dependencies: Optional[List[str]] = None,
 ) -> None:
+
+    # add pip dependencies needed by the extractor
+    pip_dependencies = pip_dependencies or []
+    pip_dependencies.append("cloudpickle")
+
     curdir = Path()
     with open(path, "w+b") as target_file, tempfile.TemporaryDirectory() as tmp:
         build_directory = Path(tmp)
@@ -43,6 +30,17 @@ def build_executable_tar(
         target_file.write(HEADER.encode())
 
         with tarfile.open(fileobj=target_file, mode="w:gz") as tar:
+            # Put pip_dependencies as requirements.txt
+            requirements_path = build_directory / "requirements.txt"
+            with open(requirements_path, mode="w") as file:
+                # register to pickly by value to ensure unpickling it works anywhere
+                file.write("\n".join(pip_dependencies))
+            tar.add(
+                requirements_path,
+                arcname="requirements.txt",
+                filter=_reset_user_info,
+            )
+
             # Put entrypoint.py
             tar.add(
                 ENTRYPOINT_FILE,
@@ -77,18 +75,27 @@ def _reset_user_info(tarinfo: tarfile.TarInfo) -> tarfile.TarInfo:
 
 
 HEADER = """
-export TMPDIR=`mktemp -d /tmp/selfextract.XXXXXX`
+TMPDIR=`mktemp -d /tmp/selfextract.XXXXXX`
+CDIR=`pwd`
 
+function cleanup()
+{
+    cd $CDIR
+    rm -rf $TMPDIR
+}
+
+trap cleanup EXIT
+
+# extract contents
 ARCHIVE=`awk '/^__ARCHIVE_BELOW__/ {print NR + 1; exit 0; }' $0`
-
 tail -n+$ARCHIVE $0 | tar xz -C $TMPDIR
 
-CDIR=`pwd`
+# run contents in temporary directory
 cd $TMPDIR
-./entrypoint.py
-
-cd $CDIR
-rm -rf $TMPDIR
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python entrypoint.py
 
 exit 0
 

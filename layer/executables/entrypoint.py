@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 import pickle  # nosec import_pickle
 from typing import Any, Callable
 
