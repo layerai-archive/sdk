@@ -88,10 +88,7 @@ class FunctionDefinition(abc.ABC):
         if name is None:
             raise LayerClientException("Name cannot be empty")
         self.name = name
-        self.resource_paths = {
-            ResourcePath(path=path)
-            for path in layer_settings.get_resource_paths() or []
-        }
+        self.resource_paths = layer_settings.get_resource_paths()
         fabric = layer_settings.get_fabric()
         if fabric is None:
             fabric = Fabric.default()
