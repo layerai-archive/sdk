@@ -574,6 +574,7 @@ def run(functions: List[Any], debug: bool = False) -> Run:
         progress_tracker_factory=RemoteExecutionRunProgressTracker,
     )
     run = project_runner.with_functions(project_full_name, functions)
+    print("Running Layer project...")
     run = project_runner.run(run, debug=debug)
 
     _make_notebook_links_open_in_new_tab()
