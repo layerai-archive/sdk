@@ -47,6 +47,6 @@ def _fabric_wrapper(fabric_name: str) -> Any:
     class FabricFunctionWrapper(LayerFunctionWrapper, metaclass=ABCMeta):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.set_fabric(fabric_name)
+            self.layer.set_fabric(fabric_name)
 
     return FabricFunctionWrapper

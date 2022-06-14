@@ -8,7 +8,7 @@ def test_resources_decorator_combines_all_paths():
     def func():
         pass
 
-    assert func.layer.get_paths() == ["/", "./abc", "../xyz"]
+    assert func.layer.get_resource_paths() == ["/", "./abc", "../xyz"]
 
 
 def test_resources_decorator_requires_at_least_one_path():

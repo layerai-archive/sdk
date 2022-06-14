@@ -1,8 +1,10 @@
 from typing import Any, List, Optional
 
+from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
-from layer.exceptions.exceptions import ConfigError
+from layer.contracts.runs import ResourcePath
+from layer.exceptions.exceptions import ConfigError, LayerClientException
 from layer.global_context import (
     default_fabric,
     get_pip_packages,
@@ -23,35 +25,45 @@ class LayerSettings:
     _fabric: Optional[Fabric] = None
     _pip_requirements_file: Optional[str] = None
     _pip_packages: Optional[List[str]] = None
-    _paths: Optional[List[str]] = None
+    _resource_paths: Optional[List[ResourcePath]] = None
     _dependencies: Optional[List[AssetPath]] = None
-    _assertions: Optional[List[Any]] = None
+    _assertions: Optional[List[Assertion]] = None
 
-    def get_fabric(self) -> Optional[Fabric]:
-        return _resolve_settings(self._fabric, default_fabric(), None)
+    def get_asset_type(self) -> AssetType:
+        if self._asset_type is None:
+            raise LayerClientException("Asset type cannot be empty")
+        return self._asset_type
 
-    def get_pip_packages(self) -> List[str]:
-        return _resolve_settings(self._pip_packages, get_pip_packages(), [])
+    def get_asset_name(self) -> str:
+        if self._name is None:
+            raise LayerClientException("Asset name cannot be empty")
+        return self._name
+
+    def get_fabric(self) -> Fabric:
+        return _resolve_settings(self._fabric, default_fabric(), Fabric.default())
 
     def get_pip_requirements_file(self) -> str:
         return _resolve_settings(
             self._pip_requirements_file, get_pip_requirements_file(), ""
         )
 
-    def get_paths(self) -> Optional[List[str]]:
-        return self._paths
+    def get_pip_packages(self) -> List[str]:
+        return _resolve_settings(self._pip_packages, get_pip_packages(), [])
 
-    def get_asset_name(self) -> Optional[str]:
-        return self._name
-
-    def get_asset_type(self) -> Optional[AssetType]:
-        return self._asset_type
+    def get_resource_paths(self) -> List[ResourcePath]:
+        return self._resource_paths or []
 
     def get_dependencies(self) -> List[AssetPath]:
-        return self._dependencies if self._dependencies else []
+        return self._dependencies or []
 
-    def get_assertions(self) -> List[Any]:
-        return self._assertions if self._assertions else []
+    def get_assertions(self) -> List[Assertion]:
+        return self._assertions or []
+
+    def set_asset_type(self, asset_type: AssetType) -> None:
+        self._asset_type = asset_type
+
+    def set_asset_name(self, name: str) -> None:
+        self._name = name
 
     def set_fabric(self, f: str) -> None:
         if Fabric.has_member_key(f):
@@ -69,31 +81,24 @@ class LayerSettings:
     def set_pip_packages(self, packages: Optional[List[str]]) -> None:
         self._pip_packages = packages
 
-    def set_paths(self, paths: Optional[List[str]]) -> None:
-        self._paths = paths
-
-    def set_asset_type(self, asset_type: AssetType) -> None:
-        self._asset_type = asset_type
-
-    def set_asset_name(self, name: str) -> None:
-        self._name = name
+    def set_resource_paths(self, paths: Optional[List[ResourcePath]]) -> None:
+        self._resource_paths = paths
 
     def set_dependencies(self, dependencies: List[AssetPath]) -> None:
         self._dependencies = dependencies
 
-    def append_assertions(self, assertions: List[Any]) -> None:
-        existing_assertions = self.get_assertions()
-        existing_assertions.append(assertions)
-        self._assertions = existing_assertions
+    def append_assertion(self, assertion: Assertion) -> None:
+        self._assertions = self._assertions or []
+        self._assertions.append(assertion)
 
     def validate(self) -> None:
-        if self.get_asset_type() is None:
+        if self._asset_type is None:
             raise ConfigError(
                 'Either @dataset(name="...") or @model(name="...") top level decorator '
                 "is required for each function. Add @dataset or @model decorator on top of existing "
                 "decorators to run functions in Layer."
             )
-        if self.get_asset_name() is None or self.get_asset_name() == "":
+        if self._name is None or self._name == "":
             raise ConfigError(
                 "Your @dataset and @model must be named. Pass an asset name as a first argument to your decorators."
             )

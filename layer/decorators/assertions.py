@@ -42,9 +42,7 @@ def _assert_true_wrapper(assert_function: Callable[..., bool]) -> Any:
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.append_assertions(
-                [assert_true.__name__, assert_function]
-            )
+            self.layer.append_assertions([assert_true.__name__, assert_function])
 
     return FunctionWrapper
 
@@ -108,7 +106,7 @@ def _assert_valid_values_wrapper(column_name: str, valid_values: List[Any]) -> A
                 raise AssertionError(
                     "Test FAILED: assert_valid_values only accepts list type valid_values."
                 )
-            self.__wrapped__.layer.append_assertions(
+            self.layer.append_assertions(
                 [assert_valid_values.__name__, column_name, valid_values]
             )
 
@@ -172,9 +170,7 @@ def _assert_not_null_wrapper(column_names: List[str]) -> Any:
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.append_assertions(
-                [assert_not_null.__name__, column_names]
-            )
+            self.layer.append_assertions([assert_not_null.__name__, column_names])
             if not isinstance(column_names, list) or not all(
                 isinstance(x, str) for x in column_names
             ):
@@ -239,9 +235,7 @@ def _assert_unique_wrapper(column_subset: List[str]) -> Any:
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.append_assertions(
-                [assert_unique.__name__, column_subset]
-            )
+            self.layer.append_assertions([assert_unique.__name__, column_subset])
             if not isinstance(column_subset, list) or not all(
                 isinstance(x, str) for x in column_subset
             ):
@@ -309,7 +303,7 @@ def _assert_skewness_wrapper(
     class FunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.append_assertions(
+            self.layer.append_assertions(
                 [assert_skewness.__name__, column_name, min_skewness, max_skewness]
             )
             if (
