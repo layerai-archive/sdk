@@ -56,6 +56,7 @@ from layer.contracts.datasets import (
     DatasetBuildStatus,
     SortField,
 )
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.exceptions.exceptions import LayerClientException
 from layer.pandas_extensions import _infer_custom_types
@@ -319,19 +320,23 @@ class DataCatalogClient:
         )
 
     def get_resource_paths(
-        self, project_name: str, function_name: str, path: str = ""
+        self, project_full_name: ProjectFullName, function_name: str, path: str = ""
     ) -> List[str]:
         request = GetResourcePathsRequest(
-            project_name=project_name, function_name=function_name, path=path
+            project_full_name=project_full_name.path,
+            function_name=function_name,
+            path=path,
         )
         response = self._service.GetResourcePaths(request)
         return response.paths
 
     def update_resource_paths_index(
-        self, project_name: str, function_name: str, paths: List[str]
+        self, project_full_name: ProjectFullName, function_name: str, paths: List[str]
     ) -> None:
         request = UpdateResourcePathsIndexRequest(
-            project_name=project_name, function_name=function_name, paths=paths
+            project_full_name=project_full_name.path,
+            function_name=function_name,
+            paths=paths,
         )
         self._service.UpdateResourcePathsIndex(request)
 

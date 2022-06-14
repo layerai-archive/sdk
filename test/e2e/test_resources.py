@@ -29,7 +29,7 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
     resource_manager.wait_resource_upload(run, RunProgressTracker())
     with tempfile.TemporaryDirectory(prefix="test_resource_manager") as resource_dir:
         resource_manager.wait_resource_download(
-            definition.project_name, definition.func_name, target_dir=resource_dir
+            definition.project_full_name, definition.func_name, target_dir=resource_dir
         )
         assert filecmp.cmp(
             "test/e2e/assets/data/test.csv",

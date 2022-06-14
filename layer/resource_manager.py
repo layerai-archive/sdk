@@ -12,6 +12,7 @@ import aiohttp
 
 from layer.clients.layer import LayerClient
 from layer.contracts.assets import AssetType
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import FunctionDefinition, ResourcePath, Run
 from layer.contracts.tracker import ResourceTransferState
 from layer.tracker.progress_tracker import RunProgressTracker
@@ -41,7 +42,7 @@ class ResourceManager:
 
     async def _upload_resource(
         self,
-        project_name: str,
+        project_full_name: ProjectFullName,
         function_name: str,
         resource_path: ResourcePath,
         file_path: str,
@@ -55,7 +56,7 @@ class ResourceManager:
             f"Upload resource file {file_path} of function {function_name} to {resource_path.path}"
         )
         resource_uri = self._client.data_catalog.get_resource_paths(
-            project_name=project_name,
+            project_full_name=project_full_name,
             function_name=function_name,
             path=resource_path.path,
         )[0]
@@ -71,7 +72,7 @@ class ResourceManager:
     def _update_resource_paths_index(self, run: Run) -> None:
         for function in run.definitions:
             self._client.data_catalog.update_resource_paths_index(
-                project_name=run.project_name,
+                project_full_name=run.project_full_name,
                 function_name=function.func_name,
                 paths=[
                     local_path
@@ -121,7 +122,7 @@ class ResourceManager:
                 total_num_files += 1
                 total_files_size_bytes += os.path.getsize(os.path.abspath(local_path))
                 upload_task = self._upload_resource(
-                    project_name=run.project_name,
+                    project_full_name=run.project_full_name,
                     function_name=function.func_name,
                     resource_path=ResourcePath(path=local_path),
                     file_path=os.path.abspath(local_path),
@@ -177,10 +178,10 @@ class ResourceManager:
         )
 
     async def _download_resources(
-        self, project_name: str, function_name: str, target_dir: str
+        self, project_full_name: ProjectFullName, function_name: str, target_dir: str
     ) -> Any:
         resource_paths = self._client.data_catalog.get_resource_paths(
-            project_name, function_name
+            project_full_name, function_name
         )
         download_root = os.getcwd() if target_dir == "" else target_dir
         async with aiohttp.ClientSession(raise_for_status=True) as session:
@@ -191,7 +192,10 @@ class ResourceManager:
             await asyncio.gather(*download_tasks)
 
     def wait_resource_download(
-        self, project_name: str, function_name: str, target_dir: str = ""
+        self,
+        project_full_name: ProjectFullName,
+        function_name: str,
+        target_dir: str = "",
     ) -> None:
         """
         Download resource files for the function.
@@ -200,7 +204,9 @@ class ResourceManager:
         with ThreadPoolExecutor(max_workers=1) as executor:
             download = executor.submit(
                 lambda: asyncio.run(
-                    self._download_resources(project_name, function_name, target_dir)
+                    self._download_resources(
+                        project_full_name, function_name, target_dir
+                    )
                 )
             )
             download.result()
