@@ -22,9 +22,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
-from layer.tracker.local_execution_progress_tracker import (
-    LocalExecutionRunProgressTracker,
-)
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
 
@@ -140,12 +138,15 @@ def _dataset_wrapper(
             current_project_full_name_ = get_current_project_full_name()
             config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
-                progress_tracker = LocalExecutionRunProgressTracker(
-                    config=config,
+                progress_tracker = RunProgressTracker(
+                    url=config.url,
                     project_name=current_project_full_name_.project_name,
                     account_name=current_project_full_name_.account_name,
                 )
                 with progress_tracker.track() as tracker:
+                    tracker.add_asset(
+                        AssetType.DATASET, self.__wrapped__.layer.get_asset_name()
+                    )
                     dataset_definition = DatasetFunctionDefinition(
                         self.__wrapped__,
                         project_name=current_project_full_name_.project_name,
@@ -170,11 +171,11 @@ def _build_dataset_locally_and_store_remotely(
     building_func: Callable[..., Any],
     layer: LayerSettings,
     dataset: DatasetFunctionDefinition,
-    tracker: LocalExecutionRunProgressTracker,
+    tracker: RunProgressTracker,
     client: LayerClient,
     assertions: List[Assertion],
 ) -> Any:
-    tracker.add_build(layer.get_asset_name())  # type: ignore
+    tracker.add_asset(AssetType.DATASET, layer.get_asset_name())  # type: ignore
 
     dataset = register_dataset_function(client, dataset, True, tracker)
     tracker.mark_dataset_building(layer.get_asset_name())  # type: ignore
@@ -205,7 +206,7 @@ def _build_locally_update_remotely(
     client: LayerClient,
     function_that_builds_dataset: Callable[..., Any],
     dataset: DatasetFunctionDefinition,
-    tracker: LocalExecutionRunProgressTracker,
+    tracker: RunProgressTracker,
     assertions: List[Assertion],
 ) -> Tuple[Any, UUID]:
     try:
@@ -251,7 +252,7 @@ def _run_assertions(
     asset_name: str,
     result: Any,
     assertions: List[Assertion],
-    tracker: LocalExecutionRunProgressTracker,
+    tracker: RunProgressTracker,
 ) -> None:
     failed_assertions = []
     tracker.mark_dataset_running_assertions(asset_name)

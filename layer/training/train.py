@@ -70,10 +70,8 @@ class Train(BaseTrain):
     def save_model(
         self,
         model_object: ModelObject,
-        tracker: Optional[RunProgressTracker] = None,
+        tracker: RunProgressTracker,
     ) -> Any:
-        if not tracker:
-            tracker = RunProgressTracker()
         assert self.__train_id
 
         flavor = get_flavor_for_model(model_object)

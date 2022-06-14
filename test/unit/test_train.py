@@ -4,11 +4,13 @@ from typing import Any
 from unittest.mock import MagicMock, create_autospec
 
 import pytest
+from yarl import URL
 
 from layer.clients.layer import LayerClient
 from layer.clients.model_catalog import ModelCatalogClient
 from layer.config import ClientConfig
 from layer.exceptions.exceptions import UnexpectedModelTypeException
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
 from .. import IS_DARWIN
@@ -62,4 +64,7 @@ def test_when_save_model_gets_invalid_object_then_throw_exception(
         train_id=uuid.uuid4(),
     )
     with pytest.raises(UnexpectedModelTypeException):
-        train.save_model(invalid_model_object)
+        train.save_model(
+            invalid_model_object,
+            tracker=RunProgressTracker(url=URL(""), account_name="", project_name=""),
+        )

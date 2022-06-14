@@ -1,7 +1,7 @@
 import logging
 import threading
 from datetime import datetime
-from typing import Any, Callable, List, Optional, Sequence, Type
+from typing import Any, Callable, List, Optional, Sequence
 
 import polling  # type: ignore
 from layerapi.api.entity.operations_pb2 import ExecutionPlan
@@ -45,9 +45,6 @@ from layer.projects.utils import (
 from layer.resource_manager import ResourceManager
 from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
-from layer.tracker.remote_execution_progress_tracker import (
-    RemoteExecutionRunProgressTracker,
-)
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
 
 
@@ -88,17 +85,12 @@ class RunContext:
 
 class ProjectRunner:
     _tracker: RunProgressTracker
-    _progress_tracker_factory: Type[RemoteExecutionRunProgressTracker]
 
     def __init__(
         self,
         config: Config,
-        progress_tracker_factory: Type[
-            RemoteExecutionRunProgressTracker
-        ] = RemoteExecutionRunProgressTracker,
     ) -> None:
         self._config = config
-        self._progress_tracker_factory = progress_tracker_factory
 
     def get_tracker(self) -> RunProgressTracker:
         return self._tracker
@@ -160,7 +152,12 @@ class ProjectRunner:
         check_asset_dependencies(run.definitions)
         with LayerClient(self._config.client, logger).init() as client:
             get_or_create_remote_project(client, run.project_full_name)
-            with self._progress_tracker_factory(self._config, run).track() as tracker:
+            with RunProgressTracker(
+                url=self._config.url,
+                account_name=run.project_full_name.account_name,
+                project_name=run.project_full_name.project_name,
+                assets=[(d.asset_type, d.name) for d in run.definitions],
+            ).track() as tracker:
                 self._tracker = tracker
                 try:
                     metadata = self._apply(client, run)
@@ -268,10 +265,8 @@ def register_dataset_function(
     client: LayerClient,
     dataset: DatasetFunctionDefinition,
     is_local: bool,
-    tracker: Optional[RunProgressTracker] = None,
+    tracker: RunProgressTracker,
 ) -> DatasetFunctionDefinition:
-    if not tracker:
-        tracker = RunProgressTracker()
     try:
         project_id = verify_project_exists_and_retrieve_project_id(
             client, dataset.project_full_name
@@ -295,11 +290,8 @@ def register_model_function(
     client: LayerClient,
     model: ModelFunctionDefinition,
     is_local: bool,
-    tracker: Optional[RunProgressTracker] = None,
+    tracker: RunProgressTracker,
 ) -> ModelFunctionDefinition:
-    if not tracker:
-        tracker = RunProgressTracker()
-
     try:
         response = client.model_catalog.create_model_version(
             model.project_full_name, model, is_local
