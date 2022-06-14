@@ -119,9 +119,7 @@ def _model_wrapper(
                 )
 
                 with progress_tracker.track() as tracker:
-                    tracker.add_asset(
-                        AssetType.MODEL, self.__wrapped__.layer.get_asset_name()
-                    )
+                    tracker.add_asset(AssetType.MODEL, self.layer.get_asset_name())
                     model_definition = ModelFunctionDefinition(
                         self.__wrapped__,
                         project_name=current_project_full_name_.project_name,

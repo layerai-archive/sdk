@@ -68,6 +68,6 @@ def _resources_wrapper(path: str, *paths: str) -> Any:
     class ResourcesFunctionWrapper(LayerFunctionWrapper, ABC):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.set_paths([path, *paths])
+            self.layer.set_resource_paths([path, *paths])
 
     return ResourcesFunctionWrapper

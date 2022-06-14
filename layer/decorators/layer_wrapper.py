@@ -47,6 +47,7 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
         dependencies: Optional[List[Union[str, Dataset, Model]]],
     ) -> None:
         super().__init__(wrapped, wrapper, enabled)
+
         self.layer.set_asset_type(asset_type)
         self.layer.set_asset_name(name)
 

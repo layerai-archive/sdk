@@ -7,6 +7,7 @@ import wrapt  # type: ignore
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
+from layer.config.config import Config
 from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetType
@@ -134,9 +135,9 @@ def _dataset_wrapper(
         # This is not serialized with cloudpickle, so it will only be run locally.
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            self.__wrapped__.layer.validate()
+            self.layer.validate()
             current_project_full_name_ = get_current_project_full_name()
-            config = asyncio_run_in_thread(ConfigManager().refresh())
+            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
                 progress_tracker = RunProgressTracker(
                     url=config.url,
