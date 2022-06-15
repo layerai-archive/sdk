@@ -112,25 +112,9 @@ class ProjectRunner:
 
     @staticmethod
     def with_functions(project_full_name: ProjectFullName, functions: List[Any]) -> Run:
-        project_name = project_full_name.project_name
-        account_name = project_full_name.account_name
         definitions: List[FunctionDefinition] = []
         for f in functions:
-            layer_settings: LayerSettings = f.layer
-            if layer_settings.get_asset_type() == AssetType.DATASET:
-                dataset = DatasetFunctionDefinition(
-                    func=f,
-                    project_name=project_name,
-                    account_name=account_name,
-                )
-                definitions.append(dataset)
-            elif layer_settings.get_asset_type() == AssetType.MODEL:
-                model = ModelFunctionDefinition(
-                    func=f,
-                    project_name=project_name,
-                    account_name=account_name,
-                )
-                definitions.append(model)
+            definitions.append(f.get_definition())
 
         return Run(
             project_full_name=project_full_name,
@@ -151,7 +135,7 @@ class ProjectRunner:
                 url=self._config.url,
                 account_name=run.project_full_name.account_name,
                 project_name=run.project_full_name.project_name,
-                assets=[(d.asset_type, d.name) for d in run.definitions],
+                assets=[(d.asset_type, d.asset_name) for d in run.definitions],
             ).track() as tracker:
                 self._tracker = tracker
                 try:
@@ -258,35 +242,36 @@ class ProjectRunner:
 
 def register_dataset_function(
     client: LayerClient,
-    dataset: DatasetFunctionDefinition,
+    dataset: FunctionDefinition,
     is_local: bool,
     tracker: RunProgressTracker,
-) -> DatasetFunctionDefinition:
+) -> FunctionDefinition:
     try:
         project_id = verify_project_exists_and_retrieve_project_id(
             client, dataset.project_full_name
         )
         dataset = client.data_catalog.add_dataset(project_id, dataset, is_local)
+        dataset.with_repository_id(resp.dataset_id.value)
         assert dataset.repository_id
-        tracker.mark_dataset_saved(dataset.name, id_=dataset.repository_id)
+        tracker.mark_dataset_saved(dataset.asset_name, id_=dataset.repository_id)
         return dataset
     except LayerClientServiceUnavailableException as e:
-        tracker.mark_dataset_failed(dataset.name, "")
+        tracker.mark_dataset_failed(dataset.asset_name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
     except LayerClientException as e:
-        tracker.mark_dataset_failed(dataset.name, "")
+        tracker.mark_dataset_failed(dataset.asset_name, "")
         raise ProjectInitializationException(
-            f"Failed to save derived dataset {dataset.name!r}: {e}",
+            f"Failed to save dataset {dataset.asset_name!r}: {e}",
             "Please retry",
         )
 
 
 def register_model_function(
     client: LayerClient,
-    model: ModelFunctionDefinition,
+    model: FunctionDefinition,
     is_local: bool,
     tracker: RunProgressTracker,
-) -> ModelFunctionDefinition:
+) -> FunctionDefinition:
     try:
         response = client.model_catalog.create_model_version(
             model.project_full_name, model, is_local
@@ -305,14 +290,14 @@ def register_model_function(
                 model, source_code_response.s3_path, version, False
             )
 
-        tracker.mark_model_saved(model.name)
+        tracker.mark_model_saved(model.asset_name)
         return model.with_version_id(version.id.value)
     except LayerClientServiceUnavailableException as e:
-        tracker.mark_model_train_failed(model.name, "")
+        tracker.mark_model_train_failed(model.asset_name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
     except LayerClientException as e:
-        tracker.mark_model_train_failed(model.name, "")
+        tracker.mark_model_train_failed(model.asset_name, "")
         raise ProjectInitializationException(
-            f"Failed to save model {model.name!r}: {e}",
+            f"Failed to save model {model.asset_name!r}: {e}",
             "Please retry",
         )
