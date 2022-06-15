@@ -1,8 +1,9 @@
 from typing import Any, List, Optional
 
+from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
-from layer.contracts.runs import ResourcePath
+from layer.decorators.definitions import ResourcePath
 from layer.exceptions.exceptions import ConfigError, LayerClientException
 from layer.global_context import (
     default_fabric,
@@ -26,7 +27,7 @@ class LayerSettings:
     _pip_packages: Optional[List[str]] = None
     _resource_paths: Optional[List[ResourcePath]] = None
     _dependencies: Optional[List[AssetPath]] = None
-    _assertions: Optional[List[Any]] = None
+    _assertions: Optional[List[Assertion]] = None
 
     def get_asset_type(self) -> AssetType:
         if self._asset_type is None:
@@ -39,7 +40,7 @@ class LayerSettings:
         return self._name
 
     def get_fabric(self) -> Fabric:
-        return _resolve_settings(self._fabric, default_fabric(), None)
+        return _resolve_settings(self._fabric, default_fabric(), Fabric.default())
 
     def get_pip_requirements_file(self) -> str:
         return _resolve_settings(
@@ -55,7 +56,7 @@ class LayerSettings:
     def get_dependencies(self) -> List[AssetPath]:
         return self._dependencies or []
 
-    def get_assertions(self) -> List[Any]:
+    def get_assertions(self) -> List[Assertion]:
         return self._assertions or []
 
     def set_asset_type(self, asset_type: AssetType) -> None:
@@ -86,10 +87,9 @@ class LayerSettings:
     def set_dependencies(self, dependencies: List[AssetPath]) -> None:
         self._dependencies = dependencies
 
-    def append_assertions(self, assertions: List[Any]) -> None:
-        existing_assertions = self.get_assertions()
-        existing_assertions.append(assertions)
-        self._assertions = existing_assertions
+    def append_assertion(self, assertion: Assertion) -> None:
+        self._assertions = self._assertions or []
+        self._assertions.append(assertion)
 
     def validate(self) -> None:
         if self._asset_type is None:

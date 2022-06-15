@@ -12,12 +12,8 @@ from layer.config import Config
 from layer.contracts.assets import AssetType
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import ApplyResult
-from layer.contracts.runs import (
-    DatasetFunctionDefinition,
-    FunctionDefinition,
-    ModelFunctionDefinition,
-    Run,
-)
+from layer.contracts.runs import Run
+from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientServiceUnavailableException,
@@ -43,7 +39,6 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.resource_manager import ResourceManager
-from layer.decorators.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
 
@@ -98,11 +93,11 @@ class ProjectRunner:
     def _apply(self, client: LayerClient, run: Run) -> ApplyResult:
         updated_definitions: List[FunctionDefinition] = []
         for definition in run.definitions:
-            if isinstance(definition, DatasetFunctionDefinition):
+            if definition.asset_type == AssetType.DATASET:
                 definition = register_dataset_function(
                     client, definition, False, self._tracker
                 )
-            elif isinstance(definition, ModelFunctionDefinition):
+            elif definition.asset_type == AssetType.MODEL:
                 definition = register_model_function(
                     client, definition, False, self._tracker
                 )

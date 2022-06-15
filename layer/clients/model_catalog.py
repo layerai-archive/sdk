@@ -1,9 +1,10 @@
+import sys
 import tempfile
 import warnings
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Tuple
 
 from layerapi.api.entity.model_pb2 import Model as PBModel
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
@@ -42,9 +43,8 @@ from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
 
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
+from layer.contracts.asset import AssetPath
 from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
-from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import ModelFunctionDefinition
 from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
@@ -82,9 +82,10 @@ class ModelCatalogClient:
 
     def create_model_version(
         self,
-        project_full_name: ProjectFullName,
-        model: ModelFunctionDefinition,
-        is_local: bool,
+        asset_path: AssetPath,
+        description: str,
+        source_code_hash: str,
+        fabric: str,
     ) -> CreateModelVersionResponse:
         """
         Given a model metadata it makes a request to the backend
@@ -93,17 +94,14 @@ class ModelCatalogClient:
         :param model: the structured of the parsed entity
         :return: the created model version entity
         """
-        model_path = f"{project_full_name.path}/models/{model.name}"
-        self._logger.debug(
-            f"Creating model version for the following model: {model_path}"
-        )
+        self._logger.debug(f"Creating model version for the model: {asset_path}")
         response = self._service.CreateModelVersion(
             CreateModelVersionRequest(
-                model_path=model_path,
-                description=model.description,
-                training_files_hash=Sha256(value=model.source_code_digest.hexdigest()),
+                model_path=asset_path.path(),
+                description=description,
+                training_files_hash=Sha256(value=source_code_hash),
                 should_create_initial_train=True,
-                fabric=model.get_fabric(is_local=is_local),
+                fabric=fabric,
             ),
         )
         self._logger.debug(f"CreateModelVersionResponse: {str(response)}")
@@ -111,35 +109,39 @@ class ModelCatalogClient:
 
     def store_training_metadata(
         self,
-        model: ModelFunctionDefinition,
+        asset_name: str,
+        description: str,
+        entrypoint: str,
+        environment: str,
         s3_path: S3Path,
         version: ModelVersion,
-        is_local: bool,
+        fabric: str,
     ) -> None:
+        language_version = _language_version()
         request: StoreTrainingMetadataRequest = StoreTrainingMetadataRequest(
             model_version_id=version.id,
-            name=model.name,
-            description=model.description,
+            name=asset_name,
+            description=description,
             source_code_env=SourceCodeEnvironment(
                 source_code=SourceCode(
                     remote_file_location=RemoteFileLocation(
-                        name=model.entrypoint,
-                        location=f"s3://{s3_path.bucket}/{s3_path.key}{model.name}.tgz",
+                        name=entrypoint,
+                        location=f"s3://{s3_path.bucket}/{s3_path.key}{asset_name}.tgz",
                     ),
                     language=SourceCode.Language.LANGUAGE_PYTHON,
                     language_version=SourceCode.LanguageVersion(
-                        major=int(model.language_version[0]),
-                        minor=int(model.language_version[1]),
-                        micro=int(model.language_version[2]),
+                        major=language_version[0],
+                        minor=language_version[1],
+                        micro=language_version[2],
                     ),
                 ),
                 dependency_file=DependencyFile(
-                    name=model.environment,
-                    location=model.environment,
+                    name=environment,
+                    location=environment,
                 ),
             ),
-            entrypoint=model.entrypoint,
-            fabric=model.get_fabric(is_local=is_local),
+            entrypoint=entrypoint,
+            fabric=fabric,
         )
         self._logger.debug(f"StoreTrainingMetadataRequest request: {str(request)}")
         response = self._service.StoreTrainingMetadata(request)
@@ -333,3 +335,7 @@ class ModelCatalogClient:
                 model_train_id=train_id, train_status=train_status
             )
         )
+
+
+def _language_version() -> Tuple[int, int, int]:
+    return sys.version_info.major, sys.version_info.minor, sys.version_info.micro

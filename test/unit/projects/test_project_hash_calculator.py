@@ -1,7 +1,7 @@
 import pandas
 
-from layer.contracts.runs import ModelFunctionDefinition
 from layer.decorators import model
+from layer.decorators.definitions import ModelFunctionDefinition
 from layer.projects.utils import calculate_hash_by_definitions
 
 

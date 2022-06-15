@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List
 
 import wrapt
 
-from layer.contracts.runs import ResourcePath  # type: ignore
+from layer.decorators.definitions import ResourcePath
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 
 

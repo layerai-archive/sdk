@@ -22,7 +22,6 @@ from layerapi.api.service.modeltraining.model_training_api_pb2_grpc import (
 )
 
 from layer.config import ClientConfig
-from layer.contracts.runs import ModelFunctionDefinition
 from layer.exceptions.exceptions import LayerClientException
 from layer.utils.file_utils import tar_directory
 from layer.utils.grpc import create_grpc_channel
@@ -56,12 +55,12 @@ class ModelTrainingClient:
             yield self
 
     def upload_training_files(
-        self, model: ModelFunctionDefinition, source_name: str
+        self, asset_name: str, function_home_dir: Path, source_name: str
     ) -> None:
         response = self.get_source_code_upload_credentials(source_name=source_name)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            tar_directory(f"{tmp_dir}/{model.name}.tgz", model.pickle_dir)
+            tar_directory(f"{tmp_dir}/{asset_name}.tgz", function_home_dir)
             S3Util.upload_dir(
                 Path(tmp_dir),
                 response.credentials,

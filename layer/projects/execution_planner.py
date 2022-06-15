@@ -14,7 +14,8 @@ from layerapi.api.entity.operations_pb2 import (
 from layerapi.api.ids_pb2 import ModelVersionId
 
 from layer.contracts.assets import AssetPath, AssetType
-from layer.contracts.runs import FunctionDefinition, Run
+from layer.contracts.runs import Run
+from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import (
     LayerClientException,
     ProjectCircularDependenciesException,

@@ -1,4 +1,3 @@
-import abc
 import uuid
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
@@ -21,7 +20,7 @@ from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 from .output import get_progress_ui
 
 
-class RunProgressTracker(abc.ABC):
+class RunProgressTracker:
     def __init__(
         self,
         url: URL,

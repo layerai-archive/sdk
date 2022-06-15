@@ -6,7 +6,7 @@ from layer import current_project_name
 from layer.clients.layer import LayerClient
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
-from layer.contracts.runs import FunctionDefinition
+from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import current_account_name
 

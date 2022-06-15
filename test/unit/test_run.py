@@ -15,7 +15,10 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     StartRunV2Response,
 )
 
-from layer.contracts.runs import DatasetFunctionDefinition, ModelFunctionDefinition
+from layer.decorators.definitions import (
+    DatasetFunctionDefinition,
+    ModelFunctionDefinition,
+)
 from layer.exceptions.exceptions import ProjectRunnerError
 from layer.projects.project_runner import ProjectRunner
 from layer.utils.grpc.interceptors import (

@@ -13,8 +13,9 @@ import aiohttp
 from layer.clients.layer import LayerClient
 from layer.contracts.assets import AssetType
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import FunctionDefinition, ResourcePath, Run
+from layer.contracts.runs import Run
 from layer.contracts.tracker import ResourceTransferState
+from layer.decorators.definitions import FunctionDefinition, ResourcePath
 from layer.tracker.progress_tracker import RunProgressTracker
 
 
