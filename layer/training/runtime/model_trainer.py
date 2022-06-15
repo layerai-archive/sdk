@@ -12,7 +12,6 @@ from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 from layer import Context
 from layer.clients.layer import LayerClient
 from layer.contracts.assertions import Assertion
-from layer.decorators.assertions import get_assertion_functions_data
 from layer.exceptions.exception_handler import exception_handler
 from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.global_context import (
