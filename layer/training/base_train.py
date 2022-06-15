@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from layer.tracker.progress_tracker import RunProgressTracker
@@ -36,7 +36,7 @@ class BaseTrain:
     def save_model(
         self,
         trained_model_obj: "ModelObject",
-        tracker: Optional[RunProgressTracker] = None,
+        tracker: RunProgressTracker,
     ) -> Any:
         pass
 

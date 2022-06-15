@@ -7,6 +7,7 @@ import wrapt  # type: ignore
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
+from layer.config.config import Config
 from layer.contracts.assets import AssetType
 from layer.contracts.runs import ModelFunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
@@ -14,9 +15,7 @@ from layer.projects.utils import (
     get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
 )
-from layer.tracker.local_execution_progress_tracker import (
-    LocalExecutionRunProgressTracker,
-)
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.runtime.model_train_failure_reporter import (
     ModelTrainFailureReporter,
 )
@@ -111,16 +110,18 @@ def _model_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             current_project_full_name_ = get_current_project_full_name()
-            config = asyncio_run_in_thread(ConfigManager().refresh())
+            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
-                progress_tracker = LocalExecutionRunProgressTracker(
-                    config=config,
+                progress_tracker = RunProgressTracker(
+                    url=config.url,
                     project_name=current_project_full_name_.project_name,
                     account_name=current_project_full_name_.account_name,
                 )
 
                 with progress_tracker.track() as tracker:
-                    tracker.add_model(self.__wrapped__.layer.get_asset_name())
+                    tracker.add_asset(
+                        AssetType.MODEL, self.__wrapped__.layer.get_asset_name()
+                    )
                     model_definition = ModelFunctionDefinition(
                         self.__wrapped__,
                         project_name=current_project_full_name_.project_name,
@@ -133,7 +134,7 @@ def _model_wrapper(
         @staticmethod
         def _train_model_locally_and_store_remotely(
             model_definition: ModelFunctionDefinition,
-            tracker: LocalExecutionRunProgressTracker,
+            tracker: RunProgressTracker,
             client: LayerClient,
         ) -> Any:
             from layer.training.runtime.model_trainer import (

@@ -3,6 +3,7 @@ import os.path
 import tempfile
 
 import pandas as pd
+from yarl import URL
 
 import layer
 from layer.contracts.projects import Project
@@ -26,7 +27,9 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
     run = Run(project_full_name).with_definitions([definition])
     resource_manager = ResourceManager(asserter.client)
 
-    resource_manager.wait_resource_upload(run, RunProgressTracker())
+    resource_manager.wait_resource_upload(
+        run, RunProgressTracker(url=URL(""), account_name="", project_name="")
+    )
     with tempfile.TemporaryDirectory(prefix="test_resource_manager") as resource_dir:
         resource_manager.wait_resource_download(
             definition.project_full_name, definition.func_name, target_dir=resource_dir

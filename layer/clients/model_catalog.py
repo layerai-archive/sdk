@@ -225,10 +225,8 @@ class ModelCatalogClient:
         self,
         model: Model,
         model_object: ModelObject,
-        tracker: Optional[RunProgressTracker] = None,
+        tracker: RunProgressTracker,
     ) -> ModelObject:
-        if not tracker:
-            tracker = RunProgressTracker()
         self._logger.debug(f"Storing given model {model_object} for {model.path}")
         try:
             with tempfile.TemporaryDirectory() as tmp:

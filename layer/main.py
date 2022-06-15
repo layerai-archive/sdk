@@ -52,12 +52,7 @@ from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.utils import get_current_project_name
 from layer.settings import LayerSettings
-from layer.tracker.local_execution_progress_tracker import (
-    LocalExecutionRunProgressTracker,
-)
-from layer.tracker.remote_execution_progress_tracker import (
-    RemoteExecutionRunProgressTracker,
-)
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -251,8 +246,10 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                         set_active_context(context)
                         context.with_asset_name(asset_path.asset_name)
                         context.with_asset_type(AssetType.DATASET)
-                        tracker = LocalExecutionRunProgressTracker(
-                            project_name=None, config=config
+                        tracker = RunProgressTracker(
+                            url=config.url,
+                            account_name=asset_path.must_org_name(),
+                            project_name=asset_path.must_project_name(),
                         )
                         context.with_tracker(tracker)
                         with tracker.track():
@@ -333,8 +330,10 @@ def get_model(name: str, no_cache: bool = False) -> Model:
                     set_active_context(context)
                     context.with_asset_name(asset_path.asset_name)
                     context.with_asset_type(AssetType.MODEL)
-                    tracker = LocalExecutionRunProgressTracker(
-                        project_name=None, config=config
+                    tracker = RunProgressTracker(
+                        url=config.url,
+                        account_name=asset_path.must_org_name(),
+                        project_name=asset_path.must_project_name(),
                     )
                     context.with_tracker(tracker)
                     with tracker.track():
@@ -569,10 +568,7 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
 
     project_full_name = _get_project_full_name(layer_config, get_current_project_name())
-    project_runner = ProjectRunner(
-        config=layer_config,
-        progress_tracker_factory=RemoteExecutionRunProgressTracker,
-    )
+    project_runner = ProjectRunner(config=layer_config)
     run = project_runner.with_functions(project_full_name, functions)
     print("Running Layer project...")
     run = project_runner.run(run, debug=debug)

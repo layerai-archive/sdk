@@ -92,7 +92,7 @@ class ModelTrainer:
     train_context: TrainContext
     logger: Logger
     failure_reporter: ModelTrainFailureReporter
-    tracker: RunProgressTracker = RunProgressTracker()
+    tracker: RunProgressTracker
 
     def train(self) -> Any:
         self.tracker.mark_model_training(

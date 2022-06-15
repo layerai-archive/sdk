@@ -156,6 +156,7 @@ class AssetTrackerStatus(str, Enum):
     DONE = "done"
     ERROR = "error"
     ASSERTING = "asserting"
+    ASSERTED = "asserted"
     RESOURCE_UPLOADING = "uploading resources"
     RESULT_UPLOADING = "uploading result"
     ASSET_DOWNLOADING = "downloading asset"

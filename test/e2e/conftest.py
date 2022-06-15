@@ -14,9 +14,6 @@ from layer.config import ClientConfig, Config, ConfigManager
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
 from layer.projects.project_runner import ProjectRunner
-from layer.tracker.remote_execution_progress_tracker import (
-    RemoteExecutionRunProgressTracker,
-)
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
@@ -139,9 +136,7 @@ def _cleanup_project(client: LayerClient, project: Project):
 
 @pytest.fixture()
 def project_runner(config: Config) -> ProjectRunner:
-    return ProjectRunner(
-        config, progress_tracker_factory=RemoteExecutionRunProgressTracker
-    )
+    return ProjectRunner(config)
 
 
 @pytest.fixture()
