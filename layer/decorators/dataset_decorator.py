@@ -14,7 +14,6 @@ from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
-from layer.decorators.assertions import get_assertion_functions_data
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
 from layer.projects.project_runner import register_dataset_function
@@ -159,7 +158,6 @@ def _dataset_wrapper(
                         dataset_definition,
                         tracker,
                         client,
-                        get_assertion_functions_data(self),
                     )
                     return result
 
@@ -172,7 +170,6 @@ def _build_dataset_locally_and_store_remotely(
     dataset: DatasetFunctionDefinition,
     tracker: RunProgressTracker,
     client: LayerClient,
-    assertions: List[Assertion],
 ) -> Any:
     tracker.add_asset(AssetType.DATASET, layer.get_asset_name())
 
@@ -184,7 +181,7 @@ def _build_dataset_locally_and_store_remotely(
         building_func,
         dataset,
         tracker,
-        assertions,
+        layer.get_assertions(),
     )
 
     transfer_state = DatasetTransferState(len(result))
