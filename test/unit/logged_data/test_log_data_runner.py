@@ -619,11 +619,11 @@ def test_given_runner_with_invalid_epoch_then_raises() -> None:
     )
 
     with pytest.raises(
-        ValueError, match=r".*can only be a positive integer, given value: 0.*"
+        ValueError, match=r".*can only be a non-negative integer, given value: -1.*"
     ):
-        runner.log({"foo": {10: 20}}, epoch=0)
+        runner.log({"foo": {10: 20}}, epoch=-1)
 
     with pytest.raises(
-        ValueError, match=r".*can only be a positive integer, given value: xyz.*"
+        ValueError, match=r".*can only be a non-negative integer, given value: xyz.*"
     ):
         runner.log({"foo": {10: 20}}, epoch="xyz")
