@@ -117,12 +117,11 @@ class ProjectServiceClient:
             RemoveProjectByIdRequest(project_id=ProjectId(value=str(project_id)))
         )
 
-    # TODO Should use project full name
     def create_project(self, full_name: ProjectFullName) -> Project:
         try:
             resp = self._service.CreateProject(
                 CreateProjectRequest(
-                    project_name=full_name.project_name,
+                    project_full_name=full_name.path,
                     visibility=ProjectMessage.VISIBILITY_PRIVATE,
                 )
             )
@@ -134,18 +133,23 @@ class ProjectServiceClient:
         except Exception as err:
             raise generate_client_error_from_grpc_error(err, "internal")
 
-    # TODO Should use project full name
-    def update_project_readme(self, project_name: str, readme: str) -> None:
+    def update_project_readme(
+        self, project_full_name: ProjectFullName, readme: str
+    ) -> None:
         try:
             self._service.UpdateProject(
-                UpdateProjectRequest(project_name=project_name, readme=readme)
+                UpdateProjectRequest(
+                    project_full_name=project_full_name.path, readme=readme
+                )
             )
         except LayerClientResourceNotFoundException as e:
             raise e
         except Exception as err:
             raise generate_client_error_from_grpc_error(err, "internal")
 
-    def set_project_visibility(self, project_name: str, *, is_public: bool) -> None:
+    def set_project_visibility(
+        self, project_full_name: ProjectFullName, *, is_public: bool
+    ) -> None:
         visibility = (
             ProjectMessage.VISIBILITY_PUBLIC
             if is_public
@@ -153,7 +157,9 @@ class ProjectServiceClient:
         )
         try:
             self._service.UpdateProject(
-                UpdateProjectRequest(project_name=project_name, visibility=visibility)
+                UpdateProjectRequest(
+                    project_full_name=project_full_name.path, visibility=visibility
+                )
             )
         except LayerClientResourceNotFoundException as e:
             raise e

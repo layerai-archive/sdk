@@ -153,7 +153,7 @@ class ModelTrainer:
             with Train(
                 layer_client=self.client,
                 name=self.train_context.model_name,
-                project_name=project_full_name.project_name,
+                project_full_name=project_full_name,
                 version=self.train_context.model_version,
                 train_id=self.train_context.train_id,
             ) as train:

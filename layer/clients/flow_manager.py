@@ -21,6 +21,7 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2_grpc import (
 from layerapi.api.value.sha256_pb2 import Sha256
 
 from layer.config import ClientConfig
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import GetRunsFunction
 from layer.utils.grpc import create_grpc_channel
 
@@ -52,14 +53,14 @@ class FlowManagerClient:
 
     def start_run(
         self,
-        name: str,
+        project_full_name: ProjectFullName,
         execution_plan: ExecutionPlan,
         project_files_hash: str,
         user_command: str,
     ) -> RunId:
         response = self._service.StartRunV2(
             request=StartRunV2Request(
-                project_name=name,
+                project_full_name=project_full_name.path,
                 plan=execution_plan,
                 project_files_hash=Sha256(value=project_files_hash),
                 user_command=user_command,
