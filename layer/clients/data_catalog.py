@@ -433,7 +433,7 @@ def _get_batch_chunks(
     batch: pyarrow.RecordBatch, max_chunk_size_bytes: int = 4_000_000
 ) -> Generator[pyarrow.RecordBatch, None, None]:
     """
-    Slice the batch into the chunks, based on average row size,
+    Slice the batch into chunks, based on average row size,
     but not exceeding the maximum chunk size.
     """
 
