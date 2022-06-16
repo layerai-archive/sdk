@@ -252,9 +252,9 @@ class LogDataRunner:
     @staticmethod
     def _check_epoch(epoch: Any) -> None:
         if epoch is not None:
-            if not isinstance(epoch, int) or epoch < 1:
+            if not isinstance(epoch, int) or epoch < 0:
                 raise ValueError(
-                    f"epoch (i.e. step) can only be a positive integer, given value: {epoch}"
+                    f"epoch (i.e. step) can only be a non-negative integer, given value: {epoch}"
                 )
 
     @staticmethod
