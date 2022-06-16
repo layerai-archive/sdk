@@ -36,11 +36,25 @@ class RunProgressTracker(abc.ABC):
         self._progress = get_progress_ui()
         self._tasks: Dict[Tuple[AssetType, str], Task] = {}
 
+    @staticmethod
+    def __google_colab_ipykernel_fix() -> None:
+        """
+        Fixes https://linear.app/layer/issue/LAY-3286/replace-rich-as-a-dependency-for-the-ui-of-the-sdk
+        """
+        import logging.config
+        logging.config.dictConfig(
+            {
+                "version": 1,
+                "disable_existing_loggers": False,
+            }
+        )
+
     @contextmanager
     def track(self) -> Iterator["RunProgressTracker"]:
         """
         Initializes tracking. Meant to be used with a `with` construct.
         """
+        self.__google_colab_ipykernel_fix()
         with self._progress:
             self._init_tasks()
             yield self

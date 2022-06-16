@@ -574,7 +574,6 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     project_full_name = _get_project_full_name(layer_config, get_current_project_name())
     project_runner = ProjectRunner(config=layer_config)
     run = project_runner.with_functions(project_full_name, functions)
-    print("Running Layer project...")
     run = project_runner.run(run, debug=debug)
 
     _make_notebook_links_open_in_new_tab()
