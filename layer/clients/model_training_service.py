@@ -20,6 +20,7 @@ from layerapi.api.service.modeltraining.model_training_api_pb2 import (
 from layerapi.api.service.modeltraining.model_training_api_pb2_grpc import (
     ModelTrainingAPIStub,
 )
+from layerapi.api.value.s3_path_pb2 import S3Path
 
 from layer.config import ClientConfig
 from layer.contracts.runs import ModelFunctionDefinition
@@ -56,9 +57,9 @@ class ModelTrainingClient:
             yield self
 
     def upload_training_files(
-        self, model: ModelFunctionDefinition, source_name: str
-    ) -> None:
-        response = self.get_source_code_upload_credentials(source_name=source_name)
+        self, model: ModelFunctionDefinition, model_version_id: uuid.UUID
+    ) -> S3Path:
+        response = self.get_source_code_upload_credentials(model_version_id)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tar_directory(f"{tmp_dir}/{model.name}.tgz", model.pickle_dir)
@@ -69,11 +70,13 @@ class ModelTrainingClient:
                 endpoint_url=self._s3_endpoint_url,
             )
 
+        return response.s3_path
+
     def get_source_code_upload_credentials(
-        self, source_name: str
+        self, model_version_id: uuid.UUID
     ) -> GetSourceCodeUploadCredentialsResponse:
         return self._service.GetSourceCodeUploadCredentials(
-            GetSourceCodeUploadCredentialsRequest(source_name=source_name)
+            GetSourceCodeUploadCredentialsRequest(source_name=str(model_version_id))
         )
 
     def train_model(
@@ -81,7 +84,7 @@ class ModelTrainingClient:
         version: ModelVersion,
     ) -> uuid.UUID:
         response: GetSourceCodeUploadCredentialsResponse = (
-            self.get_source_code_upload_credentials(version.id.value)
+            self.get_source_code_upload_credentials(uuid.UUID(version.id.value))
         )
         self._logger.debug(
             f"GetSourceCodeUploadCredentialsResponse response: {str(response)}"

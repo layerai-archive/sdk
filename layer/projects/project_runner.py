@@ -1,5 +1,6 @@
 import logging
 import threading
+import uuid
 from datetime import datetime
 from typing import Any, Callable, List, Optional, Sequence
 
@@ -299,16 +300,10 @@ def register_model_function(
         version = response.model_version
         if response.should_upload_training_files:
             # in here we upload to path / train.gz
-            client.model_training.upload_training_files(model, version.id.value)
-            source_code_response = (
-                client.model_training.get_source_code_upload_credentials(
-                    version.id.value
-                )
-            )
+            version_id = uuid.UUID(version.id.value)
+            s3_path = client.model_training.upload_training_files(model, version_id)
             # in here we reconstruct the path / train.gz to save in metadata
-            client.model_catalog.store_training_metadata(
-                model, source_code_response.s3_path, version, False
-            )
+            client.model_catalog.store_training_metadata(model, s3_path, version, False)
 
         tracker.mark_model_saved(model.name)
         return model.with_version_id(version.id.value)
