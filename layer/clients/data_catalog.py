@@ -1,10 +1,9 @@
-import math
 import tempfile
 import uuid
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import Any, Callable, Iterator, List, Optional, Sequence
+from typing import Any, Callable, Generator, Iterator, List, Optional, Sequence
 
 import pandas
 import pyarrow
@@ -64,11 +63,6 @@ from layer.utils.grpc import create_grpc_channel, generate_client_error_from_grp
 from layer.utils.s3 import S3Util
 
 from .dataset_service import DatasetClient, DatasetClientError
-
-
-# Number of rows to send in a single chunk, but still bounded by the gRPC max message size.
-# Allow to send rows on average up to 1MB, assuming default max gRPC message size is 4MB
-_STORE_DATASET_MAX_CHUNK_SIZE = 4
 
 
 class DataCatalogClient:
@@ -175,18 +169,12 @@ class DataCatalogClient:
         try:
             writer, _ = self._get_dataset_writer(name, build_id, batch.schema)
             try:
-                # We stream the batch in smaller chunks to be able to track the progress
-                # Ref: https://arrow.apache.org/docs/python/ipc.html#efficiently-writing-and-reading-arrow-data
-                for x in range(
-                    math.ceil(batch.num_rows / _STORE_DATASET_MAX_CHUNK_SIZE)
-                ):
-                    start_index = x * _STORE_DATASET_MAX_CHUNK_SIZE
-                    length = min(
-                        _STORE_DATASET_MAX_CHUNK_SIZE, batch.num_rows - start_index
-                    )
+                total_rows = 0  # total rows written
+                for chunk in _get_batch_chunks(batch):
+                    writer.write_batch(chunk)
+                    total_rows += chunk.num_rows
                     if progress_callback:
-                        progress_callback(length)
-                    writer.write_batch(batch.slice(start_index, length))
+                        progress_callback(batch.num_rows - total_rows)
             finally:
                 writer.close()
         except Exception as err:
@@ -439,3 +427,34 @@ class DataCatalogClient:
                 ),
             ).datasets
         )
+
+
+def _get_batch_chunks(
+    batch: pyarrow.RecordBatch, max_chunk_size_bytes: int = 4_000_000
+) -> Generator[pyarrow.RecordBatch, None, None]:
+    """
+    Slice the batch into the chunks, based on average row size,
+    but not exceeding the maximum chunk size.
+    """
+
+    bytes_per_row = batch.nbytes / batch.num_rows  # average row size
+    max_num_rows = int(max_chunk_size_bytes / bytes_per_row)  # rows per chunk
+    if max_num_rows == 0:
+        raise ValueError(
+            f"the average size of a single row of {int(bytes_per_row)} byte(s) exceeds max chunk size of {max_chunk_size_bytes} byte(s)"
+        )
+    start = 0
+    while start < batch.num_rows:
+        i = max_num_rows
+        # in case chunk size is exceeded due to large individual rows, slim down until it fits
+        while i > 0:
+            chunk = batch.slice(start, i)
+            if chunk.nbytes <= max_chunk_size_bytes:
+                yield chunk
+                break
+            i -= 1
+        if i == 0:
+            raise ValueError(
+                f"single row in the batch at index {start} exceeds max chunk size of {max_chunk_size_bytes} byte(s)"
+            )
+        start += i
