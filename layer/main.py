@@ -472,8 +472,8 @@ def start_train(
     project_full_name = current_project_full_name()
     if not project_full_name:
         raise Exception(
-            "Missing current project name, please use 'set_current_project_full_name(\"account-name/project-name\")'"
-            ' or layer.init("account-name/project-name"'
+            "Missing current project name, please do 'layer.init(\"account-name/project-name\")'"
+            + " or 'layer.init(\"project-name\")'"
         )
     config = asyncio_run_in_thread(ConfigManager().refresh())
     with LayerClient(config.client, logger).init() as client:

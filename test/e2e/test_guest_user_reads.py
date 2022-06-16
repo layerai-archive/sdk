@@ -47,7 +47,7 @@ def populated_public_project(
 ) -> Project:
     # make project public
     client.project_service_client.set_project_visibility(
-        populated_project.name, is_public=True
+        populated_project.full_name, is_public=True
     )
     return populated_project
 
