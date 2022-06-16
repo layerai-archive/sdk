@@ -55,8 +55,7 @@ class InitProjectRunner:
         readme_contents = ProjectLoader.load_project_readme(project_root_path)
         if readme_contents:
             layer_client.project_service_client.update_project_readme(
-                # TODO Use project path
-                project_name=project_full_name.project_name,
+                project_full_name=project_full_name,
                 readme=readme_contents,
             )
 

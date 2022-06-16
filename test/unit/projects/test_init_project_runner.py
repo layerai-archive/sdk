@@ -167,7 +167,7 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tm
 
     # then
     layer_client_mock.project_service_client.update_project_readme.assert_called_with(
-        project_name=expected_project_name, readme=expected_readme
+        project_full_name=project_full_name, readme=expected_readme
     )
 
 
@@ -243,5 +243,5 @@ def test_given_long_readme_exists_when_set_up_project_gets_and_sets_project_read
 
     # then
     layer_client_mock.project_service_client.update_project_readme.assert_called_with(
-        project_name=expected_project_name, readme=expected_readme
+        project_full_name=project_full_name, readme=expected_readme
     )

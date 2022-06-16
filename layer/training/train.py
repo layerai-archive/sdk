@@ -13,6 +13,7 @@ from layer.flavors.utils import get_flavor_for_model
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.types import ModelObject
 
+from ..contracts.project_full_name import ProjectFullName
 from .base_train import BaseTrain
 
 
@@ -38,14 +39,14 @@ class Train(BaseTrain):
         self,
         layer_client: LayerClient,
         name: str,
-        project_name: str,
+        project_full_name: ProjectFullName,
         version: Optional[str],
         train_id: Optional[UUID] = None,
         train_index: Optional[str] = None,
     ):
         self.__layer_client: LayerClient = layer_client
         self.__name: str = name
-        self.__project_name: str = project_name
+        self.__project_full_name: ProjectFullName = project_full_name
         self.__version: Optional[str] = str(version)
         self.__train_index: Optional[str] = str(train_index)
         self.__train_id: Optional[ModelTrainId] = (
@@ -98,7 +99,7 @@ class Train(BaseTrain):
             self.__train_id = self.__layer_client.model_catalog.create_model_train(
                 name=self.__name,
                 version=self.__version,
-                project_name=self.__project_name,
+                project_full_name=self.__project_full_name,
             )
         self.__layer_client.model_catalog.start_model_train(
             train_id=self.__train_id,

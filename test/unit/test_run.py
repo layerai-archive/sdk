@@ -92,7 +92,7 @@ class TestRequestIdInterceptor:
 
         # when
         interceptor = RequestIdInterceptor()
-        request = StartRunV2Request(project_name="lala")
+        request = StartRunV2Request(project_full_name="acc/lala")
         response = interceptor.intercept_unary_unary(
             continuation=continuation,
             client_call_details=client_call_details,
@@ -121,7 +121,7 @@ class TestRequestIdInterceptor:
         request_id_from_env = str(uuid.uuid4())
         os.environ[_ENV_KEY_REQUEST_ID] = request_id_from_env
         interceptor = RequestIdInterceptor()
-        request = StartRunV2Request(project_name="lala")
+        request = StartRunV2Request(project_full_name="acc/lala")
         response = interceptor.intercept_unary_unary(
             continuation=continuation,
             client_call_details=client_call_details,

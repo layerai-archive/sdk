@@ -41,6 +41,7 @@ from layer.exceptions.exceptions import (
 )
 from layer.global_context import (
     current_account_name,
+    current_project_full_name,
     current_project_name,
     get_active_context,
     reset_active_context,
@@ -467,9 +468,12 @@ def start_train(
         train.save_model(trained_model)
 
     """
-    project_name = current_project_name()
-    if not project_name:
-        raise Exception("Missing current project name")
+    project_full_name = current_project_full_name()
+    if not project_full_name:
+        raise Exception(
+            "Missing current project name, please do 'layer.init(\"account-name/project-name\")'"
+            + " or 'layer.init(\"project-name\")'"
+        )
     config = asyncio_run_in_thread(ConfigManager().refresh())
     with LayerClient(config.client, logger).init() as client:
         train = Train(
@@ -477,7 +481,7 @@ def start_train(
             name=name,
             version=version,
             train_id=train_id,
-            project_name=project_name,
+            project_full_name=project_full_name,
         )
         with train:
             yield train

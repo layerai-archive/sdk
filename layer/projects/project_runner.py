@@ -111,7 +111,7 @@ class ProjectRunner:
 
         execution_plan = build_execution_plan(run)
         client.project_service_client.update_project_readme(
-            run.project_name, run.readme
+            run.project_full_name, run.readme
         )
         return ApplyResult(execution_plan=execution_plan)
 
@@ -248,7 +248,7 @@ class ProjectRunner:
     ) -> RunId:
         try:
             run_id = client.flow_manager.start_run(
-                run.project_name, execution_plan, run.files_hash, user_command
+                run.project_full_name, execution_plan, run.files_hash, user_command
             )
         except LayerResourceExhaustedException as e:
             raise ProjectRunnerError(f"{e}")

@@ -178,9 +178,14 @@ def test_given_project_not_exists_when_update_project_raise_resource_not_found_e
         project_api_stub=mock_project_api
     )
 
+    project_full_name = ProjectFullName(
+        project_name="lala",
+        account_name="acc",
+    )
+
     # when + then
     with pytest.raises(LayerClientResourceNotFoundException):
-        project_service_client.update_project_readme("name", "readme")
+        project_service_client.update_project_readme(project_full_name, "readme")
 
 
 def test_given_project_not_exists_when_create_project_creates_project_with_private_visibility():  # noqa
@@ -200,5 +205,7 @@ def test_given_project_not_exists_when_create_project_creates_project_with_priva
 
     # then
     mock_project_api.CreateProject.assert_called_with(
-        CreateProjectRequest(project_name="test", visibility=Project.VISIBILITY_PRIVATE)
+        CreateProjectRequest(
+            project_full_name="acc/test", visibility=Project.VISIBILITY_PRIVATE
+        )
     )
