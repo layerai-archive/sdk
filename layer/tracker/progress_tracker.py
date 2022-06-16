@@ -40,8 +40,11 @@ class RunProgressTracker(abc.ABC):
     def __google_colab_ipykernel_fix() -> None:
         """
         Fixes https://linear.app/layer/issue/LAY-3286/replace-rich-as-a-dependency-for-the-ui-of-the-sdk
+        It works by clearing the logger handlers as some of them appear to be interacting with the same resources
+        rich interacts with, leading to hitting a bug in old ipykernel-s(<5.2) (https://github.com/ipython/ipykernel/pull/463)
         """
         import logging.config
+
         logging.config.dictConfig(
             {
                 "version": 1,
