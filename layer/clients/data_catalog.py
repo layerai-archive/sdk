@@ -438,11 +438,13 @@ def _get_batch_chunks(
     """
 
     bytes_per_row = batch.nbytes / batch.num_rows  # average row size
-    max_num_rows = int(max_chunk_size_bytes / bytes_per_row)  # rows per chunk
-    if max_num_rows == 0:
+    if bytes_per_row > max_chunk_size_bytes:
         raise ValueError(
             f"the average size of a single row of {int(bytes_per_row)} byte(s) exceeds max chunk size of {max_chunk_size_bytes} byte(s)"
         )
+    max_num_rows = int(
+        max_chunk_size_bytes / bytes_per_row
+    )  # how many rows fit into the chunk
     start = 0
     while start < batch.num_rows:
         i = max_num_rows
