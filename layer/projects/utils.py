@@ -2,13 +2,12 @@ import hashlib
 from typing import List
 from uuid import UUID
 
-from layer import current_project_name
 from layer.clients.layer import LayerClient
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import ProjectInitializationException
-from layer.global_context import current_account_name
+from layer.global_context import current_account_name, current_project_name
 
 
 def verify_project_exists_and_retrieve_project_id(
