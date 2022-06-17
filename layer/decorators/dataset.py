@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 import wrapt  # type: ignore
+from layerapi.api.ids_pb2 import ProjectId
 
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
@@ -12,9 +13,8 @@ from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
-from layer.contracts.runs import DatasetFunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
-from layer.decorators.assertions import get_assertion_functions_data
+from layer.decorators.definitions import FunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.decorators.settings import LayerSettings
 from layer.global_context import reset_active_context, set_active_context
@@ -148,20 +148,13 @@ def _dataset_wrapper(
                     tracker.add_asset(
                         AssetType.DATASET, self.__wrapped__.layer.get_asset_name()
                     )
-                    dataset_definition = DatasetFunctionDefinition(
-                        self.__wrapped__,
-                        project_name=current_project_full_name_.project_name,
-                        account_name=current_project_full_name_.account_name,
-                    )
+                    dataset = self.get_definition()
                     result = _build_dataset_locally_and_store_remotely(
-                        lambda: super(  # pylint: disable=super-with-arguments
-                            DatasetFunctionWrapper, self
-                        ).__call__(*args, **kwargs),
+                        lambda: dataset.func(*args, **kwargs),
                         self.layer,
-                        dataset_definition,
+                        dataset,
                         tracker,
                         client,
-                        get_assertion_functions_data(self),
                     )
                     return result
 
@@ -171,10 +164,9 @@ def _dataset_wrapper(
 def _build_dataset_locally_and_store_remotely(
     building_func: Callable[..., Any],
     layer: LayerSettings,
-    dataset: DatasetFunctionDefinition,
+    dataset: FunctionDefinition,
     tracker: RunProgressTracker,
     client: LayerClient,
-    assertions: List[Assertion],
 ) -> Any:
     tracker.add_asset(AssetType.DATASET, layer.get_asset_name())  # type: ignore
 
@@ -186,29 +178,26 @@ def _build_dataset_locally_and_store_remotely(
         building_func,
         dataset,
         tracker,
-        assertions,
     )
 
     transfer_state = DatasetTransferState(len(result))
-    tracker.mark_dataset_saving_result(dataset.name, transfer_state)
+    tracker.mark_dataset_saving_result(dataset.asset_name, transfer_state)
 
     # this call would store the resulting dataset, extract the schema and complete the build from remote
     client.data_catalog.store_dataset(
-        name="",
         data=result,
         build_id=build_uuid,
         progress_callback=transfer_state.increment_num_transferred_rows,
     )
-    tracker.mark_dataset_built(dataset.name)
+    tracker.mark_dataset_built(dataset.asset_name)
     return result
 
 
 def _build_locally_update_remotely(
     client: LayerClient,
     function_that_builds_dataset: Callable[..., Any],
-    dataset: DatasetFunctionDefinition,
+    dataset: FunctionDefinition,
     tracker: RunProgressTracker,
-    assertions: List[Assertion],
 ) -> Tuple[Any, UUID]:
     try:
         with Context() as context:
@@ -217,23 +206,23 @@ def _build_locally_update_remotely(
                 client, dataset.project_full_name
             )
             initiate_build_response = client.data_catalog.initiate_build(
-                dataset,
-                current_project_uuid,
-                True,
+                ProjectId(value=str(current_project_uuid)),
+                dataset.asset_name,
+                dataset.get_fabric(True),
             )
             dataset_build_id = UUID(initiate_build_response.id.value)
             context.with_dataset_build(
                 DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.STARTED)
             )
             context.with_tracker(tracker)
-            context.with_asset_name(dataset.name)
+            context.with_asset_name(dataset.asset_name)
             set_active_context(context)
             try:
                 result = function_that_builds_dataset()
-                _run_assertions(dataset.name, result, assertions, tracker)
+                _run_assertions(dataset.asset_name, result, dataset.assertions, tracker)
             except Exception as e:
                 client.data_catalog.complete_build(
-                    initiate_build_response.id, dataset, e
+                    initiate_build_response.id, dataset.asset_name, dataset.uri, e
                 )
                 context.with_dataset_build(
                     DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.FAILED)

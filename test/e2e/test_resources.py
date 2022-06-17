@@ -7,9 +7,7 @@ from yarl import URL
 
 import layer
 from layer.contracts.projects import Project
-from layer.contracts.runs import Run
 from layer.decorators import dataset, model, pip_requirements, resources
-from layer.decorators.definitions import ModelFunctionDefinition
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from test.e2e.assertion_utils import E2ETestAsserter
@@ -22,18 +20,17 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
         return None
 
     project_full_name = initialized_project.full_name
-    definition = ModelFunctionDefinition(
-        func, project_full_name.project_name, project_full_name.account_name
-    )
-    run = Run(project_full_name).with_definitions([definition])
+    functions = [func.get_definition()]
     resource_manager = ResourceManager(asserter.client)
 
     resource_manager.wait_resource_upload(
-        run, RunProgressTracker(url=URL(""), account_name="", project_name="")
+        project_full_name,
+        functions,
+        RunProgressTracker(url=URL(""), account_name="", project_name=""),
     )
     with tempfile.TemporaryDirectory(prefix="test_resource_manager") as resource_dir:
         resource_manager.wait_resource_download(
-            definition.project_full_name, definition.func_name, target_dir=resource_dir
+            project_full_name, functions[0].func_name, target_dir=resource_dir
         )
         assert filecmp.cmp(
             "test/e2e/assets/data/test.csv",

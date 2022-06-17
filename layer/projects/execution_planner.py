@@ -14,7 +14,6 @@ from layerapi.api.entity.operations_pb2 import (
 from layerapi.api.ids_pb2 import ModelVersionId
 
 from layer.contracts.assets import AssetPath, AssetType
-from layer.contracts.runs import Run
 from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import (
     LayerClientException,
@@ -35,8 +34,8 @@ class PlanNode:
     id: Optional[uuid.UUID]
 
 
-def build_execution_plan(run: Run) -> ExecutionPlan:
-    graph = _build_directed_acyclic_graph(run.definitions)
+def build_execution_plan(definitions: Sequence[FunctionDefinition]) -> ExecutionPlan:
+    graph = _build_directed_acyclic_graph(definitions)
     plan = _topological_sort_grouping(graph)
     operations = []
     for _level, ops in plan.items():
@@ -141,7 +140,7 @@ def _build_graph(definitions: Sequence[FunctionDefinition]) -> "DiGraph":
 
     for func in definitions:
         asset_id = _get_asset_id(func.asset_path)
-        for dependency_path in func.dependencies:
+        for dependency_path in func.asset_dependencies:
             dependency_asset_id = _get_asset_id(dependency_path)
             # we add connections only to other entities to build
             if dependency_asset_id in graph.nodes:
@@ -170,9 +169,9 @@ def _add_function_to_graph(graph: "DiGraph", func: FunctionDefinition) -> None:
         _get_asset_id(func.asset_path),
         node=PlanNode(
             path=func.asset_path,
-            name=func.name,
+            name=func.asset_name,
             id=func.version_id,
-            dependencies=func.dependencies,
+            dependencies=func.asset_dependencies,
         ),
     )
 

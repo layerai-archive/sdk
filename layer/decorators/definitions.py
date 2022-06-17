@@ -3,11 +3,10 @@ import inspect
 import os
 import pickle  # nosec import_pickle
 import shutil
-import sys
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Iterator, List, Optional
 
 import cloudpickle  # type: ignore
 

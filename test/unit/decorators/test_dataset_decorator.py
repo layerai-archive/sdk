@@ -16,7 +16,7 @@ from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
 from layer.decorators import dataset, fabric, pip_requirements
-from layer.decorators.definitions import DatasetFunctionDefinition
+from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import (
     ConfigError,
     LayerClientResourceNotFoundException,
@@ -105,13 +105,13 @@ class TestDatasetDecorator:
         func = _make_test_dataset_function(name)
 
         with project_client_mock(), patch(
-            "layer.decorators.dataset_decorator._build_locally_update_remotely",
+            "layer.decorators.dataset._build_locally_update_remotely",
             return_value=("", UUID(int=0x12345678123456781234567812345678)),
         ), patch(
-            "layer.decorators.dataset_decorator.register_dataset_function",
+            "layer.decorators.dataset.register_dataset_function",
         ) as mock_register_datasets:
 
-            dataset: Optional[DatasetFunctionDefinition] = None
+            dataset: Optional[FunctionDefinition] = None
 
             def side_effect(
                 unused_client,
@@ -130,17 +130,17 @@ class TestDatasetDecorator:
             mock_register_datasets.assert_called_with(ANY, ANY, ANY, ANY)
 
             assert dataset
-            assert dataset.name == name
+            assert dataset.asset_name == name
             assert dataset.project_name == test_project_name
-            assert len(dataset.dependencies) == 4
-            assert dataset.dependencies[0].asset_name == "bar"
-            assert dataset.dependencies[0].asset_type == AssetType.DATASET
-            assert dataset.dependencies[1].asset_name == "foo"
-            assert dataset.dependencies[1].asset_type == AssetType.MODEL
-            assert dataset.dependencies[2].asset_name == "baz"
-            assert dataset.dependencies[2].asset_type == AssetType.DATASET
-            assert dataset.dependencies[3].asset_name == "zoo"
-            assert dataset.dependencies[3].asset_type == AssetType.MODEL
+            assert len(dataset.asset_dependencies) == 4
+            assert dataset.asset_dependencies[0].asset_name == "bar"
+            assert dataset.asset_dependencies[0].asset_type == AssetType.DATASET
+            assert dataset.asset_dependencies[1].asset_name == "foo"
+            assert dataset.asset_dependencies[1].asset_type == AssetType.MODEL
+            assert dataset.asset_dependencies[2].asset_name == "baz"
+            assert dataset.asset_dependencies[2].asset_type == AssetType.DATASET
+            assert dataset.asset_dependencies[3].asset_name == "zoo"
+            assert dataset.asset_dependencies[3].asset_type == AssetType.MODEL
 
             assert dataset.environment_path.exists()
             assert dataset.environment_path.read_text() == "sklearn==0.0\n"
@@ -164,7 +164,7 @@ class TestDatasetDecorator:
         )
 
         with patch(
-            "layer.decorators.dataset_decorator.register_dataset_function",
+            "layer.decorators.dataset.register_dataset_function",
             return_value=mock_dataset_function,
         ), project_client_mock(data_catalog_client=data_catalog_client):
 
@@ -182,7 +182,7 @@ class TestDatasetDecorator:
         set_default_fabric(Fabric.F_SMALL)
 
         with project_client_mock(), patch(
-            "layer.decorators.dataset_decorator._build_dataset_locally_and_store_remotely"
+            "layer.decorators.dataset._build_dataset_locally_and_store_remotely"
         ) as mock_build_locally:
 
             @dataset("test")

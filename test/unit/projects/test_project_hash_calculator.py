@@ -1,7 +1,11 @@
+from typing import Any, Callable
+
 import pandas
 
+from layer.contracts.asset import AssetType
+from layer.contracts.fabrics import Fabric
 from layer.decorators import model
-from layer.decorators.definitions import ModelFunctionDefinition
+from layer.decorators.definitions import FunctionDefinition
 from layer.projects.utils import calculate_hash_by_definitions
 
 
@@ -14,10 +18,10 @@ def test_given_same_function_when_hash_calculated_then_hash_equal():
     def func2():
         return pandas.DataFrame({})
 
-    def_1 = ModelFunctionDefinition(
+    def_1 = _make_test_function_definition(
         func=func1, project_name="project-name", account_name="acc-name"
     )
-    def_2 = ModelFunctionDefinition(
+    def_2 = _make_test_function_definition(
         func=func1, project_name="project-name", account_name="acc-name"
     )
 
@@ -42,10 +46,10 @@ def test_given_different_function_when_hash_calculated_then_hash_different():
     def func3():
         return pandas.DataFrame({})
 
-    def_1 = ModelFunctionDefinition(
+    def_1 = _make_test_function_definition(
         func=func1, project_name="project-name", account_name="acc-name"
     )
-    def_2 = ModelFunctionDefinition(
+    def_2 = _make_test_function_definition(
         func=func2, project_name="project-name", account_name="acc-name"
     )
 
@@ -55,3 +59,20 @@ def test_given_different_function_when_hash_calculated_then_hash_different():
 
     # then
     assert first_hash != second_hash
+
+
+def _make_test_function_definition(
+    func: Callable[..., Any], project_name: str, account_name: str
+) -> FunctionDefinition:
+    return FunctionDefinition(
+        func=func,
+        project_name=project_name,
+        account_name=account_name,
+        asset_type=AssetType.MODEL,
+        asset_name=func.layer.get_asset_name(),
+        fabric=Fabric.F_LOCAL,
+        asset_dependencies=[],
+        pip_dependencies=[],
+        resource_paths=[],
+        assertions=[],
+    )

@@ -1,18 +1,13 @@
 import uuid
-from typing import Optional, Sequence, Type
+from typing import List, Optional, Sequence
 
 import pytest
 
+from layer.contracts.asset import AssetType
 from layer.contracts.assets import AssetPath
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import Run
-from layer.decorators.definitions import (
-    DatasetFunctionDefinition,
-    FunctionDefinition,
-    ModelFunctionDefinition,
-)
-from layer.decorators.settings import LayerSettings
+from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import ProjectCircularDependenciesException
 from layer.projects.execution_planner import (
     _build_graph,
@@ -116,9 +111,9 @@ class TestProjectExecutionPlanner:
         ) == [m1.drop_dependencies()]
 
     def test_build_execution_plan_linear(self) -> None:
-        r1 = self._create_mock_run_linear()
+        definitions = self._create_mock_run_linear()
 
-        execution_plan = build_execution_plan(r1)
+        execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
         ops = execution_plan.operations
 
@@ -127,10 +122,10 @@ class TestProjectExecutionPlanner:
         assert ops[1].sequential.dataset_build.dataset_name == "ds2"
         assert ops[2].sequential.dataset_build.dataset_name == "ds3"
         assert ops[3].sequential.model_train.model_version_id.value == str(
-            r1.definitions[3].version_id
+            definitions[3].version_id
         )
         assert ops[4].sequential.model_train.model_version_id.value == str(
-            r1.definitions[4].version_id
+            definitions[4].version_id
         )
         assert ops[1].sequential.dataset_build.dependency == [
             f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds1"
@@ -143,9 +138,9 @@ class TestProjectExecutionPlanner:
         ]
 
     def test_build_execution_plan_parallel(self) -> None:
-        r1 = self._create_mock_run_parallel()
+        definitions = self._create_mock_run_parallel()
 
-        execution_plan = build_execution_plan(r1)
+        execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
         ops = execution_plan.operations
 
@@ -154,8 +149,8 @@ class TestProjectExecutionPlanner:
         assert len(ops[0].parallel.model_train) == 2
 
     def test_build_execution_plan_mixed(self) -> None:
-        r1 = self._create_mock_run_mixed()
-        execution_plan = build_execution_plan(r1)
+        definitions = self._create_mock_run_mixed()
+        execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
         ops = execution_plan.operations
 
@@ -163,15 +158,13 @@ class TestProjectExecutionPlanner:
         assert ops
 
     def test_drop_independent_entities_execution_plan(self) -> None:
-        r1 = self._create_mock_run_mixed()
-        r2 = r1.with_definitions(
-            drop_independent_entities(
-                r1.definitions,
-                AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds2"),
-                keep_dependencies=False,
-            )
+        definitions1 = self._create_mock_run_mixed()
+        definitions2 = drop_independent_entities(
+            definitions1,
+            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds2"),
+            keep_dependencies=False,
         )
-        execution_plan = build_execution_plan(r2)
+        execution_plan = build_execution_plan(definitions2)
 
         assert execution_plan is not None
         ops = execution_plan.operations
@@ -179,7 +172,7 @@ class TestProjectExecutionPlanner:
         assert len(ops) == 1
         assert ops[0].sequential.dataset_build.dataset_name == "ds2"
 
-    def _create_mock_run_linear(self) -> Run:
+    def _create_mock_run_linear(self) -> List[FunctionDefinition]:
         ds1 = self._create_mock_dataset("ds1")
         m1 = self._create_mock_model("m1", ["datasets/ds1"])
 
@@ -189,18 +182,18 @@ class TestProjectExecutionPlanner:
         m1 = self._create_mock_model("m1", ["datasets/ds3"])
         m2 = self._create_mock_model("m2", ["models/m1"])
 
-        return Run(TEST_PROJECT_FULL_NAME, definitions=[ds1, ds2, ds3, m1, m2])
+        return [ds1, ds2, ds3, m1, m2]
 
-    def _create_mock_run_parallel(self) -> Run:
+    def _create_mock_run_parallel(self) -> List[FunctionDefinition]:
         ds1 = self._create_mock_dataset("ds1")
         ds2 = self._create_mock_dataset("ds2")
         ds3 = self._create_mock_dataset("ds3")
         m1 = self._create_mock_model("m1")
         m2 = self._create_mock_model("m2")
 
-        return Run(TEST_PROJECT_FULL_NAME, definitions=[ds1, ds2, ds3, m1, m2])
+        return [ds1, ds2, ds3, m1, m2]
 
-    def _create_mock_run_mixed(self) -> Run:
+    def _create_mock_run_mixed(self) -> List[FunctionDefinition]:
         ds1 = self._create_mock_dataset("ds1", project_name="other-project")
         ds2 = self._create_mock_dataset("ds2")
         ds3 = self._create_mock_dataset(
@@ -209,7 +202,7 @@ class TestProjectExecutionPlanner:
         ds4 = self._create_mock_dataset("ds4", ["datasets/ds2"])
         m1 = self._create_mock_model("m1", ["datasets/ds3", "datasets/ds4"])
 
-        return Run(TEST_PROJECT_FULL_NAME, definitions=[ds1, ds2, ds3, ds4, m1])
+        return [ds1, ds2, ds3, ds4, m1]
 
     @staticmethod
     def _create_mock_dataset(
@@ -218,7 +211,7 @@ class TestProjectExecutionPlanner:
         project_name: str = TEST_PROJECT_FULL_NAME.project_name,
     ) -> FunctionDefinition:
         return TestProjectExecutionPlanner._create_mock_asset(
-            DatasetFunctionDefinition, name, dependencies, project_name
+            AssetType.DATASET, name, dependencies, project_name
         )
 
     @staticmethod
@@ -228,12 +221,12 @@ class TestProjectExecutionPlanner:
         project_name: str = TEST_PROJECT_FULL_NAME.project_name,
     ) -> FunctionDefinition:
         return TestProjectExecutionPlanner._create_mock_asset(
-            ModelFunctionDefinition, name, dependencies, project_name
+            AssetType.MODEL, name, dependencies, project_name
         )
 
     @staticmethod
     def _create_mock_asset(
-        asset_type: Type[FunctionDefinition],
+        asset_type: AssetType,
         name: str,
         dependencies: Optional[Sequence[str]] = None,
         project_name: str = TEST_PROJECT_FULL_NAME.project_name,
@@ -242,21 +235,29 @@ class TestProjectExecutionPlanner:
         if dependencies is None:
             dependencies = []
 
-        dependency_paths = [AssetPath.parse(d) for d in dependencies]
+        dependency_paths = [
+            AssetPath.parse(d).with_project_full_name(
+                ProjectFullName(
+                    account_name=account_name,
+                    project_name=project_name,
+                )
+            )
+            for d in dependencies
+        ]
 
         def func() -> None:
             pass
 
-        settings = LayerSettings()
-        settings.set_asset_name(name)
-        settings.set_dependencies(dependency_paths)
-        settings.set_fabric(Fabric.F_LOCAL.value)
-
-        func.layer = settings  # type: ignore
-
-        return asset_type(
-            func,
+        return FunctionDefinition(
+            func=func,
             project_name=project_name,
             account_name=account_name,
+            asset_type=asset_type,
+            asset_name=name,
+            fabric=Fabric.F_LOCAL,
+            asset_dependencies=dependency_paths,
+            pip_dependencies=[],
+            resource_paths=[],
+            assertions=[],
             version_id=uuid.uuid4(),
         )

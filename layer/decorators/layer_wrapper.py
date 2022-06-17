@@ -1,12 +1,8 @@
 import logging
-from dataclasses import replace
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import wrapt
 
-from layer.clients.layer import LayerClient
-from layer.config.config import Config
-from layer.config.config_manager import ConfigManager
 from layer.contracts.assertions import Assertion  # type: ignore
 from layer.contracts.assets import AssetPath, AssetType, BaseAsset
 from layer.contracts.datasets import Dataset
@@ -15,8 +11,6 @@ from layer.contracts.project_full_name import ProjectFullName
 from layer.decorators.definitions import FunctionDefinition
 from layer.decorators.settings import LayerSettings
 from layer.projects.utils import get_current_project_full_name
-from layer.tracker.progress_tracker import RunProgressTracker
-from layer.utils.async_utils import asyncio_run_in_thread
 
 
 logger = logging.getLogger(__name__)
@@ -58,13 +52,8 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
         asset_type: AssetType,
         name: str,
         dependencies: Optional[List[Union[str, Dataset, Model]]],
-        execution_wrapper: Callable[
-            [FunctionDefinition, LayerClient, RunProgressTracker], Any
-        ],
     ) -> None:
         super().__init__(wrapped, wrapper, enabled)
-        self._self_execution_wrapper = execution_wrapper
-
         self.layer.set_asset_type(asset_type)
         self.layer.set_asset_name(name)
 
