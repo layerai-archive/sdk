@@ -10,7 +10,6 @@ from .interceptors import (
     GRPCErrorClientInterceptor,
     LogRpcCallsInterceptor,
     RequestIdInterceptor,
-    TrackingClientInterceptor,
 )
 
 
@@ -56,17 +55,14 @@ def create_grpc_channel(
 
     client_interceptors = [
         RequestIdInterceptor(),
-        TrackingClientInterceptor(),
         GRPCErrorClientInterceptor(),
         LogRpcCallsInterceptor(logs_file_path),
     ]
 
-    # TODO: remove type: ignore once
-    # https://github.com/shabbyrobe/grpc-stubs/pull/12 is released
     return grpc.intercept_channel(
         grpc.secure_channel(
             address,
-            grpc.composite_channel_credentials(  # type: ignore
+            grpc.composite_channel_credentials(
                 credentials,
                 grpc.access_token_call_credentials(access_token),
             ),
