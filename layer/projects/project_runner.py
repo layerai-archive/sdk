@@ -303,8 +303,7 @@ def register_model_function(
             version_id = uuid.UUID(version.id.value)
             s3_path = client.model_training.upload_training_files(model, version_id)
             # in here we reconstruct the path / train.gz to save in metadata
-            client.model_catalog.store_training_metadata(model, s3_path, version, False)
-
+            client.model_catalog.store_training_metadata(model, s3_path, version)
         tracker.mark_model_saved(model.name)
         return model.with_version_id(version.id.value)
     except LayerClientServiceUnavailableException as e:

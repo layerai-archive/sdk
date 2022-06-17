@@ -114,7 +114,6 @@ class ModelCatalogClient:
         model: ModelFunctionDefinition,
         s3_path: S3Path,
         version: ModelVersion,
-        is_local: bool,
     ) -> None:
         request: StoreTrainingMetadataRequest = StoreTrainingMetadataRequest(
             model_version_id=version.id,
@@ -139,7 +138,6 @@ class ModelCatalogClient:
                 ),
             ),
             entrypoint=model.entrypoint,
-            fabric=model.get_fabric(is_local=is_local),
         )
         self._logger.debug(f"StoreTrainingMetadataRequest request: {str(request)}")
         response = self._service.StoreTrainingMetadata(request)
