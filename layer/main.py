@@ -87,6 +87,7 @@ def login(url: Union[URL, str] = DEFAULT_URL) -> None:
         layer.login()
 
     """
+    _check_latest_version()
 
     async def _login(manager: ConfigManager, login_url: URL) -> None:
         await manager.login_headless(login_url)
@@ -516,6 +517,8 @@ def init(
         # Initialize new project and create it in Layer backend if it does not exist
         project = layer.init("my_project_name", fabric="x-small")
     """
+    _check_latest_version()
+
     if pip_packages and pip_requirements_file:
         raise ValueError(
             "either pip_requirements_file or pip_packages should be provided, not both"
@@ -646,6 +649,18 @@ document.querySelectorAll(".output a").forEach(function(a){
 })
         """
             )
+        )
+
+
+def _check_latest_version() -> None:
+    import luddite  # type: ignore
+    import pkg_resources
+
+    latest_version = luddite.get_version_pypi("layer")
+    current_version = pkg_resources.get_distribution("layer").version
+    if current_version != latest_version:
+        print(
+            "You are using the version {current_version} but the latest version is {latest_version}, please upgrade with 'pip install --upgrade layer'"
         )
 
 
