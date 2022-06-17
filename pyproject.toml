@@ -29,7 +29,6 @@ packaging = "<=21.0"  # latest release (21.2) is causing version conflicts with 
 pandas = "1.3.5"
 pickle5 = { version = "~0.0.11", python = "<3.8" }
 polling  = ">=0.3.1"
-prompt_toolkit  = ">=3.0.8"
 protobuf  = ">=3.12.0"
 pyarrow = "7.0.0"
 pyjwt  = "^2.0.0"
