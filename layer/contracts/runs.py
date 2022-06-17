@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field, replace
-from typing import Callable, List, Optional, Sequence
+from dataclasses import dataclass
+from typing import Callable, List
 
 from layerapi.api.entity.run_pb2 import Run as PBRun
 from layerapi.api.ids_pb2 import RunId
@@ -26,10 +26,8 @@ class Run:
 
     """
 
+    id: RunId
     project_full_name: ProjectFullName
-    files_hash: str = ""
-    readme: str = field(repr=False, default="")
-    run_id: Optional[RunId] = field(repr=False, default=None)
 
     @property
     def project_name(self) -> str:
@@ -38,6 +36,3 @@ class Run:
     @property
     def account_name(self) -> str:
         return self.project_full_name.account_name
-
-    def with_run_id(self, run_id: RunId) -> "Run":
-        return replace(self, run_id=run_id)

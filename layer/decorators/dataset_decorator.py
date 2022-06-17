@@ -168,10 +168,10 @@ def _build_dataset_locally_and_store_remotely(
     tracker: RunProgressTracker,
     client: LayerClient,
 ) -> Any:
-    tracker.add_asset(AssetType.DATASET, layer.get_asset_name())  # type: ignore
+    tracker.add_asset(AssetType.DATASET, layer.get_asset_name())
 
-    dataset = register_dataset_function(client, dataset, True, tracker)
-    tracker.mark_dataset_building(layer.get_asset_name())  # type: ignore
+    register_dataset_function(client, dataset, True, tracker)
+    tracker.mark_dataset_building(layer.get_asset_name())
 
     (result, build_uuid) = _build_locally_update_remotely(
         client,

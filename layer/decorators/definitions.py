@@ -110,13 +110,11 @@ class FunctionDefinition:
     def function_home_dir(self) -> Path:
         return DEFAULT_FUNC_PATH / self.asset_path.path()
 
-    def with_version_id(self, version_id: uuid.UUID) -> "FunctionDefinition":
+    def set_version_id(self, version_id: uuid.UUID) -> None:
         self.version_id = version_id
-        return self
 
-    def with_repository_id(self, repository_id: uuid.UUID) -> "FunctionDefinition":
+    def set_repository_id(self, repository_id: uuid.UUID) -> None:
         self.repository_id = repository_id
-        return self
 
     def drop_dependencies(self) -> "FunctionDefinition":
         self.asset_dependencies = []

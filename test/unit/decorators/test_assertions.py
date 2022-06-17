@@ -293,9 +293,9 @@ class TestAssertions:
     def test_get_asserted_function(self):
 
         with patch(
-            "layer.decorators.assertions._assert_unique"
+            "layer.decorators.assertions_decorator._assert_unique"
         ) as mocked_unique, patch(
-            "layer.decorators.assertions._assert_not_null"
+            "layer.decorators.assertions_decorator._assert_not_null"
         ) as mocked_not_null:
             mocked_unique.__name__ = "_assert_unique"
             mocked_not_null.__name__ = "_assert_not_null"

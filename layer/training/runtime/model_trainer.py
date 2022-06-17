@@ -190,7 +190,8 @@ class ModelTrainer:
                 )
                 self.logger.info("Executed train_model_func successfully")
                 self._run_assertions(
-                    model, get_assertion_functions_data(train_model_func)
+                    model,
+                    train_model_func.layer.get_assertions(),  # type: ignore
                 )
                 self.tracker.mark_model_saving(self.train_context.model_name)
                 self.logger.info(f"Saving model artifact {model} to model registry")

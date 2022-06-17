@@ -11,6 +11,7 @@ from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId
 from layer.clients.layer import LayerClient
 from layer.contracts.projects import ApplyResult
 from layer.contracts.runs import Run
+from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import (
     LayerClientTimeoutException,
     ProjectDatasetBuildExecutionException,
@@ -41,6 +42,7 @@ class ProgressTrackerUpdater:
     client: LayerClient
     apply_metadata: ApplyResult
     run: Run
+    definitions: List[FunctionDefinition]
     run_metadata: _FormattedRunMetadata
 
     def __init__(
@@ -48,11 +50,13 @@ class ProgressTrackerUpdater:
         tracker: RunProgressTracker,
         apply_metadata: ApplyResult,
         run: Run,
+        definitions: List[FunctionDefinition],
         client: LayerClient,
     ):
         self.tracker = tracker
         self.apply_metadata = apply_metadata
         self.run = run
+        self.definitions = definitions
         self.client = client
 
     @staticmethod
@@ -83,10 +87,10 @@ class ProgressTrackerUpdater:
             if event_type == "run":
                 run_status = event.run.run_status
                 if run_status == PBRun.STATUS_TERMINATED:
-                    raise ProjectRunTerminatedError(run_id=self.run.run_id)
+                    raise ProjectRunTerminatedError(run_id=self.run.id)
 
                 elif run_status == PBRun.STATUS_FAILED:
-                    raise ProjectRunnerError("Run failed", self.run.run_id)
+                    raise ProjectRunnerError("Run failed", self.run.id)
 
                 elif run_status in [PBRun.STATUS_SUCCEEDED]:
                     return True
@@ -146,13 +150,13 @@ class ProgressTrackerUpdater:
             _print_debug(f"Task type not handled {task_type}")
 
     def _handle_task_failed(self, task: PBTask) -> None:
-        assert self.run.run_id
+        assert self.run.id
         task_id = task.id
         task_type = task.type
         task_info = task.info
         if task_type == PBTask.TYPE_DATASET_BUILD:
             exc_ds = ProjectDatasetBuildExecutionException(
-                self.run.run_id,
+                self.run.id,
                 task_id,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
@@ -160,7 +164,7 @@ class ProgressTrackerUpdater:
             raise exc_ds
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             exc_model = ProjectModelExecutionException(
-                self.run.run_id,
+                self.run.id,
                 task_id,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
@@ -187,9 +191,9 @@ class ProgressTrackerUpdater:
             _print_debug(f"Task type not handled {task_type}")
 
     def _find_model_name_by_version_id(self, version_id: str) -> str:
-        for definition in self.run.definitions:
+        for definition in self.definitions:
             if str(definition.version_id) == version_id:
-                return definition.name
+                return definition.asset_name
         raise KeyError(version_id)
 
 
