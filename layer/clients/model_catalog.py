@@ -45,6 +45,7 @@ from layer.cache.cache import Cache
 from layer.config import ClientConfig
 from layer.contracts.asset import AssetPath
 from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
+from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
@@ -282,14 +283,14 @@ class ModelCatalogClient:
     def create_model_train(
         self,
         name: str,
-        project_name: str,
+        project_full_name: ProjectFullName,
         version: Optional[str],
     ) -> ModelTrainId:
         response = self._service.CreateModelTrain(
             CreateModelTrainRequest(
                 model_name=name,
                 model_version="" if version is None else version,
-                project_name=project_name,
+                project_full_name=project_full_name.path,
             ),
         )
         return response.id

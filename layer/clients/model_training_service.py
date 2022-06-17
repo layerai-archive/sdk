@@ -55,9 +55,9 @@ class ModelTrainingClient:
             yield self
 
     def upload_training_files(
-        self, asset_name: str, function_home_dir: Path, source_name: str
+        self, asset_name: str, function_home_dir: Path, model_version_id: uuid.UUID
     ) -> None:
-        response = self.get_source_code_upload_credentials(source_name=source_name)
+        response = self.get_source_code_upload_credentials(model_version_id)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tar_directory(f"{tmp_dir}/{asset_name}.tgz", function_home_dir)
@@ -68,11 +68,13 @@ class ModelTrainingClient:
                 endpoint_url=self._s3_endpoint_url,
             )
 
+        return response.s3_path
+
     def get_source_code_upload_credentials(
-        self, source_name: str
+        self, model_version_id: uuid.UUID
     ) -> GetSourceCodeUploadCredentialsResponse:
         return self._service.GetSourceCodeUploadCredentials(
-            GetSourceCodeUploadCredentialsRequest(source_name=source_name)
+            GetSourceCodeUploadCredentialsRequest(source_name=str(model_version_id))
         )
 
     def train_model(
@@ -80,7 +82,7 @@ class ModelTrainingClient:
         version: ModelVersion,
     ) -> uuid.UUID:
         response: GetSourceCodeUploadCredentialsResponse = (
-            self.get_source_code_upload_credentials(version.id.value)
+            self.get_source_code_upload_credentials(uuid.UUID(version.id.value))
         )
         self._logger.debug(
             f"GetSourceCodeUploadCredentialsResponse response: {str(response)}"

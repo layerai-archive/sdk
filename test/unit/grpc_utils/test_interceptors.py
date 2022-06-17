@@ -330,7 +330,7 @@ class TestLogRpcCallsInterceptor:
         _intercept_call_for_method(
             interceptor,
             "/api.FlowManagerAPI/StartRun",
-            request=StartRunV2Request(project_name="lala"),
+            request=StartRunV2Request(project_full_name="acc/lala"),
             result=StartRunV2Response(run_id=run_id),
         )
         # call 2

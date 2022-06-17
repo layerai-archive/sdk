@@ -9,6 +9,7 @@ from yarl import URL
 from layer.clients.layer import LayerClient
 from layer.clients.model_catalog import ModelCatalogClient
 from layer.config import ClientConfig
+from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
@@ -26,8 +27,10 @@ def test_train_raises_exception_if_error_happens() -> None:
         with Train(
             layer_client=client,
             name="name",
-            project_name="test-project",
-            version=2,
+            project_full_name=ProjectFullName(
+                project_name="test-project", account_name="acc"
+            ),
+            version="2",
             train_id=uuid.uuid4(),
         ):
             raise Exception("train exception")
@@ -59,8 +62,10 @@ def test_when_save_model_gets_invalid_object_then_throw_exception(
     train = Train(
         layer_client=client,
         name="name",
-        project_name="test-project",
-        version=2,
+        project_full_name=ProjectFullName(
+            project_name="test-project", account_name="acc"
+        ),
+        version="2",
         train_id=uuid.uuid4(),
     )
     with pytest.raises(UnexpectedModelTypeException):

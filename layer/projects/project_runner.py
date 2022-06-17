@@ -206,7 +206,7 @@ class ProjectRunner:
     ) -> RunId:
         try:
             run_id = client.flow_manager.start_run(
-                self.project_full_name.project_name,
+                self.project_full_name,
                 execution_plan,
                 self.files_hash,
                 user_command,
@@ -274,8 +274,9 @@ def register_model_function(
 
         if response.should_upload_training_files:
             # in here we upload to path / train.gz
+            version_id = uuid.UUID(version.id.value)
             client.model_training.upload_training_files(
-                model.asset_name, model.function_home_dir, version.id.value
+                model.asset_name, model.function_home_dir, version_id
             )
             source_code_response = (
                 client.model_training.get_source_code_upload_credentials(

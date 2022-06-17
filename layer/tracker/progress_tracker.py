@@ -75,11 +75,11 @@ class RunProgressTracker:
             self._tasks[task_key] = task
         return self._tasks[task_key]
 
-    def add_asset(self, type_: AssetType, name: str) -> None:
-        self._get_or_create_task(type_, name)
+    def add_asset(self, asset_type: AssetType, asset_name: str) -> None:
+        self._get_or_create_task(asset_type, asset_name)
 
-    def _get_asset(self, type_: AssetType, name: str) -> AssetTracker:
-        task = self._tasks[(type_, name)]
+    def _get_asset(self, asset_type: AssetType, asset_name: str) -> AssetTracker:
+        task = self._get_or_create_task(asset_type, asset_name)
         asset = task.fields["asset"]
         return asset
 
