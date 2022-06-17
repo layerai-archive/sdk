@@ -105,10 +105,10 @@ class TestDatasetDecorator:
         func = _make_test_dataset_function(name)
 
         with project_client_mock(), patch(
-            "layer.decorators.dataset._build_locally_update_remotely",
+            "layer.decorators.dataset_decorator._build_locally_update_remotely",
             return_value=("", UUID(int=0x12345678123456781234567812345678)),
         ), patch(
-            "layer.decorators.dataset.register_dataset_function",
+            "layer.decorators.dataset_decorator.register_dataset_function",
         ) as mock_register_datasets:
 
             dataset: Optional[FunctionDefinition] = None
@@ -143,7 +143,7 @@ class TestDatasetDecorator:
             assert dataset.asset_dependencies[3].asset_type == AssetType.MODEL
 
             assert dataset.environment_path.exists()
-            assert dataset.environment_path.read_text() == "sklearn==0.0\n"
+            assert dataset.environment_path.read_text() == "sklearn==0.0"
             # Check if the unpickled file contains the correct function
             assert dataset.pickle_path.exists()
             loaded = pickle.load(open(dataset.pickle_path, "rb"))
@@ -164,7 +164,7 @@ class TestDatasetDecorator:
         )
 
         with patch(
-            "layer.decorators.dataset.register_dataset_function",
+            "layer.decorators.dataset_decorator.register_dataset_function",
             return_value=mock_dataset_function,
         ), project_client_mock(data_catalog_client=data_catalog_client):
 
@@ -182,7 +182,7 @@ class TestDatasetDecorator:
         set_default_fabric(Fabric.F_SMALL)
 
         with project_client_mock(), patch(
-            "layer.decorators.dataset._build_dataset_locally_and_store_remotely"
+            "layer.decorators.dataset_decorator._build_dataset_locally_and_store_remotely"
         ) as mock_build_locally:
 
             @dataset("test")
@@ -203,7 +203,6 @@ class TestDatasetDecorator:
                 unused_ds,
                 unused_tracker,
                 unused_client,
-                unused_assertions,
             ) = mock_build_locally.call_args_list[0][0]
             assert settings.get_fabric() == Fabric.F_MEDIUM
 
@@ -213,7 +212,6 @@ class TestDatasetDecorator:
                 unused_ds,
                 unused_tracker,
                 unused_client,
-                unused_assertions,
             ) = mock_build_locally.call_args_list[1][0]
             assert settings.get_fabric() == Fabric.F_SMALL
 

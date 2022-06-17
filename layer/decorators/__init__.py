@@ -1,5 +1,5 @@
-from .dataset import dataset  # noqa
-from .fabric import fabric  # noqa
-from .model import model  # noqa
-from .pip_requirements import pip_requirements  # noqa
-from .resources import resources  # noqa
+from .dataset_decorator import dataset  # noqa
+from .fabric_decorator import fabric  # noqa
+from .model_decorator import model  # noqa
+from .pip_requirements_decorator import pip_requirements  # noqa
+from .resources_decorator import resources  # noqa

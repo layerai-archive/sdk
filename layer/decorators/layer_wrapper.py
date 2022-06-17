@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import wrapt
 
-from layer.contracts.assertions import Assertion  # type: ignore
 from layer.contracts.assets import AssetPath, AssetType, BaseAsset
 from layer.contracts.datasets import Dataset
 from layer.contracts.models import Model

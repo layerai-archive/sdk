@@ -6,8 +6,8 @@ import pytest
 
 from layer import Dataset, Model
 from layer.contracts.assets import AssetType
-from layer.decorators.model import model
-from layer.decorators.pip_requirements import pip_requirements
+from layer.decorators.model_decorator import model
+from layer.decorators.pip_requirements_decorator import pip_requirements
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import reset_to
 from test.unit.decorators.util import project_client_mock
@@ -59,18 +59,22 @@ class TestModelDecorator:
             args = mock_create_model.call_args
             model_definition = args[0][0]
 
-            assert model_definition.name == name
+            assert model_definition.asset_name == name
             assert model_definition.project_name == "foo-test"
 
-            assert len(model_definition.dependencies) == 4
-            assert model_definition.dependencies[0].asset_name == "bar"
-            assert model_definition.dependencies[0].asset_type == AssetType.DATASET
-            assert model_definition.dependencies[1].asset_name == "foo"
-            assert model_definition.dependencies[1].asset_type == AssetType.MODEL
-            assert model_definition.dependencies[2].asset_name == "baz"
-            assert model_definition.dependencies[2].asset_type == AssetType.DATASET
-            assert model_definition.dependencies[3].asset_name == "zoo"
-            assert model_definition.dependencies[3].asset_type == AssetType.MODEL
+            assert len(model_definition.asset_dependencies) == 4
+            assert model_definition.asset_dependencies[0].asset_name == "bar"
+            assert (
+                model_definition.asset_dependencies[0].asset_type == AssetType.DATASET
+            )
+            assert model_definition.asset_dependencies[1].asset_name == "foo"
+            assert model_definition.asset_dependencies[1].asset_type == AssetType.MODEL
+            assert model_definition.asset_dependencies[2].asset_name == "baz"
+            assert (
+                model_definition.asset_dependencies[2].asset_type == AssetType.DATASET
+            )
+            assert model_definition.asset_dependencies[3].asset_name == "zoo"
+            assert model_definition.asset_dependencies[3].asset_type == AssetType.MODEL
 
             # Check if the function is decorated correctly
             assert func.layer.get_asset_name() == name

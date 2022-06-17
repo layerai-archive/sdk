@@ -5,7 +5,7 @@ from sklearn.svm import SVC
 import layer
 from layer.contracts.projects import Project
 from layer.decorators import dataset, model, pip_requirements
-from layer.decorators.assertions import (
+from layer.decorators.assertions_decorator import (
     assert_not_null,
     assert_true,
     assert_valid_values,

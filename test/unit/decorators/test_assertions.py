@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from layer.contracts.assertions import Assertion
-from layer.decorators.assertions import (
+from layer.decorators.assertions_decorator import (
     assert_not_null,
     assert_skewness,
     assert_true,
