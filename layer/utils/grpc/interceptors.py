@@ -1,7 +1,6 @@
 import datetime
 import json
 import os
-import platform
 import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -10,7 +9,6 @@ import grpc
 from google.protobuf.json_format import MessageToDict
 from grpc._cython.cygrpc import _Metadatum  # type: ignore
 
-from layer import __version__
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientResourceAlreadyExistsException,
@@ -25,31 +23,7 @@ from layer.utils.session import _ENV_KEY_REQUEST_ID, UserSessionId, is_layer_deb
 _OBFUSCATED_VALUE = "***"
 _NON_OBFUSCATED_REQUEST_METADATA = [
     "x-request-id",
-    "layer-sdk-version",
-    "layer-sdk-language",
-    "layer-sdk-language-version",
 ]
-
-
-class TrackingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # type: ignore
-    def intercept_unary_unary(
-        self,
-        continuation: Callable[[grpc.ClientCallDetails, Any], Any],
-        client_call_details: grpc.ClientCallDetails,
-        request: Any,
-    ) -> Any:
-        metadata: List[Tuple[str, str]] = []
-        if client_call_details.metadata:
-            metadata = list(client_call_details.metadata)  # type: ignore
-        metadata.extend(
-            [
-                ("layer-sdk-version", __version__),
-                ("layer-sdk-language", "python"),
-                ("layer-sdk-language-version", platform.python_version()),
-            ]
-        )
-        client_call_details = client_call_details._replace(metadata=metadata)  # type: ignore
-        return continuation(client_call_details, request)
 
 
 class GRPCErrorClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # type: ignore

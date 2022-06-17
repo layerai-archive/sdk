@@ -1,5 +1,3 @@
-__version__ = "0.0.1b1"
-
 from .context import Context  # noqa
 from .contracts.datasets import Dataset  # noqa
 from .contracts.logged_data import Markdown  # noqa
