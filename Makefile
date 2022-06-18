@@ -14,9 +14,8 @@ define get_python_package_version
   $(1)==$(shell $(POETRY) show $1 --no-ansi --no-dev | grep version | awk '{print $$3}')
 endef
 
-install: apple-arm-prereq-install $(INSTALL_STAMP) ## Install dependencies
+install: check-poetry apple-arm-prereq-install $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock
-	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. See https://python-poetry.org/docs/"; exit 2; fi
 ifdef IN_VENV
 	$(POETRY) install
 else
@@ -80,6 +79,10 @@ lint: $(INSTALL_STAMP) ## Run all linters
 	$(POETRY) run pylint  --recursive yes .
 	$(POETRY) run mypy .
 	$(POETRY) run bandit -c pyproject.toml -r .
+
+.PHONY: check-poetry
+check-poetry:
+	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. See https://python-poetry.org/docs/"; exit 2; fi
 
 .PHONY: check-package-loads
 check-package-loads: ## Check that we can load the package without the dev dependencies
