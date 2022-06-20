@@ -140,7 +140,7 @@ def _build_graph(definitions: Sequence[FunctionDefinition]) -> "DiGraph":
 
     for func in definitions:
         asset_id = _get_asset_id(func.asset_path)
-        for dependency_path in func.dependencies:
+        for dependency_path in func.asset_dependencies:
             dependency_asset_id = _get_asset_id(dependency_path)
             # we add connections only to other entities to build
             if dependency_asset_id in graph.nodes:
@@ -169,9 +169,9 @@ def _add_function_to_graph(graph: "DiGraph", func: FunctionDefinition) -> None:
         _get_asset_id(func.asset_path),
         node=PlanNode(
             path=func.asset_path,
-            name=func.name,
+            name=func.asset_name,
             id=func.version_id,
-            dependencies=func.dependencies,
+            dependencies=func.asset_dependencies,
         ),
     )
 

@@ -6,10 +6,12 @@ import pytest
 
 from layer import Dataset, Model
 from layer.contracts.assets import AssetType
+from layer.contracts.runs import FunctionDefinition
 from layer.decorators.model_decorator import model
 from layer.decorators.pip_requirements_decorator import pip_requirements
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import reset_to
+from layer.settings import LayerSettings
 from test.unit.decorators.util import project_client_mock
 
 
@@ -57,29 +59,35 @@ class TestModelDecorator:
 
             mock_create_model.assert_called_with(ANY, ANY, ANY)
             args = mock_create_model.call_args
-            model_definition = args[0][0]
+            model_definition: FunctionDefinition = args[0][0]
 
-            assert model_definition.name == name
+            assert model_definition.asset_name == name
             assert model_definition.project_name == "foo-test"
 
-            assert len(model_definition.dependencies) == 4
-            assert model_definition.dependencies[0].asset_name == "bar"
-            assert model_definition.dependencies[0].asset_type == AssetType.DATASET
-            assert model_definition.dependencies[1].asset_name == "foo"
-            assert model_definition.dependencies[1].asset_type == AssetType.MODEL
-            assert model_definition.dependencies[2].asset_name == "baz"
-            assert model_definition.dependencies[2].asset_type == AssetType.DATASET
-            assert model_definition.dependencies[3].asset_name == "zoo"
-            assert model_definition.dependencies[3].asset_type == AssetType.MODEL
+            assert len(model_definition.asset_dependencies) == 4
+            assert model_definition.asset_dependencies[0].asset_name == "bar"
+            assert (
+                model_definition.asset_dependencies[0].asset_type == AssetType.DATASET
+            )
+            assert model_definition.asset_dependencies[1].asset_name == "foo"
+            assert model_definition.asset_dependencies[1].asset_type == AssetType.MODEL
+            assert model_definition.asset_dependencies[2].asset_name == "baz"
+            assert (
+                model_definition.asset_dependencies[2].asset_type == AssetType.DATASET
+            )
+            assert model_definition.asset_dependencies[3].asset_name == "zoo"
+            assert model_definition.asset_dependencies[3].asset_type == AssetType.MODEL
 
             # Check if the function is decorated correctly
-            assert func.layer.get_asset_name() == name
-            assert func.layer.get_asset_type() == AssetType.MODEL
-            assert func.layer.get_pip_packages() == ["scikit-learn==0.23.2"]
+            settings: LayerSettings = func.layer
+            assert settings.get_asset_name() == name
+            assert settings.get_asset_type() == AssetType.MODEL
+            assert settings.get_pip_packages() == ["scikit-learn==0.23.2"]
 
             # Check if the unpickled file contains the correct function
             assert model_definition.pickle_path.exists()
             loaded = pickle.load(open(model_definition.pickle_path, "rb"))
-            assert loaded.layer.get_asset_name() == name
-            assert loaded.layer.get_asset_type() == AssetType.MODEL
-            assert loaded.layer.get_pip_packages() == ["scikit-learn==0.23.2"]
+            settings: LayerSettings = loaded.layer
+            assert settings.get_asset_name() == name
+            assert settings.get_asset_type() == AssetType.MODEL
+            assert settings.get_pip_packages() == ["scikit-learn==0.23.2"]

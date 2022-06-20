@@ -7,7 +7,7 @@ from yarl import URL
 
 import layer
 from layer.contracts.projects import Project
-from layer.contracts.runs import ModelFunctionDefinition, Run
+from layer.contracts.runs import Run
 from layer.decorators import dataset, model, pip_requirements, resources
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
@@ -21,9 +21,7 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
         return None
 
     project_full_name = initialized_project.full_name
-    definition = ModelFunctionDefinition(
-        func, project_full_name.project_name, project_full_name.account_name
-    )
+    definition = func.get_definition()
     run = Run(project_full_name).with_definitions([definition])
     resource_manager = ResourceManager(asserter.client)
 

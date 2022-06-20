@@ -15,7 +15,7 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     StartRunV2Response,
 )
 
-from layer.contracts.runs import DatasetFunctionDefinition, ModelFunctionDefinition
+from layer.contracts.runs import FunctionDefinition
 from layer.exceptions.exceptions import ProjectRunnerError
 from layer.projects.project_runner import ProjectRunner
 from layer.utils.grpc.interceptors import (
@@ -214,9 +214,9 @@ class TestProjectRun:
             config=MagicMock(),
         )
 
-        func1: DatasetFunctionDefinition = MagicMock()
+        func1: FunctionDefinition = MagicMock()
         func1.func_name = "create_my_dataset"
-        func2: ModelFunctionDefinition = MagicMock()
+        func2: FunctionDefinition = MagicMock()
         func2.func_name = "create_my_model"
 
         functions = [func1, func2]
