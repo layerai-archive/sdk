@@ -179,6 +179,14 @@ def _model_wrapper(
                 failure_reporter=failure_reporter,
                 tracker=tracker,
             )
-            return trainer.train()
+            result = trainer.train()
+
+            tracker.mark_model_trained(
+                name=model_definition.name,
+                train_index=str(train.index),
+                version=model_version.name,
+            )
+
+            return result
 
     return FunctionWrapper
