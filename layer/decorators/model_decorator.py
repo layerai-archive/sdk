@@ -4,11 +4,12 @@ from uuid import UUID
 
 import wrapt  # type: ignore
 
-from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
+from layer.contracts.datasets import Dataset
+from layer.contracts.models import Model
 from layer.decorators.definitions import FunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.projects.utils import (

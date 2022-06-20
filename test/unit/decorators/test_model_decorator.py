@@ -4,8 +4,9 @@ from unittest.mock import ANY, patch
 
 import pytest
 
-from layer import Dataset, Model
 from layer.contracts.assets import AssetType
+from layer.contracts.datasets import Dataset
+from layer.contracts.models import Model
 from layer.decorators.model_decorator import model
 from layer.decorators.pip_requirements_decorator import pip_requirements
 from layer.exceptions.exceptions import ProjectInitializationException

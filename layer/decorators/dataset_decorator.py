@@ -5,14 +5,14 @@ from uuid import UUID
 import wrapt  # type: ignore
 from layerapi.api.ids_pb2 import ProjectId
 
-from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetType
-from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
+from layer.contracts.datasets import Dataset, DatasetBuild, DatasetBuildStatus
+from layer.contracts.models import Model
 from layer.contracts.tracker import DatasetTransferState
 from layer.decorators.definitions import FunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
