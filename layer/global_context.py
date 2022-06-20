@@ -13,6 +13,11 @@ class GlobalContext:
     active_context: Optional[Context]
     pip_requirements_file: Optional[str]
     pip_packages: Optional[List[str]]
+    # We show a message to the user if their installed layer version is outdated.
+    # We want to avoid showing this in case we already checked the version or we have already shown this message.
+    has_shown_update_message: bool
+    # Similar to above, but for supported Python version.
+    has_shown_python_version_message: bool
 
 
 # We store project name, fabric, active context and requirements
@@ -23,6 +28,8 @@ _GLOBAL_CONTEXT = GlobalContext(
     active_context=None,
     pip_requirements_file=None,
     pip_packages=None,
+    has_shown_update_message=False,
+    has_shown_python_version_message=False,
 )
 
 
@@ -36,6 +43,8 @@ def reset_to(project_full_name: Optional[Union[str, ProjectFullName]]) -> None:
             active_context=None,
             pip_requirements_file=None,
             pip_packages=None,
+            has_shown_update_message=False,
+            has_shown_python_version_message=False,
         )
 
 
@@ -124,3 +133,19 @@ def set_pip_packages(packages: List[str]) -> None:
 
 def get_pip_packages() -> Optional[List[str]]:
     return _GLOBAL_CONTEXT.pip_packages
+
+
+def set_has_shown_update_message(shown: bool) -> None:
+    _GLOBAL_CONTEXT.has_shown_update_message = shown
+
+
+def has_shown_update_message() -> bool:
+    return _GLOBAL_CONTEXT.has_shown_update_message
+
+
+def set_has_shown_python_version_message(shown: bool) -> None:
+    _GLOBAL_CONTEXT.has_shown_python_version_message = shown
+
+
+def has_shown_python_version_message() -> bool:
+    return _GLOBAL_CONTEXT.has_shown_python_version_message

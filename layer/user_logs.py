@@ -34,7 +34,7 @@ def __convert_log_line(line: PBUserLogLine) -> UserLogLine:
     )
 
 
-def __convert_entity(entity: PBUserLogLine.TaskType.ValueType) -> AssetType:
+def __convert_entity(entity: "PBUserLogLine.TaskType.ValueType") -> AssetType:
     if entity == PBUserLogLine.TASK_TYPE_MODEL_TRAIN:
         return AssetType.MODEL
     elif entity == PBUserLogLine.TASK_TYPE_DATASET_BUILD:

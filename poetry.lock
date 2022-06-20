@@ -1294,7 +1294,7 @@ typing-extensions = {version = "*", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "layer-api"
-version = "0.9.365520"
+version = "0.9.365841"
 description = ""
 category = "main"
 optional = false
@@ -1302,7 +1302,7 @@ python-versions = "*"
 
 [package.dependencies]
 grpcio-tools = "1.45.0"
-protobuf = ">=3.20.0"
+protobuf = ">=3.19.4"
 
 [[package]]
 name = "lazy-object-proxy"
@@ -1335,6 +1335,20 @@ scipy = "*"
 
 [package.extras]
 dask = ["dask[array] (>=2.0.0)", "dask[dataframe] (>=2.0.0)", "dask[distributed] (>=2.0.0)", "pandas"]
+
+[[package]]
+name = "luddite"
+version = "1.0.2"
+description = "Checks for out-of-date package versions"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+dev = ["pytest (>=3.6.3)", "pytest-cov", "pytest-mock", "pytest-socket", "coveralls"]
 
 [[package]]
 name = "mako"
@@ -2856,7 +2870,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "22b97f6d21515e7c966bc7a062172c16c817dc1e83f7547e7cc0c7b5dd4678b9"
+content-hash = "06d5554bbedcac73f57e4b508371a0f2c4cfe2f686f9551b123c0752e5bad4e6"
 
 [metadata.files]
 absl-py = [
@@ -3607,7 +3621,7 @@ kiwisolver = [
     {file = "kiwisolver-1.4.2.tar.gz", hash = "sha256:7f606d91b8a8816be476513a77fd30abe66227039bd6f8b406c348cb0247dcc9"},
 ]
 layer-api = [
-    {file = "layer_api-0.9.365520-py3-none-any.whl", hash = "sha256:ac9546dd37e0f31b382fda58a71ab3b185f86aa835b3336512743ca6167a1bd0"},
+    {file = "layer_api-0.9.365841-py3-none-any.whl", hash = "sha256:6a03878baf3b85db5c1a96a956c613d4a78f7ef039a63f78706303f5d4956554"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.7.1.tar.gz", hash = "sha256:d609c75b986def706743cdebe5e47553f4a5a1da9c5ff66d76013ef396b5a8a4"},
@@ -3663,6 +3677,10 @@ lightgbm = [
     {file = "lightgbm-3.3.2-py3-none-manylinux2014_aarch64.whl", hash = "sha256:8e788c56853316fc5d35db726d81bd002c721038c856853952287f68082e0158"},
     {file = "lightgbm-3.3.2-py3-none-win_amd64.whl", hash = "sha256:e4f1529cad416066964f9af0efad208787861e9f2181b7f9ee7fc9bacc082d4f"},
     {file = "lightgbm-3.3.2.tar.gz", hash = "sha256:5d25d16e77c844c297ece2044df57651139bc3c8ad8c4108916374267ac68b64"},
+]
+luddite = [
+    {file = "luddite-1.0.2-py2.py3-none-any.whl", hash = "sha256:5d4cd45c91e7876465330b84e18e6994d44b77ee8f723fdc384d5fd7ff160c04"},
+    {file = "luddite-1.0.2.tar.gz", hash = "sha256:8bec9f75247716320da307ff84df141b57fbd1f7e81a8bc2a7d7db88531cebc5"},
 ]
 mako = [
     {file = "Mako-1.2.0-py3-none-any.whl", hash = "sha256:23aab11fdbbb0f1051b93793a58323ff937e98e34aece1c4219675122e57e4ba"},
