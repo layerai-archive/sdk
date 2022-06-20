@@ -182,7 +182,7 @@ def _model_wrapper(
             result = trainer.train()
 
             tracker.mark_model_trained(
-                name=model.asset_name,
+                name=model_definition.name,
                 train_index=str(train.index),
                 version=model_version.name,
             )
