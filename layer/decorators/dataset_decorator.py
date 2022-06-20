@@ -24,6 +24,7 @@ from layer.projects.utils import (
 from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.async_utils import asyncio_run_in_thread
+from layer.utils.runtime_utils import check_and_convert_to_df
 
 
 logger = logging.getLogger(__name__)
@@ -229,6 +230,7 @@ def _build_locally_update_remotely(
             set_active_context(context)
             try:
                 result = function_that_builds_dataset()
+                result = check_and_convert_to_df(result)
                 _run_assertions(dataset.name, result, assertions, tracker)
             except Exception as e:
                 client.data_catalog.complete_build(
