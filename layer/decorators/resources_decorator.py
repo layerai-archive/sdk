@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Any, Callable, Dict, List
 
-import wrapt
+import wrapt  # type: ignore
 
 from layer.contracts.runs import ResourcePath
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
