@@ -33,7 +33,7 @@ class PollingStepFunction:
         return min(self._max_backoff, step * self._backoff_multiplier)
 
 
-_FormattedRunMetadata = Dict[Tuple[PBTask.Type.ValueType, str, str], str]
+_FormattedRunMetadata = Dict[Tuple["PBTask.Type.ValueType", str, str], str]
 
 
 class ProgressTrackerUpdater:
