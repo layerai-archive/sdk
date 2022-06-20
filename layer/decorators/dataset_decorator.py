@@ -34,11 +34,12 @@ def dataset(
     name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
 ) -> Callable[..., Any]:
     """
-    Decorator function that wraps a dataset function. The wrapped function must output a Pandas dataframe.
+    Decorator function that wraps a dataset function.
 
     The decorator ensures that:
     - If decorated function is passed in to ``layer.run(your_function)``, then Layer runs the function remotely and stores its output as a dataset.
     - If you run the function locally, ``your_function()``, then Layer stores the output in the Layer backend as a dataset. This does not affect function execution.
+    - The result of the function is a pandas.DataFrame or an array of column name -> value dict-s, which under the hood is converted to a pandas.DataFrame
 
     Supported Pandas dataframe types:
     * `bool`
@@ -77,7 +78,7 @@ def dataset(
         assert df == layer.get_dataset("my_titanic_dataset").to_pandas()
 
     Here's another way to create a dataset.
-    As long as the function outputs a Pandas dataframe, Layer doesn't really care how you get the data into it.
+    As long as the function outputs a Pandas dataframe or an array of dict-s, Layer doesn't really care how you load the data.
 
     .. code-block:: python
 
@@ -86,9 +87,14 @@ def dataset(
 
         @dataset("my_products")
         def create_product_dataset():
+            data_as_dict = [
+                {"Id": 1, "Product": "product1", "Price": 15},
+                {"Id": 2, "Product": "product2", "Price": 20},
+                {"Id": 3, "Product": "product3", "Price": 10}
+            ]
             data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
-            dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
-            return dataframe
+            return pd.DataFrame(data, columns=["Id", "Product", "Price"])
+            #  return data_as_dict  # You can also return this
 
         product_dataset = create_product_dataset()
 
