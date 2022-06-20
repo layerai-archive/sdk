@@ -11,9 +11,6 @@ class Context:
     """
     Provides access to variables within the pipeline execution.
 
-    An instance of this class is automatically passed in as an argument to the user-defined functions.
-    It must always be listed as the first argument in the user-defined functions.
-
     This class should not be initialized by end-users.
     """
 

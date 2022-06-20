@@ -44,9 +44,11 @@ from layer.global_context import (
     current_project_full_name,
     current_project_name,
     get_active_context,
+    has_shown_update_message,
     reset_active_context,
     reset_to,
     set_active_context,
+    set_has_shown_update_message,
 )
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.init_project_runner import InitProjectRunner
@@ -653,6 +655,9 @@ document.querySelectorAll(".output a").forEach(function(a){
 
 
 def _check_latest_version() -> None:
+    if has_shown_update_message():
+        return
+
     import luddite  # type: ignore
     import pkg_resources
 
@@ -662,6 +667,7 @@ def _check_latest_version() -> None:
         print(
             "You are using the version {current_version} but the latest version is {latest_version}, please upgrade with 'pip install --upgrade layer'"
         )
+    set_has_shown_update_message(True)
 
 
 def _ensure_all_functions_are_decorated(functions: List[Callable[..., Any]]) -> None:
