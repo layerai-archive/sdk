@@ -12,6 +12,7 @@ from layer.contracts.runs import (
     ModelFunctionDefinition,
     Run,
 )
+from layer.decorators.settings import LayerSettings
 from layer.exceptions.exceptions import ProjectCircularDependenciesException
 from layer.projects.execution_planner import (
     _build_graph,
@@ -20,7 +21,6 @@ from layer.projects.execution_planner import (
     check_asset_dependencies,
     drop_independent_entities,
 )
-from layer.settings import LayerSettings
 
 
 TEST_PROJECT_FULL_NAME = ProjectFullName(project_name="test", account_name="test-acc")
