@@ -3,8 +3,8 @@ import pytest
 from layer.contracts.assets import AssetType
 from layer.contracts.fabrics import Fabric
 from layer.decorators import dataset, fabric, pip_requirements
+from layer.decorators.settings import LayerSettings
 from layer.exceptions.exceptions import ConfigError
-from layer.settings import LayerSettings
 
 
 settings = LayerSettings()
