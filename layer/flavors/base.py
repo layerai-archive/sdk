@@ -2,12 +2,15 @@ import inspect
 from abc import ABCMeta, abstractmethod, abstractproperty
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import pandas as pd
-from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PBModelFlavor
 
 from layer.types import ModelObject
+
+
+if TYPE_CHECKING:
+    from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PBModelFlavor
 
 
 @dataclass(frozen=True)
@@ -34,7 +37,7 @@ class ModelFlavor(metaclass=ABCMeta):
     @abstractproperty
     def PROTO_FLAVOR(  # pylint: disable=invalid-name
         self,
-    ) -> PBModelFlavor.ValueType:
+    ) -> "PBModelFlavor.ValueType":
         """Defines the proto flavor that this Model Flavor uses.
 
         Returns:
