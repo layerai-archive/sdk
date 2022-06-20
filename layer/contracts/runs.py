@@ -1,12 +1,11 @@
 import os
-from dataclasses import dataclass, field, replace
-from typing import Callable, Iterator, List, Optional, Sequence
+from dataclasses import dataclass
+from typing import Callable, Iterator, List
 
 from layerapi.api.entity.run_pb2 import Run as PBRun
 from layerapi.api.ids_pb2 import RunId
 
 from layer.contracts.project_full_name import ProjectFullName
-from layer.decorators.definitions import FunctionDefinition
 
 
 GetRunsFunction = Callable[[], List[PBRun]]
@@ -55,11 +54,8 @@ class Run:
 
     """
 
+    id: RunId
     project_full_name: ProjectFullName
-    definitions: Sequence[FunctionDefinition] = field(default_factory=list, repr=False)
-    files_hash: str = ""
-    readme: str = field(repr=False, default="")
-    run_id: Optional[RunId] = field(repr=False, default=None)
 
     @property
     def project_name(self) -> str:
@@ -68,9 +64,3 @@ class Run:
     @property
     def account_name(self) -> str:
         return self.project_full_name.account_name
-
-    def with_run_id(self, run_id: RunId) -> "Run":
-        return replace(self, run_id=run_id)
-
-    def with_definitions(self, definitions: Sequence[FunctionDefinition]) -> "Run":
-        return replace(self, definitions=definitions)

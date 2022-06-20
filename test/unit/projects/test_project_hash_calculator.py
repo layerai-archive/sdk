@@ -3,9 +3,9 @@ from typing import Any, Callable
 import pandas
 
 from layer.contracts.asset import AssetType
+from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.decorators import model
-from layer.decorators.definitions import FunctionDefinition
 from layer.projects.utils import calculate_hash_by_definitions
 
 

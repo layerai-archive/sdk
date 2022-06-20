@@ -4,9 +4,9 @@ import wrapt  # type: ignore
 
 from layer.contracts.assets import AssetPath, AssetType, BaseAsset
 from layer.contracts.datasets import Dataset
+from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import FunctionDefinition
 from layer.projects.utils import get_current_project_full_name
 from layer.settings import LayerSettings
 

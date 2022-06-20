@@ -28,7 +28,7 @@ def test_remote_run_succeeds_and_registers_metadata(
     run = layer.run([train_model])
 
     # then
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
     mdl = layer.get_model(model_name)
     assert isinstance(mdl.get_train(), SVC)
 

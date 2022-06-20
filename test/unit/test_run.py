@@ -15,7 +15,7 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     StartRunV2Response,
 )
 
-from layer.contracts.runs import FunctionDefinition
+from layer.contracts.definitions import FunctionDefinition
 from layer.exceptions.exceptions import ProjectRunnerError
 from layer.projects.project_runner import ProjectRunner
 from layer.utils.grpc.interceptors import (
@@ -29,6 +29,7 @@ from layer.utils.session import (
     is_layer_debug_on,
 )
 from test.unit.grpc_test_utils import new_client_call_details, rpc_error
+from test.unit.projects.test_execution_planner import TEST_PROJECT_FULL_NAME
 
 
 class TestLayerDebug:
@@ -188,6 +189,8 @@ class TestProjectRun:
     def test_project_run_fails_when_max_active_run_exceeds(self) -> None:
         runner = ProjectRunner(
             config=MagicMock(),
+            project_full_name=TEST_PROJECT_FULL_NAME,
+            functions=[],
         )
         error = rpc_error(
             metadata=(),
@@ -199,12 +202,9 @@ class TestProjectRun:
 
         client = MagicMock()
         client.flow_manager.start_run.side_effect = layer_client_exception
-        run = MagicMock()
-        run.project_name.return_value = "test"
         with pytest.raises(ProjectRunnerError, match=".*RESOURCE_EXHAUSTED.*"):
             runner._run(  # pylint: disable=protected-access
                 client=client,
-                run=run,
                 execution_plan=ExecutionPlan(),
                 user_command="",
             )
@@ -212,6 +212,8 @@ class TestProjectRun:
     def test_get_user_command_returns_the_command_correctly(self) -> None:
         runner = ProjectRunner(
             config=MagicMock(),
+            project_full_name=TEST_PROJECT_FULL_NAME,
+            functions=[],
         )
 
         func1: FunctionDefinition = MagicMock()

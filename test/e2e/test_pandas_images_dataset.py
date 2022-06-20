@@ -27,7 +27,7 @@ def test_pandas_images_dataset_store_and_save(
         )
 
     run = layer.run([build_images])
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
 
     data = layer.get_dataset(f"{initialized_project.name}/datasets/images").to_pandas()
 

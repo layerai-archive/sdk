@@ -49,7 +49,7 @@ def test_remote_run_with_dependent_datasets_succeeds_and_registers_metadata(
     run = layer.run([prepare_data, transform_data])
 
     # then
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
 
     first_ds = layer.get_dataset(dataset_name)
     first_pandas = first_ds.to_pandas()

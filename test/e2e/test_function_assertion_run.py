@@ -49,7 +49,7 @@ def test_remote_run_succeeds_and_registers_metadata_when_assertion_succeeds(
     run = layer.run([prepare_data])
 
     # then
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
     ds = layer.get_dataset(dataset_name)
     assert len(ds.to_pandas().index) == 10
 
