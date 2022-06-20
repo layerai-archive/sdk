@@ -364,10 +364,13 @@ def get_assertion_functions_data(function: Callable[..., Any]) -> List[Assertion
     assertion_list = _get_assertion_list(function)
     result = []
     for assertion in assertion_list:
-        name = assertion[0]
-        values = assertion[1:]
-        assertion_function = _assertion_name_function_mapper(name, values)
-        result.append(Assertion(name, values, assertion_function))
+        if isinstance(assertion, Assertion):
+            result.append(assertion)
+        else:
+            name = assertion[0]
+            values = assertion[1:]
+            assertion_function = _assertion_name_function_mapper(name, values)
+            result.append(Assertion(name, values, assertion_function))
 
     return result
 
