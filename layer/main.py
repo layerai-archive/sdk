@@ -44,10 +44,12 @@ from layer.global_context import (
     current_project_full_name,
     current_project_name,
     get_active_context,
+    has_shown_python_version_message,
     has_shown_update_message,
     reset_active_context,
     reset_to,
     set_active_context,
+    set_has_shown_python_version_message,
     set_has_shown_update_message,
 )
 from layer.logged_data.log_data_runner import LogDataRunner
@@ -572,6 +574,7 @@ def run(functions: List[Any], debug: bool = False) -> Run:
         run = layer.run([create_my_dataset])
         # run = layer.run([create_my_dataset], debug=True)  # Stream logs to console
     """
+    _check_python_version()
     _ensure_all_functions_are_decorated(functions)
 
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
@@ -665,9 +668,24 @@ def _check_latest_version() -> None:
     current_version = pkg_resources.get_distribution("layer").version
     if current_version != latest_version:
         print(
-            "You are using the version {current_version} but the latest version is {latest_version}, please upgrade with 'pip install --upgrade layer'"
+            f"You are using the version {current_version} but the latest version is {latest_version}, please upgrade with 'pip install --upgrade layer'"
         )
     set_has_shown_update_message(True)
+
+
+def _check_python_version() -> None:
+    if has_shown_python_version_message():
+        return
+
+    import platform
+
+    major, minor, _ = platform.python_version_tuple()
+
+    if major != "3" or minor not in ["7", "8"]:
+        print(
+            f"You are using the Python version {platform.python_version()} but layer requires Python 3.7.x or 3.8.x"
+        )
+    set_has_shown_python_version_message(True)
 
 
 def _ensure_all_functions_are_decorated(functions: List[Callable[..., Any]]) -> None:
