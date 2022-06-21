@@ -1,15 +1,9 @@
-import logging
 import tempfile
-import threading
 import uuid
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
 from typing import Iterator
-from layer.config.config_manager import ConfigManager
-
-from layer.utils.async_utils import asyncio_run_in_thread
-
 
 import polling  # type: ignore
 from layerapi.api.entity.model_train_status_pb2 import (
