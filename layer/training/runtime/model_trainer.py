@@ -92,6 +92,9 @@ class LocalTrainContext(TrainContext):
         return None
 
 
+start_cpu_used = None
+
+
 @dataclass(frozen=True)
 class ModelTrainer:
     client: LayerClient
@@ -174,7 +177,6 @@ class ModelTrainer:
                     self.logger,
                 )
 
-                start_cpu_used = None
                 log_data_runner = LogDataRunner(
                     client=self.client,
                     train_id=self.train_context.train_id,
