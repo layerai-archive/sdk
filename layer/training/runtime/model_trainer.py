@@ -1,14 +1,18 @@
 import os
+import threading
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from logging import Logger
 from pathlib import Path
+from time import sleep
 from types import TracebackType
 from typing import Any, Callable, List, Optional
 from uuid import UUID
 
 import pandas as pd
+import polling
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 
 from layer import Context
@@ -170,7 +174,17 @@ class ModelTrainer:
                     self.logger,
                 )
 
-                def get_metrics() -> pd.DataFrame:
+                start_cpu_used = None
+                log_data_runner = LogDataRunner(
+                    client=self.client,
+                    train_id=self.train_context.train_id,
+                    logger=self.logger,
+                )
+                tag = "Fabric Performance"
+
+                def get_metrics(start_time):
+                    global start_cpu_used
+
                     def read_value_from_file(path: str) -> int:
                         with open(path, "r") as f:
                             return int(f.read())
@@ -191,48 +205,77 @@ class ModelTrainer:
                             return 0
                         return round((100 * float(used) / float(available)), 2)
 
+                    def get_cpu_used() -> int:
+                        # Time in nanoseconds
+                        # Multiply by 1000000000 to get to seconds
+                        return read_value_from_file(
+                            "/sys/fs/cgroup/cpu/cpuacct.usage_user"
+                        )
+
+                    def get_cpu_available() -> float:
+                        # Times in microseconds
+                        cpu_quota = read_value_from_file(
+                            "/sys/fs/cgroup/cpu/cpu.cfs_quota_us"
+                        )
+                        cpu_period = read_value_from_file(
+                            "/sys/fs/cgroup/cpu/cpu.cfs_period_us"
+                        )
+                        return float(cpu_quota / cpu_period)
+
+                    start_cpu_used = start_cpu_used or get_cpu_used()
+                    now_time = int(time.time())
+                    now_cpu_used = get_cpu_used()
+                    diff_time = now_time - start_time
+                    diff_cpu = now_cpu_used - start_cpu_used
+                    cpus_available = get_cpu_available()
+                    cpus_used = float(diff_cpu / diff_time / 1000000000)
+                    print(f"CPUs used: {cpus_used:.2f} ({cpus_available} available)")
+                    fabric_cpu_utilisation_percent = cpus_used * 100 / cpus_available
+                    print(
+                        f"Fabric's CPU Utilisation: {fabric_cpu_utilisation_percent:.2f} %"
+                    )
                     local_now = datetime.now().strftime("%Y%m%dT%H%M%S")
                     mem_used = get_mem_used()
                     mem_used_percent = get_mem_used_percent(
                         mem_used, get_mem_available()
                     )
 
-                    return pd.DataFrame(
+                    dataframe = pd.DataFrame(
                         [
                             [
                                 local_now,
                                 mem_used,
                                 mem_used_percent,
+                                cpus_used,
+                                fabric_cpu_utilisation_percent,
                             ],
                         ],
-                        columns=["Timestamp", "Used Memory", "Memory Utilisation"],
+                        columns=[
+                            "Timestamp",
+                            "Used Memory",
+                            "Memory Utilisation",
+                            "Used CPUs",
+                            "Fabric's CPU Utilisation %",
+                        ],
+                    )
+                    log_data_runner.log({tag: dataframe})
+
+                def monitor_system_metrics(stop):
+                    start_time = int(time.time())
+                    sleep(1)  # helps keep things simple
+                    polling.poll(
+                        lambda: get_metrics(start_time),
+                        step=1,  # anything under 1 second risks divisions by zero, stick with >=1
+                        check_success=stop,
+                        poll_forever=True,
                     )
 
-                log_data_runner = LogDataRunner(
-                    client=self.client,
-                    train_id=self.train_context.train_id,
-                    logger=self.logger,
+                stop_system_metrics_thread = False
+                system_metrics_thread = threading.Thread(
+                    target=monitor_system_metrics,
+                    args=(lambda x: stop_system_metrics_thread,),
                 )
-                tag = "Fabric Performance"
-
-                dataframe = get_metrics()
-                log_data_runner.log({tag: dataframe})
-
-                # def log_system_metrics() -> None:
-
-                # # Start logging system stats
-                # log_system_metrics(train_id)
-                # system_metrics_thread = threading.Thread(
-                #     target=log_system_metrics,
-                #     args=(train_id),
-                # )
-                # system_metrics_thread.start()
-                # polling.poll(
-                #     lambda: layer.log({"System Metrics": {"CPU": 0, "Memory": 0, "GPU": 1}}),
-                #     step=0.2,
-                #     poll_forever=True,
-                # )
-                # system_metrics_thread.join()
+                system_metrics_thread.start()
 
                 update_train_status(
                     self.client.model_catalog,
@@ -271,4 +314,6 @@ class ModelTrainer:
                     f"Saved model artifact {model} to model registry successfully"
                 )
                 self.tracker.mark_model_saved(self.train_context.model_name)
+                stop_system_metrics_thread = True
+                system_metrics_thread.join()
                 return model
