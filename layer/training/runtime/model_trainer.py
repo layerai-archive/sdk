@@ -19,6 +19,7 @@ from layer.global_context import (
     reset_active_context,
     set_active_context,
 )
+from layer.logged_data.log_data_runner import LogDataRunner
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
@@ -166,6 +167,31 @@ class ModelTrainer:
                     ModelTrainStatus.TRAIN_STATUS_FETCHING_FEATURES,
                     self.logger,
                 )
+
+                log_data_runner = LogDataRunner(
+                    client=self.client,
+                    train_id=self.train_context.train_id,
+                    logger=self.logger,
+                )
+                log_data_runner.log(
+                    {"System Metrics": {"CPU": 0, "Memory": 0, "GPU": 1}}
+                )
+
+                # def log_system_metrics() -> None:
+
+                # # Start logging system stats
+                # log_system_metrics(train_id)
+                # system_metrics_thread = threading.Thread(
+                #     target=log_system_metrics,
+                #     args=(train_id),
+                # )
+                # system_metrics_thread.start()
+                # polling.poll(
+                #     lambda: layer.log({"System Metrics": {"CPU": 0, "Memory": 0, "GPU": 1}}),
+                #     step=0.2,
+                #     poll_forever=True,
+                # )
+                # system_metrics_thread.join()
 
                 update_train_status(
                     self.client.model_catalog,
