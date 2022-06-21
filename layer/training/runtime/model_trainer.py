@@ -199,10 +199,13 @@ class ModelTrainer:
 
                     return pd.DataFrame(
                         [
-                            [local_now, "Used Memory", mem_used],
-                            [local_now, "Memory Utilisation", mem_used_percent],
+                            [
+                                local_now,
+                                mem_used,
+                                mem_used_percent,
+                            ],
                         ],
-                        columns=["Timestamp", "Metric", "Value"],
+                        columns=["Timestamp", "Used Memory", "Memory Utilisation"],
                     )
 
                 log_data_runner = LogDataRunner(
