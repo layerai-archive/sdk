@@ -1,12 +1,14 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Callable, List, Optional
 from uuid import UUID
 
+import pandas as pd
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 
 from layer import Context
@@ -168,14 +170,50 @@ class ModelTrainer:
                     self.logger,
                 )
 
+                def get_metrics() -> pd.DataFrame:
+                    def read_value_from_file(path: str) -> int:
+                        with open(path, "r") as f:
+                            return int(f.read())
+
+                    def get_mem_used() -> int:
+                        return read_value_from_file(
+                            "/sys/fs/cgroup/memory/memory.usage_in_bytes"
+                        )
+
+                    def get_mem_available() -> int:
+                        return read_value_from_file(
+                            "/sys/fs/cgroup/memory/memory.limit_in_bytes"
+                        )
+
+                    def get_mem_used_percent(used: int, available: int) -> float:
+                        if not used or not available:
+                            print("Memory metric 0")
+                            return 0
+                        return round((100 * float(used) / float(available)), 2)
+
+                    local_now = datetime.now().strftime("%Y%m%dT%H%M%S")
+                    mem_used = get_mem_used()
+                    mem_used_percent = get_mem_used_percent(
+                        mem_used, get_mem_available()
+                    )
+
+                    return pd.DataFrame(
+                        [
+                            [local_now, "Used Memory", mem_used],
+                            [local_now, "Memory Utilisation", mem_used_percent],
+                        ],
+                        columns=["Timestamp", "Metric", "Value"],
+                    )
+
                 log_data_runner = LogDataRunner(
                     client=self.client,
                     train_id=self.train_context.train_id,
                     logger=self.logger,
                 )
-                log_data_runner.log(
-                    {"System Metrics": {"CPU": 0, "Memory": 0, "GPU": 1}}
-                )
+                tag = "Fabric Performance"
+
+                dataframe = get_metrics()
+                log_data_runner.log({tag: dataframe})
 
                 # def log_system_metrics() -> None:
 
