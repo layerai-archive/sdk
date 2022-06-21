@@ -7,13 +7,13 @@ import wrapt  # type: ignore
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
+from layer.config.config import Config
 from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.contracts.runs import DatasetFunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
-from layer.decorators.assertions import get_assertion_functions_data
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
 from layer.projects.project_runner import register_dataset_function
@@ -141,9 +141,9 @@ def _dataset_wrapper(
         # This is not serialized with cloudpickle, so it will only be run locally.
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            self.__wrapped__.layer.validate()
+            self.layer.validate()
             current_project_full_name_ = get_current_project_full_name()
-            config = asyncio_run_in_thread(ConfigManager().refresh())
+            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             with LayerClient(config.client, logger).init() as client:
                 progress_tracker = RunProgressTracker(
                     url=config.url,
@@ -151,9 +151,7 @@ def _dataset_wrapper(
                     account_name=current_project_full_name_.account_name,
                 )
                 with progress_tracker.track() as tracker:
-                    tracker.add_asset(
-                        AssetType.DATASET, self.__wrapped__.layer.get_asset_name()
-                    )
+                    tracker.add_asset(AssetType.DATASET, self.layer.get_asset_name())
                     dataset_definition = DatasetFunctionDefinition(
                         self.__wrapped__,
                         project_name=current_project_full_name_.project_name,
@@ -167,7 +165,6 @@ def _dataset_wrapper(
                         dataset_definition,
                         tracker,
                         client,
-                        get_assertion_functions_data(self),
                     )
                     return result
 
@@ -180,19 +177,18 @@ def _build_dataset_locally_and_store_remotely(
     dataset: DatasetFunctionDefinition,
     tracker: RunProgressTracker,
     client: LayerClient,
-    assertions: List[Assertion],
 ) -> Any:
-    tracker.add_asset(AssetType.DATASET, layer.get_asset_name())  # type: ignore
+    tracker.add_asset(AssetType.DATASET, layer.get_asset_name())
 
     dataset = register_dataset_function(client, dataset, True, tracker)
-    tracker.mark_dataset_building(layer.get_asset_name())  # type: ignore
+    tracker.mark_dataset_building(layer.get_asset_name())
 
     (result, build_uuid) = _build_locally_update_remotely(
         client,
         building_func,
         dataset,
         tracker,
-        assertions,
+        layer.get_assertions(),
     )
 
     transfer_state = DatasetTransferState(len(result))

@@ -88,9 +88,7 @@ class FunctionDefinition(abc.ABC):
         if name is None:
             raise LayerClientException("Name cannot be empty")
         self.name = name
-        self.resource_paths = {
-            ResourcePath(path=path) for path in layer_settings.get_paths() or []
-        }
+        self.resource_paths = layer_settings.get_resource_paths()
         fabric = layer_settings.get_fabric()
         if fabric is None:
             fabric = Fabric.default()
@@ -162,7 +160,7 @@ class FunctionDefinition(abc.ABC):
 
     @property
     def pickle_dir(self) -> Path:
-        return DEFAULT_FUNC_PATH / self.project_name / self.name
+        return DEFAULT_FUNC_PATH / self.asset_path.path()
 
     @property
     def pickle_path(self) -> Path:

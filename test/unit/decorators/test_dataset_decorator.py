@@ -203,7 +203,6 @@ class TestDatasetDecorator:
                 unused_ds,
                 unused_tracker,
                 unused_client,
-                unused_assertions,
             ) = mock_build_locally.call_args_list[0][0]
             assert settings.get_fabric() == Fabric.F_MEDIUM
 
@@ -213,7 +212,6 @@ class TestDatasetDecorator:
                 unused_ds,
                 unused_tracker,
                 unused_client,
-                unused_assertions,
             ) = mock_build_locally.call_args_list[1][0]
             assert settings.get_fabric() == Fabric.F_SMALL
 

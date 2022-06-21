@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List
 
 import wrapt  # type: ignore
 
+from layer.contracts.runs import ResourcePath
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 
 
@@ -68,6 +69,10 @@ def _resources_wrapper(path: str, *paths: str) -> Any:
     class ResourcesFunctionWrapper(LayerFunctionWrapper, ABC):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.set_paths([path, *paths])
+
+            _paths: List[ResourcePath] = []
+            for _path in [path, *paths]:
+                _paths.append(ResourcePath(path=_path))
+            self.layer.set_resource_paths(_paths)
 
     return ResourcesFunctionWrapper
