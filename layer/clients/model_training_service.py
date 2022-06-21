@@ -1,9 +1,15 @@
+import logging
 import tempfile
+import threading
 import uuid
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
 from typing import Iterator
+from layer.config.config_manager import ConfigManager
+
+from layer.utils.async_utils import asyncio_run_in_thread
+
 
 import polling  # type: ignore
 from layerapi.api.entity.model_train_status_pb2 import (
@@ -96,12 +102,36 @@ class ModelTrainingClient:
         )
         self._logger.debug(f"StartExecuteModelTrainRequest request: {str(request)}")
         train_response = self._service.StartModelTraining(request)
+        # Start logging system stats
+        log_system_metrics(train_id)
+        system_metrics_thread = threading.Thread(
+            target=log_system_metrics,
+            args=(train_id),
+        )
+        system_metrics_thread.start()
 
         def is_train_completed(status: PBModelTrainStatus) -> bool:
             return (
                 status.train_status == PBModelTrainStatus.TRAIN_STATUS_SUCCESSFUL
                 or status.train_status == PBModelTrainStatus.TRAIN_STATUS_FAILED
             )
+
+        def log_system_metrics(train_id: ModelTrainId) -> None:
+            from layer.logged_data.log_data_runner import LogDataRunner
+
+            logger = logging.getLogger(__name__)
+            log_data_runner = LogDataRunner(
+                client=self,
+                train_id=train_id,
+                logger=logger,
+            )
+            log_data_runner.log({"System Metrics": {"CPU": 0, "Memory": 0, "GPU": 1}})
+            # layer.log({"System Metrics": {"CPU": 0, "Memory": 0, "GPU": 1}})
+            # polling.poll(
+            #     lambda: layer.log({"System Metrics": {"CPU": 0, "Memory": 0, "GPU": 1}}),
+            #     step=0.2,
+            #     poll_forever=True,
+            # )
 
         polling.poll(
             lambda: self._get_model_train_status(train_response.id.value),
@@ -110,6 +140,7 @@ class ModelTrainingClient:
             poll_forever=True,
         )
         status = self._get_model_train_status(train_response.id.value)
+        system_metrics_thread.join()
         if status.train_status == PBModelTrainStatus.TRAIN_STATUS_FAILED:
             raise LayerClientException(f"regular train failed. Info: {status.info}")
         return uuid.UUID(train_response.id.value)
