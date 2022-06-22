@@ -199,18 +199,10 @@ class LocalTrainContext(TrainContext):
         cpu_percent = psutil.cpu_percent(interval=None)
         cpu_used = cpu_count * cpu_percent / 100
 
-        print("cpu_used:", round(cpu_used, 2), "CPUs")
-        print("cpu_count:", cpu_count, "CPUs")
-        print("cpu_percent:", round(cpu_percent, 2), "%")
-
         mem = psutil.virtual_memory()
         mem_allocated = mem.total
         mem_used = mem_allocated - mem.available
         mem_utilisation = mem.percent
-
-        print("mem_used:", round((mem_used / 1024 / 1024), 2), "MB")
-        print("mem_allocated:", round((mem_allocated / 1024 / 1024), 2), "MB")
-        print("mem_utilisation:", round(mem_utilisation, 2), "%")
 
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
