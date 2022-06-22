@@ -278,12 +278,12 @@ class ModelTrainer:
                             round(float(mem_available / 1024 / 1024), 2),
                             mem_used_percent,
                             round(cpus_used, 4),
-                            round(cpus_available, 4),
+                            round(cpus_available, 2),
                             fabric_cpu_utilisation_percent,
                             gpu0_utilisation,
                             gpu0_mem_used,
                             gpu0_mem_total,
-                            gpu0_mem_utilisation,
+                            round(gpu0_mem_utilisation, 2),
                         ]
                     )
                     dataframe = pd.DataFrame(
