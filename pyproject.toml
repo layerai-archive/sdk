@@ -5,10 +5,48 @@ description = "Layer AI SDK"
 authors = ["Layer <info@layer.ai>"]
 readme = "README.md"
 license = "Apache-2.0"
-
+homepage = "https://layer.ai"
+repository = "https://github.com/layerai/sdk"
+documentation = "https://docs.app.layer.ai/"
+keywords = [
+    "MLOps",
+    "ML Experiment Tracking",
+    "ML Model Registry",
+    "ML Model Store",
+    "ML Metadata Store",
+]
+classifiers = [
+    # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    "Development Status :: 4 - Production/Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Logging",
+    "Topic :: System :: Monitoring",
+]
 packages = [
     { include = "layer" },
 ]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/layerai/sdk/issues"
+
 
 [tool.poetry.dependencies]
 python = ">=3.7.1,<3.11"
