@@ -17,7 +17,7 @@ keywords = [
 ]
 classifiers = [
     # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-    "Development Status :: 4 - Production/Beta",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
