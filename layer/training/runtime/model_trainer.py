@@ -259,6 +259,7 @@ class ModelTrainer:
                             "Used CPUs",
                             "Fabric's CPU Utilisation %",
                         ],
+                        index_col="Timestamp",
                     )
                     log_data_runner.log({tag: dataframe})
 
