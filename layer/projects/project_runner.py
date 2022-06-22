@@ -13,12 +13,7 @@ from layer.config import Config
 from layer.contracts.assets import AssetType
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import ApplyResult
-from layer.contracts.runs import (
-    DatasetFunctionDefinition,
-    FunctionDefinition,
-    ModelFunctionDefinition,
-    Run,
-)
+from layer.contracts.runs import FunctionDefinition, Run
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientServiceUnavailableException,
@@ -44,7 +39,6 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.resource_manager import ResourceManager
-from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
 
@@ -97,18 +91,11 @@ class ProjectRunner:
         return self._tracker
 
     def _apply(self, client: LayerClient, run: Run) -> ApplyResult:
-        updated_definitions: List[FunctionDefinition] = []
         for definition in run.definitions:
-            if isinstance(definition, DatasetFunctionDefinition):
-                definition = register_dataset_function(
-                    client, definition, False, self._tracker
-                )
-            elif isinstance(definition, ModelFunctionDefinition):
-                definition = register_model_function(
-                    client, definition, False, self._tracker
-                )
-            updated_definitions.append(definition)
-        run = run.with_definitions(updated_definitions)
+            if definition.asset_type == AssetType.DATASET:
+                register_dataset_function(client, definition, False, self._tracker)
+            if definition.asset_type == AssetType.MODEL:
+                register_model_function(client, definition, False, self._tracker)
 
         execution_plan = build_execution_plan(run)
         client.project_service_client.update_project_readme(
@@ -118,25 +105,7 @@ class ProjectRunner:
 
     @staticmethod
     def with_functions(project_full_name: ProjectFullName, functions: List[Any]) -> Run:
-        project_name = project_full_name.project_name
-        account_name = project_full_name.account_name
-        definitions: List[FunctionDefinition] = []
-        for f in functions:
-            layer_settings: LayerSettings = f.layer
-            if layer_settings.get_asset_type() == AssetType.DATASET:
-                dataset = DatasetFunctionDefinition(
-                    func=f,
-                    project_name=project_name,
-                    account_name=account_name,
-                )
-                definitions.append(dataset)
-            elif layer_settings.get_asset_type() == AssetType.MODEL:
-                model = ModelFunctionDefinition(
-                    func=f,
-                    project_name=project_name,
-                    account_name=account_name,
-                )
-                definitions.append(model)
+        definitions: List[FunctionDefinition] = [f.get_definition() for f in functions]
 
         return Run(
             project_full_name=project_full_name,
@@ -157,7 +126,7 @@ class ProjectRunner:
                 url=self._config.url,
                 account_name=run.project_full_name.account_name,
                 project_name=run.project_full_name.project_name,
-                assets=[(d.asset_type, d.name) for d in run.definitions],
+                assets=[(d.asset_type, d.asset_name) for d in run.definitions],
             ).track() as tracker:
                 self._tracker = tracker
                 try:
@@ -264,54 +233,54 @@ class ProjectRunner:
 
 def register_dataset_function(
     client: LayerClient,
-    dataset: DatasetFunctionDefinition,
+    dataset: FunctionDefinition,
     is_local: bool,
     tracker: RunProgressTracker,
-) -> DatasetFunctionDefinition:
+) -> None:
     try:
         project_id = verify_project_exists_and_retrieve_project_id(
             client, dataset.project_full_name
         )
-        dataset = client.data_catalog.add_dataset(project_id, dataset, is_local)
+        dataset_id = client.data_catalog.add_dataset(project_id, dataset, is_local)
+        dataset.set_repository_id(uuid.UUID(dataset_id))
         assert dataset.repository_id
-        tracker.mark_dataset_saved(dataset.name, id_=dataset.repository_id)
-        return dataset
+        tracker.mark_dataset_saved(dataset.asset_name, id_=dataset.repository_id)
     except LayerClientServiceUnavailableException as e:
-        tracker.mark_dataset_failed(dataset.name, "")
+        tracker.mark_dataset_failed(dataset.asset_name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
     except LayerClientException as e:
-        tracker.mark_dataset_failed(dataset.name, "")
+        tracker.mark_dataset_failed(dataset.asset_name, "")
         raise ProjectInitializationException(
-            f"Failed to save derived dataset {dataset.name!r}: {e}",
+            f"Failed to save derived dataset {dataset.asset_name!r}: {e}",
             "Please retry",
         )
 
 
 def register_model_function(
     client: LayerClient,
-    model: ModelFunctionDefinition,
+    model: FunctionDefinition,
     is_local: bool,
     tracker: RunProgressTracker,
-) -> ModelFunctionDefinition:
+) -> None:
     try:
         response = client.model_catalog.create_model_version(
             model.project_full_name, model, is_local
         )
         version = response.model_version
+        model.set_version_id(version.id.value)
         if response.should_upload_training_files:
             # in here we upload to path / train.gz
             version_id = uuid.UUID(version.id.value)
             s3_path = client.model_training.upload_training_files(model, version_id)
             # in here we reconstruct the path / train.gz to save in metadata
             client.model_catalog.store_training_metadata(model, s3_path, version)
-        tracker.mark_model_saved(model.name)
-        return model.with_version_id(version.id.value)
+        tracker.mark_model_saved(model.asset_name)
     except LayerClientServiceUnavailableException as e:
-        tracker.mark_model_train_failed(model.name, "")
+        tracker.mark_model_train_failed(model.asset_name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
     except LayerClientException as e:
-        tracker.mark_model_train_failed(model.name, "")
+        tracker.mark_model_train_failed(model.asset_name, "")
         raise ProjectInitializationException(
-            f"Failed to save model {model.name!r}: {e}",
+            f"Failed to save model {model.asset_name!r}: {e}",
             "Please retry",
         )

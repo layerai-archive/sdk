@@ -9,7 +9,7 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
-from layer.contracts.runs import ModelFunctionDefinition
+from layer.contracts.runs import FunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.projects.utils import (
     get_current_project_full_name,
@@ -120,18 +120,14 @@ def _model_wrapper(
 
                 with progress_tracker.track() as tracker:
                     tracker.add_asset(AssetType.MODEL, self.layer.get_asset_name())
-                    model_definition = ModelFunctionDefinition(
-                        self.__wrapped__,
-                        project_name=current_project_full_name_.project_name,
-                        account_name=current_project_full_name_.account_name,
-                    )
+                    model_definition = self.get_definition()
                     return self._train_model_locally_and_store_remotely(
                         model_definition, tracker, client
                     )
 
         @staticmethod
         def _train_model_locally_and_store_remotely(
-            model_definition: ModelFunctionDefinition,
+            model_definition: FunctionDefinition,
             tracker: RunProgressTracker,
             client: LayerClient,
         ) -> Any:
@@ -157,10 +153,10 @@ def _model_wrapper(
 
             context = LocalTrainContext(  # noqa: F841
                 logger=logger,
-                model_name=model_definition.name,
+                model_name=model_definition.asset_name,
                 model_version=model_version.name,
                 train_id=UUID(train_id.value),
-                source_folder=model_definition.pickle_dir,
+                source_folder=model_definition.function_home_dir,
                 source_entrypoint=model_definition.entrypoint,
                 train_index=str(train.index),
             )
@@ -180,7 +176,7 @@ def _model_wrapper(
             result = trainer.train()
 
             tracker.mark_model_trained(
-                name=model_definition.name,
+                name=model_definition.asset_name,
                 train_index=str(train.index),
                 version=model_version.name,
             )
