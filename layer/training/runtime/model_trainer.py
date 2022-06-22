@@ -331,7 +331,7 @@ class ModelTrainer:
                     ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
                     self.logger,
                 )
-                sleep(1)
+                sleep(1)  # temporarily make things slower
                 self.logger.info("Executing the train_model_func")
                 work_dir = self.train_context.get_working_directory()
                 os.chdir(work_dir)
@@ -341,13 +341,13 @@ class ModelTrainer:
                     train_model_func.__name__,
                     target_dir=str(work_dir),
                 )
-                sleep(1)
+                sleep(1)  # temporarily make things slower
                 model = train_model_func()
-                sleep(1)
+                sleep(1)  # temporarily make things slower
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
                 )
-                sleep(1)
+                sleep(1)  # temporarily make things slower
                 self.logger.info("Executed train_model_func successfully")
                 self._run_assertions(
                     model,
@@ -356,7 +356,7 @@ class ModelTrainer:
                 self.tracker.mark_model_saving(self.train_context.model_name)
                 self.logger.info(f"Saving model artifact {model} to model registry")
                 train.save_model(model, tracker=self.tracker)
-                sleep(1)
+                sleep(1)  # temporarily make things slower
                 update_train_status(
                     self.client.model_catalog,
                     self.train_context.train_id,
