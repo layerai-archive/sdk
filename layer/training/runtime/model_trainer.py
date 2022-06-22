@@ -205,9 +205,9 @@ class ModelTrainer:
                             "/sys/fs/cgroup/memory/memory.limit_in_bytes"
                         )
 
-                    def get_mem_used_percent(used: int, available: int) -> float:
+                    def get_used_percent(used: int, available: int) -> float:
                         if not used or not available:
-                            print("Memory metric 0")
+                            print("System metric 0")
                             return 0
                         return round((100 * float(used) / float(available)), 2)
 
@@ -243,25 +243,23 @@ class ModelTrainer:
                         diff_cpu = now_cpu_used - cpu_used_temp
                     start_time_temp = now_time
                     cpu_used_temp = now_cpu_used
-
                     cpus_available = get_cpu_available()
                     cpus_used = float(diff_cpu / diff_time / 1000000000)
-                    print(f"CPUs used: {cpus_used:.2f} ({cpus_available} available)")
-                    fabric_cpu_utilisation_percent = cpus_used * 100 / cpus_available
-                    print(
-                        f"Fabric's CPU Utilisation: {fabric_cpu_utilisation_percent:.2f} %"
+                    fabric_cpu_utilisation_percent = get_used_percent(
+                        cpus_used, cpus_available
                     )
                     local_now = datetime.now().strftime("%Y%m%dT%H%M%S")
                     mem_used = get_mem_used()
-                    mem_used_percent = get_mem_used_percent(
-                        mem_used, get_mem_available()
-                    )
+                    mem_available = get_mem_available()
+                    mem_used_percent = get_used_percent(mem_used, mem_available)
                     metrics_data.append(
                         [
                             local_now,
-                            mem_used,
+                            round(float(mem_used / 1024 / 1024), 2),
+                            round(float(mem_available / 1024 / 1024), 2),
                             mem_used_percent,
-                            cpus_used,
+                            round(cpus_used, 4),
+                            round(cpus_available, 4),
                             fabric_cpu_utilisation_percent,
                         ]
                     )
@@ -269,9 +267,11 @@ class ModelTrainer:
                         metrics_data,
                         columns=[
                             "Timestamp",
-                            "Used Memory",
-                            "Memory Utilisation",
+                            "Used Memory (MB)",
+                            "Allocated Memory (MB)",
+                            "Fabric's Memory Utilisation %",
                             "Used CPUs",
+                            "Allocated CPUs",
                             "Fabric's CPU Utilisation %",
                         ],
                     )
