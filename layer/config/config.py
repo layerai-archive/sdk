@@ -105,7 +105,7 @@ class ClientConfig:
     grpc_gateway_address: str = ""
     access_token: str = ""
     grpc_do_verify_ssl: bool = True
-    logs_file_path: Path = _default_logs_file_path()
+    logs_file_path: Path = LogsConfig().logs_file_path
     s3: S3Config = S3Config.create_default()
 
     def with_access_token(self, access_token: str) -> "ClientConfig":
