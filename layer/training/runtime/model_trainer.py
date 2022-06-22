@@ -92,8 +92,9 @@ class LocalTrainContext(TrainContext):
         return None
 
 
-start_cpu_used = None
 metrics_data = []
+cpu_used_temp = None
+start_time_temp = None
 
 
 @dataclass(frozen=True)
@@ -185,9 +186,10 @@ class ModelTrainer:
                 )
                 tag = "Fabric Performance"
 
-                def get_metrics(start_time):
-                    global start_cpu_used
+                def get_metrics(start_time, start_cpu_used):
                     global metrics_data
+                    global cpu_used_temp
+                    global start_time_temp
 
                     def read_value_from_file(path: str) -> int:
                         with open(path, "r") as f:
@@ -226,11 +228,22 @@ class ModelTrainer:
                         )
                         return float(cpu_quota / cpu_period)
 
-                    start_cpu_used = start_cpu_used or get_cpu_used()
                     now_time = int(time.time())
                     now_cpu_used = get_cpu_used()
-                    diff_time = now_time - start_time
-                    diff_cpu = now_cpu_used - start_cpu_used
+                    if start_time_temp is None:
+                        print("start_time_temp is None")
+                        diff_time = now_time - start_time
+                    else:
+                        diff_time = now_time - start_time_temp
+
+                    if cpu_used_temp is None:
+                        print("cpu_used_temp is None")
+                        diff_cpu = now_cpu_used - start_cpu_used
+                    else:
+                        diff_cpu = now_cpu_used - cpu_used_temp
+                    start_time_temp = now_time
+                    cpu_used_temp = now_cpu_used
+
                     cpus_available = get_cpu_available()
                     cpus_used = float(diff_cpu / diff_time / 1000000000)
                     print(f"CPUs used: {cpus_used:.2f} ({cpus_available} available)")
@@ -267,9 +280,12 @@ class ModelTrainer:
 
                 def monitor_system_metrics(stop):
                     start_time = int(time.time())
+                    with open("/sys/fs/cgroup/cpu/cpuacct.usage_user", "r") as f:
+                        start_cpu_used = int(f.read())
+
                     sleep(1)  # helps keep things simple
                     polling.poll(
-                        lambda: get_metrics(start_time),
+                        lambda: get_metrics(start_time, start_cpu_used),
                         step=1,  # anything under 1 second risks divisions by zero, stick with >=1
                         check_success=stop,
                         poll_forever=True,
@@ -288,6 +304,7 @@ class ModelTrainer:
                     ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
                     self.logger,
                 )
+                sleep(1)
                 self.logger.info("Executing the train_model_func")
                 work_dir = self.train_context.get_working_directory()
                 os.chdir(work_dir)
@@ -297,10 +314,13 @@ class ModelTrainer:
                     train_model_func.__name__,
                     target_dir=str(work_dir),
                 )
+                sleep(1)
                 model = train_model_func()
+                sleep(1)
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
                 )
+                sleep(1)
                 self.logger.info("Executed train_model_func successfully")
                 self._run_assertions(
                     model,
@@ -309,6 +329,7 @@ class ModelTrainer:
                 self.tracker.mark_model_saving(self.train_context.model_name)
                 self.logger.info(f"Saving model artifact {model} to model registry")
                 train.save_model(model, tracker=self.tracker)
+                sleep(1)
                 update_train_status(
                     self.client.model_catalog,
                     self.train_context.train_id,
