@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "layer"
-version = "0.1.0"
+version = "0.1.12"
 description = "Layer AI SDK"
 authors = ["Layer <info@layer.ai>"]
 readme = "README.md"
@@ -74,6 +74,7 @@ yarl  = ">=1.6.3"
 wrapt  = ">=1.13.3"
 layer-api = "0.9.368123"
 numpy = { version = "<1.22", python = "~3.7" } # 1.22 doesn't support python 3.7, this is a transitive dependency comming from various other packages
+nvsmi = "^0.4.2"
 
 [tool.poetry.dev-dependencies]
 black = "22.3.0"

@@ -11,6 +11,7 @@ from types import TracebackType
 from typing import Any, Callable, List, Optional
 from uuid import UUID
 
+import nvsmi
 import pandas as pd
 import polling
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
@@ -231,13 +232,11 @@ class ModelTrainer:
                     now_time = int(time.time())
                     now_cpu_used = get_cpu_used()
                     if start_time_temp is None:
-                        print("start_time_temp is None")
                         diff_time = now_time - start_time
                     else:
                         diff_time = now_time - start_time_temp
 
                     if cpu_used_temp is None:
-                        print("cpu_used_temp is None")
                         diff_cpu = now_cpu_used - start_cpu_used
                     else:
                         diff_cpu = now_cpu_used - cpu_used_temp
@@ -252,6 +251,26 @@ class ModelTrainer:
                     mem_used = get_mem_used()
                     mem_available = get_mem_available()
                     mem_used_percent = get_used_percent(mem_used, mem_available)
+
+                    gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
+                    if gpu_present:
+                        gpus = nvsmi.get_gpus()
+                        gpu0 = next(gpus, None)  # Only handle a single GPU for now
+                        gpu0_utilisation = gpu0.gpu_util
+                        gpu0_mem_utilisation = gpu0.mem_util
+                        gpu0_mem_used = gpu0.mem_used
+                        gpu0_mem_total = gpu0.mem_total
+                    else:
+                        gpu0_utilisation = -1
+                        gpu0_mem_utilisation = -1
+                        gpu0_mem_used = -1
+                        gpu0_mem_total = -1
+
+                    print("gpu0_utilisation: " + str(gpu0_utilisation))
+                    print("gpu0_mem_utilisation: " + str(gpu0_mem_utilisation))
+                    print("gpu0_mem_used: " + str(gpu0_mem_used))
+                    print("gpu0_mem_total: " + str(gpu0_mem_total))
+
                     metrics_data.append(
                         [
                             local_now,
@@ -261,18 +280,26 @@ class ModelTrainer:
                             round(cpus_used, 4),
                             round(cpus_available, 4),
                             fabric_cpu_utilisation_percent,
+                            gpu0_utilisation,
+                            gpu0_mem_used,
+                            gpu0_mem_total,
+                            gpu0_mem_utilisation,
                         ]
                     )
                     dataframe = pd.DataFrame(
                         metrics_data,
                         columns=[
                             "Timestamp",
-                            "Used Memory (MB)",
-                            "Allocated Memory (MB)",
-                            "Fabric's Memory Utilisation %",
-                            "Used CPUs",
-                            "Allocated CPUs",
-                            "Fabric's CPU Utilisation %",
+                            "Memory Used (MB)",
+                            "Memory Allocated (MB)",
+                            "Memory Utilisation %",
+                            "CPUs Used",
+                            "CPUs Allocated",
+                            "CPU Utilisation %",
+                            "GPU Utilisation %",
+                            "GPU Memory Used (MB)",
+                            "GPU Memory Allocated (MB)",
+                            "GPU Memory Utilisation %",
                         ],
                     )
                     dataframe.set_index("Timestamp", inplace=True)
