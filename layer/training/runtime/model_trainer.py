@@ -93,6 +93,7 @@ class LocalTrainContext(TrainContext):
 
 
 start_cpu_used = None
+metrics_data = []
 
 
 @dataclass(frozen=True)
@@ -186,6 +187,7 @@ class ModelTrainer:
 
                 def get_metrics(start_time):
                     global start_cpu_used
+                    global metrics_data
 
                     def read_value_from_file(path: str) -> int:
                         with open(path, "r") as f:
@@ -241,17 +243,17 @@ class ModelTrainer:
                     mem_used_percent = get_mem_used_percent(
                         mem_used, get_mem_available()
                     )
-
-                    dataframe = pd.DataFrame(
+                    metrics_data.append(
                         [
-                            [
-                                local_now,
-                                mem_used,
-                                mem_used_percent,
-                                cpus_used,
-                                fabric_cpu_utilisation_percent,
-                            ],
-                        ],
+                            local_now,
+                            mem_used,
+                            mem_used_percent,
+                            cpus_used,
+                            fabric_cpu_utilisation_percent,
+                        ]
+                    )
+                    dataframe = pd.DataFrame(
+                        metrics_data,
                         columns=[
                             "Timestamp",
                             "Used Memory",
