@@ -212,6 +212,20 @@ class LocalTrainContext(TrainContext):
         print("mem_allocated:", round((mem_allocated / 1024 / 1024), 2), "MB")
         print("mem_utilisation:", round(mem_utilisation, 2), "%")
 
+        gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
+        if gpu_present:
+            gpus = nvsmi.get_gpus()
+            gpu0 = next(gpus, None)  # Only handle a single GPU for now
+            gpu0_utilisation = gpu0.gpu_util  # type: ignore
+            gpu0_mem_utilisation = gpu0.mem_util  # type: ignore
+            gpu0_mem_used = gpu0.mem_used  # type: ignore
+            gpu0_mem_total = gpu0.mem_total  # type: ignore
+        else:
+            gpu0_utilisation = -1
+            gpu0_mem_utilisation = -1
+            gpu0_mem_used = -1
+            gpu0_mem_total = -1
+
         metrics_data.append(
             [
                 local_now,
@@ -221,10 +235,10 @@ class LocalTrainContext(TrainContext):
                 round(cpu_used, 2),
                 cpu_count,
                 round(cpu_percent, 2),
-                -1,
-                -1,
-                -1,
-                -1,
+                gpu0_utilisation,
+                gpu0_mem_used,
+                gpu0_mem_total,
+                round(gpu0_mem_utilisation, 2),
             ]
         )
         dataframe = pd.DataFrame(

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "layer"
-version = "0.1.15"
+version = "0.1.16"
 description = "Layer AI SDK"
 authors = ["Layer <info@layer.ai>"]
 readme = "README.md"
