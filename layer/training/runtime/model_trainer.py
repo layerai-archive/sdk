@@ -259,8 +259,8 @@ class ModelTrainer:
                             "Used CPUs",
                             "Fabric's CPU Utilisation %",
                         ],
-                        index_col="Timestamp",
                     )
+                    dataframe.set_index("Timestamp", inplace=True)
                     log_data_runner.log({tag: dataframe})
 
                 def monitor_system_metrics(stop):
