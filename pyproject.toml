@@ -7,7 +7,7 @@ readme = "README.md"
 license = "Apache-2.0"
 homepage = "https://layer.ai"
 repository = "https://github.com/layerai/sdk"
-documentation = "https://docs.development.layer.co/"
+documentation = "https://docs.app.layer.ai/"
 keywords = [
     "MLOps",
     "ML Experiment Tracking",
