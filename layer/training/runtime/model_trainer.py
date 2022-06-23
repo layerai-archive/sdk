@@ -67,6 +67,23 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         pass
 
     @staticmethod
+    def get_gpu_metrics() -> Dict[str, Dict[str, float]]:
+        metrics = {}
+        for gpu in nvsmi.get_gpus():
+            print("gpu.name:", gpu.name)
+            print("gpu.id:", gpu.id)
+            print("gpu.uuid:", gpu.uuid)
+            metrics[gpu.id] = {
+                "utilisation": gpu.gpu_util,
+                "mem_utilisation": round(gpu.mem_util, 2),
+                "mem_used": gpu.mem_used,
+                "mem_total": gpu.mem_total,
+                "id": gpu.id,
+                "name": gpu.name,
+            }
+        return metrics
+
+    @staticmethod
     def get_metrics(start_time: int, start_cpu_used: int) -> Dict[str, pd.DataFrame]:
         tag = "Remote Fabric Stats"
         global metrics_data  # pylint: disable=invalid-name disable=global-variable-not-assigned
@@ -121,50 +138,57 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         mem_available = get_mem_available()
         mem_used_percent = get_used_percent(mem_used, mem_available)
 
+        gpu_metrics = {}
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
-            gpus = nvsmi.get_gpus()
-            gpu0 = next(gpus, None)  # Only handle a single GPU for now
-            gpu0_utilisation = gpu0.gpu_util  # type: ignore
-            gpu0_mem_utilisation = gpu0.mem_util  # type: ignore
-            gpu0_mem_used = gpu0.mem_used  # type: ignore
-            gpu0_mem_total = gpu0.mem_total  # type: ignore
-        else:
-            gpu0_utilisation = -1
-            gpu0_mem_utilisation = -1
-            gpu0_mem_used = -1
-            gpu0_mem_total = -1
+            gpu_metrics = (
+                get_gpu_metrics()  # type: ignore noqa: F821 pylint: disable=undefined-variable
+            )
 
-        metrics_data.append(
-            [
-                local_now,
-                round(float(mem_used / 1024 / 1024), 2),
-                round(float(mem_available / 1024 / 1024), 2),
-                mem_used_percent,
-                round(cpus_used, 4),
-                round(cpus_available, 2),
-                fabric_cpu_utilisation_percent,
-                gpu0_utilisation,
-                gpu0_mem_used,
-                gpu0_mem_total,
-                round(gpu0_mem_utilisation, 2),
+        metrics = [
+            local_now,
+            round(float(mem_used / 1024 / 1024), 2),
+            round(float(mem_available / 1024 / 1024), 2),
+            mem_used_percent,
+            round(cpus_used, 4),
+            round(cpus_available, 2),
+            fabric_cpu_utilisation_percent,
+        ]
+        columns = [
+            "Timestamp",
+            "Memory Used (MB)",
+            "Memory Allocated (MB)",
+            "Memory Utilisation %",
+            "CPUs Used",
+            "CPUs Allocated",
+            "CPU Utilisation %",
+        ]
+        for gpu in gpu_metrics:
+            metrics = metrics + [
+                gpu_metrics[gpu]["utilisation"],
+                gpu_metrics[gpu]["mem_used"],
+                gpu_metrics[gpu]["mem_total"],
+                gpu_metrics[gpu]["mem_utilisation"],
             ]
-        )
+            columns = columns + [
+                "GPU Utilisation % - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ),
+                "GPU Memory Used (MB) - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ),
+                "GPU Memory Allocated (MB) - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ),
+                "GPU Memory Utilisation % - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ),
+            ]
+
+        metrics_data.append(metrics)
         dataframe = pd.DataFrame(
             metrics_data,
-            columns=[
-                "Timestamp",
-                "Memory Used (MB)",
-                "Memory Allocated (MB)",
-                "Memory Utilisation %",
-                "CPUs Used",
-                "CPUs Allocated",
-                "CPU Utilisation %",
-                "GPU Utilisation %",
-                "GPU Memory Used (MB)",
-                "GPU Memory Allocated (MB)",
-                "GPU Memory Utilisation %",
-            ],
+            columns=columns,
         )
         dataframe.set_index("Timestamp", inplace=True)  # type: ignore
         return {tag: dataframe}
@@ -204,51 +228,50 @@ class LocalTrainContext(TrainContext):
         mem_used = mem_allocated - mem.available
         mem_utilisation = mem.percent
 
+        gpu_metrics = {}
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
-            gpus = nvsmi.get_gpus()
-            gpu0 = next(gpus, None)  # Only handle a single GPU for now
-            gpu0_utilisation = gpu0.gpu_util  # type: ignore
-            gpu0_mem_utilisation = gpu0.mem_util  # type: ignore
-            gpu0_mem_used = gpu0.mem_used  # type: ignore
-            gpu0_mem_total = gpu0.mem_total  # type: ignore
-        else:
-            gpu0_utilisation = -1
-            gpu0_mem_utilisation = -1
-            gpu0_mem_used = -1
-            gpu0_mem_total = -1
+            gpu_metrics = (
+                get_gpu_metrics()  # type: ignore noqa: F821 pylint: disable=undefined-variable
+            )
 
-        metrics_data.append(
-            [
-                local_now,
-                round((mem_used / 1024 / 1024), 2),
-                round((mem_allocated / 1024 / 1024), 2),
-                round(mem_utilisation, 2),
-                round(cpu_used, 2),
-                cpu_count,
-                round(cpu_percent, 2),
-                gpu0_utilisation,
-                gpu0_mem_used,
-                gpu0_mem_total,
-                round(gpu0_mem_utilisation, 2),
+        metrics = [
+            local_now,
+            round((mem_used / 1024 / 1024), 2),
+            round((mem_allocated / 1024 / 1024), 2),
+            round(mem_utilisation, 2),
+            round(cpu_used, 2),
+            cpu_count,
+            round(cpu_percent, 2),
+        ]
+        columns = [
+            "Timestamp",
+            "Memory Used (MB)",
+            "Memory Allocated (MB)",
+            "Memory Utilisation %",
+            "CPUs Used",
+            "CPUs Allocated",
+            "CPU Utilisation %",
+        ]
+        for gpu_metric_key, gpu_metric_values in gpu_metrics.items():
+            metrics = metrics + [
+                gpu_metric_values.utilisation,
+                gpu_metric_values.mem_used,
+                gpu_metric_values.mem_total,
+                gpu_metric_values.mem_utilisation,
             ]
-        )
+            columns = columns + [
+                "GPU Utilisation % - {}".format(gpu_metric_key),
+                "GPU Memory Used (MB) - {}".format(gpu_metric_key),
+                "GPU Memory Allocated (MB) - {}".format(gpu_metric_key),
+                "GPU Memory Utilisation % - {}".format(gpu_metric_key),
+            ]
+        metrics_data.append(metrics)
         dataframe = pd.DataFrame(
             metrics_data,
-            columns=[
-                "Timestamp",
-                "Memory Used (MB)",
-                "Memory Allocated (MB)",
-                "Memory Utilisation %",
-                "CPUs Used",
-                "CPUs Allocated",
-                "CPU Utilisation %",
-                "GPU Utilisation %",
-                "GPU Memory Used (MB)",
-                "GPU Memory Allocated (MB)",
-                "GPU Memory Utilisation %",
-            ],
+            columns=columns,
         )
+
         dataframe.set_index("Timestamp", inplace=True)  # type: ignore
         return {tag: dataframe}
 
