@@ -79,7 +79,7 @@ def _reset_user_info(tarinfo: tarfile.TarInfo) -> tarfile.TarInfo:
 EXECUTABLE_TAR_HEADER = """
 TMPDIR=`mktemp -d /tmp/selfextract.XXXXXX`
 CDIR=`pwd`
-function cleanup()
+function cleanup 
 {
     cd $CDIR
     rm -rf $TMPDIR
