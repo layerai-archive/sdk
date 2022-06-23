@@ -98,7 +98,7 @@ class Image:
         img_array: npt.NDArray[np.complex64], format: str
     ) -> "PIL.Image.Image":
         supported_image_formats = ["CHW", "HWC", "HW"]
-        import PIL
+        from PIL import Image as PIL_IMAGE
 
         if format not in supported_image_formats:
             raise Exception(
@@ -109,10 +109,13 @@ class Image:
         if format == "CHW":
             img_array = img_array.transpose(1, 2, 0)
 
+        # Users can pass [0, 1] (float32) or [0, 255] (uint8), we should scale accordingly
+        scale_factor = 1 if img_array.dtype == np.uint8 else 255  # type: ignore
+
         if format == "HW":
-            img = PIL.Image.fromarray(np.uint8(img_array * 255), "L")
+            img = PIL_IMAGE.fromarray(np.uint8(img_array * scale_factor), "L")
         else:
-            img_array = (img_array * 255).astype(np.uint8)
-            img = PIL.Image.fromarray(img_array)
+            img_array = (img_array * scale_factor).astype(np.uint8)
+            img = PIL_IMAGE.fromarray(img_array)
 
         return img
