@@ -15,6 +15,7 @@ import nvsmi  # type: ignore
 import pandas as pd
 import polling  # type: ignore
 import psutil  # type: ignore
+import subprocess
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 
 from layer import Context
@@ -52,20 +53,22 @@ cpu_used_temp = None  # pylint: disable=C0103
 start_time_temp = None  # pylint: disable=C0103
 
 
-def get_gpu_metrics() -> Dict[str, Dict[str, float]]:
+def get_gpu_metrics(logger: Logger) -> Dict[str, Dict[str, float]]:
     metrics = {}
-    for gpu in nvsmi.get_gpus():
-        print("gpu.name:", gpu.name)
-        print("gpu.id:", gpu.id)
-        print("gpu.uuid:", gpu.uuid)
-        metrics[gpu.id] = {
-            "utilisation": gpu.gpu_util,
-            "mem_utilisation": round(gpu.mem_util, 2),
-            "mem_used": gpu.mem_used,
-            "mem_total": gpu.mem_total,
-            "id": gpu.id,
-            "name": gpu.name,
-        }
+    try:
+        for gpu in nvsmi.get_gpus():
+            metrics[gpu.id] = {
+                "utilisation": gpu.gpu_util,
+                "mem_utilisation": round(gpu.mem_util, 2),
+                "mem_used": gpu.mem_used,
+                "mem_total": gpu.mem_total,
+                "id": gpu.id,
+                "name": gpu.name,
+            }
+    except subprocess.CalledProcessError:
+        logger.info(
+            "Nvidia driver not running despite nvidia-smi being on the path. No GPU stats collected."
+        )
     return metrics
 
 
@@ -84,7 +87,9 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         pass
 
     @staticmethod
-    def get_metrics(start_time: int, start_cpu_used: int) -> Dict[str, pd.DataFrame]:
+    def get_metrics(
+        start_time: int, start_cpu_used: int, logger: Logger
+    ) -> Dict[str, pd.DataFrame]:
         tag = "Remote Fabric Stats"
         global metrics_data  # pylint: disable=invalid-name disable=global-variable-not-assigned
         global cpu_used_temp  # pylint: disable=invalid-name
@@ -141,7 +146,7 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         gpu_metrics = {}
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
-            gpu_metrics = get_gpu_metrics()
+            gpu_metrics = get_gpu_metrics(logger)
 
         metrics = [
             local_now,
@@ -214,7 +219,9 @@ class LocalTrainContext(TrainContext):
         return Path(self.initial_cwd)
 
     @staticmethod
-    def get_metrics(start_time: int, start_cpu_used: int) -> Dict[str, pd.DataFrame]:
+    def get_metrics(
+        start_time: int, start_cpu_used: int, logger: Logger
+    ) -> Dict[str, pd.DataFrame]:
         tag = "Local System Stats"
 
         local_now = datetime.now().strftime("%Y%m%dT%H%M%S")
@@ -230,7 +237,7 @@ class LocalTrainContext(TrainContext):
         gpu_metrics = {}
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
-            gpu_metrics = get_gpu_metrics()
+            gpu_metrics = get_gpu_metrics(logger)
 
         metrics = [
             local_now,
@@ -392,8 +399,10 @@ class ModelTrainer:
                     sleep(1)  # helps keep things simple
                     polling.poll(
                         lambda: log_data_runner.log(
-                            self.train_context.get_metrics(start_time, start_cpu_used)  # type: ignore
+                            self.train_context.get_metrics(start_time, start_cpu_used, self.logger)  # type: ignore
                         ),
+                        # TODO: set to 15s as outlined in the project spec, leaving at 1 for now to have data
+                        # as tests run in a few seconds only
                         step=1,  # anything under 1 second risks divisions by zero, stick with >=1
                         check_success=stop,
                         poll_forever=True,
