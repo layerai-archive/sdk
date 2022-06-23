@@ -52,6 +52,23 @@ cpu_used_temp = None  # pylint: disable=C0103
 start_time_temp = None  # pylint: disable=C0103
 
 
+def get_gpu_metrics() -> Dict[str, Dict[str, float]]:
+    metrics = {}
+    for gpu in nvsmi.get_gpus():
+        print("gpu.name:", gpu.name)
+        print("gpu.id:", gpu.id)
+        print("gpu.uuid:", gpu.uuid)
+        metrics[gpu.id] = {
+            "utilisation": gpu.gpu_util,
+            "mem_utilisation": round(gpu.mem_util, 2),
+            "mem_used": gpu.mem_used,
+            "mem_total": gpu.mem_total,
+            "id": gpu.id,
+            "name": gpu.name,
+        }
+    return metrics
+
+
 class TrainContext(ABC, TrainContextDataclassMixin):
     is_remote = True
 
@@ -65,23 +82,6 @@ class TrainContext(ABC, TrainContextDataclassMixin):
     @abstractmethod
     def get_working_directory(self) -> Path:
         pass
-
-    @staticmethod
-    def get_gpu_metrics() -> Dict[str, Dict[str, float]]:
-        metrics = {}
-        for gpu in nvsmi.get_gpus():
-            print("gpu.name:", gpu.name)
-            print("gpu.id:", gpu.id)
-            print("gpu.uuid:", gpu.uuid)
-            metrics[gpu.id] = {
-                "utilisation": gpu.gpu_util,
-                "mem_utilisation": round(gpu.mem_util, 2),
-                "mem_used": gpu.mem_used,
-                "mem_total": gpu.mem_total,
-                "id": gpu.id,
-                "name": gpu.name,
-            }
-        return metrics
 
     @staticmethod
     def get_metrics(start_time: int, start_cpu_used: int) -> Dict[str, pd.DataFrame]:
@@ -141,9 +141,7 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         gpu_metrics = {}
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
-            gpu_metrics = (
-                get_gpu_metrics()  # type: ignore noqa: F821 pylint: disable=undefined-variable
-            )
+            gpu_metrics = get_gpu_metrics()
 
         metrics = [
             local_now,
@@ -218,6 +216,7 @@ class LocalTrainContext(TrainContext):
     @staticmethod
     def get_metrics(start_time: int, start_cpu_used: int) -> Dict[str, pd.DataFrame]:
         tag = "Local System Stats"
+
         local_now = datetime.now().strftime("%Y%m%dT%H%M%S")
         cpu_count = psutil.cpu_count()
         cpu_percent = psutil.cpu_percent(interval=None)
@@ -231,9 +230,7 @@ class LocalTrainContext(TrainContext):
         gpu_metrics = {}
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
-            gpu_metrics = (
-                get_gpu_metrics()  # type: ignore noqa: F821 pylint: disable=undefined-variable
-            )
+            gpu_metrics = get_gpu_metrics()
 
         metrics = [
             local_now,
@@ -253,18 +250,26 @@ class LocalTrainContext(TrainContext):
             "CPUs Allocated",
             "CPU Utilisation %",
         ]
-        for gpu_metric_key, gpu_metric_values in gpu_metrics.items():
+        for gpu in gpu_metrics:
             metrics = metrics + [
-                gpu_metric_values.utilisation,
-                gpu_metric_values.mem_used,
-                gpu_metric_values.mem_total,
-                gpu_metric_values.mem_utilisation,
+                gpu_metrics[gpu]["utilisation"],
+                gpu_metrics[gpu]["mem_used"],
+                gpu_metrics[gpu]["mem_total"],
+                gpu_metrics[gpu]["mem_utilisation"],
             ]
             columns = columns + [
-                "GPU Utilisation % - {}".format(gpu_metric_key),
-                "GPU Memory Used (MB) - {}".format(gpu_metric_key),
-                "GPU Memory Allocated (MB) - {}".format(gpu_metric_key),
-                "GPU Memory Utilisation % - {}".format(gpu_metric_key),
+                "GPU Utilisation % - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ),
+                "GPU Memory Used (MB) - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ),
+                "GPU Memory Allocated (MB) - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ),
+                "GPU Memory Utilisation % - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ),
             ]
         metrics_data.append(metrics)
         dataframe = pd.DataFrame(
