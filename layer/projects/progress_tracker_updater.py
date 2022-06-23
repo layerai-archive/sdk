@@ -189,7 +189,7 @@ class ProgressTrackerUpdater:
     def _find_model_name_by_version_id(self, version_id: str) -> str:
         for definition in self.run.definitions:
             if str(definition.version_id) == version_id:
-                return definition.name
+                return definition.asset_name
         raise KeyError(version_id)
 
 

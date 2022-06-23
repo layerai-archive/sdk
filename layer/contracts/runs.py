@@ -1,4 +1,3 @@
-import abc
 import hashlib
 import inspect
 import os
@@ -15,7 +14,7 @@ from layerapi.api.entity.run_pb2 import Run as PBRun
 from layerapi.api.ids_pb2 import RunId
 
 from layer.config import DEFAULT_FUNC_PATH, is_feature_active
-from layer.exceptions.exceptions import LayerClientException
+from layer.contracts.assertions import Assertion
 from layer.executables.tar import MODEL_TRAIN_ENTRYPOINT_FILE, build_executable_tar
 
 from .asset import AssetPath, AssetType
@@ -62,43 +61,41 @@ FunctionDefinitionType = TypeVar(  # pylint: disable=invalid-name
 )
 
 
-class FunctionDefinition(abc.ABC):
+class FunctionDefinition:
     def __init__(
         self,
-        func: Any,
+        func: Callable[..., Any],
         project_name: str,
         account_name: str,
+        asset_type: AssetType,
+        asset_name: str,
+        fabric: Fabric,
+        asset_dependencies: List[AssetPath],
+        pip_dependencies: List[str],
+        resource_paths: List[ResourcePath],
+        assertions: List[Assertion],
         version_id: Optional[uuid.UUID] = None,
         repository_id: Optional[uuid.UUID] = None,
         description: str = "",
         uri: str = "",
-        language_version: Tuple[int, int, int] = _language_version(),
     ) -> None:
         self.func = func
         self.func_name: str = func.__name__
+
         self.project_name = project_name
         self.account_name = account_name
+        self.asset_type = asset_type
+        self.asset_name = asset_name
+        self.fabric = fabric
+        self.asset_dependencies = asset_dependencies
+        self.pip_dependencies = pip_dependencies
+        self.resource_paths = resource_paths
+        self.assertions = assertions
+
         self.version_id = version_id
         self.repository_id = repository_id
         self.description = description
         self.uri = uri
-        self.language_version = language_version
-
-        layer_settings = func.layer
-        name = layer_settings.get_asset_name()
-        if name is None:
-            raise LayerClientException("Name cannot be empty")
-        self.name = name
-        self.resource_paths = {
-            ResourcePath(path=path) for path in layer_settings.get_paths() or []
-        }
-        fabric = layer_settings.get_fabric()
-        if fabric is None:
-            fabric = Fabric.default()
-        self._fabric = fabric
-        self._dependencies: List[AssetPath] = layer_settings.get_dependencies()
-        self.pip_packages = layer_settings.get_pip_packages()
-        self.pip_requirements_file = layer_settings.get_pip_requirements_file()
 
         self.func_source = inspect.getsource(self.func)
 
@@ -108,11 +105,7 @@ class FunctionDefinition(abc.ABC):
         self._pack()
 
     def __repr__(self) -> str:
-        return f"FunctionDefinition({self.asset_type}, {self.name})"
-
-    @abc.abstractproperty
-    def asset_type(self) -> AssetType:
-        ...
+        return f"FunctionDefinition({self.asset_type}, {self.asset_name})"
 
     @property
     def project_full_name(self) -> ProjectFullName:
@@ -125,53 +118,36 @@ class FunctionDefinition(abc.ABC):
     def asset_path(self) -> AssetPath:
         return AssetPath(
             asset_type=self.asset_type,
-            asset_name=self.name,
+            asset_name=self.asset_name,
             project_name=self.project_name,
             org_name=self.account_name,
         )
 
     @property
-    def dependencies(self) -> List[AssetPath]:
-        """
-        Account and project names from this function definition
-        are added to dependency paths which are relative
-        """
-        deps: List[AssetPath] = []
-        for d in self._dependencies:
-            full_path_dep: AssetPath
-            if d.is_relative():
-                if d.has_project():
-                    assert d.project_name is not None
-                    full_path_dep = d.with_project_full_name(
-                        ProjectFullName(
-                            account_name=self.account_name,
-                            project_name=d.project_name,
-                        )
-                    )
-                else:
-                    full_path_dep = d.with_project_full_name(
-                        replace(self.project_full_name)
-                    )
-            else:
-                full_path_dep = d
-            deps.append(full_path_dep)
-        return deps
+    def function_home_dir(self) -> Path:
+        return DEFAULT_FUNC_PATH / self.asset_path.path()
+
+    def set_version_id(self, version_id: uuid.UUID) -> None:
+        self.version_id = version_id
+
+    def set_repository_id(self, repository_id: uuid.UUID) -> None:
+        self.repository_id = repository_id
+
+    def drop_dependencies(self) -> "FunctionDefinition":
+        self.asset_dependencies = []
+        return self
+
+    # DEPRECATED below, will remove once we build the simplified backend
+    def get_pickled_function(self) -> bytes:
+        return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)
 
     @property
     def entrypoint(self) -> str:
-        return f"{self.name}.pkl"
-
-    @property
-    def pickle_dir(self) -> Path:
-        return DEFAULT_FUNC_PATH / self.project_name / self.name
+        return f"{self.asset_name}.pkl"
 
     @property
     def pickle_path(self) -> Path:
-        return self.pickle_dir / self.entrypoint
-
-    @property
-    def tar_dir(self) -> Path:
-        return DEFAULT_FUNC_PATH / self.project_name / self.name
+        return self.function_home_dir / self.entrypoint
 
     @property
     def tar_path(self) -> Path:
@@ -179,31 +155,28 @@ class FunctionDefinition(abc.ABC):
 
     @property
     def environment(self) -> str:
-        return (
-            str(os.path.basename(self.pip_requirements_file))
-            if self.pip_requirements_file
-            else "requirements.txt"
-        )
+        return "requirements.txt"
 
     @property
     def environment_path(self) -> Path:
-        return self.pickle_dir / self.environment
+        return self.function_home_dir / self.environment
 
     def get_fabric(self, is_local: bool) -> str:
         if is_local:
             return Fabric.F_LOCAL.value
         else:
-            return self._fabric.value
+            return self.fabric.value
 
-    def _clean_folder(self, folder: Path) -> None:
+    def _clean_function_home_dir(self) -> None:
         # Remove directory to clean leftovers from previous runs
-        if folder.exists():
-            shutil.rmtree(folder)
-        os.makedirs(folder)
+        function_home_dir = self.function_home_dir
+        if function_home_dir.exists():
+            shutil.rmtree(function_home_dir)
+        os.makedirs(function_home_dir)
 
     def _pack(self) -> None:
+        self._clean_function_home_dir()
         if is_feature_active("TAR_PACKAGING"):
-            self._clean_folder(self.tar_dir)
             build_executable_tar(
                 path=self.tar_path,
                 function=self.func,
@@ -211,8 +184,6 @@ class FunctionDefinition(abc.ABC):
                 pip_dependencies=self.pip_packages,
             )
         else:
-            self._clean_folder(self.pickle_dir)
-
             # Dump pickled function to asset_name.pkl
             with open(self.pickle_path, mode="wb") as file:
                 cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
@@ -225,45 +196,6 @@ class FunctionDefinition(abc.ABC):
                     reqs_file.writelines(
                         list(map(lambda package: f"{package}\n", self.pip_packages))
                     )
-
-    def get_pickled_function(self) -> bytes:
-        return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)
-
-    def with_version_id(
-        self: FunctionDefinitionType, version_id: uuid.UUID
-    ) -> FunctionDefinitionType:
-        self.version_id = version_id
-        return self
-
-    def with_repository_id(
-        self: FunctionDefinitionType, repository_id: uuid.UUID
-    ) -> FunctionDefinitionType:
-        self.repository_id = repository_id
-        return self
-
-    def drop_dependencies(self: FunctionDefinitionType) -> FunctionDefinitionType:
-        self._dependencies = []
-        return self
-
-
-class DatasetFunctionDefinition(FunctionDefinition):
-    """
-    Dataset function definition
-    """
-
-    @property
-    def asset_type(self) -> AssetType:
-        return AssetType.DATASET
-
-
-class ModelFunctionDefinition(FunctionDefinition):
-    """
-    Model function definition
-    """
-
-    @property
-    def asset_type(self) -> AssetType:
-        return AssetType.MODEL
 
 
 @dataclass(frozen=True)

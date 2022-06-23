@@ -7,6 +7,25 @@ from layer.contracts.assertions import Assertion
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 
 
+class LayerAssertFunctionWrapper(LayerFunctionWrapper):
+    def __init__(
+        self,
+        wrapped: Any,
+        wrapper: Any,
+        enabled: Any,
+        assert_func: Callable[..., Any],
+        values: List[Any],
+    ) -> None:
+        super().__init__(wrapped, wrapper, enabled)
+        self.layer.append_assertion(
+            Assertion(
+                name=assert_func.__name__.lstrip("_"),
+                values=values,
+                function=assert_func(*values),
+            )
+        )
+
+
 def assert_true(assert_function: Callable[..., bool]) -> Callable[..., Any]:
     """
     Asserts that a condition is true.
@@ -39,11 +58,14 @@ def assert_true(assert_function: Callable[..., bool]) -> Callable[..., Any]:
 
 
 def _assert_true_wrapper(assert_function: Callable[..., bool]) -> Any:
-    class FunctionWrapper(LayerFunctionWrapper):
+    class FunctionWrapper(LayerAssertFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
-            super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.append_assertions(
-                [assert_true.__name__, assert_function]
+            super().__init__(
+                wrapped,
+                wrapper,
+                enabled,
+                _assert_true,
+                [assert_function],
             )
 
     return FunctionWrapper
@@ -101,15 +123,19 @@ def assert_valid_values(
 
 
 def _assert_valid_values_wrapper(column_name: str, valid_values: List[Any]) -> Any:
-    class FunctionWrapper(LayerFunctionWrapper):
+    if not isinstance(valid_values, list):
+        raise AssertionError(
+            "Test FAILED: assert_valid_values only accepts list type valid_values."
+        )
+
+    class FunctionWrapper(LayerAssertFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
-            super().__init__(wrapped, wrapper, enabled)
-            if not isinstance(valid_values, list):
-                raise AssertionError(
-                    "Test FAILED: assert_valid_values only accepts list type valid_values."
-                )
-            self.__wrapped__.layer.append_assertions(
-                [assert_valid_values.__name__, column_name, valid_values]
+            super().__init__(
+                wrapped,
+                wrapper,
+                enabled,
+                _assert_valid_values,
+                [column_name, valid_values],
             )
 
     return FunctionWrapper
@@ -169,18 +195,22 @@ def assert_not_null(column_names: List[str]) -> Callable[..., Any]:
 
 
 def _assert_not_null_wrapper(column_names: List[str]) -> Any:
-    class FunctionWrapper(LayerFunctionWrapper):
+    if not isinstance(column_names, list) or not all(
+        isinstance(x, str) for x in column_names
+    ):
+        raise AssertionError(
+            "Test FAILED: assert_not_null only accepts string list type column_names."
+        )
+
+    class FunctionWrapper(LayerAssertFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
-            super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.append_assertions(
-                [assert_not_null.__name__, column_names]
+            super().__init__(
+                wrapped,
+                wrapper,
+                enabled,
+                _assert_not_null,
+                [column_names],
             )
-            if not isinstance(column_names, list) or not all(
-                isinstance(x, str) for x in column_names
-            ):
-                raise AssertionError(
-                    "Test FAILED: assert_not_null only accepts string list type column_names."
-                )
 
     return FunctionWrapper
 
@@ -236,18 +266,22 @@ def assert_unique(column_subset: List[str]) -> Callable[..., Any]:
 
 
 def _assert_unique_wrapper(column_subset: List[str]) -> Any:
-    class FunctionWrapper(LayerFunctionWrapper):
+    if not isinstance(column_subset, list) or not all(
+        isinstance(x, str) for x in column_subset
+    ):
+        raise AssertionError(
+            "Test FAILED: assert_unique only accepts string list type column_subset."
+        )
+
+    class FunctionWrapper(LayerAssertFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
-            super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.append_assertions(
-                [assert_unique.__name__, column_subset]
+            super().__init__(
+                wrapped,
+                wrapper,
+                enabled,
+                _assert_unique,
+                [column_subset],
             )
-            if not isinstance(column_subset, list) or not all(
-                isinstance(x, str) for x in column_subset
-            ):
-                raise AssertionError(
-                    "Test FAILED: assert_unique only accepts string list type column_subset."
-                )
 
     return FunctionWrapper
 
@@ -306,21 +340,25 @@ def assert_skewness(
 def _assert_skewness_wrapper(
     column_name: str, min_skewness: float, max_skewness: float
 ) -> Any:
-    class FunctionWrapper(LayerFunctionWrapper):
+    if (
+        not isinstance(column_name, str)
+        or not isinstance(min_skewness, (int, float))
+        or not isinstance(max_skewness, (int, float))
+    ):
+        raise AssertionError(
+            "assert_skewness only accepts string type column_name and "
+            "numeric type min_skewness and max_skewness values."
+        )
+
+    class FunctionWrapper(LayerAssertFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
-            super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.append_assertions(
-                [assert_skewness.__name__, column_name, min_skewness, max_skewness]
+            super().__init__(
+                wrapped,
+                wrapper,
+                enabled,
+                _assert_skewness,
+                [column_name, min_skewness, max_skewness],
             )
-            if (
-                not isinstance(column_name, str)
-                or not isinstance(min_skewness, (int, float))
-                or not isinstance(max_skewness, (int, float))
-            ):
-                raise AssertionError(
-                    "assert_skewness only accepts string type column_name and "
-                    "numeric type min_skewness and max_skewness values."
-                )
 
     return FunctionWrapper
 
@@ -344,60 +382,3 @@ def _assert_skewness(
         return result
 
     return assert_func
-
-
-def get_asserted_function(function: Callable[..., Any]) -> Callable[..., Any]:
-    asserted_function = function
-    assertion_list = _get_assertion_list(function)
-    for assertion in assertion_list:
-        name = assertion[0]
-        values = assertion[1:]
-        assertion_function = _assertion_name_function_mapper(name, values)
-        asserted_function = _call_function_with_assertion(
-            asserted_function, assertion_function
-        )
-
-    return asserted_function
-
-
-def get_assertion_functions_data(function: Callable[..., Any]) -> List[Assertion]:
-    assertion_list = _get_assertion_list(function)
-    result = []
-    for assertion in assertion_list:
-        name = assertion[0]
-        values = assertion[1:]
-        assertion_function = _assertion_name_function_mapper(name, values)
-        result.append(Assertion(name, values, assertion_function))
-
-    return result
-
-
-def _assertion_name_function_mapper(name: str, values: List[Any]) -> Callable[..., Any]:
-    if name == assert_true.__name__ and len(values) == 1:
-        return _assert_true(values[0])
-    elif name == assert_valid_values.__name__ and len(values) == 2:
-        return _assert_valid_values(values[0], values[1])
-    elif name == assert_not_null.__name__ and len(values) == 1:
-        return _assert_not_null(values[0])
-    elif name == assert_unique.__name__ and len(values) == 1:
-        return _assert_unique(values[0])
-    elif name == assert_skewness.__name__ and len(values) == 3:
-        return _assert_skewness(values[0], values[1], values[2])
-    else:
-        raise ValueError(f"Invalid assertion function: {name}")
-
-
-def _call_function_with_assertion(
-    function: Callable[..., Any], assertion: Callable[..., Any]
-) -> Callable[..., Any]:
-    def with_assertion() -> Callable[..., Any]:
-        return assertion(function())
-
-    return with_assertion
-
-
-def _get_assertion_list(function: Callable[..., Any]) -> List[Any]:
-    layer_settings = function.__dict__.get("layer")
-    if not layer_settings:
-        return []
-    return layer_settings.get_assertions()

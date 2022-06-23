@@ -52,7 +52,7 @@ def _pip_requirements_wrapper(
     class PipRequirementsFunctionWrapper(LayerFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(wrapped, wrapper, enabled)
-            self.__wrapped__.layer.set_pip_requirements_file(file)
-            self.__wrapped__.layer.set_pip_packages(packages)
+            self.layer.set_pip_requirements_file(file)
+            self.layer.set_pip_packages(packages)
 
     return PipRequirementsFunctionWrapper

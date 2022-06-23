@@ -1,19 +1,39 @@
+from typing import Any, Callable, List
 from unittest.mock import ANY, MagicMock, patch
 
 import numpy
 import pandas as pd
 import pytest
 
+from layer.contracts.assertions import Assertion
 from layer.decorators.assertions import (
-    _assertion_name_function_mapper,
-    _get_assertion_list,
     assert_not_null,
     assert_skewness,
     assert_true,
     assert_unique,
     assert_valid_values,
-    get_asserted_function,
 )
+from layer.decorators.settings import LayerSettings
+
+
+def get_asserted_function(function: Callable[..., Any]) -> Callable[..., Any]:
+    asserted_function = function
+    settings: LayerSettings = function.layer  # type:ignore
+    for assertion in settings.get_assertions():
+        asserted_function = _call_function_with_assertion(
+            asserted_function, assertion.function
+        )
+
+    return asserted_function
+
+
+def _call_function_with_assertion(
+    function: Callable[..., Any], assertion: Callable[..., Any]
+) -> Callable[..., Any]:
+    def with_assertion() -> Callable[..., Any]:
+        return assertion(function())
+
+    return with_assertion
 
 
 class TestAssertions:
@@ -257,23 +277,18 @@ class TestAssertions:
         def f1():
             return pd.DataFrame()
 
-        assertion_list = _get_assertion_list(f1)
-        assert len(assertion_list) == 2
-
-    def test_assertion_name_function_mapper(self):
-        name = assert_unique.__name__
-        values = [["UserName", "NonExisting"]]
-        assertion_function = _assertion_name_function_mapper(name, values)
-        assert isinstance(assertion_function, type(assert_unique))
+        assertions: List[Assertion] = f1.__dict__.get("layer").get_assertions()
+        assert len(assertions) == 2
 
     def test_call_function_with_assertion(self):
         @assert_unique(["UserName", "NonExisting"])
         def f1():
             return pd.DataFrame()
 
-        assert f1.__dict__.get("layer").get_assertions() == [
-            ["assert_unique", ["UserName", "NonExisting"]]
-        ]
+        assertions: List[Assertion] = f1.__dict__.get("layer").get_assertions()
+
+        assert assertions[0].name == "assert_unique"
+        assert assertions[0].values == [["UserName", "NonExisting"]]
 
     def test_get_asserted_function(self):
 

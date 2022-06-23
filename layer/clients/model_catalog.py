@@ -1,9 +1,10 @@
+import sys
 import tempfile
 import warnings
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Optional
+from typing import TYPE_CHECKING, Iterator, Optional, Tuple
 
 from layerapi.api.entity.model_pb2 import Model as PBModel
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
@@ -43,7 +44,7 @@ from layer.cache.cache import Cache
 from layer.config import ClientConfig
 from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import ModelFunctionDefinition
+from layer.contracts.runs import FunctionDefinition
 from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
@@ -86,7 +87,7 @@ class ModelCatalogClient:
     def create_model_version(
         self,
         project_full_name: ProjectFullName,
-        model: ModelFunctionDefinition,
+        model: FunctionDefinition,
         is_local: bool,
     ) -> CreateModelVersionResponse:
         """
@@ -96,7 +97,7 @@ class ModelCatalogClient:
         :param model: the structured of the parsed entity
         :return: the created model version entity
         """
-        model_path = f"{project_full_name.path}/models/{model.name}"
+        model_path = f"{project_full_name.path}/models/{model.asset_name}"
         self._logger.debug(
             f"Creating model version for the following model: {model_path}"
         )
@@ -114,25 +115,26 @@ class ModelCatalogClient:
 
     def store_training_metadata(
         self,
-        model: ModelFunctionDefinition,
+        model: FunctionDefinition,
         s3_path: S3Path,
         version: ModelVersion,
     ) -> None:
+        language_version = _language_version()
         request: StoreTrainingMetadataRequest = StoreTrainingMetadataRequest(
             model_version_id=version.id,
-            name=model.name,
+            name=model.asset_name,
             description=model.description,
             source_code_env=SourceCodeEnvironment(
                 source_code=SourceCode(
                     remote_file_location=RemoteFileLocation(
                         name=model.entrypoint,
-                        location=f"s3://{s3_path.bucket}/{s3_path.key}{model.name}.tgz",
+                        location=f"s3://{s3_path.bucket}/{s3_path.key}{model.asset_name}.tgz",
                     ),
                     language=SourceCode.Language.LANGUAGE_PYTHON,
                     language_version=SourceCode.LanguageVersion(
-                        major=int(model.language_version[0]),
-                        minor=int(model.language_version[1]),
-                        micro=int(model.language_version[2]),
+                        major=int(language_version[0]),
+                        minor=int(language_version[1]),
+                        micro=int(language_version[2]),
                     ),
                 ),
                 dependency_file=DependencyFile(
@@ -334,3 +336,7 @@ class ModelCatalogClient:
                 model_train_id=train_id, train_status=train_status
             )
         )
+
+
+def _language_version() -> Tuple[int, int, int]:
+    return sys.version_info.major, sys.version_info.minor, sys.version_info.micro

@@ -134,7 +134,7 @@ class ResourceManager:
         state.total_resource_size_bytes = total_files_size_bytes
 
         asset_type = function.asset_type
-        asset_name = function.name
+        asset_name = function.asset_name
         if asset_type == AssetType.DATASET:
             tracker.mark_dataset_resources_uploading(asset_name, state)
         elif asset_type == AssetType.MODEL:
