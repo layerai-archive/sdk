@@ -7,6 +7,7 @@ from .contracts.runs import Run  # noqa
 from .flavors.custom import CustomModel  # noqa
 from .global_context import current_project_name  # noqa
 from .logged_data.callbacks import KerasCallback, XGBoostCallback  # noqa
+from .logged_data.log_data_runner import Image  # noqa
 from .main import clear_cache  # noqa
 from .main import get_dataset  # noqa
 from .main import get_model  # noqa
