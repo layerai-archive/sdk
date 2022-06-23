@@ -1,6 +1,5 @@
 import subprocess
 import sys
-from http.server import executable
 from pathlib import Path
 
 from layer.executables.tar import build_executable_tar
