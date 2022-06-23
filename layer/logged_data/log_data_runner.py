@@ -5,78 +5,21 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
-import numpy
 import pandas as pd
 import requests  # type: ignore
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
+import layer
 from layer.clients.layer import LayerClient
 from layer.contracts.logged_data import Markdown, ModelMetricPoint
 
+from .image import Image
 from .utils import get_base_module_list, has_allowed_extension
 
 
 if TYPE_CHECKING:
     import matplotlib.figure  # type: ignore
-    import PIL.Image
-
-
-class Image:
-    def __init__(
-        self,
-        img: Union[
-            "PIL.Image.Image", Path, numpy.array, "torch.Tensor", "tensorflow.Tensor"
-        ],
-        format: str = "CHW",
-    ):
-        self.img = img
-        self.format = format
-
-    def get_image(self):
-        if Image.is_pil_image(self.img):
-            return self.img
-        elif Image.is_image_path(self.img):
-            return self.img
-        elif isinstance(self.img, numpy.array):
-            return Image._get_image_from_array(self.img, self.format)
-        elif "torch.Tensor" in get_base_module_list(self.img):
-            img_array = self.img.cpu().numpy()[0]
-            return self._get_image_from_array(img_array, self.format)
-        elif "tensorflow.Tensor" in get_base_module_list(self.img):
-            img_array = self.img.numpy()
-            return self._get_image_from_array(img_array, self.format)
-
-    @staticmethod
-    def is_image(value):
-        return (
-            isinstance(value, Image)
-            or Image.is_pil_image(value)
-            or Image.is_image_path(value)
-        )
-
-    @staticmethod
-    def is_pil_image(value: Any) -> bool:
-        return "PIL.Image" in get_base_module_list(value)
-
-    @staticmethod
-    def is_image_path(path: Any) -> bool:
-        return isinstance(path, Path) and has_allowed_extension(
-            path, [".gif", ".png", ".jpg", ".jpeg"]
-        )
-
-    @staticmethod
-    def _get_image_from_array(img_array: numpy.array, format: str) -> "PIL.Image.Image":
-        supported_image_formats = ["CHW", "HWC", "HW"]
-        if format not in supported_image_formats:
-            raise Exception(
-                f"Invalid image format: '{format}'. Support formats are: {supported_image_formats}"
-            )
-
-        if format == "CHW":
-            img_array = img_array.transpose(1, 2, 0)
-
-        img_array = (img_array * 255).astype(numpy.uint8)
-        return PIL.Image.fromarray(img_array)
+    import PIL
 
 
 class LogDataRunner:
@@ -140,29 +83,11 @@ class LogDataRunner:
                     assert isinstance(value, Path)
                 self._log_video_from_path(tag=tag, path=value)
             elif Image.is_image(value):
-                # Users can log images directly with `layer.log({'img':img})` for simple images or with
-                # `layer.log({'img':layer.Image(img)})` for advanced image formats like Tensors
-                if isinstance(value, Image):
-                    img = value.get_image()
-                else:
-                    img = value
+                if TYPE_CHECKING:
+                    import PIL
 
-                if Image.is_image_path(img):
-                    if TYPE_CHECKING:
-                        assert isinstance(img, Path)
-                    if self._train_id and epoch is not None:
-                        self._log_image_from_path(tag=tag, path=img, epoch=epoch)
-                    else:
-                        self._log_image_from_path(tag=tag, path=img)
-                elif Image.is_pil_image(img):
-                    if TYPE_CHECKING:
-                        import PIL.Image
-
-                        assert isinstance(img, PIL.Image.Image)
-                    if self._train_id and epoch is not None:
-                        self._log_image(tag=tag, image=img, epoch=epoch)
-                    else:
-                        self._log_image(tag=tag, image=img)
+                    assert isinstance(value, (Path, PIL.Image.Image, Image))
+                self._log_image(tag=tag, img_value=value, epoch=epoch)
             elif self._is_plot_figure(value):
                 if TYPE_CHECKING:
                     import matplotlib.figure
@@ -183,6 +108,42 @@ class LogDataRunner:
                 self._log_current_plot_figure(tag=tag, plt=value)
             else:
                 raise ValueError(f"Unsupported value type -> {type(value)}")
+
+    def _log_image(
+        self,
+        tag: str,
+        img_value: Union["PIL.Image.Image", Path, Image],
+        epoch: Optional[int],
+    ) -> None:
+        # Users can log images directly with `layer.log({'img':img})` for simple images or with
+        # `layer.log({'img':layer.Image(img)})` for advanced image formats like Tensors
+        if isinstance(img_value, Image):
+            img = img_value.get_image()
+        else:
+            if TYPE_CHECKING:
+                import PIL
+
+                assert isinstance(img_value, Path) or isinstance(
+                    img_value, PIL.Image.Image
+                )
+            img = img_value
+
+        if Image.is_image_path(img):
+            if TYPE_CHECKING:
+                assert isinstance(img, Path)
+            if self._train_id and epoch is not None:
+                self._log_image_from_path(tag=tag, path=img, epoch=epoch)
+            else:
+                self._log_image_from_path(tag=tag, path=img)
+        elif Image.is_pil_image(img):
+            if TYPE_CHECKING:
+                import PIL
+
+                assert isinstance(img, PIL.Image.Image)
+            if self._train_id and epoch is not None:
+                self._log_pil_image(tag=tag, image=img, epoch=epoch)
+            else:
+                self._log_pil_image(tag=tag, image=img)
 
     def _log_metric(
         self, tag: str, numeric_value: Union[float, int], epoch: Optional[int]
@@ -280,7 +241,7 @@ class LogDataRunner:
             resp = s.put(presigned_url, data=image_file)
             resp.raise_for_status()
 
-    def _log_image(
+    def _log_pil_image(
         self, tag: str, image: "PIL.Image.Image", *, epoch: Optional[int] = None
     ) -> None:
         with requests.Session() as s, io.BytesIO() as buffer:
