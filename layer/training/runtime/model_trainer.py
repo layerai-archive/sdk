@@ -1,4 +1,5 @@
 import os
+import subprocess
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -15,7 +16,6 @@ import nvsmi  # type: ignore
 import pandas as pd
 import polling  # type: ignore
 import psutil  # type: ignore
-import subprocess
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 
 from layer import Context
