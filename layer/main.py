@@ -18,6 +18,7 @@ from uuid import UUID
 
 from yarl import URL
 
+from layer import Image
 from layer.cache.cache import Cache
 from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
@@ -712,6 +713,7 @@ def log(
             "PIL.Image.Image",
             "matplotlib.figure.Figure",
             "matplotlib.axes._subplots.AxesSubplot",
+            Image,
             ModuleType,
             Path,
         ],
@@ -741,11 +743,12 @@ def log(
 
     **Images**
 
-    You can log images to track inputs, outputs, detections, activations and more. We support JPEG and PNG formats.
+    You can log images to track inputs, outputs, detections, activations and more. We support GIF, JPEG, PNG formats.
 
     Accepted Types:
     ``PIL.Image.Image``,
     ``path.Path``
+    ``layer.Image``
 
     **Charts**
 

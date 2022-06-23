@@ -41,14 +41,20 @@ class Image:
             return self.img
         elif isinstance(self.img, np.ndarray):
             return Image._get_image_from_array(self.img, self.format)
-        elif "torch.Tensor" in get_base_module_list(self.img):
+        elif "torch" in get_base_module_list(self.img):
             if TYPE_CHECKING:
                 import torch
 
                 assert isinstance(self.img, torch.Tensor)
-            img_array = self.img.cpu().numpy()[0]
-            return self._get_image_from_array(img_array, self.format)
-        elif "tensorflow.Tensor" in get_base_module_list(self.img):
+            try:
+                from torchvision import transforms  # type: ignore
+
+                return transforms.ToPILImage()(self.img)
+            except ImportError:
+                raise Exception(
+                    "You need torchvision installed to log torch.Tensor images. Install with: `pip install torchvision`"
+                )
+        elif "tensorflow" in get_base_module_list(self.img):
             if TYPE_CHECKING:
                 import tensorflow
 
@@ -88,8 +94,14 @@ class Image:
                 f"Invalid image format: '{format}'. Support formats are: {supported_image_formats}"
             )
 
+        # Reshape array to HWC
         if format == "CHW":
             img_array = img_array.transpose(1, 2, 0)
 
-        img_array = (img_array * 255).astype(np.uint8)
-        return PIL.Image.fromarray(img_array)
+        if format == "HW":
+            img = PIL.Image.fromarray(np.uint8(img_array * 255), 'L')
+        else:
+            img_array = (img_array * 255).astype(np.uint8)
+            img = PIL.Image.fromarray(img_array)
+
+        return img
