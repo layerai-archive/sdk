@@ -1,17 +1,11 @@
-import datetime
-from typing import List, Optional
+from typing import Optional
 
-import humanize  # type: ignore
-import polling  # type: ignore
-from layerapi.api.entity.run_pb2 import Run
 from rich.console import Console, RenderableType
 from rich.progress import Progress, ProgressColumn, Task
 from rich.spinner import Spinner
 from rich.style import StyleType
 from rich.table import Column
 from rich.text import Text, TextType
-
-from layer.contracts.runs import GetRunsFunction
 
 from .asset_column import AssetColumn
 
@@ -71,33 +65,3 @@ def get_progress_ui() -> Progress:
         AssetColumn(),
         console=Console(),
     )
-
-
-def watch_get_runs(console: Console, get_runs_fn: GetRunsFunction) -> None:
-    def clean_get_print() -> None:
-        console.clear()
-        print_runs(get_runs_fn())
-
-    polling.poll(
-        clean_get_print,
-        step=5,
-        poll_forever=True,
-    )
-
-
-def print_runs(runs: List[Run]) -> None:
-    print(
-        f"{'ID':<40} {'PROJECT':<60} {'STATUS':<24} {'CREATED TIME':<24} {'DURATION'}"
-    )
-    for run in runs:
-        print(_to_run_string(run))
-
-
-def _to_run_string(run: Run) -> str:
-    created_time = run.created_time.ToDatetime()
-    created_time_formatted = created_time.strftime("%Y-%m-%d %H:%M:%S")
-    humanized_duration_str = humanize.naturaldelta(
-        datetime.timedelta(seconds=run.duration.seconds)
-    )
-    status = str(Run.Status.Name(run.run_status))
-    return f"{run.id.value:<40} {run.project_name:<60} {status[len('STATUS_'):]:<24} {created_time_formatted:<24} {humanized_duration_str}"
