@@ -9,6 +9,7 @@ from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
 from layer.contracts.runs import ModelFunctionDefinition
+from layer.executables.model.model_trainer import LocalTrainContext, ModelTrainer
 from layer.global_context import set_has_shown_update_message
 from layer.projects.utils import (
     get_current_project_full_name,
@@ -16,8 +17,6 @@ from layer.projects.utils import (
 )
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.async_utils import asyncio_run_in_thread
-
-from layer.executables.model.model_trainer import LocalTrainContext, ModelTrainer
 
 
 logger = logging.getLogger(__name__)

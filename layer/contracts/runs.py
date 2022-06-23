@@ -188,14 +188,8 @@ class FunctionDefinition:
             with open(self.pickle_path, mode="wb") as file:
                 cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
 
-            # Add requirements to tarball
-            if self.pip_requirements_file:
-                shutil.copy(self.pip_requirements_file, self.environment_path)
-            elif self.pip_packages:
-                with open(self.environment_path, "w") as reqs_file:
-                    reqs_file.writelines(
-                        list(map(lambda package: f"{package}\n", self.pip_packages))
-                    )
+            with open(self.environment_path, "w") as reqs_file:
+                reqs_file.write("\n".join(self.pip_dependencies))
 
 
 @dataclass(frozen=True)
