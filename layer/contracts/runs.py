@@ -13,8 +13,9 @@ import cloudpickle  # type: ignore
 from layerapi.api.entity.run_pb2 import Run as PBRun
 from layerapi.api.ids_pb2 import RunId
 
-from layer.config import DEFAULT_FUNC_PATH
+from layer.config import DEFAULT_FUNC_PATH, is_feature_active
 from layer.contracts.assertions import Assertion
+from layer.executables.tar import MODEL_TRAIN_ENTRYPOINT_FILE, build_executable_tar
 
 from .asset import AssetPath, AssetType
 from .fabrics import Fabric
@@ -149,6 +150,10 @@ class FunctionDefinition:
         return self.function_home_dir / self.entrypoint
 
     @property
+    def tar_path(self) -> Path:
+        return self.function_home_dir / f"{self.asset_name}.tar"
+
+    @property
     def environment(self) -> str:
         return "requirements.txt"
 
@@ -162,7 +167,7 @@ class FunctionDefinition:
         else:
             return self.fabric.value
 
-    def _clean_pickle_folder(self) -> None:
+    def _clean_function_home_dir(self) -> None:
         # Remove directory to clean leftovers from previous runs
         function_home_dir = self.function_home_dir
         if function_home_dir.exists():
@@ -170,14 +175,21 @@ class FunctionDefinition:
         os.makedirs(function_home_dir)
 
     def _pack(self) -> None:
-        self._clean_pickle_folder()
+        self._clean_function_home_dir()
+        if is_feature_active("TAR_PACKAGING"):
+            build_executable_tar(
+                path=self.tar_path,
+                function=self.func,
+                entrypoint=MODEL_TRAIN_ENTRYPOINT_FILE,
+                pip_dependencies=self.pip_dependencies,
+            )
+        else:
+            # Dump pickled function to asset_name.pkl
+            with open(self.pickle_path, mode="wb") as file:
+                cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
 
-        # Dump pickled function to asset_name.pkl
-        with open(self.pickle_path, mode="wb") as file:
-            cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
-
-        with open(self.environment_path, "w") as reqs_file:
-            reqs_file.write("\n".join(self.pip_dependencies))
+            with open(self.environment_path, "w") as reqs_file:
+                reqs_file.write("\n".join(self.pip_dependencies))
 
 
 @dataclass(frozen=True)
