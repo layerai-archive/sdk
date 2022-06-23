@@ -295,7 +295,7 @@ class DataCatalogClient:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             archive_path = f"{tmp_dir}/{archive_name}"
-            tar_directory(archive_path, dataset.pickle_dir)
+            tar_directory(archive_path, dataset.tar_dir)
             S3Util.upload_dir(
                 Path(tmp_dir),
                 response.credentials,

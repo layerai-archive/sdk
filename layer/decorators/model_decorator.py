@@ -6,7 +6,7 @@ import wrapt  # type: ignore
 
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager
+from layer.config import ConfigManager, is_feature_active
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
 from layer.contracts.runs import ModelFunctionDefinition
@@ -110,26 +110,44 @@ def _model_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             current_project_full_name_ = get_current_project_full_name()
-            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            with LayerClient(config.client, logger).init() as client:
-                progress_tracker = RunProgressTracker(
-                    url=config.url,
-                    project_name=current_project_full_name_.project_name,
-                    account_name=current_project_full_name_.account_name,
-                )
+            model_definition = ModelFunctionDefinition(
+                self.__wrapped__,
+                project_name=current_project_full_name_.project_name,
+                account_name=current_project_full_name_.account_name,
+            )
 
-                with progress_tracker.track() as tracker:
-                    tracker.add_asset(
-                        AssetType.MODEL, self.__wrapped__.layer.get_asset_name()
-                    )
-                    model_definition = ModelFunctionDefinition(
-                        self.__wrapped__,
+            if is_feature_active("TAR_PACKAGING"):
+                import subprocess  # nosec: import_subprocess
+                import sys
+
+                subprocess.run(  # nosec: start_process_with_partial_path, subprocess_without_shell_equals_true
+                    [
+                        "sh",
+                        model_definition.tar_path,
+                    ],
+                    env={
+                        "LAYER_PROJECT_NAME": model_definition.project_name,
+                        "PYTHON_EXECUTABLE_PATH": sys.executable,
+                    },
+                    stderr=sys.stderr,
+                    stdout=sys.stdout,
+                )
+            else:
+                config: Config = asyncio_run_in_thread(ConfigManager().refresh())
+                with LayerClient(config.client, logger).init() as client:
+                    progress_tracker = RunProgressTracker(
+                        url=config.url,
                         project_name=current_project_full_name_.project_name,
                         account_name=current_project_full_name_.account_name,
                     )
-                    return self._train_model_locally_and_store_remotely(
-                        model_definition, tracker, client
-                    )
+
+                    with progress_tracker.track() as tracker:
+                        tracker.add_asset(
+                            AssetType.MODEL, self.__wrapped__.layer.get_asset_name()
+                        )
+                        return self._train_model_locally_and_store_remotely(
+                            model_definition, tracker, client
+                        )
 
         @staticmethod
         def _train_model_locally_and_store_remotely(

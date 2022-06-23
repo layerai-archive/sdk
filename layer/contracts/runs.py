@@ -14,8 +14,9 @@ import cloudpickle  # type: ignore
 from layerapi.api.entity.run_pb2 import Run as PBRun
 from layerapi.api.ids_pb2 import RunId
 
-from layer.config import DEFAULT_FUNC_PATH
+from layer.config import DEFAULT_FUNC_PATH, is_feature_active
 from layer.exceptions.exceptions import LayerClientException
+from layer.executables.tar import MODEL_TRAIN_ENTRYPOINT_FILE, build_executable_tar
 
 from .asset import AssetPath, AssetType
 from .fabrics import Fabric
@@ -169,6 +170,14 @@ class FunctionDefinition(abc.ABC):
         return self.pickle_dir / self.entrypoint
 
     @property
+    def tar_dir(self) -> Path:
+        return DEFAULT_FUNC_PATH / self.project_name / self.name
+
+    @property
+    def tar_path(self) -> Path:
+        return self.tar_dir / f"{self.name}.tar"
+
+    @property
     def environment(self) -> str:
         return (
             str(os.path.basename(self.pip_requirements_file))
@@ -186,28 +195,36 @@ class FunctionDefinition(abc.ABC):
         else:
             return self._fabric.value
 
-    def _clean_pickle_folder(self) -> None:
+    def _clean_folder(self, folder: Path) -> None:
         # Remove directory to clean leftovers from previous runs
-        pickle_dir = self.pickle_dir
-        if pickle_dir.exists():
-            shutil.rmtree(pickle_dir)
-        os.makedirs(pickle_dir)
+        if folder.exists():
+            shutil.rmtree(folder)
+        os.makedirs(folder)
 
     def _pack(self) -> None:
-        self._clean_pickle_folder()
+        if is_feature_active("TAR_PACKAGING"):
+            self._clean_folder(self.tar_dir)
+            build_executable_tar(
+                path=self.tar_path,
+                function=self.func,
+                entrypoint=MODEL_TRAIN_ENTRYPOINT_FILE,
+                pip_dependencies=self.pip_packages,
+            )
+        else:
+            self._clean_folder(self.pickle_dir)
 
-        # Dump pickled function to asset_name.pkl
-        with open(self.pickle_path, mode="wb") as file:
-            cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
+            # Dump pickled function to asset_name.pkl
+            with open(self.pickle_path, mode="wb") as file:
+                cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
 
-        # Add requirements to tarball
-        if self.pip_requirements_file:
-            shutil.copy(self.pip_requirements_file, self.environment_path)
-        elif self.pip_packages:
-            with open(self.environment_path, "w") as reqs_file:
-                reqs_file.writelines(
-                    list(map(lambda package: f"{package}\n", self.pip_packages))
-                )
+            # Add requirements to tarball
+            if self.pip_requirements_file:
+                shutil.copy(self.pip_requirements_file, self.environment_path)
+            elif self.pip_packages:
+                with open(self.environment_path, "w") as reqs_file:
+                    reqs_file.writelines(
+                        list(map(lambda package: f"{package}\n", self.pip_packages))
+                    )
 
     def get_pickled_function(self) -> bytes:
         return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)

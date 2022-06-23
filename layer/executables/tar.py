@@ -5,16 +5,17 @@ import tempfile
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-import cloudpickle
+import cloudpickle  # type: ignore
 
 
-ENTRYPOINT_FILE = Path(__file__).parent / "entrypoint.py"
+MODEL_TRAIN_ENTRYPOINT_FILE = Path(__file__).parent / "model" / "entrypoint.py"
 EXTRACTOR_PIP_DEPENDENCIES = ["cloudpickle"]
 
 
 def build_executable_tar(
     path: Path,
-    entrypoint: Callable[..., Any],
+    function: Callable[..., Any],
+    entrypoint: Path,
     resources: Optional[List[Path]] = None,
     pip_dependencies: Optional[List[str]] = None,
 ) -> None:
@@ -44,7 +45,7 @@ def build_executable_tar(
 
             # Put entrypoint.py
             tar.add(
-                ENTRYPOINT_FILE,
+                entrypoint,
                 arcname="entrypoint.py",
                 filter=_reset_user_info,
             )
@@ -53,8 +54,8 @@ def build_executable_tar(
             function_path = build_directory / "function.pkl"
             with open(function_path, mode="wb") as file:
                 # register to pickly by value to ensure unpickling it works anywhere
-                cloudpickle.register_pickle_by_value(sys.modules[entrypoint.__module__])
-                cloudpickle.dump(entrypoint, file, protocol=pickle.DEFAULT_PROTOCOL)
+                cloudpickle.register_pickle_by_value(sys.modules[function.__module__])
+                cloudpickle.dump(function, file, protocol=pickle.DEFAULT_PROTOCOL)
             tar.add(function_path, arcname="function.pkl", filter=_reset_user_info)
 
             # Put all resources into the correct path inside the tar
@@ -78,7 +79,6 @@ def _reset_user_info(tarinfo: tarfile.TarInfo) -> tarfile.TarInfo:
 EXECUTABLE_TAR_HEADER = """
 TMPDIR=`mktemp -d /tmp/selfextract.XXXXXX`
 CDIR=`pwd`
-
 function cleanup()
 {
     cd $CDIR
@@ -93,9 +93,9 @@ tail -n+$ARCHIVE $0 | tar xz -C $TMPDIR
 
 # run contents in temporary directory
 cd $TMPDIR
-python3 -m venv --system-site-packages venv
+$PYTHON_EXECUTABLE_PATH -m venv --system-site-packages venv
 source venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python entrypoint.py
 
 exit 0
