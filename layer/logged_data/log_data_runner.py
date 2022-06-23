@@ -56,7 +56,7 @@ class Image:
 
     @staticmethod
     def is_pil_image(value: Any) -> bool:
-        return "PIL.Image.Image" in get_base_module_list(value)
+        return "PIL.Image" in get_base_module_list(value)
 
     @staticmethod
     def is_image_path(path: Any) -> bool:
