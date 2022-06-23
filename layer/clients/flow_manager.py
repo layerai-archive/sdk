@@ -86,6 +86,8 @@ class FlowManagerClient:
         list_all: bool,
         project_name: Optional[str] = None,
     ) -> Tuple[List[Run], GetRunsFunction]:
+        print("get_runs called")
+
         def get_runs_func() -> List[Run]:
             if pipeline_run_id:
                 run = self._service.GetRunById(
