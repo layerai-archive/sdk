@@ -9,20 +9,13 @@ from .utils import get_base_module_list, has_allowed_extension
 
 if TYPE_CHECKING:
     import PIL
-    import tensorflow  # type: ignore
     import torch
 
 
 class Image:
     def __init__(
         self,
-        img: Union[
-            "PIL.Image.Image",
-            Path,
-            npt.NDArray[np.complex64],
-            "torch.Tensor",
-            "tensorflow.Tensor",
-        ],
+        img: Union["PIL.Image.Image", Path, npt.NDArray[np.complex64], "torch.Tensor"],
         format: str = "CHW",
     ):
         self.img = img
@@ -42,27 +35,21 @@ class Image:
         elif isinstance(self.img, np.ndarray):
             return Image._get_image_from_array(self.img, self.format)
         elif "torch" in get_base_module_list(self.img):
-            if TYPE_CHECKING:
+            try:
                 import torch
+                from torchvision import transforms  # type: ignore
 
                 assert isinstance(self.img, torch.Tensor)
-            try:
-                from torchvision import transforms  # type: ignore
 
                 return transforms.ToPILImage()(self.img)
             except ImportError:
                 raise Exception(
-                    "You need torchvision installed to log torch.Tensor images. Install with: `pip install torchvision`"
+                    "You need torch & torchvision installed to log torch.Tensor images. Install with: `pip install torch torchvision`"
                 )
-        elif "tensorflow" in get_base_module_list(self.img):
-            if TYPE_CHECKING:
-                import tensorflow
-
-                assert isinstance(self.img, tensorflow.Tensor)
-            img_array = self.img.numpy()
-            return self._get_image_from_array(img_array, self.format)
         else:
-            raise Exception("Unsupported image type!")
+            raise Exception(
+                "Unsupported image type! Supported images are: PIL.Image, torch.Tensor, np.ndarray (CHW,HWC,HW) and Path"
+            )
 
     @staticmethod
     def is_image(value: Any) -> bool:
@@ -99,7 +86,7 @@ class Image:
             img_array = img_array.transpose(1, 2, 0)
 
         if format == "HW":
-            img = PIL.Image.fromarray(np.uint8(img_array * 255), 'L')
+            img = PIL.Image.fromarray(np.uint8(img_array * 255), "L")
         else:
             img_array = (img_array * 255).astype(np.uint8)
             img = PIL.Image.fromarray(img_array)
