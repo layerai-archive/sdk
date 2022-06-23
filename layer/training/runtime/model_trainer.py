@@ -4,16 +4,14 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
 from logging import Logger
 from pathlib import Path
 from time import sleep
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from uuid import UUID
 
 import nvsmi  # type: ignore
-import pandas as pd
 import polling  # type: ignore
 import psutil  # type: ignore
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
@@ -48,9 +46,9 @@ class TrainContextDataclassMixin:
     train_index: Optional[str] = None
 
 
-metrics_data = []
 cpu_used_temp = None  # pylint: disable=C0103
 start_time_temp = None  # pylint: disable=C0103
+step_value = 0  # pylint: disable=C0103
 
 
 def get_gpu_metrics(logger: Logger) -> Dict[str, Dict[str, float]]:
@@ -72,6 +70,44 @@ def get_gpu_metrics(logger: Logger) -> Dict[str, Dict[str, float]]:
     return metrics
 
 
+def generate_metrics_dict(
+    mem_used: float,
+    mem_allocated: float,
+    mem_used_percent: float,
+    cpus_used: float,
+    cpus_available: float,
+    cpu_utilisation_percent: float,
+    gpu_metrics: Dict[Any, Any],
+) -> Dict[str, float]:
+    metrics = {
+        "Memory Used (MB)": mem_used,
+        "Memory Allocated (MB)": mem_allocated,
+        "Memory Utilisation %": mem_used_percent,
+        "CPUs Used": cpus_used,
+        "CPUs Allocated": cpus_available,
+        "CPU Utilisation %": cpu_utilisation_percent,
+    }
+
+    for gpu in gpu_metrics:
+        metrics.update(
+            {
+                "GPU Utilisation % - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ): gpu_metrics[gpu]["utilisation"],
+                "GPU Memory Used (MB) - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ): gpu_metrics[gpu]["mem_used"],
+                "GPU Memory Allocated (MB) - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ): gpu_metrics[gpu]["mem_total"],
+                "GPU Memory Utilisation % - gpu{} - {}".format(
+                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
+                ): gpu_metrics[gpu]["mem_utilisation"],
+            }
+        )
+    return metrics
+
+
 class TrainContext(ABC, TrainContextDataclassMixin):
     is_remote = True
 
@@ -89,9 +125,7 @@ class TrainContext(ABC, TrainContextDataclassMixin):
     @staticmethod
     def get_metrics(
         start_time: int, start_cpu_used: int, logger: Logger
-    ) -> Dict[str, pd.DataFrame]:
-        tag = "Remote Fabric Stats"
-        global metrics_data  # pylint: disable=invalid-name disable=global-variable-not-assigned
+    ) -> Tuple[Dict[str, float], int]:
         global cpu_used_temp  # pylint: disable=invalid-name
         global start_time_temp  # pylint: disable=invalid-name
 
@@ -138,7 +172,6 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         cpus_available = get_cpu_available()
         cpus_used = diff_cpu / diff_time / 1000000000
         fabric_cpu_utilisation_percent = get_used_percent(cpus_used, cpus_available)
-        local_now = datetime.now().strftime("%Y%m%dT%H%M%S")
         mem_used = get_mem_used()
         mem_available = get_mem_available()
         mem_used_percent = get_used_percent(mem_used, mem_available)
@@ -148,53 +181,17 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         if gpu_present:
             gpu_metrics = get_gpu_metrics(logger)
 
-        metrics = [
-            local_now,
+        metrics = generate_metrics_dict(
             round(float(mem_used / 1024 / 1024), 2),
             round(float(mem_available / 1024 / 1024), 2),
             mem_used_percent,
             round(cpus_used, 4),
             round(cpus_available, 2),
             fabric_cpu_utilisation_percent,
-        ]
-        columns = [
-            "Timestamp",
-            "Memory Used (MB)",
-            "Memory Allocated (MB)",
-            "Memory Utilisation %",
-            "CPUs Used",
-            "CPUs Allocated",
-            "CPU Utilisation %",
-        ]
-        for gpu in gpu_metrics:
-            metrics = metrics + [
-                gpu_metrics[gpu]["utilisation"],
-                gpu_metrics[gpu]["mem_used"],
-                gpu_metrics[gpu]["mem_total"],
-                gpu_metrics[gpu]["mem_utilisation"],
-            ]
-            columns = columns + [
-                "GPU Utilisation % - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ),
-                "GPU Memory Used (MB) - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ),
-                "GPU Memory Allocated (MB) - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ),
-                "GPU Memory Utilisation % - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ),
-            ]
-
-        metrics_data.append(metrics)
-        dataframe = pd.DataFrame(
-            metrics_data,
-            columns=columns,
+            gpu_metrics,
         )
-        dataframe.set_index("Timestamp", inplace=True)  # type: ignore
-        return {tag: dataframe}
+
+        return (metrics, step_value)
 
     def __exit__(
         self,
@@ -221,10 +218,7 @@ class LocalTrainContext(TrainContext):
     @staticmethod
     def get_metrics(
         start_time: int, start_cpu_used: int, logger: Logger
-    ) -> Dict[str, pd.DataFrame]:
-        tag = "Local System Stats"
-
-        local_now = datetime.now().strftime("%Y%m%dT%H%M%S")
+    ) -> Tuple[Dict[str, float], int]:
         cpu_count = psutil.cpu_count()
         cpu_percent = psutil.cpu_percent(interval=None)
         cpu_used = cpu_count * cpu_percent / 100
@@ -239,53 +233,16 @@ class LocalTrainContext(TrainContext):
         if gpu_present:
             gpu_metrics = get_gpu_metrics(logger)
 
-        metrics = [
-            local_now,
+        metrics = generate_metrics_dict(
             round((mem_used / 1024 / 1024), 2),
             round((mem_allocated / 1024 / 1024), 2),
             round(mem_utilisation, 2),
             round(cpu_used, 2),
             cpu_count,
             round(cpu_percent, 2),
-        ]
-        columns = [
-            "Timestamp",
-            "Memory Used (MB)",
-            "Memory Allocated (MB)",
-            "Memory Utilisation %",
-            "CPUs Used",
-            "CPUs Allocated",
-            "CPU Utilisation %",
-        ]
-        for gpu in gpu_metrics:
-            metrics = metrics + [
-                gpu_metrics[gpu]["utilisation"],
-                gpu_metrics[gpu]["mem_used"],
-                gpu_metrics[gpu]["mem_total"],
-                gpu_metrics[gpu]["mem_utilisation"],
-            ]
-            columns = columns + [
-                "GPU Utilisation % - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ),
-                "GPU Memory Used (MB) - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ),
-                "GPU Memory Allocated (MB) - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ),
-                "GPU Memory Utilisation % - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ),
-            ]
-        metrics_data.append(metrics)
-        dataframe = pd.DataFrame(
-            metrics_data,
-            columns=columns,
+            gpu_metrics,
         )
-
-        dataframe.set_index("Timestamp", inplace=True)  # type: ignore
-        return {tag: dataframe}
+        return (metrics, step_value)
 
     def __exit__(
         self,
@@ -391,6 +348,13 @@ class ModelTrainer:
                         train_id=self.train_context.train_id,
                         logger=self.logger,
                     )
+
+                    def metrics_step_function(step: int) -> int:
+                        global step_value  # pylint: disable=invalid-name
+                        step += 1
+                        step_value += step
+                        return min(step, 15)
+
                     if self.train_context.is_remote:
                         start_time = int(time.time())
                         with open("/sys/fs/cgroup/cpu/cpuacct.usage_user", "r") as f:
@@ -399,13 +363,14 @@ class ModelTrainer:
                     sleep(1)  # helps keep things simple
                     polling.poll(
                         lambda: log_data_runner.log(
-                            self.train_context.get_metrics(start_time, start_cpu_used, self.logger)  # type: ignore
+                            *self.train_context.get_metrics(start_time, start_cpu_used, self.logger)  # type: ignore
                         ),
-                        # TODO: set to 15s as outlined in the project spec, leaving at 1 for now to have data
-                        # as tests run in a few seconds only
-                        step=1,  # anything under 1 second risks divisions by zero, stick with >=1
                         check_success=stop,
                         poll_forever=True,
+                        # get metrics every 1, then 2, then 3, then (...) until 15 seconds, then every 15 seconds
+                        # This will ensure that short trains still get at least a couple of data points
+                        step=1,
+                        step_function=metrics_step_function,
                     )
 
                 stop_system_metrics_thread = False
@@ -424,33 +389,40 @@ class ModelTrainer:
                 self.logger.info("Executing the train_model_func")
                 work_dir = self.train_context.get_working_directory()
                 os.chdir(work_dir)
+
                 self.logger.info("Downloading resources")
                 ResourceManager(self.client).wait_resource_download(
                     project_full_name,
                     train_model_func.__name__,
                     target_dir=str(work_dir),
                 )
+
                 model = train_model_func()
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
                 )
+
                 self.logger.info("Executed train_model_func successfully")
                 self._run_assertions(
                     model,
                     train_model_func.layer.get_assertions(),  # type: ignore
                 )
+
                 self.tracker.mark_model_saving(self.train_context.model_name)
                 self.logger.info(f"Saving model artifact {model} to model registry")
                 train.save_model(model, tracker=self.tracker)
+
                 update_train_status(
                     self.client.model_catalog,
                     self.train_context.train_id,
                     ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
                     self.logger,
                 )
+
                 self.logger.info(
                     f"Saved model artifact {model} to model registry successfully"
                 )
+
                 self.tracker.mark_model_saved(self.train_context.model_name)
                 stop_system_metrics_thread = True
                 system_metrics_thread.join()

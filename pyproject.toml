@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "layer"
-version = "0.1.19"
+version = "0.1.20"
 description = "Layer AI SDK"
 authors = ["Layer <info@layer.ai>"]
 readme = "README.md"
@@ -350,6 +350,7 @@ skips = [
     "B101", # assert_used
     "B105", # hardcoded_password_string too noisy on defaults values empty string
     "B106", # hardcoded_password_funcarg too noisy on defaults values empty string
+    "B404", # import_subprocess
 ]
 
 [tool.isort]
