@@ -94,7 +94,7 @@ tail -n+$ARCHIVE $0 | tar xz -C $TMPDIR
 # run contents in temporary directory
 cd $TMPDIR
 $PYTHON_EXECUTABLE_PATH -m venv --system-site-packages venv
-source venv/bin/activate
+. ./venv/bin/activate
 python -m pip install -r requirements.txt
 python entrypoint.py
 
