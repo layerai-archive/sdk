@@ -14,13 +14,9 @@ if TYPE_CHECKING:
 
 class Image:
     """
-    Helper class to log complex images. Supported image types are:
-    - torch.Tensor
-    - numpy.array with `CHW`, `HWC` and `HW` support
-    - Image from path.Path
-    - PIL.Image
+    Helper class to log complex images such as torch.tensor or numpy.ndarray
 
-    Example of logging a numpy image
+    Example of logging a numpy array as an image:
     .. code-block:: python
         ...
         import numpy as np
@@ -31,11 +27,21 @@ class Image:
         layer.log({"image":layer.Image(img_HWC)})
         ...
     """
+
     def __init__(
         self,
         img: Union["PIL.Image.Image", Path, npt.NDArray[np.complex64], "torch.Tensor"],
         format: str = "CHW",
     ):
+        """
+        :param img: Supported image types are:
+        - torch.Tensor
+        - numpy.ndarray
+        - Image from path.Path
+        - PIL.Image
+        :param format: Sets the image format if the provided image is a numpy.ndarray.
+        Support formats are: `CHW`, `HWC`, `HW`
+        """
         self.img = img
         self.format = format
 
