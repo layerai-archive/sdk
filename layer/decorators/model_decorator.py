@@ -175,12 +175,6 @@ def _model_wrapper(
             )
             result = trainer.train()
 
-            tracker.mark_model_trained(
-                name=model_definition.asset_name,
-                train_index=str(train.index),
-                version=model_version.name,
-            )
-
             return result
 
     return FunctionWrapper

@@ -185,8 +185,6 @@ class ModelTrainer:
                 model = train_model_func()
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
-                    version=train.get_version(),
-                    train_index=train.get_train_index(),
                 )
                 self.logger.info("Executed train_model_func successfully")
                 self._run_assertions(
