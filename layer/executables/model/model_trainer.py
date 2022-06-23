@@ -13,7 +13,6 @@ from layerapi.api.ids_pb2 import ModelTrainId
 from layer import Context
 from layer.clients.layer import LayerClient
 from layer.contracts.assertions import Assertion
-from layer.decorators.assertions import get_assertion_functions_data
 from layer.exceptions.exception_handler import exception_handler
 from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.exceptions.status_report import (
@@ -156,12 +155,6 @@ class ModelTrainer:
                 self.train_context.init_or_save_context(context)
                 self._update_train_status(
                     self.train_context.train_id,
-                    ModelTrainStatus.TRAIN_STATUS_FETCHING_FEATURES,
-                    self.logger,
-                )
-
-                self._update_train_status(
-                    self.train_context.train_id,
                     ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
                     self.logger,
                 )
@@ -182,7 +175,8 @@ class ModelTrainer:
                 )
                 self.logger.info("Executed train_model_func successfully")
                 self._run_assertions(
-                    model, get_assertion_functions_data(train_model_func)
+                    model,
+                    train_model_func.layer.get_assertions(),  # type: ignore
                 )
                 self.tracker.mark_model_saving(self.train_context.model_name)
                 self.logger.info(f"Saving model artifact {model} to model registry")

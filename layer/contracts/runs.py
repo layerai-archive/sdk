@@ -151,7 +151,7 @@ class FunctionDefinition:
 
     @property
     def tar_path(self) -> Path:
-        return self.tar_dir / f"{self.name}.tar"
+        return self.function_home_dir / f"{self.asset_name}.tar"
 
     @property
     def environment(self) -> str:
@@ -181,7 +181,7 @@ class FunctionDefinition:
                 path=self.tar_path,
                 function=self.func,
                 entrypoint=MODEL_TRAIN_ENTRYPOINT_FILE,
-                pip_dependencies=self.pip_packages,
+                pip_dependencies=self.pip_dependencies,
             )
         else:
             # Dump pickled function to asset_name.pkl

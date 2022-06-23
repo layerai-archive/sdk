@@ -8,7 +8,7 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
-from layer.contracts.runs import ModelFunctionDefinition
+from layer.contracts.runs import FunctionDefinition
 from layer.executables.model.model_trainer import LocalTrainContext, ModelTrainer
 from layer.global_context import set_has_shown_update_message
 from layer.projects.utils import (
@@ -38,8 +38,15 @@ with open("function.pkl", "rb") as file:
 
         with progress_tracker.track() as tracker:
             tracker.add_asset(AssetType.MODEL, user_function.layer.get_asset_name())
-            model_definition = ModelFunctionDefinition(
-                user_function,
+            model_definition = FunctionDefinition(
+                func=user_function,
+                asset_name=user_function.layer.get_asset_name(),
+                asset_type=AssetType.MODEL,
+                fabric=user_function.layer.get_fabric(),
+                asset_dependencies=[],
+                pip_dependencies=[],
+                resource_paths=user_function.layer.get_resource_paths(),
+                assertions=user_function.layer.get_assertions(),
                 project_name=current_project_full_name_.project_name,
                 account_name=current_project_full_name_.account_name,
             )
@@ -60,7 +67,7 @@ with open("function.pkl", "rb") as file:
 
             context = LocalTrainContext(  # noqa: F841
                 logger=logger,
-                model_name=model_definition.name,
+                model_name=model_definition.asset_name,
                 model_version=model_version.name,
                 train_id=UUID(train_id.value),
                 function=user_function,
@@ -75,7 +82,7 @@ with open("function.pkl", "rb") as file:
             result = trainer.train()
 
             tracker.mark_model_trained(
-                name=model_definition.name,
+                name=model_definition.asset_name,
                 train_index=str(train.index),
                 version=model_version.name,
             )

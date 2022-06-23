@@ -35,7 +35,6 @@ def test_executable_tar(tmpdir: Path) -> None:
         env={"PYTHON_EXECUTABLE_PATH": sys.executable},
         capture_output=True,
     )
-    print(result)
     assert b"running simple function" in result.stdout
 
 
@@ -54,7 +53,6 @@ def test_executable_tar_with_resources(tmpdir: Path) -> None:
         env={"PYTHON_EXECUTABLE_PATH": sys.executable},
         capture_output=True,
     )
-    print(result)
     assert b"reading file of size 67" in result.stdout
 
 
@@ -72,6 +70,5 @@ def test_executable_tar_with_dependencies(tmpdir: Path) -> None:
         env={"PYTHON_EXECUTABLE_PATH": sys.executable},
         capture_output=True,
     )
-    print(result)
     assert b"running requests version 2.28.0" in result.stdout
     assert b"running click version 8.1.3" in result.stdout
