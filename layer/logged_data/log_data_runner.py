@@ -9,7 +9,6 @@ import pandas as pd
 import requests  # type: ignore
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
-import layer
 from layer.clients.layer import LayerClient
 from layer.contracts.logged_data import Markdown, ModelMetricPoint
 
