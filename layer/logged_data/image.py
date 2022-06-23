@@ -13,6 +13,24 @@ if TYPE_CHECKING:
 
 
 class Image:
+    """
+    Helper class to log complex images. Supported image types are:
+    - torch.Tensor
+    - numpy.array with `CHW`, `HWC` and `HW` support
+    - Image from path.Path
+    - PIL.Image
+
+    Example of logging a numpy image
+    .. code-block:: python
+        ...
+        import numpy as np
+        img_HWC = np.zeros((100, 100, 3))
+        img_HWC[:, :, 0] = np.arange(0, 10000).reshape(100, 100) / 10000
+        img_HWC[:, :, 1] = 1 - np.arange(0, 10000).reshape(100, 100) / 10000
+
+        layer.log({"image":layer.Image(img_HWC)})
+        ...
+    """
     def __init__(
         self,
         img: Union["PIL.Image.Image", Path, npt.NDArray[np.complex64], "torch.Tensor"],
