@@ -187,7 +187,7 @@ class FunctionDefinition:
                 else DATASET_BUILD_ENTRYPOINT_FILE,
                 pip_dependencies=self.pip_dependencies,
                 resources=[
-                    local_path
+                    Path(local_path)
                     for resource_path in self.resource_paths
                     for local_path in resource_path.local_relative_paths()
                 ],
