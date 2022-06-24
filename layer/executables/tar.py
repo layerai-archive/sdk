@@ -9,6 +9,7 @@ import cloudpickle  # type: ignore
 
 
 MODEL_TRAIN_ENTRYPOINT_FILE = Path(__file__).parent / "model" / "entrypoint.py"
+DATASET_BUILD_ENTRYPOINT_FILE = Path(__file__).parent / "dataset" / "entrypoint.py"
 EXTRACTOR_PIP_DEPENDENCIES = ["cloudpickle"]
 
 

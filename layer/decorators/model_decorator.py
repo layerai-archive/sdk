@@ -110,6 +110,7 @@ def _model_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             model_definition = self.get_definition()
+            model_definition.package()
             if is_feature_active("TAR_PACKAGING"):
                 import subprocess  # nosec: import_subprocess
                 import sys
