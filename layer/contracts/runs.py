@@ -15,7 +15,11 @@ from layerapi.api.ids_pb2 import RunId
 
 from layer.config import DEFAULT_FUNC_PATH, is_feature_active
 from layer.contracts.assertions import Assertion
-from layer.executables.tar import MODEL_TRAIN_ENTRYPOINT_FILE, build_executable_tar
+from layer.executables.tar import (
+    DATASET_BUILD_ENTRYPOINT_FILE,
+    MODEL_TRAIN_ENTRYPOINT_FILE,
+    build_executable_tar,
+)
 
 from .asset import AssetPath, AssetType
 from .fabrics import Fabric
@@ -102,8 +106,6 @@ class FunctionDefinition:
         self.source_code_digest = hashlib.sha256()
         self.source_code_digest.update(self.func_source.encode("utf-8"))
 
-        self._pack()
-
     def __repr__(self) -> str:
         return f"FunctionDefinition({self.asset_type}, {self.asset_name})"
 
@@ -174,13 +176,15 @@ class FunctionDefinition:
             shutil.rmtree(function_home_dir)
         os.makedirs(function_home_dir)
 
-    def _pack(self) -> None:
+    def package(self) -> None:
         self._clean_function_home_dir()
         if is_feature_active("TAR_PACKAGING"):
             build_executable_tar(
                 path=self.tar_path,
                 function=self.func,
-                entrypoint=MODEL_TRAIN_ENTRYPOINT_FILE,
+                entrypoint=MODEL_TRAIN_ENTRYPOINT_FILE
+                if self.asset_type == AssetType.MODEL
+                else DATASET_BUILD_ENTRYPOINT_FILE,
                 pip_dependencies=self.pip_dependencies,
             )
         else:

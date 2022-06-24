@@ -6,7 +6,7 @@ import wrapt  # type: ignore
 
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager
+from layer.config import ConfigManager, is_feature_active
 from layer.config.config import Config
 from layer.context import Context
 from layer.contracts.assertions import Assertion
@@ -142,27 +142,47 @@ def _dataset_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             self.layer.validate()
-            current_project_full_name_ = get_current_project_full_name()
-            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            with LayerClient(config.client, logger).init() as client:
-                progress_tracker = RunProgressTracker(
-                    url=config.url,
-                    project_name=current_project_full_name_.project_name,
-                    account_name=current_project_full_name_.account_name,
+            dataset_definition = self.get_definition()
+            dataset_definition.package()
+            if is_feature_active("TAR_PACKAGING"):
+                import subprocess  # nosec: import_subprocess
+                import sys
+
+                subprocess.run(  # nosec: start_process_with_partial_path, subprocess_without_shell_equals_true
+                    [
+                        "sh",
+                        dataset_definition.tar_path,
+                    ],
+                    env={
+                        "LAYER_PROJECT_NAME": dataset_definition.project_name,
+                        "PYTHON_EXECUTABLE_PATH": sys.executable,
+                    },
+                    stderr=sys.stderr,
+                    stdout=sys.stdout,
                 )
-                with progress_tracker.track() as tracker:
-                    tracker.add_asset(AssetType.DATASET, self.layer.get_asset_name())
-                    dataset_definition = self.get_definition()
-                    result = _build_dataset_locally_and_store_remotely(
-                        lambda: super(  # pylint: disable=super-with-arguments
-                            DatasetFunctionWrapper, self
-                        ).__call__(*args, **kwargs),
-                        self.layer,
-                        dataset_definition,
-                        tracker,
-                        client,
+            else:
+                current_project_full_name_ = get_current_project_full_name()
+                config: Config = asyncio_run_in_thread(ConfigManager().refresh())
+                with LayerClient(config.client, logger).init() as client:
+                    progress_tracker = RunProgressTracker(
+                        url=config.url,
+                        project_name=current_project_full_name_.project_name,
+                        account_name=current_project_full_name_.account_name,
                     )
-                    return result
+                    with progress_tracker.track() as tracker:
+                        tracker.add_asset(
+                            AssetType.DATASET, self.layer.get_asset_name()
+                        )
+                        result = _build_dataset_locally_and_store_remotely(
+                            lambda: super(  # pylint: disable=super-with-arguments
+                                DatasetFunctionWrapper, self
+                            ).__call__(*args, **kwargs),
+                            self.layer,
+                            dataset_definition,
+                            tracker,
+                            client,
+                        )
+                        return result
 
     return DatasetFunctionWrapper
 
