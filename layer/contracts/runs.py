@@ -186,6 +186,11 @@ class FunctionDefinition:
                 if self.asset_type == AssetType.MODEL
                 else DATASET_BUILD_ENTRYPOINT_FILE,
                 pip_dependencies=self.pip_dependencies,
+                resources=[
+                    local_path
+                    for resource_path in self.resource_paths
+                    for local_path in resource_path.local_relative_paths()
+                ],
             )
         else:
             # Dump pickled function to asset_name.pkl
