@@ -120,6 +120,8 @@ class ProjectRunner:
         printer: Callable[[str], Any] = print,
     ) -> Run:
         check_asset_dependencies(run.definitions)
+        for definition in run.definitions:
+            definition.package()
         with LayerClient(self._config.client, logger).init() as client:
             get_or_create_remote_project(client, run.project_full_name)
             with RunProgressTracker(
