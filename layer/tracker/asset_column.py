@@ -2,7 +2,7 @@ from datetime import timedelta
 from enum import Enum
 from typing import Any, List
 
-import humanize  # type: ignore
+import humanize
 from rich.console import Group, RenderableType
 from rich.markup import escape
 from rich.progress import ProgressColumn, Task
