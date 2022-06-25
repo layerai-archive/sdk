@@ -42,6 +42,7 @@ classifiers = [
 ]
 packages = [
     { include = "layer" },
+    { include = "pyproject.toml"}
 ]
 
 [tool.poetry.urls]
