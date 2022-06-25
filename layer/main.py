@@ -59,7 +59,7 @@ from layer.global_context import (
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
-from layer.projects.utils import get_current_project_name
+from layer.projects.utils import get_current_project_full_name
 from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
@@ -583,7 +583,7 @@ def run(functions: List[Any], debug: bool = False) -> Run:
 
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
 
-    project_full_name = _get_project_full_name(layer_config, get_current_project_name())
+    project_full_name = get_current_project_full_name()
     project_runner = ProjectRunner(config=layer_config)
     run = project_runner.with_functions(project_full_name, functions)
     run = project_runner.run(run, debug=debug)
