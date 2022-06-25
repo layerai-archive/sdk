@@ -1,6 +1,8 @@
+import json
 import logging
 import pathlib
 import re
+import urllib.request
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
@@ -659,13 +661,19 @@ document.querySelectorAll(".output a").forEach(function(a){
         )
 
 
+def _get_latest_version() -> str:
+    pypi_url = "https://pypi.org/pypi/layer/json"
+    response = urllib.request.urlopen(pypi_url).read().decode()  # nosec urllib_urlopen
+    data = json.loads(response)
+
+    return data["info"]["version"]
+
+
 def _check_latest_version() -> None:
     if has_shown_update_message():
         return
 
-    import luddite  # type: ignore
-
-    latest_version = luddite.get_version_pypi("layer")
+    latest_version = _get_latest_version()
     current_version = get_version()
     if current_version != latest_version:
         print(
