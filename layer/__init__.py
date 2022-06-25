@@ -10,6 +10,7 @@ from .logged_data.callbacks import KerasCallback, XGBoostCallback  # noqa
 from .main import clear_cache  # noqa
 from .main import get_dataset  # noqa
 from .main import get_model  # noqa
+from .main import get_version  # noqa
 from .main import init  # noqa
 from .main import log  # noqa
 from .main import login  # noqa
@@ -23,3 +24,5 @@ from .pandas_extensions import Arrays, Images, _register_type_extensions  # noqa
 
 
 _register_type_extensions()
+
+__version__ = get_version()

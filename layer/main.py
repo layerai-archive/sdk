@@ -1,4 +1,6 @@
 import logging
+import pathlib
+import re
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
@@ -662,10 +664,9 @@ def _check_latest_version() -> None:
         return
 
     import luddite  # type: ignore
-    import pkg_resources
 
     latest_version = luddite.get_version_pypi("layer")
-    current_version = pkg_resources.get_distribution("layer").version
+    current_version = get_version()
     if current_version != latest_version:
         print(
             f"You are using the version {current_version} but the latest version is {latest_version}, please upgrade with 'pip install --upgrade layer'"
@@ -841,3 +842,14 @@ def clear_cache() -> None:
     but subsequent calls will read it from the local disk.
     """
     Cache().clear()
+
+
+def get_version() -> str:
+    with open(pathlib.Path(__file__).parent.parent / "pyproject.toml") as pyproject:
+        text = pyproject.read()
+        # Use a simple regex to avoid a dependency on toml
+        version_match = re.search(r'version = "(\d+\.\d+\.\d+)"', text)
+
+    if version_match is None:
+        raise RuntimeError("Failed to parse version")
+    return version_match.group(1)
