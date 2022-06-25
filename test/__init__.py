@@ -2,7 +2,7 @@ import platform
 
 
 def _is_darwin():
-    return (platform.system() == "Darwin",)
+    return platform.system() == "Darwin"
 
 
 def _is_darwin_arm64():
