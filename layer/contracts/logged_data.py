@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Union
 
 import numpy as np
-import numpy.typing as npt
 
 from ..logged_data.utils import get_base_module_list, has_allowed_extension
 
 
 if TYPE_CHECKING:
+    import numpy.typing as npt
     import PIL
     import torch
 
@@ -32,7 +32,9 @@ class Image:
 
     def __init__(
         self,
-        img: Union["PIL.Image.Image", Path, npt.NDArray[np.complex64], "torch.Tensor"],
+        img: Union[
+            "PIL.Image.Image", Path, "npt.NDArray[np.complex64]", "torch.Tensor"
+        ],
         format: str = "CHW",
     ):
         """
@@ -103,7 +105,7 @@ class Image:
 
     @staticmethod
     def _get_image_from_array(
-        img_array: npt.NDArray[np.complex64], format: str
+        img_array: "npt.NDArray[np.complex64]", format: str
     ) -> "PIL.Image.Image":
         from PIL import Image as PIL_IMAGE
 
