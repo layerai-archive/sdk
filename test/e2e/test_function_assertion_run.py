@@ -74,6 +74,9 @@ def test_remote_run_with_model_fails_when_assertion_fails(initialized_project: P
         layer.run([train_model])
 
 
+@pytest.mark.skip(
+    reason="https://linear.app/layer/issue/LAY-3386/fix-flaky-test-for-layer-function-assertion"
+)
 def test_remote_run_with_dataset_fails_when_assertion_fails(
     initialized_project: Project,
 ):
