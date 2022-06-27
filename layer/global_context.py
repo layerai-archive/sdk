@@ -77,14 +77,6 @@ def current_project_full_name() -> Optional[ProjectFullName]:
     return _GLOBAL_CONTEXT.project_full_name
 
 
-def current_project_name() -> Optional[str]:
-    return (
-        _GLOBAL_CONTEXT.project_full_name.project_name
-        if _GLOBAL_CONTEXT.project_full_name
-        else None
-    )
-
-
 def current_account_name() -> Optional[str]:
     return (
         _GLOBAL_CONTEXT.project_full_name.account_name
