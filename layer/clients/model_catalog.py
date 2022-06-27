@@ -6,7 +6,6 @@ from logging import Logger
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, Optional, Tuple
 
-from layerapi.api.entity.model_pb2 import Model as PBModel
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
 from layerapi.api.entity.model_train_status_pb2 import (
     ModelTrainStatus as PBModelTrainStatus,
@@ -20,8 +19,6 @@ from layerapi.api.service.modelcatalog.model_catalog_api_pb2 import (
     CreateModelTrainRequest,
     CreateModelVersionRequest,
     CreateModelVersionResponse,
-    GetModelByPathRequest,
-    GetModelByPathResponse,
     GetModelTrainRequest,
     GetModelTrainResponse,
     GetModelTrainStorageConfigurationRequest,
@@ -303,14 +300,6 @@ class ModelCatalogClient:
         self._service.CompleteModelTrain(
             CompleteModelTrainRequest(id=train_id, flavor=flavor),
         )
-
-    def get_model_by_path(self, model_path: str) -> PBModel:
-        response: GetModelByPathResponse = self._service.GetModelByPath(
-            GetModelByPathRequest(
-                path=model_path,
-            )
-        )
-        return response.model
 
     def get_model_train(self, train_id: ModelTrainId) -> PBModelTrain:
         response: GetModelTrainResponse = self._service.GetModelTrain(

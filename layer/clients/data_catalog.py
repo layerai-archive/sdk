@@ -4,15 +4,11 @@ import uuid
 from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import Any, Callable, Generator, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Generator, Iterator, List, Optional, Tuple
 
 import pandas
 import pyarrow
 from layerapi.api.entity.dataset_build_pb2 import DatasetBuild as PBDatasetBuild
-from layerapi.api.entity.dataset_list_options_pb2 import (
-    DatasetListOptions,
-    DatasetSortField,
-)
 from layerapi.api.entity.dataset_pb2 import Dataset as PBDataset
 from layerapi.api.entity.dataset_version_pb2 import DatasetVersion as PBDatasetVersion
 from layerapi.api.ids_pb2 import DatasetBuildId, DatasetId, DatasetVersionId, ProjectId
@@ -21,7 +17,6 @@ from layerapi.api.service.datacatalog.data_catalog_api_pb2 import (
     CompleteBuildResponse,
     GetBuildRequest,
     GetDatasetRequest,
-    GetDatasetsRequest,
     GetLatestBuildRequest,
     GetPythonDatasetAccessCredentialsRequest,
     GetPythonDatasetAccessCredentialsResponse,
@@ -50,12 +45,7 @@ from pyarrow import flight
 
 from layer.config import ClientConfig
 from layer.contracts.assets import AssetPath, AssetType
-from layer.contracts.datasets import (
-    Dataset,
-    DatasetBuild,
-    DatasetBuildStatus,
-    SortField,
-)
+from layer.contracts.datasets import Dataset, DatasetBuild, DatasetBuildStatus
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import FunctionDefinition
 from layer.exceptions.exceptions import LayerClientException
@@ -330,12 +320,6 @@ class DataCatalogClient:
         )
         self._service.UpdateResourcePathsIndex(request)
 
-    def get_dataset_by_id(self, id_: uuid.UUID) -> Dataset:
-        dataset = self._get_dataset_by_id(str(id_))
-        build = self._get_build_by_id(dataset.default_build_id.value)
-        version = self._get_version_by_id(build.dataset_version_id.value)
-        return self._create_dataset(dataset, version, build)
-
     def get_dataset_by_name(
         self, project_id: uuid.UUID, name: str, version_name: str = ""
     ) -> Dataset:
@@ -349,20 +333,6 @@ class DataCatalogClient:
         version = self._get_version_by_id(build.dataset_version_id.value)
         dataset = self._get_dataset_by_id(version.dataset_id.value)
         return self._create_dataset(dataset, version, build)
-
-    def list_datasets(
-        self,
-        sort_fields: Sequence[SortField] = (),
-        query_build: bool = True,
-    ) -> Iterator[Dataset]:
-        for dataset in self._list_datasets(sort_fields):
-            if query_build:
-                build = self._get_build_by_id(dataset.default_build_id.value)
-                version = self._get_version_by_id(build.dataset_version_id.value)
-            else:
-                build = PBDatasetBuild()
-                version = PBDatasetVersion()
-            yield self._create_dataset(dataset, version, build)
 
     def _create_dataset(
         self,
@@ -418,22 +388,6 @@ class DataCatalogClient:
                 project_id=ProjectId(value=str(project_id)),
             ),
         ).build
-
-    def _list_datasets(self, sort_fields: Sequence[SortField] = ()) -> List[PBDataset]:
-        return list(
-            self._service.GetDatasets(
-                GetDatasetsRequest(
-                    dataset_list_options=DatasetListOptions(
-                        sorting=[
-                            DatasetSortField(
-                                name=sort_field.name, descending=sort_field.descending
-                            )
-                            for sort_field in sort_fields
-                        ]
-                    )
-                ),
-            ).datasets
-        )
 
 
 def _get_batch_chunks(
