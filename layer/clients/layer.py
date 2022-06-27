@@ -6,6 +6,7 @@ from layer.config import ClientConfig
 
 from .account_service import AccountServiceClient
 from .data_catalog import DataCatalogClient
+from .executor_service import ExecutorClient
 from .flow_manager import FlowManagerClient
 from .logged_data_service import LoggedDataClient
 from .model_catalog import ModelCatalogClient
@@ -25,6 +26,7 @@ class LayerClient:
         self._user_logs = UserLogsClient(config, logger)
         self._project_service_client = ProjectServiceClient(config, logger)
         self._logged_data_client = LoggedDataClient(config, logger)
+        self._executor_client = ExecutorClient(config, logger)
 
     @contextmanager
     def init(self) -> Iterator["LayerClient"]:
@@ -44,6 +46,7 @@ class LayerClient:
                 exit_stack.enter_context(self._user_logs.init())
             if self._config.project_service.is_enabled:
                 exit_stack.enter_context(self.project_service_client.init())
+            exit_stack.enter_context(self._executor_client.init())
             exit_stack.enter_context(self._logged_data_client.init())
             yield self
 
@@ -78,3 +81,7 @@ class LayerClient:
     @property
     def logged_data_service_client(self) -> LoggedDataClient:
         return self._logged_data_client
+
+    @property
+    def executor_service_client(self) -> ExecutorClient:
+        return self._executor_client
