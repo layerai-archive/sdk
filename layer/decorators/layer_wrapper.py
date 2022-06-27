@@ -70,30 +70,6 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
         self.layer.validate()
         current_project_full_name = get_current_project_full_name()
 
-        # get asset dependencies
-        asset_dependencies: List[AssetPath] = []
-        for d in self.layer.get_dependencies():
-            full_path_dep = d
-            if d.is_relative():
-                if d.project_name is not None:
-                    full_path_dep = d.with_project_full_name(
-                        ProjectFullName(
-                            account_name=current_project_full_name.account_name,
-                            project_name=d.project_name,
-                        )
-                    )
-                else:
-                    full_path_dep = d.with_project_full_name(current_project_full_name)
-            asset_dependencies.append(full_path_dep)
-
-        # get pip dependencies
-        pip_dependencies: List[str] = []
-        if self.layer.get_pip_requirements_file():
-            with open(self.layer.get_pip_requirements_file(), "r") as file:
-                pip_dependencies = file.read().strip().split("\n")
-        else:
-            pip_dependencies = self.layer.get_pip_packages()
-
         return FunctionDefinition(
             func=self.__wrapped__,
             project_name=current_project_full_name.project_name,
@@ -101,8 +77,37 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
             asset_type=self.layer.get_asset_type(),
             asset_name=self.layer.get_asset_name(),
             fabric=self.layer.get_fabric(),
-            asset_dependencies=asset_dependencies,
-            pip_dependencies=pip_dependencies,
+            asset_dependencies=_get_asset_dependencies(
+                self.layer, current_project_full_name
+            ),
+            pip_dependencies=_get_pip_dependencies(self.layer),
             resource_paths=self.layer.get_resource_paths(),
             assertions=self.layer.get_assertions(),
         )
+
+
+def _get_asset_dependencies(
+    settings: LayerSettings, current_project_full_name: ProjectFullName
+) -> List[AssetPath]:
+    asset_dependencies: List[AssetPath] = []
+    for d in settings.get_dependencies():
+        full_path_dep = d
+        if d.is_relative():
+            if d.project_name is not None:
+                full_path_dep = d.with_project_full_name(
+                    ProjectFullName(
+                        account_name=current_project_full_name.account_name,
+                        project_name=d.project_name,
+                    )
+                )
+            else:
+                full_path_dep = d.with_project_full_name(current_project_full_name)
+        asset_dependencies.append(full_path_dep)
+    return asset_dependencies
+
+
+def _get_pip_dependencies(settings: LayerSettings) -> List[str]:
+    if settings.get_pip_requirements_file():
+        with open(settings.get_pip_requirements_file(), "r") as file:
+            return file.read().strip().split("\n")
+    return settings.get_pip_packages()
