@@ -114,7 +114,7 @@ def test_remote_run_with_supported_column_types_succeeds_and_registers_metadata(
     run = layer.run([prepare_data])
 
     # then
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
 
     types_ds = layer.get_dataset(dataset_name)
     types_pandas = types_ds.to_pandas()

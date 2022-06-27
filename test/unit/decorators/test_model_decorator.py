@@ -6,7 +6,7 @@ import pytest
 
 from layer import Dataset, Model
 from layer.contracts.assets import AssetType
-from layer.contracts.runs import FunctionDefinition
+from layer.contracts.definitions import FunctionDefinition
 from layer.decorators.model_decorator import model
 from layer.decorators.pip_requirements_decorator import pip_requirements
 from layer.exceptions.exceptions import ProjectInitializationException

@@ -579,12 +579,15 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     _check_python_version()
     _ensure_all_functions_are_decorated(functions)
 
-    layer_config = asyncio_run_in_thread(ConfigManager().refresh())
+    layer_config: Config = asyncio_run_in_thread(ConfigManager().refresh())
 
     project_full_name = get_current_project_full_name()
-    project_runner = ProjectRunner(config=layer_config)
-    run = project_runner.with_functions(project_full_name, functions)
-    run = project_runner.run(run, debug=debug)
+    project_runner = ProjectRunner(
+        config=layer_config,
+        project_full_name=project_full_name,
+        functions=functions,
+    )
+    run = project_runner.run(debug=debug)
 
     _make_notebook_links_open_in_new_tab()
 

@@ -23,7 +23,6 @@ from layerapi.api.service.modeltraining.model_training_api_pb2_grpc import (
 from layerapi.api.value.s3_path_pb2 import S3Path
 
 from layer.config import ClientConfig
-from layer.contracts.runs import FunctionDefinition
 from layer.exceptions.exceptions import LayerClientException
 from layer.utils.file_utils import tar_directory
 from layer.utils.grpc import create_grpc_channel
@@ -57,12 +56,12 @@ class ModelTrainingClient:
             yield self
 
     def upload_training_files(
-        self, model: FunctionDefinition, model_version_id: uuid.UUID
+        self, asset_name: str, function_home_dir: Path, model_version_id: uuid.UUID
     ) -> S3Path:
         response = self.get_source_code_upload_credentials(model_version_id)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            tar_directory(f"{tmp_dir}/{model.asset_name}.tgz", model.function_home_dir)
+            tar_directory(f"{tmp_dir}/{asset_name}.tgz", function_home_dir)
             S3Util.upload_dir(
                 Path(tmp_dir),
                 response.credentials,
