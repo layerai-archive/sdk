@@ -2,7 +2,7 @@ from layer import Context
 from layer.contracts.fabrics import Fabric
 from layer.global_context import (
     current_account_name,
-    current_project_name,
+    current_project_full_name,
     default_fabric,
     get_active_context,
     get_pip_packages,
@@ -26,7 +26,7 @@ class TestGlobalContext:
     def test_last_project_name_returned(self) -> None:
         set_current_project_full_name("acc/test")
         set_current_project_full_name("acc/anotherTest")
-        assert current_project_name() == "anotherTest"
+        assert current_project_full_name().project_name == "anotherTest"
 
     def test_reset(self) -> None:
         set_current_project_full_name("acc/test")
@@ -35,7 +35,7 @@ class TestGlobalContext:
         set_pip_packages(["numpy=1.22.2"])
         reset_to("acc/second-test")
         assert current_account_name() == "acc"
-        assert current_project_name() == "second-test"
+        assert current_project_full_name().project_name == "second-test"
         assert default_fabric() is None
         assert get_pip_packages() is None
         assert get_pip_requirements_file() is None
@@ -46,7 +46,7 @@ class TestGlobalContext:
         set_pip_requirements_file("/path/to/requirements2.txt")
         set_pip_packages(["numpy=1.22.2"])
         reset_to("test-acc/test")
-        assert current_project_name() == "test"
+        assert current_project_full_name().project_name == "test"
         assert default_fabric() == Fabric.F_SMALL
         assert get_pip_packages() == ["numpy=1.22.2"]
         assert get_pip_requirements_file() == "/path/to/requirements2.txt"
