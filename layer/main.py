@@ -442,7 +442,7 @@ def _ensure_asset_path_is_absolute(
     project_name = (
         path.project_name
         if path.has_project()
-        else current_project_full_name().project_name
+        else get_current_project_full_name().project_name
     )
     account_name = (
         path.org_name if path.org_name is not None else current_account_name()
