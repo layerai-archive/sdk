@@ -37,7 +37,8 @@ def get_current_project_full_name() -> ProjectFullName:
     project_full_name = current_project_full_name()
     if not project_full_name:
         raise ProjectInitializationException(
-            "Please specify the current project name globally with `layer.init('project-name')`"
+            "Please specify the current project name globally with"
+            " 'layer.init(\"account-name/project-name\")' or 'layer.init(\"project-name\")'"
         )
     return project_full_name
 

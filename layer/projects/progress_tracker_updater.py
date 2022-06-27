@@ -118,10 +118,23 @@ class ProgressTrackerUpdater:
         project_full_name = get_current_project_full_name()
         if task_type == PBTask.TYPE_DATASET_BUILD:
             dataset_name = task_id
-            dataset_path = f"{project_full_name.path}/datasets/{dataset_name}"
-            dataset_build_id = uuid.UUID(
-                self.run_metadata[(task_type, dataset_path, "build-id")]
+            # Dataset path is evolving, and SDK needs to handle both relative and absolute
+            # Ideally we'd use a proper dataset_id name here
+            # new
+            dataset_abs_path = f"{project_full_name.path}/datasets/{dataset_name}"
+            # legacy
+            dataset_rel_path = (
+                f"{project_full_name.project_name}/datasets/{dataset_name}"
             )
+            if (task_type, dataset_rel_path, "build-id") in self.run_metadata:
+                dataset_build_id = uuid.UUID(
+                    self.run_metadata[(task_type, dataset_rel_path, "build-id")]
+                )
+            else:
+                dataset_build_id = uuid.UUID(
+                    self.run_metadata[(task_type, dataset_abs_path, "build-id")]
+                )
+
             dataset = self.client.data_catalog.get_dataset_by_build_id(dataset_build_id)
             self.tracker.mark_dataset_built(
                 name=dataset_name,
