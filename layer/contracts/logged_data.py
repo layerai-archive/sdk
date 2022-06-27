@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     import torch
 
 
+@dataclass(frozen=True)
 class Image:
     """
     Helper class to log complex images such as torch.tensor or numpy.ndarray
