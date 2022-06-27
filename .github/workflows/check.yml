@@ -69,13 +69,17 @@ jobs:
       - name: Run check
         run: make check
   e2e-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7, 3.8]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - run: git fetch origin ${{ github.event.pull_request.base.sha }}
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: ${{ matrix.python-version }}
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
@@ -84,8 +88,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/.cache/pypoetry/virtualenvs
-          key: poetry-venvs-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
-          restore-keys: poetry-venvs-${{ runner.os }}-3.8-
+          key: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-
       - name: Compute dependencies that require e2e-tests to run
         id: deps
         run: |
