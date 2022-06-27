@@ -48,8 +48,61 @@ jobs:
       - name: Check package loads without dev dependencies
         run: make check-package-loads
 
+  e2e-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7, 3.8]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: git fetch origin ${{ github.event.pull_request.base.sha }}
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.13
+      - name: Cache poetry virtualenvs
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/.cache/pypoetry/virtualenvs
+          key: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Compute dependencies that require e2e-tests to run
+        id: deps
+        run: |
+          make install
+          DEPENDENCIES=$(poetry run python build_scripts/get_package_dependencies.py)
+          echo "::set-output name=paths::${DEPENDENCIES},test/e2e/**"
+      - name: Get changes that will affect the package
+        id: changed-files
+        uses: tj-actions/changed-files@v19.1
+        with:
+          base_sha: ${{ github.event.pull_request.base.sha }}
+          files: ${{ steps.deps.outputs.paths }}
+          files_separator: ','
+      - name: Fail fast if on a fork as forks cannot run e2e-tests directly
+        if: |
+          github.event.pull_request.head.repo.full_name != github.repository &&
+          steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          exit 1
+      - name: Start the Datadog Agent
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: datadog/agent-github-action@v1
+        with:
+          api_key: ${{ secrets.DD_API_KEY }}
+          datadog_site: datadoghq.eu
+      - name: Run e2e tests
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          echo ${{ secrets.APP_API_KEY }} > .test-token
+          make e2e-test
+
   publish:
-    needs: [ check , check-package-loads]
+    needs: [ check , check-package-loads, e2e-test]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -72,15 +125,6 @@ jobs:
           make install
           poetry lock --no-update
           [ -z "$(git status --porcelain=v1 2>/dev/null)" ] || (echo "Lock file is not up to date, please run 'poetry lock --no-update'" && exit 1)
-      - name: Start the Datadog Agent
-        uses: datadog/agent-github-action@v1
-        with:
-          api_key: ${{ secrets.DD_API_KEY }}
-          datadog_site: datadoghq.eu
-      - name: Run e2e tests
-        run: |
-          echo ${{ secrets.APP_API_KEY }} > .test-token
-          make e2e-test
       - name: Compute package dependencies
         id: deps
         run: |
