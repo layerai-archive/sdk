@@ -1,9 +1,8 @@
-import inspect
 import io
 from logging import Logger
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
 import pandas as pd
@@ -11,12 +10,14 @@ import requests  # type: ignore
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
 from layer.clients.layer import LayerClient
-from layer.contracts.logged_data import Markdown, ModelMetricPoint
+from layer.contracts.logged_data import Image, Markdown, ModelMetricPoint
+
+from .utils import get_base_module_list, has_allowed_extension
 
 
 if TYPE_CHECKING:
     import matplotlib.figure  # type: ignore
-    import PIL.Image
+    import PIL
 
 
 class LogDataRunner:
@@ -46,6 +47,7 @@ class LogDataRunner:
                 pd.DataFrame,
                 "PIL.Image.Image",
                 "matplotlib.figure.Figure",
+                Image,
                 ModuleType,
                 Path,
             ],
@@ -78,22 +80,12 @@ class LogDataRunner:
                 if TYPE_CHECKING:
                     assert isinstance(value, Path)
                 self._log_video_from_path(tag=tag, path=value)
-            elif LogDataRunner._is_image(value):
+            elif Image.is_image(value):
                 if TYPE_CHECKING:
-                    assert isinstance(value, Path)
-                if self._train_id and epoch is not None:
-                    self._log_image_from_path(tag=tag, path=value, epoch=epoch)
-                else:
-                    self._log_image_from_path(tag=tag, path=value)
-            elif self._is_pil_image(value):
-                if TYPE_CHECKING:
-                    import PIL.Image
+                    import PIL
 
-                    assert isinstance(value, PIL.Image.Image)
-                if self._train_id and epoch is not None:
-                    self._log_image(tag=tag, image=value, epoch=epoch)
-                else:
-                    self._log_image(tag=tag, image=value)
+                    assert isinstance(value, (Path, PIL.Image.Image, Image))
+                self._log_image(tag=tag, img_value=value, epoch=epoch)
             elif self._is_plot_figure(value):
                 if TYPE_CHECKING:
                     import matplotlib.figure
@@ -114,6 +106,42 @@ class LogDataRunner:
                 self._log_current_plot_figure(tag=tag, plt=value)
             else:
                 raise ValueError(f"Unsupported value type -> {type(value)}")
+
+    def _log_image(
+        self,
+        tag: str,
+        img_value: Union["PIL.Image.Image", Path, Image],
+        epoch: Optional[int],
+    ) -> None:
+        # Users can log images directly with `layer.log({'img':img})` for simple images or with
+        # `layer.log({'img':layer.Image(img)})` for advanced image formats like Tensors
+        if isinstance(img_value, Image):
+            img = img_value.get_image()
+        else:
+            if TYPE_CHECKING:
+                import PIL
+
+                assert isinstance(img_value, Path) or isinstance(
+                    img_value, PIL.Image.Image
+                )
+            img = img_value
+
+        if Image.is_image_path(img):
+            if TYPE_CHECKING:
+                assert isinstance(img, Path)
+            if self._train_id and epoch is not None:
+                self._log_image_from_path(tag=tag, path=img, epoch=epoch)
+            else:
+                self._log_image_from_path(tag=tag, path=img)
+        elif Image.is_pil_image(img):
+            if TYPE_CHECKING:
+                import PIL
+
+                assert isinstance(img, PIL.Image.Image)
+            if self._train_id and epoch is not None:
+                self._log_pil_image(tag=tag, image=img, epoch=epoch)
+            else:
+                self._log_pil_image(tag=tag, image=img)
 
     def _log_metric(
         self, tag: str, numeric_value: Union[float, int], epoch: Optional[int]
@@ -211,7 +239,7 @@ class LogDataRunner:
             resp = s.put(presigned_url, data=image_file)
             resp.raise_for_status()
 
-    def _log_image(
+    def _log_pil_image(
         self, tag: str, image: "PIL.Image.Image", *, epoch: Optional[int] = None
     ) -> None:
         with requests.Session() as s, io.BytesIO() as buffer:
@@ -258,18 +286,6 @@ class LogDataRunner:
                 )
 
     @staticmethod
-    def _has_allowed_extension(
-        file: Path, allowed_extensions: Optional[List[str]]
-    ) -> bool:
-        if allowed_extensions is None:
-            allowed_extensions = []
-        extension = file.suffix.lower()
-        for allowed_extension in allowed_extensions:
-            if extension == allowed_extension:
-                return True
-        return False
-
-    @staticmethod
     def _convert_dict_to_dataframe(dictionary: Dict[str, Any]) -> pd.DataFrame:
         new_values = []
         for value in dictionary.values():
@@ -293,25 +309,16 @@ class LogDataRunner:
         return True
 
     @staticmethod
-    def _is_image(value: Any) -> bool:
-        return isinstance(value, Path) and LogDataRunner._has_allowed_extension(
-            value, [".gif", ".png", ".jpg", ".jpeg"]
-        )
-
-    @staticmethod
     def _is_video(value: Any) -> bool:
-        return isinstance(value, Path) and LogDataRunner._has_allowed_extension(
+        return isinstance(value, Path) and has_allowed_extension(
             value, [".mp4", ".webm", ".ogg"]
         )
 
-    def _is_pil_image(self, value: Any) -> bool:
-        return "PIL.Image" in self._get_base_module_list(value)
-
     def _is_plot_figure(self, value: Any) -> bool:
-        return "matplotlib.figure" in self._get_base_module_list(value)
+        return "matplotlib.figure" in get_base_module_list(value)
 
     def _is_axes_subplot(self, value: Any) -> bool:
-        base_module_list = self._get_base_module_list(value)
+        base_module_list = get_base_module_list(value)
         return "matplotlib.axes._subplots" in base_module_list
 
     def _is_pyplot(self, value: Any) -> bool:
@@ -320,11 +327,6 @@ class LogDataRunner:
             and "matplotlib.pyplot" == value.__name__
             and isinstance(value, ModuleType)
         )
-
-    def _get_base_module_list(self, value: Any) -> List[str]:
-        return [
-            inspect.getmodule(clazz).__name__ for clazz in inspect.getmro(type(value))  # type: ignore
-        ]
 
     def _check_buffer_size(self, buffer: io.BytesIO) -> None:
         size_in_bytes = buffer.tell()
