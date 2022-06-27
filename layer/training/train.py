@@ -7,6 +7,7 @@ from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor
 
 from layer.clients.layer import LayerClient
+from layer.clients.local.layer_local_client import LayerLocalClient
 from layer.contracts.models import Model
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.flavors.utils import get_flavor_for_model

@@ -5,6 +5,7 @@ from typing import Any, List, Optional, Union
 
 from layer import global_context
 from layer.clients.layer import LayerClient
+from layer.clients.local.layer_local_client import LayerLocalClient
 from layer.config import ConfigManager
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
@@ -68,7 +69,7 @@ class InitProjectRunner:
     ) -> Project:
         if not layer_client:
             login_config = self._ensure_user_logged_in()
-            layer_client = LayerClient(login_config.client, self._logger)
+            layer_client = LayerLocalClient(login_config.client, self._logger)
 
         with layer_client.init() as initialized_client:
             project = get_or_create_remote_project(

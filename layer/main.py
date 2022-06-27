@@ -21,6 +21,7 @@ from yarl import URL
 from layer.cache.cache import Cache
 from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
+from layer.clients.local.layer_local_client import LayerLocalClient
 from layer.config import DEFAULT_PATH, DEFAULT_URL, ConfigManager
 from layer.config.config import Config
 from layer.context import Context
@@ -239,7 +240,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
 
     def fetch_dataset() -> "pandas.DataFrame":
         context = get_active_context()
-        with LayerClient(config.client, logger).init() as client:
+        with LayerLocalClient(config.client, logger).init() as client:
             within_run = (
                 True if context else False
             )  # if layer.get_dataset is called within an @dataset decorated func or not
@@ -319,7 +320,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
     asset_path = _ensure_asset_path_is_absolute(asset_path)
     context = get_active_context()
 
-    with LayerClient(config.client, logger).init() as client:
+    with LayerLocalClient(config.client, logger).init() as client:
         within_run = (
             True if context else False
         )  # if layer.get_model is called within a @model decorated func of not
@@ -822,7 +823,7 @@ def log(
     dataset_build = active_context.dataset_build()
     dataset_build_id = dataset_build.id if dataset_build is not None else None
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
-    with LayerClient(layer_config.client, logger).init() as client:
+    with LayerLocalClient(layer_config.client, logger).init() as client:
         log_data_runner = LogDataRunner(
             client=client,
             train_id=train_id,

@@ -6,6 +6,7 @@ import wrapt  # type: ignore
 
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
+from layer.clients.local.layer_local_client import LayerLocalClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
@@ -111,7 +112,7 @@ def _model_wrapper(
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             current_project_full_name_ = get_current_project_full_name()
             config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            with LayerClient(config.client, logger).init() as client:
+            with LayerLocalClient(config.client, logger).init() as client:
                 progress_tracker = RunProgressTracker(
                     url=config.url,
                     project_name=current_project_full_name_.project_name,
@@ -150,7 +151,6 @@ def _model_wrapper(
                 model_version.id
             )
             train = client.model_catalog.get_model_train(train_id)
-
             context = LocalTrainContext(  # noqa: F841
                 logger=logger,
                 model_name=model_definition.asset_name,

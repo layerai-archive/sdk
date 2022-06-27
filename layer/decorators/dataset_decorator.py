@@ -6,6 +6,7 @@ import wrapt  # type: ignore
 
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
+from layer.clients.local.layer_local_client import LayerLocalClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.context import Context
@@ -144,7 +145,7 @@ def _dataset_wrapper(
             self.layer.validate()
             current_project_full_name_ = get_current_project_full_name()
             config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            with LayerClient(config.client, logger).init() as client:
+            with LayerLocalClient(config.client, logger).init() as client:
                 progress_tracker = RunProgressTracker(
                     url=config.url,
                     project_name=current_project_full_name_.project_name,
