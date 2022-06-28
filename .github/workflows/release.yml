@@ -83,12 +83,6 @@ jobs:
           base_sha: ${{ github.event.pull_request.base.sha }}
           files: ${{ steps.deps.outputs.paths }}
           files_separator: ','
-      - name: Fail fast if on a fork as forks cannot run e2e-tests directly
-        if: |
-          github.event.pull_request.head.repo.full_name != github.repository &&
-          steps.changed-files.outputs.any_changed == 'true'
-        run: |
-          exit 1
       - name: Start the Datadog Agent
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: datadog/agent-github-action@v1
