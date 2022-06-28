@@ -1,11 +1,12 @@
+import asyncio
 import logging
 import threading
 import uuid
 from datetime import datetime
 from typing import Any, Callable, List, Optional, Sequence
 
+import aiohttp
 import polling  # type: ignore
-import requests  # type: ignore
 from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layerapi.api.ids_pb2 import RunId
 
@@ -128,7 +129,7 @@ class ProjectRunner:
                         execute_function=ProjectRunner.run, functions=self.definitions
                     )
                     if is_feature_active("TAR_PACKAGING"):
-                        self._upload_tar_packages(client)
+                        asyncio.run(self._upload_tar_packages(client))
                     else:
                         ResourceManager(client).wait_resource_upload(
                             self.project_full_name, self.definitions, tracker
@@ -164,19 +165,32 @@ class ProjectRunner:
                     )
         return run
 
-    def _upload_tar_packages(self, client: LayerClient) -> None:
-        for definition in self.definitions:
-            self._upload_tar_package(client, definition)
+    async def _upload_tar_packages(self, client: LayerClient) -> None:
+        trace_config = aiohttp.TraceConfig()
+        async with aiohttp.ClientSession(
+            raise_for_status=True, trace_configs=[trace_config]
+        ) as session:
+            upload_tasks = [
+                self._upload_tar_package(client, definition, session)
+                for definition in self.definitions
+            ]
+            await asyncio.gather(*upload_tasks)
 
-    def _upload_tar_package(
-        self, client: LayerClient, function: FunctionDefinition
+    async def _upload_tar_package(
+        self,
+        client: LayerClient,
+        function: FunctionDefinition,
+        session: aiohttp.ClientSession,
     ) -> None:
-        with requests.Session() as s, open(function.tar_path, "rb") as package_file:
+        with open(function.tar_path, "rb") as package_file:
             presigned_url = client.executor_service_client.get_upload_path(
                 self.project_full_name, f"{function.asset_name}.tar"
             )
-            resp = s.put(presigned_url, data=package_file)
-            resp.raise_for_status()
+            await session.put(
+                presigned_url,
+                data=package_file,
+                timeout=aiohttp.ClientTimeout(total=None),
+            )
 
     @staticmethod
     def _get_user_command(
