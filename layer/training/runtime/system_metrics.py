@@ -164,16 +164,24 @@ class SystemMetrics:
         return (metrics, self.step_value)
 
     def _generate_system_metrics(
-        self, start_time: int, start_cpu_used: int, logger: Logger, local: bool
-    ) -> Tuple[Dict[str, float], int]:
+        self,
+        start_time: int,
+        start_cpu_used: int,
+        logger: Logger,
+        local: bool,
+        log_data_runner: LogDataRunner,
+    ) -> None:
+        metrics = None
+        step = None
         if local:
-            return self._generate_local_system_metrics(
+            metrics, step = self._generate_local_system_metrics(
                 start_time, start_cpu_used, logger
             )
         else:
-            return self._generate_remote_system_metrics(
+            metrics, step = self._generate_remote_system_metrics(
                 start_time, start_cpu_used, logger
             )
+        log_data_runner.log(metrics, step)  # type: ignore
 
     def monitor_system_metrics(
         self,
@@ -207,13 +215,8 @@ class SystemMetrics:
             sleep(1)
 
         polling.poll(
-            lambda: log_data_runner.log(
-                *self._generate_system_metrics(
-                    start_time,
-                    start_cpu_used,
-                    logger,
-                    local,
-                )  # type: ignore
+            lambda: self._generate_system_metrics(
+                start_time, start_cpu_used, logger, local, log_data_runner
             ),
             check_success=stop,
             poll_forever=True,
