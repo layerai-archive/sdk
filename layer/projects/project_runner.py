@@ -2,14 +2,16 @@ import logging
 import threading
 import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable, List, Optional, Sequence
 
 import polling  # type: ignore
+import requests  # type: ignore
 from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
-from layer.config import Config
+from layer.config import Config, is_feature_active
 from layer.contracts.assets import AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.project_full_name import ProjectFullName
@@ -123,12 +125,15 @@ class ProjectRunner:
                 self._tracker = tracker
                 try:
                     metadata = self._apply(client)
-                    ResourceManager(client).wait_resource_upload(
-                        self.project_full_name, self.definitions, tracker
-                    )
                     user_command = self._get_user_command(
                         execute_function=ProjectRunner.run, functions=self.definitions
                     )
+                    if is_feature_active("TAR_PACKAGING"):
+                        self._upload_tar_packages(client)
+                    else:
+                        ResourceManager(client).wait_resource_upload(
+                            self.project_full_name, self.definitions, tracker
+                        )
                     run_id = self._run(client, metadata.execution_plan, user_command)
                     run = Run(id=run_id, project_full_name=self.project_full_name)
                 except LayerClientServiceUnavailableException as e:
@@ -159,6 +164,18 @@ class ProjectRunner:
                         run_id, str(e)
                     )
         return run
+
+    def _upload_tar_packages(self, client: LayerClient) -> None:
+        for definition in self.definitions:
+            self._upload_tar_package(client, definition.func_name, definition.tar_path)
+
+    def _upload_tar_package(self, client: LayerClient, function_name: str, path: Path) -> None:
+        with requests.Session() as s, open(path, "rb") as package_file:
+            presigned_url = client.executor_service_client.get_upload_path(
+                self.project_full_name, function_name
+            )
+            resp = s.put(presigned_url, data=package_file)
+            resp.raise_for_status()
 
     @staticmethod
     def _get_user_command(
