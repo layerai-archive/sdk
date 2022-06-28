@@ -1,19 +1,13 @@
 import os
-import subprocess  # nosec: import_subprocess
 import threading
-import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 from pathlib import Path
-from time import sleep
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, List, Optional
 from uuid import UUID
 
-import nvsmi  # type: ignore
-import polling  # type: ignore
-import psutil  # type: ignore
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 
 from layer import Context
@@ -26,13 +20,13 @@ from layer.global_context import (
     reset_active_context,
     set_active_context,
 )
-from layer.logged_data.log_data_runner import LogDataRunner
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
 from .common import import_function, update_train_status
 from .model_train_failure_reporter import ModelTrainFailureReporter
+from .system_metrics import SystemMetrics
 
 
 @dataclass
@@ -46,71 +40,6 @@ class TrainContextDataclassMixin:
     train_index: Optional[str] = None
 
 
-cpu_used_temp = None  # pylint: disable=C0103
-start_time_temp = None  # pylint: disable=C0103
-step_value = 0  # pylint: disable=C0103
-
-
-def _get_gpu_metrics(logger: Logger) -> Dict[str, Dict[str, float]]:
-    metrics = {}
-    gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
-    if gpu_present:
-        try:
-            gpus = nvsmi.get_gpus()
-        except subprocess.CalledProcessError:
-            logger.info(
-                "Nvidia driver not running despite nvidia-smi being on the path. No GPU stats collected."
-            )
-        for gpu in gpus:
-            metrics[gpu.id] = {
-                "utilisation": gpu.gpu_util,
-                "mem_utilisation": round(gpu.mem_util, 2),
-                "mem_used": gpu.mem_used,
-                "mem_total": gpu.mem_total,
-                "id": gpu.id,
-                "name": gpu.name,
-            }
-
-    return metrics
-
-
-def _generate_system_metrics_dict(
-    mem_used: float,
-    mem_allocated: float,
-    mem_used_percent: float,
-    cpus_used: float,
-    cpus_available: float,
-    cpu_utilisation_percent: float,
-    gpu_metrics: Dict[Any, Any],
-) -> Dict[str, float]:
-    metrics = {
-        "Memory Used (MB)": mem_used,
-        "Memory Allocated (MB)": mem_allocated,
-        "Memory Utilisation %": mem_used_percent,
-        "CPUs Used": cpus_used,
-        "CPUs Allocated": cpus_available,
-        "CPU Utilisation %": cpu_utilisation_percent,
-    }
-
-    for gpu in gpu_metrics:
-        gpu_id = gpu_metrics[gpu]["id"]
-        gpu_name = gpu_metrics[gpu]["name"]
-        gpu_id_name_suffix = f" - gpu{gpu_id} - {gpu_name}"
-        metrics.update(
-            {
-                "GPU Utilisation %"
-                + gpu_id_name_suffix: gpu_metrics[gpu]["utilisation"],
-                "GPU Memory Used (MB)"
-                + gpu_id_name_suffix: gpu_metrics[gpu]["mem_used"],
-                "GPU Memory Allocated (MB)"
-                + gpu_id_name_suffix: gpu_metrics[gpu]["mem_total"],
-                "GPU Memory Utilisation %"
-                + gpu_id_name_suffix: gpu_metrics[gpu]["mem_utilisation"],
-            }
-        )
-    return metrics
-
-
 class TrainContext(ABC, TrainContextDataclassMixin):
     def init_or_save_context(self, context: Context) -> None:
         set_active_context(context)
@@ -122,72 +51,6 @@ class TrainContext(ABC, TrainContextDataclassMixin):
     @abstractmethod
     def get_working_directory(self) -> Path:
         pass
-
-    @staticmethod
-    def generate_system_metrics(
-        start_time: int, start_cpu_used: int, logger: Logger
-    ) -> Tuple[Dict[str, float], int]:
-        global cpu_used_temp  # pylint: disable=invalid-name
-        global start_time_temp  # pylint: disable=invalid-name
-
-        def _read_value_from_file(path: str) -> int:
-            with open(path, "r") as f:
-                return int(f.read())
-
-        def _get_mem_used() -> int:
-            return _read_value_from_file("/sys/fs/cgroup/memory/memory.usage_in_bytes")
-
-        def _get_mem_available() -> int:
-            return _read_value_from_file("/sys/fs/cgroup/memory/memory.limit_in_bytes")
-
-        def _get_used_percent(used: float, available: float) -> float:
-            if not available:
-                # If we try to divide by 0, return 0
-                return 0
-            return round((100 * used / available), 2)
-
-        def _get_cpu_used() -> int:
-            # Time in nanoseconds
-            # Multiply by 1000000000 to get to seconds
-            return _read_value_from_file("/sys/fs/cgroup/cpu/cpuacct.usage_user")
-
-        def _get_cpu_available() -> float:
-            # Times in microseconds
-            cpu_quota = _read_value_from_file("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
-            cpu_period = _read_value_from_file("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
-            return float(cpu_quota / cpu_period)
-
-        now_time = int(time.time())
-        now_cpu_used = _get_cpu_used()
-        if start_time_temp is None:
-            diff_time = now_time - start_time
-        else:
-            diff_time = now_time - start_time_temp  # type: ignore
-
-        if cpu_used_temp is None:
-            diff_cpu = now_cpu_used - start_cpu_used
-        else:
-            diff_cpu = now_cpu_used - cpu_used_temp  # type: ignore
-        start_time_temp = now_time
-        cpu_used_temp = now_cpu_used
-        cpus_available = _get_cpu_available()
-        cpus_used = diff_cpu / diff_time / 1000000000
-        fabric_cpu_utilisation_percent = _get_used_percent(cpus_used, cpus_available)
-        mem_used = _get_mem_used()
-        mem_available = _get_mem_available()
-        mem_used_percent = _get_used_percent(mem_used, mem_available)
-
-        metrics = _generate_system_metrics_dict(
-            round(float(mem_used / 1024 / 1024), 2),
-            round(float(mem_available / 1024 / 1024), 2),
-            mem_used_percent,
-            round(cpus_used, 4),
-            round(cpus_available, 2),
-            fabric_cpu_utilisation_percent,
-            _get_gpu_metrics(logger),
-        )
-
-        return (metrics, step_value)
 
     def __exit__(
         self,
@@ -209,30 +72,6 @@ class LocalTrainContext(TrainContext):
     def get_working_directory(self) -> Path:
         assert self.initial_cwd
         return Path(self.initial_cwd)
-
-    @staticmethod
-    def generate_system_metrics(
-        start_time: int, start_cpu_used: int, logger: Logger
-    ) -> Tuple[Dict[str, float], int]:
-        cpu_count = psutil.cpu_count()
-        cpu_percent = psutil.cpu_percent(interval=None)
-        cpu_used = cpu_count * cpu_percent / 100
-
-        mem = psutil.virtual_memory()
-        mem_allocated = mem.total
-        mem_used = mem_allocated - mem.available
-        mem_utilisation = mem.percent
-
-        metrics = _generate_system_metrics_dict(
-            round((mem_used / 1024 / 1024), 2),
-            round((mem_allocated / 1024 / 1024), 2),
-            round(mem_utilisation, 2),
-            round(cpu_used, 2),
-            cpu_count,
-            round(cpu_percent, 2),
-            _get_gpu_metrics(logger),
-        )
-        return (metrics, step_value)
 
     def __exit__(
         self,
@@ -330,47 +169,17 @@ class ModelTrainer:
                     self.logger,
                 )
 
-                def _monitor_system_metrics(stop: bool) -> None:
-                    start_time = 0
-                    start_cpu_used = 0
-                    log_data_runner = LogDataRunner(
-                        client=self.client,
-                        train_id=self.train_context.train_id,
-                        logger=self.logger,
-                    )
-
-                    def _metrics_step_function(step: int) -> int:
-                        global step_value  # pylint: disable=invalid-name
-                        step += 1
-                        step_value += step
-                        return min(step, 15)
-
-                    # For remote system metrics collection, we calculate metrics based off cgroup CPU usage data.
-                    # For each iteration, we compare the current usage data with the previous iteration's data, allowing us to calculate the difference.
-                    # We capture the data which allows the first loop to run successfully, keeping the logic executed within the loop lean.
-                    # We also wait a second before going into the first loop to ensure the CPU usage data has changed.
-                    if not isinstance(self.train_context, LocalTrainContext):
-                        start_time = int(time.time())
-                        with open("/sys/fs/cgroup/cpu/cpuacct.usage_user", "r") as f:
-                            start_cpu_used = int(f.read())
-                        sleep(1)
-
-                    polling.poll(
-                        lambda: log_data_runner.log(
-                            *self.train_context.generate_system_metrics(start_time, start_cpu_used, self.logger)  # type: ignore
-                        ),
-                        check_success=stop,
-                        poll_forever=True,
-                        # get metrics every 1, then 2, then 3, then (...) until 15 seconds, then every 15 seconds
-                        # This will ensure that short trains still get at least a couple of data points
-                        step=1,
-                        step_function=_metrics_step_function,
-                    )
-
                 stop_system_metrics_thread = False
+                system_metrics = SystemMetrics()
                 system_metrics_thread = threading.Thread(
-                    target=_monitor_system_metrics,
-                    args=(lambda x: stop_system_metrics_thread,),
+                    target=system_metrics.monitor_system_metrics,
+                    args=(
+                        lambda x: stop_system_metrics_thread,
+                        self.client,
+                        self.train_context.train_id,
+                        self.logger,
+                        isinstance(self.train_context, LocalTrainContext),
+                    ),
                 )
                 system_metrics_thread.start()
 
