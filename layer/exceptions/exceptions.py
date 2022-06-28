@@ -142,39 +142,6 @@ class ProjectModelExecutionException(ProjectExecutionException):
         return f'File "{frame.filename}" on line {frame.lineno}: "{frame.line}"'
 
 
-class ProjectHPTExecutionException(ProjectExecutionException):
-    def __init__(self, run_id: RunId, tuning_id: str, report: ExecutionStatusReport):
-        self._tuning_id = tuning_id
-        self._report = report
-        super().__init__(
-            run_id,
-            self.__format_message(),
-            "Add `debug=True` parameter to your `layer.run()` to see server logs",
-        )
-
-    @property
-    def message(self) -> str:
-        return self._report.message
-
-    @property
-    def error_msg_rich(self) -> str:
-        return (
-            f"HPT [bold {RICH_ERROR_COLOR}]{self._tuning_id}[/bold {RICH_ERROR_COLOR}] failed with "
-            + f'"{self._report.message}"'
-        )
-
-    @property
-    def suggestion_rich(self) -> str:
-        return self.suggestion
-
-    def __format_message(self) -> str:
-        return f"HPT {self._tuning_id} failed with " + f'"{self._report.message}"'
-
-    @staticmethod
-    def __format_frame(frame: FrameSummary) -> str:
-        return f'File "{frame.filename}" on line {frame.lineno}: "{frame.line}"'
-
-
 class ProjectDatasetBuildExecutionException(ProjectExecutionException):
     def __init__(self, run_id: RunId, dataset_id: str, report: ExecutionStatusReport):
         self._dataset_id = dataset_id
