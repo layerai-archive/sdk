@@ -3,7 +3,6 @@ import uuid
 from typing import Optional
 from unittest.mock import MagicMock, Mock
 
-from layer import current_project_name
 from layer.clients.layer import LayerClient
 from layer.clients.project_service import ProjectServiceClient
 from layer.config import ConfigManager
@@ -12,6 +11,7 @@ from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.global_context import (
+    current_project_full_name,
     default_fabric,
     get_pip_packages,
     get_pip_requirements_file,
@@ -78,7 +78,7 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
 
     # then
     assert project.id == expected_project.id
-    assert current_project_name() == expected_project_name
+    assert current_project_full_name().project_name == expected_project_name
     assert default_fabric() == my_fabric
     assert get_pip_requirements_file() == pip_requirements_file_name
     project_client_mock.get_project.assert_called_once()
@@ -123,7 +123,7 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
 
     # then
     assert project.id == expected_project.id
-    assert current_project_name() == expected_project_name
+    assert current_project_full_name().project_name == expected_project_name
     assert default_fabric() == my_fabric
     assert get_pip_packages() == pip_packages
     project_client_mock.get_project.assert_called_once()

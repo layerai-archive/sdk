@@ -4,6 +4,8 @@ import pickle  # nosec import_pickle
 from typing import Any, List
 from uuid import UUID
 
+from layerapi.api.ids_pb2 import ProjectId
+
 import layer
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
@@ -12,7 +14,7 @@ from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
-from layer.contracts.runs import FunctionDefinition
+from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
 from layer.global_context import (
     reset_active_context,
@@ -24,6 +26,7 @@ from layer.projects.utils import (
     get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
 )
+from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.async_utils import asyncio_run_in_thread
 from layer.utils.runtime_utils import check_and_convert_to_df
@@ -54,10 +57,8 @@ def _run_assertions(
         tracker.mark_dataset_completed_assertions(asset_name)
 
 
-# load the entrypoint function
-with open("function.pkl", "rb") as file:
-    layer.init(os.environ["LAYER_PROJECT_NAME"])
-    user_function = pickle.load(file)  # nosec pickle
+def _run(user_function: Any) -> None:
+    settings: LayerSettings = user_function.layer
     current_project_full_name_ = get_current_project_full_name()
     config: Config = asyncio_run_in_thread(ConfigManager().refresh())
     with LayerClient(config.client, logger).init() as client:
@@ -68,22 +69,22 @@ with open("function.pkl", "rb") as file:
         )
 
         with progress_tracker.track() as tracker:
-            tracker.add_asset(AssetType.DATASET, user_function.layer.get_asset_name())
+            tracker.add_asset(AssetType.DATASET, settings.get_asset_name())
             dataset = FunctionDefinition(
                 func=user_function,
-                asset_name=user_function.layer.get_asset_name(),
-                asset_type=AssetType.DATASET,
-                fabric=user_function.layer.get_fabric(),
-                asset_dependencies=[],
-                pip_dependencies=[],
-                resource_paths=user_function.layer.get_resource_paths(),
-                assertions=user_function.layer.get_assertions(),
                 project_name=current_project_full_name_.project_name,
                 account_name=current_project_full_name_.account_name,
+                asset_name=settings.get_asset_name(),
+                asset_type=AssetType.DATASET,
+                fabric=settings.get_fabric(),
+                asset_dependencies=[],
+                pip_dependencies=[],
+                resource_paths=settings.get_resource_paths(),
+                assertions=settings.get_assertions(),
             )
 
             register_dataset_function(client, dataset, True, tracker)
-            tracker.mark_dataset_building(user_function.layer.get_asset_name())
+            tracker.mark_dataset_building(settings.get_asset_name())
 
             try:
                 with Context() as context:
@@ -94,9 +95,9 @@ with open("function.pkl", "rb") as file:
                         )
                     )
                     initiate_build_response = client.data_catalog.initiate_build(
-                        dataset,
-                        current_project_uuid,
-                        True,
+                        ProjectId(value=str(current_project_uuid)),
+                        dataset.asset_name,
+                        dataset.get_fabric(True),
                     )
                     dataset_build_id = UUID(initiate_build_response.id.value)
                     context.with_dataset_build(
@@ -108,17 +109,17 @@ with open("function.pkl", "rb") as file:
                     context.with_asset_name(dataset.asset_name)
                     set_active_context(context)
                     try:
-                        result = user_function()
+                        result = dataset.func()
                         result = check_and_convert_to_df(result)
                         _run_assertions(
-                            dataset.asset_name,
-                            result,
-                            user_function.layer.get_assertions(),
-                            tracker,
+                            dataset.asset_name, result, dataset.assertions, tracker
                         )
                     except Exception as e:
                         client.data_catalog.complete_build(
-                            initiate_build_response.id, dataset, e
+                            initiate_build_response.id,
+                            dataset.asset_name,
+                            dataset.uri,
+                            e,
                         )
                         context.with_dataset_build(
                             DatasetBuild(
@@ -142,9 +143,16 @@ with open("function.pkl", "rb") as file:
 
             # this call would store the resulting dataset, extract the schema and complete the build from remote
             client.data_catalog.store_dataset(
-                name="",
                 data=result,
                 build_id=build_uuid,
                 progress_callback=transfer_state.increment_num_transferred_rows,
             )
             tracker.mark_dataset_built(dataset.asset_name)
+
+
+# load the entrypoint function
+with open("function.pkl", "rb") as file:
+    layer.init(os.environ["LAYER_PROJECT_NAME"])
+    user_function = pickle.load(file)  # nosec pickle
+
+_run(user_function)

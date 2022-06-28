@@ -14,7 +14,7 @@ from layerapi.api.entity.operations_pb2 import (
 from layerapi.api.ids_pb2 import ModelVersionId
 
 from layer.contracts.assets import AssetPath, AssetType
-from layer.contracts.runs import FunctionDefinition, Run
+from layer.contracts.definitions import FunctionDefinition
 from layer.exceptions.exceptions import (
     LayerClientException,
     ProjectCircularDependenciesException,
@@ -34,8 +34,8 @@ class PlanNode:
     id: Optional[uuid.UUID]
 
 
-def build_execution_plan(run: Run) -> ExecutionPlan:
-    graph = _build_directed_acyclic_graph(run.definitions)
+def build_execution_plan(definitions: Sequence[FunctionDefinition]) -> ExecutionPlan:
+    graph = _build_directed_acyclic_graph(definitions)
     plan = _topological_sort_grouping(graph)
     operations = []
     for _level, ops in plan.items():

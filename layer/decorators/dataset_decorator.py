@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 import wrapt  # type: ignore
+from layerapi.api.ids_pb2 import ProjectId
 
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
@@ -12,7 +13,7 @@ from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
-from layer.contracts.runs import FunctionDefinition
+from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
@@ -174,9 +175,7 @@ def _dataset_wrapper(
                             AssetType.DATASET, self.layer.get_asset_name()
                         )
                         result = _build_dataset_locally_and_store_remotely(
-                            lambda: super(  # pylint: disable=super-with-arguments
-                                DatasetFunctionWrapper, self
-                            ).__call__(*args, **kwargs),
+                            lambda: dataset_definition.func(*args, **kwargs),
                             self.layer,
                             dataset_definition,
                             tracker,
@@ -204,7 +203,6 @@ def _build_dataset_locally_and_store_remotely(
         building_func,
         dataset,
         tracker,
-        layer.get_assertions(),
     )
 
     transfer_state = DatasetTransferState(len(result))
@@ -212,7 +210,6 @@ def _build_dataset_locally_and_store_remotely(
 
     # this call would store the resulting dataset, extract the schema and complete the build from remote
     client.data_catalog.store_dataset(
-        name="",
         data=result,
         build_id=build_uuid,
         progress_callback=transfer_state.increment_num_transferred_rows,
@@ -226,7 +223,6 @@ def _build_locally_update_remotely(
     function_that_builds_dataset: Callable[..., Any],
     dataset: FunctionDefinition,
     tracker: RunProgressTracker,
-    assertions: List[Assertion],
 ) -> Tuple[Any, UUID]:
     try:
         with Context() as context:
@@ -235,9 +231,9 @@ def _build_locally_update_remotely(
                 client, dataset.project_full_name
             )
             initiate_build_response = client.data_catalog.initiate_build(
-                dataset,
-                current_project_uuid,
-                True,
+                ProjectId(value=str(current_project_uuid)),
+                dataset.asset_name,
+                dataset.get_fabric(True),
             )
             dataset_build_id = UUID(initiate_build_response.id.value)
             context.with_dataset_build(
@@ -249,10 +245,10 @@ def _build_locally_update_remotely(
             try:
                 result = function_that_builds_dataset()
                 result = check_and_convert_to_df(result)
-                _run_assertions(dataset.asset_name, result, assertions, tracker)
+                _run_assertions(dataset.asset_name, result, dataset.assertions, tracker)
             except Exception as e:
                 client.data_catalog.complete_build(
-                    initiate_build_response.id, dataset, e
+                    initiate_build_response.id, dataset.asset_name, dataset.uri, e
                 )
                 context.with_dataset_build(
                     DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.FAILED)

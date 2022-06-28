@@ -49,7 +49,7 @@ def test_remote_run_succeeds_and_registers_metadata_when_assertion_succeeds(
     run = layer.run([prepare_data])
 
     # then
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
     ds = layer.get_dataset(dataset_name)
     assert len(ds.to_pandas().index) == 10
 
@@ -74,6 +74,9 @@ def test_remote_run_with_model_fails_when_assertion_fails(initialized_project: P
         layer.run([train_model])
 
 
+@pytest.mark.skip(
+    reason="https://linear.app/layer/issue/LAY-3386/fix-flaky-test-for-layer-function-assertion"
+)
 def test_remote_run_with_dataset_fails_when_assertion_fails(
     initialized_project: Project,
 ):

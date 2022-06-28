@@ -5,8 +5,9 @@ from .contracts.logged_data import Markdown  # noqa
 from .contracts.models import Model  # noqa
 from .contracts.projects import Project  # noqa
 from .contracts.runs import Run  # noqa
+from .decorators import dataset, fabric, model, pip_requirements, resources  # noqa
 from .flavors.custom import CustomModel  # noqa
-from .global_context import current_project_name  # noqa
+from .global_context import current_project_full_name  # noqa
 from .logged_data.callbacks import KerasCallback, XGBoostCallback  # noqa
 from .main import clear_cache  # noqa
 from .main import get_dataset  # noqa

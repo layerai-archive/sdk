@@ -12,10 +12,10 @@ from layerapi.api.service.datacatalog.data_catalog_api_pb2 import InitiateBuildR
 from layer.clients.data_catalog import DataCatalogClient
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import Dataset
+from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import FunctionDefinition
 from layer.decorators import dataset, fabric, pip_requirements
 from layer.exceptions.exceptions import (
     ConfigError,

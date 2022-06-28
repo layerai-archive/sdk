@@ -5,10 +5,9 @@ import pytest
 
 from layer.contracts.asset import AssetType
 from layer.contracts.assets import AssetPath
+from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import Run
-from layer.decorators.definitions import FunctionDefinition
 from layer.exceptions.exceptions import ProjectCircularDependenciesException
 from layer.projects.execution_planner import (
     _build_graph,
@@ -114,9 +113,7 @@ class TestProjectExecutionPlanner:
     def test_build_execution_plan_linear(self) -> None:
         definitions = self._create_mock_run_linear()
 
-        execution_plan = build_execution_plan(
-            Run(TEST_PROJECT_FULL_NAME, definitions=definitions)
-        )
+        execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
         ops = execution_plan.operations
 
@@ -143,9 +140,7 @@ class TestProjectExecutionPlanner:
     def test_build_execution_plan_parallel(self) -> None:
         definitions = self._create_mock_run_parallel()
 
-        execution_plan = build_execution_plan(
-            Run(TEST_PROJECT_FULL_NAME, definitions=definitions)
-        )
+        execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
         ops = execution_plan.operations
 
@@ -155,9 +150,7 @@ class TestProjectExecutionPlanner:
 
     def test_build_execution_plan_mixed(self) -> None:
         definitions = self._create_mock_run_mixed()
-        execution_plan = build_execution_plan(
-            Run(TEST_PROJECT_FULL_NAME, definitions=definitions)
-        )
+        execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
         ops = execution_plan.operations
 
@@ -171,9 +164,7 @@ class TestProjectExecutionPlanner:
             AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds2"),
             keep_dependencies=False,
         )
-        execution_plan = build_execution_plan(
-            Run(TEST_PROJECT_FULL_NAME, definitions=definitions2)
-        )
+        execution_plan = build_execution_plan(definitions2)
 
         assert execution_plan is not None
         ops = execution_plan.operations

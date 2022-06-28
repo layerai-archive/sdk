@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle  # nosec import_pickle
+from typing import Any
 from uuid import UUID
 
 import layer
@@ -8,13 +9,14 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
-from layer.contracts.runs import FunctionDefinition
+from layer.contracts.definitions import FunctionDefinition
 from layer.executables.model.model_trainer import LocalTrainContext, ModelTrainer
 from layer.global_context import set_has_shown_update_message
 from layer.projects.utils import (
     get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
 )
+from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -23,10 +25,8 @@ logger = logging.getLogger(__name__)
 set_has_shown_update_message(True)
 
 
-# load the entrypoint function
-with open("function.pkl", "rb") as file:
-    layer.init(os.environ["LAYER_PROJECT_NAME"])
-    user_function = pickle.load(file)  # nosec pickle
+def _run(user_function: Any) -> Any:
+    settings: LayerSettings = user_function.layer
     current_project_full_name_ = get_current_project_full_name()
     config: Config = asyncio_run_in_thread(ConfigManager().refresh())
     with LayerClient(config.client, logger).init() as client:
@@ -37,16 +37,16 @@ with open("function.pkl", "rb") as file:
         )
 
         with progress_tracker.track() as tracker:
-            tracker.add_asset(AssetType.MODEL, user_function.layer.get_asset_name())
+            tracker.add_asset(AssetType.MODEL, settings.get_asset_name())
             model_definition = FunctionDefinition(
                 func=user_function,
-                asset_name=user_function.layer.get_asset_name(),
+                asset_name=settings.get_asset_name(),
                 asset_type=AssetType.MODEL,
-                fabric=user_function.layer.get_fabric(),
+                fabric=settings.get_fabric(),
                 asset_dependencies=[],
                 pip_dependencies=[],
-                resource_paths=user_function.layer.get_resource_paths(),
-                assertions=user_function.layer.get_assertions(),
+                resource_paths=settings.get_resource_paths(),
+                assertions=settings.get_assertions(),
                 project_name=current_project_full_name_.project_name,
                 account_name=current_project_full_name_.account_name,
             )
@@ -56,9 +56,10 @@ with open("function.pkl", "rb") as file:
             )
 
             model_version = client.model_catalog.create_model_version(
-                model_definition.project_full_name,
-                model_definition,
-                True,
+                model_definition.asset_path,
+                model_definition.description,
+                model_definition.source_code_digest.hexdigest(),
+                model_definition.get_fabric(True),
             ).model_version
             train_id = client.model_catalog.create_model_train_from_version_id(
                 model_version.id
@@ -86,3 +87,13 @@ with open("function.pkl", "rb") as file:
                 train_index=str(train.index),
                 version=model_version.name,
             )
+
+            return result
+
+
+# load the entrypoint function
+with open("function.pkl", "rb") as file:
+    layer.init(os.environ["LAYER_PROJECT_NAME"])
+    user_function = pickle.load(file)  # nosec pickle
+
+_run(user_function)

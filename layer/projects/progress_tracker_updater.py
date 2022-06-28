@@ -9,6 +9,7 @@ from layerapi.api.entity.task_pb2 import Task as PBTask
 from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId
 
 from layer.clients.layer import LayerClient
+from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.projects import ApplyResult
 from layer.contracts.runs import Run
 from layer.exceptions.exceptions import (
@@ -19,7 +20,7 @@ from layer.exceptions.exceptions import (
     ProjectRunTerminatedError,
 )
 from layer.exceptions.status_report import ExecutionStatusReportFactory
-from layer.projects.utils import get_current_project_name
+from layer.projects.utils import get_current_project_full_name
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.session import is_layer_debug_on
 
@@ -41,6 +42,7 @@ class ProgressTrackerUpdater:
     client: LayerClient
     apply_metadata: ApplyResult
     run: Run
+    definitions: List[FunctionDefinition]
     run_metadata: _FormattedRunMetadata
 
     def __init__(
@@ -48,11 +50,13 @@ class ProgressTrackerUpdater:
         tracker: RunProgressTracker,
         apply_metadata: ApplyResult,
         run: Run,
+        definitions: List[FunctionDefinition],
         client: LayerClient,
     ):
         self.tracker = tracker
         self.apply_metadata = apply_metadata
         self.run = run
+        self.definitions = definitions
         self.client = client
 
     @staticmethod
@@ -83,10 +87,10 @@ class ProgressTrackerUpdater:
             if event_type == "run":
                 run_status = event.run.run_status
                 if run_status == PBRun.STATUS_TERMINATED:
-                    raise ProjectRunTerminatedError(run_id=self.run.run_id)
+                    raise ProjectRunTerminatedError(run_id=self.run.id)
 
                 elif run_status == PBRun.STATUS_FAILED:
-                    raise ProjectRunnerError("Run failed", self.run.run_id)
+                    raise ProjectRunnerError("Run failed", self.run.id)
 
                 elif run_status in [PBRun.STATUS_SUCCEEDED]:
                     return True
@@ -115,12 +119,26 @@ class ProgressTrackerUpdater:
     def _handle_task_succeeded(self, task: PBTask) -> None:
         task_id = task.id
         task_type = task.type
+        project_full_name = get_current_project_full_name()
         if task_type == PBTask.TYPE_DATASET_BUILD:
             dataset_name = task_id
-            dataset_path = f"{get_current_project_name()}/datasets/{dataset_name}"
-            dataset_build_id = uuid.UUID(
-                self.run_metadata[(task_type, dataset_path, "build-id")]
+            # Dataset path is evolving, and SDK needs to handle both relative and absolute
+            # Ideally we'd use a proper dataset_id name here
+            # new
+            dataset_abs_path = f"{project_full_name.path}/datasets/{dataset_name}"
+            # legacy
+            dataset_rel_path = (
+                f"{project_full_name.project_name}/datasets/{dataset_name}"
             )
+            if (task_type, dataset_rel_path, "build-id") in self.run_metadata:
+                dataset_build_id = uuid.UUID(
+                    self.run_metadata[(task_type, dataset_rel_path, "build-id")]
+                )
+            else:
+                dataset_build_id = uuid.UUID(
+                    self.run_metadata[(task_type, dataset_abs_path, "build-id")]
+                )
+
             dataset = self.client.data_catalog.get_dataset_by_build_id(dataset_build_id)
             self.tracker.mark_dataset_built(
                 name=dataset_name,
@@ -146,13 +164,13 @@ class ProgressTrackerUpdater:
             _print_debug(f"Task type not handled {task_type}")
 
     def _handle_task_failed(self, task: PBTask) -> None:
-        assert self.run.run_id
+        assert self.run.id
         task_id = task.id
         task_type = task.type
         task_info = task.info
         if task_type == PBTask.TYPE_DATASET_BUILD:
             exc_ds = ProjectDatasetBuildExecutionException(
-                self.run.run_id,
+                self.run.id,
                 task_id,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
@@ -160,7 +178,7 @@ class ProgressTrackerUpdater:
             raise exc_ds
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             exc_model = ProjectModelExecutionException(
-                self.run.run_id,
+                self.run.id,
                 task_id,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
@@ -187,7 +205,7 @@ class ProgressTrackerUpdater:
             _print_debug(f"Task type not handled {task_type}")
 
     def _find_model_name_by_version_id(self, version_id: str) -> str:
-        for definition in self.run.definitions:
+        for definition in self.definitions:
             if str(definition.version_id) == version_id:
                 return definition.asset_name
         raise KeyError(version_id)

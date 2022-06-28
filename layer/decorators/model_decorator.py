@@ -9,7 +9,7 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager, is_feature_active
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
-from layer.contracts.runs import FunctionDefinition
+from layer.contracts.definitions import FunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.projects.utils import (
     get_current_project_full_name,
@@ -145,7 +145,7 @@ def _model_wrapper(
 
         @staticmethod
         def _train_model_locally_and_store_remotely(
-            model_definition: FunctionDefinition,
+            model: FunctionDefinition,
             tracker: RunProgressTracker,
             client: LayerClient,
         ) -> Any:
@@ -154,15 +154,16 @@ def _model_wrapper(
                 ModelTrainer,
             )
 
-            assert model_definition.project_name is not None
+            assert model.project_name is not None
             verify_project_exists_and_retrieve_project_id(
-                client, model_definition.project_full_name
+                client, model.project_full_name
             )
 
             model_version = client.model_catalog.create_model_version(
-                model_definition.project_full_name,
-                model_definition,
-                True,
+                model.asset_path,
+                model.description,
+                model.source_code_digest.hexdigest(),
+                model.get_fabric(True),
             ).model_version
             train_id = client.model_catalog.create_model_train_from_version_id(
                 model_version.id
@@ -171,11 +172,11 @@ def _model_wrapper(
 
             context = LocalTrainContext(  # noqa: F841
                 logger=logger,
-                model_name=model_definition.asset_name,
+                model_name=model.asset_name,
                 model_version=model_version.name,
                 train_id=UUID(train_id.value),
-                source_folder=model_definition.function_home_dir,
-                source_entrypoint=model_definition.entrypoint,
+                source_folder=model.function_home_dir,
+                source_entrypoint=model.entrypoint,
                 train_index=str(train.index),
             )
             failure_reporter = ModelTrainFailureReporter(
@@ -192,7 +193,6 @@ def _model_wrapper(
                 tracker=tracker,
             )
             result = trainer.train()
-
             return result
 
     return FunctionWrapper

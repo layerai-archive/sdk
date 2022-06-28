@@ -7,7 +7,6 @@ from yarl import URL
 
 import layer
 from layer.contracts.projects import Project
-from layer.contracts.runs import Run
 from layer.decorators import dataset, model, pip_requirements, resources
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
@@ -21,16 +20,17 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
         return None
 
     project_full_name = initialized_project.full_name
-    definition = func.get_definition()
-    run = Run(project_full_name).with_definitions([definition])
+    functions = [func.get_definition()]
     resource_manager = ResourceManager(asserter.client)
 
     resource_manager.wait_resource_upload(
-        run, RunProgressTracker(url=URL(""), account_name="", project_name="")
+        project_full_name,
+        functions,
+        RunProgressTracker(url=URL(""), account_name="", project_name=""),
     )
     with tempfile.TemporaryDirectory(prefix="test_resource_manager") as resource_dir:
         resource_manager.wait_resource_download(
-            definition.project_full_name, definition.func_name, target_dir=resource_dir
+            project_full_name, functions[0].func_name, target_dir=resource_dir
         )
         assert filecmp.cmp(
             "test/e2e/assets/data/test.csv",
@@ -45,7 +45,7 @@ def test_resources_simple(initialized_project: Project, asserter: E2ETestAsserte
         return pd.read_csv("test/e2e/assets/data/test.csv")
 
     run = layer.run([resources_func])
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
 
 
 def test_titanic_resources(initialized_project: Project, asserter: E2ETestAsserter):
@@ -55,7 +55,7 @@ def test_titanic_resources(initialized_project: Project, asserter: E2ETestAssert
         return pd.read_csv("test/e2e/assets/titanic/titanic.csv")
 
     run = layer.run([titanic])
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
 
 
 def test_model_resources(initialized_project: Project, asserter: E2ETestAsserter):
@@ -70,7 +70,7 @@ def test_model_resources(initialized_project: Project, asserter: E2ETestAsserter
         return svc.fit([[1], [2], [3]], [[1], [2], [3]])
 
     run = layer.run([train_model])
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
 
 
 def test_local_model_train_with_resources(
@@ -100,7 +100,7 @@ def test_no_resource_decorator(initialized_project: Project, asserter: E2ETestAs
         return pd.DataFrame(data={"col_a": ["a"], "col_b": ["b"]})
 
     run = layer.run([titanic_no_resources])
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)
 
 
 def test_add_remove_resource_decorator(
@@ -115,7 +115,7 @@ def test_add_remove_resource_decorator(
             return pd.read_csv(resource_file)
 
         run = layer.run([titanic])
-        asserter.assert_run_succeeded(run.run_id)
+        asserter.assert_run_succeeded(run.id)
 
     def second_run():  # with resources removed
         @dataset("titanic")
@@ -125,7 +125,7 @@ def test_add_remove_resource_decorator(
             return pd.DataFrame(data={"col_a": ["a"], "col_b": ["b"]})
 
         run = layer.run([titanic])
-        asserter.assert_run_succeeded(run.run_id)
+        asserter.assert_run_succeeded(run.id)
 
     first_run()
     second_run()
@@ -142,4 +142,4 @@ def test_resource_path_contains_spaces(
         return pd.read_csv(resource_path)
 
     run = layer.run([titanic])
-    asserter.assert_run_succeeded(run.run_id)
+    asserter.assert_run_succeeded(run.id)

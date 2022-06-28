@@ -47,7 +47,6 @@ from layer.config import ClientConfig
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.datasets import Dataset, DatasetBuild, DatasetBuildStatus
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import FunctionDefinition
 from layer.exceptions.exceptions import LayerClientException
 from layer.pandas_extensions import _infer_custom_types
 from layer.utils.file_utils import tar_directory
@@ -131,7 +130,7 @@ class DataCatalogClient:
 
         return df
 
-    def _get_dataset_writer(self, name: str, build_id: uuid.UUID, schema: Any) -> Any:
+    def _get_dataset_writer(self, build_id: uuid.UUID, schema: Any) -> Any:
         dataset_snapshot = DatasetSnapshot(build_id=DatasetBuildId(value=str(build_id)))
         return self._dataset_client.get_dataset_writer(
             Command(dataset_snapshot=dataset_snapshot), schema
@@ -139,7 +138,6 @@ class DataCatalogClient:
 
     def store_dataset(
         self,
-        name: str,
         data: "pandas.DataFrame",
         build_id: uuid.UUID,
         progress_callback: Optional[Callable[[int], None]] = None,
@@ -159,7 +157,7 @@ class DataCatalogClient:
             _infer_custom_types(data), preserve_index=False
         )
         try:
-            writer, _ = self._get_dataset_writer(name, build_id, batch.schema)
+            writer, _ = self._get_dataset_writer(build_id, batch.schema)
             try:
                 total_rows = 0  # total rows written
                 for chunk in _get_batch_chunks(batch):
@@ -176,22 +174,19 @@ class DataCatalogClient:
 
     def initiate_build(
         self,
-        dataset: FunctionDefinition,
-        project_id: uuid.UUID,
-        is_local: bool,
+        project_id: ProjectId,
+        asset_name: str,
+        fabric: str,
     ) -> InitiateBuildResponse:
-        self._logger.debug(
-            "Initiating build for the dataset %r",
-            dataset.asset_name,
-        )
+        self._logger.debug("Initiating build for the dataset %r", asset_name)
 
         resp = self._service.InitiateBuild(
             InitiateBuildRequest(
-                dataset_name=dataset.asset_name,
+                dataset_name=asset_name,
                 format="python",
                 build_entity_type=PBDatasetBuild.BUILD_ENTITY_TYPE_DATASET,
-                project_id=ProjectId(value=str(project_id)),
-                fabric=dataset.get_fabric(is_local),
+                project_id=project_id,
+                fabric=fabric,
             )
         )
 
@@ -200,13 +195,11 @@ class DataCatalogClient:
     def complete_build(
         self,
         dataset_build_id: DatasetBuildId,
-        dataset: FunctionDefinition,
+        asset_name: str,
+        dataset_uri: str,
         error: Optional[Exception] = None,
     ) -> CompleteBuildResponse:
-        self._logger.debug(
-            "Completing build for the dataset %r",
-            dataset.asset_name,
-        )
+        self._logger.debug("Completing build for the dataset %r", asset_name)
 
         if error:
             max_error_length = 99_999
@@ -222,7 +215,7 @@ class DataCatalogClient:
         else:
             status = DatasetBuildStatus.COMPLETED
             success = CompleteBuildRequest.BuildSuccess(
-                location=StorageLocation(uri=dataset.uri), schema="{}"
+                location=StorageLocation(uri=dataset_uri), schema="{}"
             )
             failure = None
 
@@ -239,20 +232,30 @@ class DataCatalogClient:
 
     def add_dataset(
         self,
+        asset_path: AssetPath,
         project_id: uuid.UUID,
-        dataset_definition: FunctionDefinition,
-        is_local: bool,
+        description: str,
+        function_home_dir: Path,
+        fabric: str,
+        func_source: str,
+        entrypoint: str,
+        environment: str,
     ) -> str:
         self._logger.debug(
             "Adding or updating a dataset with name %r",
-            dataset_definition.asset_name,
+            asset_path.asset_name,
         )
         resp = self._service.RegisterDataset(
             RegisterDatasetRequest(
-                name=dataset_definition.asset_name,
-                description=dataset_definition.description,
+                name=asset_path.asset_name,
+                description=description,
                 python_dataset=self._get_pb_python_dataset(
-                    dataset_definition, is_local
+                    asset_path,
+                    function_home_dir,
+                    fabric,
+                    func_source,
+                    entrypoint,
+                    environment,
                 ),
                 project_id=ProjectId(value=str(project_id)),
             ),
@@ -261,33 +264,39 @@ class DataCatalogClient:
 
     def _get_pb_python_dataset(
         self,
-        dataset: FunctionDefinition,
-        is_local: bool,
+        asset_path: AssetPath,
+        function_home_dir: Path,
+        fabric: str,
+        func_source: str,
+        entrypoint: str,
+        environment: str,
     ) -> PBPythonDataset:
-        s3_path = self._upload_dataset_source(dataset)
+        s3_path = self._upload_dataset_source(asset_path, function_home_dir)
         language_version = _language_version()
         return PBPythonDataset(
             s3_path=s3_path,
             python_source=PythonSource(
-                content=dataset.func_source,
-                entrypoint=dataset.entrypoint,
-                environment=dataset.environment,
+                content=func_source,
+                entrypoint=entrypoint,
+                environment=environment,
                 language_version=LanguageVersion(
                     major=language_version[0],
                     minor=language_version[1],
                     micro=language_version[2],
                 ),
             ),
-            fabric=dataset.get_fabric(is_local),
+            fabric=fabric,
         )
 
-    def _upload_dataset_source(self, dataset: FunctionDefinition) -> S3Path:
-        response = self._get_python_dataset_access_credentials(dataset.asset_path)
-        archive_name = f"{dataset.asset_name}.tgz"
+    def _upload_dataset_source(
+        self, asset_path: AssetPath, function_home_dir: Path
+    ) -> S3Path:
+        response = self._get_python_dataset_access_credentials(asset_path)
+        archive_name = f"{asset_path.asset_name}.tgz"
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             archive_path = f"{tmp_dir}/{archive_name}"
-            tar_directory(archive_path, dataset.function_home_dir)
+            tar_directory(archive_path, function_home_dir)
             S3Util.upload_dir(
                 Path(tmp_dir),
                 response.credentials,
@@ -390,6 +399,10 @@ class DataCatalogClient:
         ).build
 
 
+def _language_version() -> Tuple[int, int, int]:
+    return sys.version_info.major, sys.version_info.minor, sys.version_info.micro
+
+
 def _get_batch_chunks(
     batch: pyarrow.RecordBatch, max_chunk_size_bytes: int = 4_000_000
 ) -> Generator[pyarrow.RecordBatch, None, None]:
@@ -421,7 +434,3 @@ def _get_batch_chunks(
                 f"single row in the batch at index {start} exceeds max chunk size of {max_chunk_size_bytes} byte(s)"
             )
         start += i
-
-
-def _language_version() -> Tuple[int, int, int]:
-    return sys.version_info.major, sys.version_info.minor, sys.version_info.micro

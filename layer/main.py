@@ -46,8 +46,6 @@ from layer.exceptions.exceptions import (
 )
 from layer.global_context import (
     current_account_name,
-    current_project_full_name,
-    current_project_name,
     get_active_context,
     has_shown_python_version_message,
     has_shown_update_message,
@@ -440,7 +438,11 @@ def _ensure_asset_path_is_absolute(
 ) -> AssetPath:
     if not path.is_relative():
         return path
-    project_name = path.project_name if path.has_project() else current_project_name()
+    project_name = (
+        path.project_name
+        if path.has_project()
+        else get_current_project_full_name().project_name
+    )
     account_name = (
         path.org_name if path.org_name is not None else current_account_name()
     )
@@ -478,12 +480,7 @@ def start_train(
         train.save_model(trained_model)
 
     """
-    project_full_name = current_project_full_name()
-    if not project_full_name:
-        raise Exception(
-            "Missing current project name, please do 'layer.init(\"account-name/project-name\")'"
-            + " or 'layer.init(\"project-name\")'"
-        )
+    project_full_name = get_current_project_full_name()
     config = asyncio_run_in_thread(ConfigManager().refresh())
     with LayerClient(config.client, logger).init() as client:
         train = Train(
@@ -582,12 +579,15 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     _check_python_version()
     _ensure_all_functions_are_decorated(functions)
 
-    layer_config = asyncio_run_in_thread(ConfigManager().refresh())
+    layer_config: Config = asyncio_run_in_thread(ConfigManager().refresh())
 
     project_full_name = get_current_project_full_name()
-    project_runner = ProjectRunner(config=layer_config)
-    run = project_runner.with_functions(project_full_name, functions)
-    run = project_runner.run(run, debug=debug)
+    project_runner = ProjectRunner(
+        config=layer_config,
+        project_full_name=project_full_name,
+        functions=functions,
+    )
+    run = project_runner.run(debug=debug)
 
     _make_notebook_links_open_in_new_tab()
 
