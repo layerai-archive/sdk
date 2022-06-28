@@ -143,6 +143,7 @@ def _dataset_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             self.layer.validate()
+            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             dataset_definition = self.get_definition()
             dataset_definition.package()
             if is_feature_active("TAR_PACKAGING"):
@@ -155,6 +156,8 @@ def _dataset_wrapper(
                         dataset_definition.tar_path,
                     ],
                     env={
+                        "LAYER_CLIENT_AUTH_URL": config.url,
+                        "LAYER_CLIENT_AUTH_TOKEN": config.credentials.access_token,
                         "LAYER_PROJECT_NAME": dataset_definition.project_name,
                         "PYTHON_EXECUTABLE_PATH": sys.executable,
                     },
@@ -163,7 +166,6 @@ def _dataset_wrapper(
                 )
             else:
                 current_project_full_name_ = get_current_project_full_name()
-                config: Config = asyncio_run_in_thread(ConfigManager().refresh())
                 with LayerClient(config.client, logger).init() as client:
                     progress_tracker = RunProgressTracker(
                         url=config.url,

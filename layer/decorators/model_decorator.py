@@ -109,6 +109,7 @@ def _model_wrapper(
         # This is not serialized with cloudpickle, so it will only be run locally.
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
+            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             model_definition = self.get_definition()
             model_definition.package()
             if is_feature_active("TAR_PACKAGING"):
@@ -121,6 +122,8 @@ def _model_wrapper(
                         model_definition.tar_path,
                     ],
                     env={
+                        "LAYER_CLIENT_AUTH_URL": config.url,
+                        "LAYER_CLIENT_AUTH_TOKEN": config.credentials.access_token,
                         "LAYER_PROJECT_NAME": model_definition.project_name,
                         "PYTHON_EXECUTABLE_PATH": sys.executable,
                     },
@@ -129,7 +132,6 @@ def _model_wrapper(
                 )
             else:
                 current_project_full_name_ = get_current_project_full_name()
-                config: Config = asyncio_run_in_thread(ConfigManager().refresh())
                 with LayerClient(config.client, logger).init() as client:
                     progress_tracker = RunProgressTracker(
                         url=config.url,
