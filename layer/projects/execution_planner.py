@@ -1,7 +1,7 @@
 import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, DefaultDict, List, Optional, Sequence, Set
+from typing import TYPE_CHECKING, DefaultDict, List, Optional, Sequence
 
 from layerapi.api.entity.operations_pb2 import (
     DatasetBuildOperation,
@@ -101,33 +101,6 @@ def build_execution_plan(definitions: Sequence[FunctionDefinition]) -> Execution
 
 def check_asset_dependencies(definitions: Sequence[FunctionDefinition]) -> None:
     _build_directed_acyclic_graph(definitions)
-
-
-def drop_independent_entities(
-    definitions: Sequence[FunctionDefinition],
-    target_path: AssetPath,
-    *,
-    keep_dependencies: bool = True,
-) -> Sequence[FunctionDefinition]:
-    from networkx import NodeNotFound, shortest_path
-
-    target_asset_id = _get_asset_id(target_path)
-    if keep_dependencies:
-        graph = _build_directed_acyclic_graph(definitions)
-        try:
-            asset_ids: Set[str] = set.union(
-                set(), *shortest_path(graph, target=target_asset_id).values()
-            )
-        except NodeNotFound:
-            raise _create_not_found_exception(target_path)
-    else:
-        asset_ids = {target_asset_id}
-    definitions = [
-        f if keep_dependencies else f.drop_dependencies()
-        for f in definitions
-        if _get_asset_id(f.asset_path) in asset_ids
-    ]
-    return definitions
 
 
 def _build_graph(definitions: Sequence[FunctionDefinition]) -> "DiGraph":

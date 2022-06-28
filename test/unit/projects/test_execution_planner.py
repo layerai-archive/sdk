@@ -14,7 +14,6 @@ from layer.projects.execution_planner import (
     _find_cycles,
     build_execution_plan,
     check_asset_dependencies,
-    drop_independent_entities,
 )
 
 
@@ -54,61 +53,6 @@ class TestProjectExecutionPlanner:
         graph = _build_graph([m, a, e, s])
         cycle_paths = _find_cycles(graph)
         assert len(cycle_paths) == 5
-
-    def test_drop_independent_entities(self) -> None:
-        ds2 = self._create_mock_dataset("ds2")
-        ds1 = self._create_mock_dataset("ds1")
-        ds3 = self._create_mock_dataset("ds3", ["datasets/ds2"])
-
-        m3 = self._create_mock_model("m3")
-        m2 = self._create_mock_model("m2", ["datasets/ds1", "models/m3"])
-        m1 = self._create_mock_model("m1", ["datasets/ds2", "models/m2"])
-        m4 = self._create_mock_model("m4", ["models/m3"])
-
-        funcs = [ds2, ds3, ds1, m2, m3, m1, m4]
-
-        assert drop_independent_entities(
-            funcs,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds1"),
-        ) == [ds1]
-        assert drop_independent_entities(
-            funcs,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds3"),
-        ) == [ds2, ds3]
-        assert drop_independent_entities(
-            funcs,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m3"),
-        ) == [m3]
-        assert drop_independent_entities(
-            funcs,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m2"),
-        ) == [ds1, m2, m3]
-        assert drop_independent_entities(
-            funcs,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m1"),
-        ) == [ds2, ds1, m2, m3, m1]
-        assert drop_independent_entities(
-            funcs,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m4"),
-        ) == [m3, m4]
-
-    def test_drop_independent_entities_no_dependencies(self) -> None:
-        ds1 = self._create_mock_dataset("ds1")
-        m1 = self._create_mock_model("m1", ["datasets/ds1"])
-
-        funcs = [ds1, m1]
-
-        assert drop_independent_entities(
-            funcs,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds1"),
-            keep_dependencies=False,
-        ) == [ds1.drop_dependencies()]
-
-        assert drop_independent_entities(
-            funcs,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/models/m1"),
-            keep_dependencies=False,
-        ) == [m1.drop_dependencies()]
 
     def test_build_execution_plan_linear(self) -> None:
         definitions = self._create_mock_run_linear()
@@ -156,21 +100,6 @@ class TestProjectExecutionPlanner:
 
         assert len(ops) == 3
         assert ops
-
-    def test_drop_independent_entities_execution_plan(self) -> None:
-        definitions1 = self._create_mock_run_mixed()
-        definitions2 = drop_independent_entities(
-            definitions1,
-            AssetPath.parse(f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds2"),
-            keep_dependencies=False,
-        )
-        execution_plan = build_execution_plan(definitions2)
-
-        assert execution_plan is not None
-        ops = execution_plan.operations
-
-        assert len(ops) == 1
-        assert ops[0].sequential.dataset_build.dataset_name == "ds2"
 
     def _create_mock_run_linear(self) -> List[FunctionDefinition]:
         ds1 = self._create_mock_dataset("ds1")

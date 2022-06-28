@@ -206,9 +206,6 @@ class BaseAsset(metaclass=ABCMeta):
         self._dependencies = dependencies
         return self
 
-    def drop_dependencies(self: BaseAssetType) -> BaseAssetType:
-        return self.with_dependencies(())
-
     def get_cache_dir(self, cache_dir: Optional[Path] = None) -> Optional[Path]:
         cache = Cache(cache_dir=cache_dir).initialise()
         return cache.get_path_entry(str(self.id))
