@@ -109,9 +109,9 @@ def _model_wrapper(
         # This is not serialized with cloudpickle, so it will only be run locally.
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             model_definition = self.get_definition()
             model_definition.package()
+            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             if is_feature_active("TAR_PACKAGING"):
                 import subprocess  # nosec: import_subprocess
                 import sys

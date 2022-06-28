@@ -143,9 +143,9 @@ def _dataset_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             self.layer.validate()
-            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             dataset_definition = self.get_definition()
             dataset_definition.package()
+            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             if is_feature_active("TAR_PACKAGING"):
                 import subprocess  # nosec: import_subprocess
                 import sys
