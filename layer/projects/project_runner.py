@@ -2,7 +2,6 @@ import logging
 import threading
 import uuid
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Callable, List, Optional, Sequence
 
 import polling  # type: ignore
@@ -167,12 +166,14 @@ class ProjectRunner:
 
     def _upload_tar_packages(self, client: LayerClient) -> None:
         for definition in self.definitions:
-            self._upload_tar_package(client, definition.func_name, definition.tar_path)
+            self._upload_tar_package(client, definition)
 
-    def _upload_tar_package(self, client: LayerClient, function_name: str, path: Path) -> None:
-        with requests.Session() as s, open(path, "rb") as package_file:
+    def _upload_tar_package(
+        self, client: LayerClient, function: FunctionDefinition
+    ) -> None:
+        with requests.Session() as s, open(function.tar_path, "rb") as package_file:
             presigned_url = client.executor_service_client.get_upload_path(
-                self.project_full_name, function_name
+                self.project_full_name, f"{function.asset_name}.tar"
             )
             resp = s.put(presigned_url, data=package_file)
             resp.raise_for_status()
