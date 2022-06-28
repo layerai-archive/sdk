@@ -127,7 +127,7 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         pass
 
     @staticmethod
-    def get_system_metrics(
+    def generate_system_metrics(
         start_time: int, start_cpu_used: int, logger: Logger
     ) -> Tuple[Dict[str, float], int]:
         global cpu_used_temp  # pylint: disable=invalid-name
@@ -215,7 +215,7 @@ class LocalTrainContext(TrainContext):
         return Path(self.initial_cwd)
 
     @staticmethod
-    def get_system_metrics(
+    def generate_system_metrics(
         start_time: int, start_cpu_used: int, logger: Logger
     ) -> Tuple[Dict[str, float], int]:
         cpu_count = psutil.cpu_count()
@@ -357,7 +357,7 @@ class ModelTrainer:
                     sleep(1)  # helps keep things simple
                     polling.poll(
                         lambda: log_data_runner.log(
-                            *self.train_context.get_system_metrics(start_time, start_cpu_used, self.logger)  # type: ignore
+                            *self.train_context.generate_system_metrics(start_time, start_cpu_used, self.logger)  # type: ignore
                         ),
                         check_success=stop,
                         poll_forever=True,
