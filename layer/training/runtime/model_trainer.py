@@ -93,28 +93,25 @@ def _generate_system_metrics_dict(
     }
 
     for gpu in gpu_metrics:
+        gpu_id = gpu_metrics[gpu]["id"]
+        gpu_name = gpu_metrics[gpu]["name"]
+        gpu_id_name_suffix = f" - gpu{gpu_id} - {gpu_name}"
         metrics.update(
             {
-                "GPU Utilisation % - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ): gpu_metrics[gpu]["utilisation"],
-                "GPU Memory Used (MB) - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ): gpu_metrics[gpu]["mem_used"],
-                "GPU Memory Allocated (MB) - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ): gpu_metrics[gpu]["mem_total"],
-                "GPU Memory Utilisation % - gpu{} - {}".format(
-                    gpu_metrics[gpu]["id"], gpu_metrics[gpu]["name"]
-                ): gpu_metrics[gpu]["mem_utilisation"],
+                "GPU Utilisation %"
+                + gpu_id_name_suffix: gpu_metrics[gpu]["utilisation"],
+                "GPU Memory Used (MB)"
+                + gpu_id_name_suffix: gpu_metrics[gpu]["mem_used"],
+                "GPU Memory Allocated (MB)"
+                + gpu_id_name_suffix: gpu_metrics[gpu]["mem_total"],
+                "GPU Memory Utilisation %"
+                + gpu_id_name_suffix: gpu_metrics[gpu]["mem_utilisation"],
             }
         )
     return metrics
 
 
 class TrainContext(ABC, TrainContextDataclassMixin):
-    is_remote = True
-
     def init_or_save_context(self, context: Context) -> None:
         set_active_context(context)
 
@@ -144,8 +141,8 @@ class TrainContext(ABC, TrainContextDataclassMixin):
             return _read_value_from_file("/sys/fs/cgroup/memory/memory.limit_in_bytes")
 
         def _get_used_percent(used: float, available: float) -> float:
-            if not used or not available:
-                print("System metric 0")
+            if not available:
+                # If we try to divide by 0, return 0
                 return 0
             return round((100 * used / available), 2)
 
@@ -204,7 +201,6 @@ class TrainContext(ABC, TrainContextDataclassMixin):
 @dataclass
 class LocalTrainContext(TrainContext):
     initial_cwd: Optional[str] = None
-    is_remote = False
 
     def __enter__(self) -> None:
         super().__enter__()
@@ -349,12 +345,16 @@ class ModelTrainer:
                         step_value += step
                         return min(step, 15)
 
-                    if self.train_context.is_remote:
+                    # For remote system metrics collection, we calculate metrics based off cgroup CPU usage data.
+                    # For each iteration, we compare the current usage data with the previous iteration's data, allowing us to calculate the difference.
+                    # We capture the data which allows the first loop to run successfully, keeping the logic executed within the loop lean.
+                    # We also wait a second before going into the first loop to ensure the CPU usage data has changed.
+                    if not isinstance(self.train_context, LocalTrainContext):
                         start_time = int(time.time())
                         with open("/sys/fs/cgroup/cpu/cpuacct.usage_user", "r") as f:
                             start_cpu_used = int(f.read())
+                        sleep(1)
 
-                    sleep(1)  # helps keep things simple
                     polling.poll(
                         lambda: log_data_runner.log(
                             *self.train_context.generate_system_metrics(start_time, start_cpu_used, self.logger)  # type: ignore
