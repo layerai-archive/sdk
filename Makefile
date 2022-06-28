@@ -94,8 +94,12 @@ else
 endif
 	$(POETRY) run python -c "import layer"
 
+.PHONY: check-colab-violations
+check-colab-violations: ## Check that colab pre-installed packages are not clashing with ours
+	$(MAKE) -C build_scripts/colab-tests check-colab-violations
+
 .PHONY: check
-check: test lint ## Run test and lint
+check: test lint check-colab-violations ## Run test and lint
 
 .PHONY: publish
 publish: ## Publish to PyPi - should only run in CI
