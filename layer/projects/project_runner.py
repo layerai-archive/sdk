@@ -166,10 +166,7 @@ class ProjectRunner:
         return run
 
     async def _upload_tar_packages(self, client: LayerClient) -> None:
-        trace_config = aiohttp.TraceConfig()
-        async with aiohttp.ClientSession(
-            raise_for_status=True, trace_configs=[trace_config]
-        ) as session:
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
             upload_tasks = [
                 self._upload_tar_package(client, definition, session)
                 for definition in self.definitions
