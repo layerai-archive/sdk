@@ -218,11 +218,6 @@ class ProjectRunner:
         else:
             return run_id
 
-    def terminate_run(self, run_id: str) -> None:
-        _run_id = RunId(value=run_id)
-        with LayerClient(self._config.client, logger).init() as client:
-            client.flow_manager.terminate_run(_run_id)
-
 
 def register_dataset_function(
     client: LayerClient,

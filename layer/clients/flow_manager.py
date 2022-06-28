@@ -11,7 +11,6 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     GetRunByIdRequest,
     GetRunHistoryAndMetadataRequest,
     StartRunV2Request,
-    TerminateRunRequest,
 )
 from layerapi.api.service.flowmanager.flow_manager_api_pb2_grpc import (
     FlowManagerAPIStub,
@@ -76,7 +75,3 @@ class FlowManagerClient:
             GetRunHistoryAndMetadataRequest(run_id=run_id)
         )
         return list(response.events), response.run_metadata
-
-    def terminate_run(self, run_id: RunId) -> Run:
-        response = self._service.TerminateRun(TerminateRunRequest(run_id=run_id))
-        return response.run_id

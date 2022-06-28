@@ -159,12 +159,6 @@ class ConfigManager:
         print(f"Successfully logged into {url}")
         return config
 
-    async def login_with_config(self, config: Config) -> Config:
-        await self._logout()
-        self._store.save(config)
-        print(f"Successfully logged into {config.url}")
-        return config
-
     async def logout(self) -> None:
         msg = "Logged out."
         try:

@@ -92,10 +92,6 @@ class FunctionDefinition:
     def set_repository_id(self, repository_id: uuid.UUID) -> None:
         self.repository_id = repository_id
 
-    def drop_dependencies(self) -> "FunctionDefinition":
-        self.asset_dependencies = []
-        return self
-
     # DEPRECATED below, will remove once we build the simplified backend
     def get_pickled_function(self) -> bytes:
         return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)
