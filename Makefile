@@ -102,7 +102,7 @@ publish: ## Publish to PyPi - should only run in CI
 	@test $${PATCH_VERSION?PATCH_VERSION expected}
 	@test $${PYPI_USER?PYPI_USER expected}
 	@test $${PYPI_PASSWORD?PYPI_PASSWORD expected}
-	$(eval CURRENT_VERSION := "0.1.0")
+	$(eval CURRENT_VERSION := $(shell $(POETRY) version --short))
 	$(eval PARTIAL_VERSION=$(shell echo $(CURRENT_VERSION) | grep -Po '.*(?=\.)'))
 	$(POETRY) version $(PARTIAL_VERSION).$(PATCH_VERSION)
 	$(POETRY) publish --build --username $(PYPI_USER) --password $(PYPI_PASSWORD)
