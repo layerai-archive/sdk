@@ -1,5 +1,5 @@
 import os
-import subprocess
+import subprocess  # nosec: import_subprocess
 import threading
 import time
 from abc import ABC, abstractmethod
