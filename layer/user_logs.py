@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Any, Callable, List, Tuple
 
 from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
-from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
 from layer.contracts.assets import AssetType
@@ -77,23 +76,3 @@ def show_pipeline_run_logs(
         if prev_token == curr_token and follow is False:
             break
         time.sleep(polling_interval_sec)
-
-
-def get_pipeline_run_logs(
-    client: LayerClient,
-    pipeline_run_id: RunId,
-    polling_interval_sec: float = POLLING_INTERVAL_SEC,
-) -> List[UserLogLine]:
-    lines: List[UserLogLine] = []
-    curr_token = ""
-    while True:
-        curr_lines, next_token = __get_lines(
-            uuid.UUID(pipeline_run_id.value), curr_token, client
-        )
-        lines.extend(curr_lines)
-        prev_token = curr_token
-        curr_token = next_token
-        if prev_token == curr_token:
-            break
-        time.sleep(polling_interval_sec)
-    return lines
