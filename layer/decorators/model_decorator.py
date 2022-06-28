@@ -122,7 +122,7 @@ def _model_wrapper(
                         model_definition.tar_path,
                     ],
                     env={
-                        "LAYER_CLIENT_AUTH_URL": config.url,
+                        "LAYER_CLIENT_AUTH_URL": str(config.url),
                         "LAYER_CLIENT_AUTH_TOKEN": config.credentials.access_token,
                         "LAYER_PROJECT_NAME": model_definition.project_name,
                         "PYTHON_EXECUTABLE_PATH": sys.executable,
