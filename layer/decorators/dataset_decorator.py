@@ -145,6 +145,7 @@ def _dataset_wrapper(
             self.layer.validate()
             dataset_definition = self.get_definition()
             dataset_definition.package()
+            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
             if is_feature_active("TAR_PACKAGING"):
                 import subprocess  # nosec: import_subprocess
                 import sys
@@ -155,6 +156,8 @@ def _dataset_wrapper(
                         dataset_definition.tar_path,
                     ],
                     env={
+                        "LAYER_CLIENT_AUTH_URL": str(config.url),
+                        "LAYER_CLIENT_AUTH_TOKEN": config.credentials.access_token,
                         "LAYER_PROJECT_NAME": dataset_definition.project_name,
                         "PYTHON_EXECUTABLE_PATH": sys.executable,
                     },
@@ -163,7 +166,6 @@ def _dataset_wrapper(
                 )
             else:
                 current_project_full_name_ = get_current_project_full_name()
-                config: Config = asyncio_run_in_thread(ConfigManager().refresh())
                 with LayerClient(config.client, logger).init() as client:
                     progress_tracker = RunProgressTracker(
                         url=config.url,

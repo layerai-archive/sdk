@@ -91,9 +91,17 @@ def _run(user_function: Any) -> Any:
             return result
 
 
+LAYER_CLIENT_AUTH_URL = os.environ["LAYER_CLIENT_AUTH_URL"]
+LAYER_CLIENT_AUTH_TOKEN = os.environ["LAYER_CLIENT_AUTH_TOKEN"]
+LAYER_PROJECT_NAME = os.environ["LAYER_PROJECT_NAME"]
+
+layer.login_with_access_token(
+    access_token=LAYER_CLIENT_AUTH_TOKEN, url=LAYER_CLIENT_AUTH_URL
+)
+layer.init(LAYER_PROJECT_NAME)
+
 # load the entrypoint function
 with open("function.pkl", "rb") as file:
-    layer.init(os.environ["LAYER_PROJECT_NAME"])
     user_function = pickle.load(file)  # nosec pickle
 
 _run(user_function)
