@@ -350,14 +350,13 @@ class AssetColumn(ProgressColumn):
         else:
             text = task.description
         if (
-            asset.status == AssetTrackerStatus.RESOURCE_UPLOADING
-            or asset.status == AssetTrackerStatus.RESULT_UPLOADING
-            or asset.status == AssetTrackerStatus.ASSET_DOWNLOADING
-            or asset.status == AssetTrackerStatus.ASSET_FROM_CACHE
+            asset.status == AssetTrackerStatus.ASSET_LOADED
+            or asset.status == AssetTrackerStatus.DONE
+            or asset.status == AssetTrackerStatus.ERROR
         ):
-            style = ProgressStyle.BLACK
-        else:
             style = self._status_style_map[asset.status]
+        else:
+            style = ProgressStyle.GRAY
         return Text(
             text.upper(),
             overflow="fold",
