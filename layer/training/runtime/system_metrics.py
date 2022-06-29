@@ -47,7 +47,7 @@ class SystemMetrics:
         self._system_metrics_thread.join()
 
     def _get_gpu_metrics(self) -> Dict[str, Dict[str, float]]:
-        metrics = {}
+        metrics: Dict[str, Any] = {}
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
             try:
@@ -56,6 +56,7 @@ class SystemMetrics:
                 self._logger.info(
                     "Nvidia driver not running despite nvidia-smi being on the path. No GPU stats collected."
                 )
+                return metrics
             for gpu in gpus:
                 metrics[gpu.id] = {
                     "utilisation": gpu.gpu_util,
