@@ -25,6 +25,7 @@ from layer.training.train import Train
 
 from .common import import_function, update_train_status
 from .model_train_failure_reporter import ModelTrainFailureReporter
+from .system_metrics import SystemMetrics
 
 
 @dataclass
@@ -166,42 +167,47 @@ class ModelTrainer:
                     ModelTrainStatus.TRAIN_STATUS_FETCHING_FEATURES,
                     self.logger,
                 )
-
-                update_train_status(
-                    self.client.model_catalog,
-                    self.train_context.train_id,
-                    ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
-                    self.logger,
-                )
-                self.logger.info("Executing the train_model_func")
-                work_dir = self.train_context.get_working_directory()
-                os.chdir(work_dir)
-                self.logger.info("Downloading resources")
-                ResourceManager(self.client).wait_resource_download(
-                    project_full_name,
-                    train_model_func.__name__,
-                    target_dir=str(work_dir),
-                )
-                model = train_model_func()
-                self.tracker.mark_model_trained(
-                    self.train_context.model_name,
-                )
-                self.logger.info("Executed train_model_func successfully")
-                self._run_assertions(
-                    model,
-                    train_model_func.layer.get_assertions(),  # type: ignore
-                )
-                self.tracker.mark_model_saving(self.train_context.model_name)
-                self.logger.info(f"Saving model artifact {model} to model registry")
-                train.save_model(model, tracker=self.tracker)
-                update_train_status(
-                    self.client.model_catalog,
-                    self.train_context.train_id,
-                    ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
-                    self.logger,
-                )
-                self.logger.info(
-                    f"Saved model artifact {model} to model registry successfully"
-                )
-                self.tracker.mark_model_saved(self.train_context.model_name)
-                return model
+                with SystemMetrics(
+                    client=self.client,
+                    train_id=self.train_context.train_id,
+                    logger=self.logger,
+                    local=isinstance(self.train_context, LocalTrainContext),
+                ):
+                    update_train_status(
+                        self.client.model_catalog,
+                        self.train_context.train_id,
+                        ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
+                        self.logger,
+                    )
+                    self.logger.info("Executing the train_model_func")
+                    work_dir = self.train_context.get_working_directory()
+                    os.chdir(work_dir)
+                    self.logger.info("Downloading resources")
+                    ResourceManager(self.client).wait_resource_download(
+                        project_full_name,
+                        train_model_func.__name__,
+                        target_dir=str(work_dir),
+                    )
+                    model = train_model_func()
+                    self.tracker.mark_model_trained(
+                        self.train_context.model_name,
+                    )
+                    self.logger.info("Executed train_model_func successfully")
+                    self._run_assertions(
+                        model,
+                        train_model_func.layer.get_assertions(),  # type: ignore
+                    )
+                    self.tracker.mark_model_saving(self.train_context.model_name)
+                    self.logger.info(f"Saving model artifact {model} to model registry")
+                    train.save_model(model, tracker=self.tracker)
+                    update_train_status(
+                        self.client.model_catalog,
+                        self.train_context.train_id,
+                        ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
+                        self.logger,
+                    )
+                    self.logger.info(
+                        f"Saved model artifact {model} to model registry successfully"
+                    )
+                    self.tracker.mark_model_saved(self.train_context.model_name)
+                    return model
