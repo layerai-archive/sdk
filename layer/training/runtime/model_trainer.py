@@ -182,7 +182,6 @@ class ModelTrainer:
                     self.logger.info("Executing the train_model_func")
                     work_dir = self.train_context.get_working_directory()
                     os.chdir(work_dir)
-
                     self.logger.info("Downloading resources")
                     ResourceManager(self.client).wait_resource_download(
                         project_full_name,
