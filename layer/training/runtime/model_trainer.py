@@ -1,5 +1,4 @@
 import os
-import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
@@ -168,59 +167,48 @@ class ModelTrainer:
                     ModelTrainStatus.TRAIN_STATUS_FETCHING_FEATURES,
                     self.logger,
                 )
-
-                stop_system_metrics_thread = False
-                system_metrics = SystemMetrics()
-                system_metrics_thread = threading.Thread(
-                    target=system_metrics.monitor_system_metrics,
-                    args=(
-                        lambda x: stop_system_metrics_thread,
-                        self.client,
+                with SystemMetrics(
+                    client=self.client,
+                    train_id=self.train_context.train_id,
+                    logger=self.logger,
+                    local=isinstance(self.train_context, LocalTrainContext),
+                ):
+                    update_train_status(
+                        self.client.model_catalog,
                         self.train_context.train_id,
+                        ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
                         self.logger,
-                        isinstance(self.train_context, LocalTrainContext),
-                    ),
-                )
-                system_metrics_thread.start()
+                    )
+                    self.logger.info("Executing the train_model_func")
+                    work_dir = self.train_context.get_working_directory()
+                    os.chdir(work_dir)
 
-                update_train_status(
-                    self.client.model_catalog,
-                    self.train_context.train_id,
-                    ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
-                    self.logger,
-                )
-                self.logger.info("Executing the train_model_func")
-                work_dir = self.train_context.get_working_directory()
-                os.chdir(work_dir)
-
-                self.logger.info("Downloading resources")
-                ResourceManager(self.client).wait_resource_download(
-                    project_full_name,
-                    train_model_func.__name__,
-                    target_dir=str(work_dir),
-                )
-                model = train_model_func()
-                self.tracker.mark_model_trained(
-                    self.train_context.model_name,
-                )
-                self.logger.info("Executed train_model_func successfully")
-                self._run_assertions(
-                    model,
-                    train_model_func.layer.get_assertions(),  # type: ignore
-                )
-                self.tracker.mark_model_saving(self.train_context.model_name)
-                self.logger.info(f"Saving model artifact {model} to model registry")
-                train.save_model(model, tracker=self.tracker)
-                update_train_status(
-                    self.client.model_catalog,
-                    self.train_context.train_id,
-                    ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
-                    self.logger,
-                )
-                self.logger.info(
-                    f"Saved model artifact {model} to model registry successfully"
-                )
-                self.tracker.mark_model_saved(self.train_context.model_name)
-                stop_system_metrics_thread = True
-                system_metrics_thread.join()
-                return model
+                    self.logger.info("Downloading resources")
+                    ResourceManager(self.client).wait_resource_download(
+                        project_full_name,
+                        train_model_func.__name__,
+                        target_dir=str(work_dir),
+                    )
+                    model = train_model_func()
+                    self.tracker.mark_model_trained(
+                        self.train_context.model_name,
+                    )
+                    self.logger.info("Executed train_model_func successfully")
+                    self._run_assertions(
+                        model,
+                        train_model_func.layer.get_assertions(),  # type: ignore
+                    )
+                    self.tracker.mark_model_saving(self.train_context.model_name)
+                    self.logger.info(f"Saving model artifact {model} to model registry")
+                    train.save_model(model, tracker=self.tracker)
+                    update_train_status(
+                        self.client.model_catalog,
+                        self.train_context.train_id,
+                        ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
+                        self.logger,
+                    )
+                    self.logger.info(
+                        f"Saved model artifact {model} to model registry successfully"
+                    )
+                    self.tracker.mark_model_saved(self.train_context.model_name)
+                    return model

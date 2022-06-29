@@ -1,4 +1,5 @@
 import subprocess  # nosec: import_subprocess
+import threading
 import time
 from logging import Logger
 from time import sleep
@@ -14,19 +15,45 @@ from layer.logged_data.log_data_runner import LogDataRunner
 
 
 class SystemMetrics:
-    cpu_used_temp = None
-    start_time_temp = None
-    step_value = 0
+    def __init__(
+        self,
+        client: LayerClient,
+        train_id: UUID,
+        logger: Logger,
+        local: bool,
+    ) -> None:
+        self._client: LayerClient = client
+        self._train_id: UUID = train_id
+        self._logger: Logger = logger
+        self._local: bool = local
+        self._cpu_used_temp: int = 0
+        self._cpu_used: int = 0
+        self._start_time_temp: int = 0
+        self._start_time: int = 0
+        self._start_cpu_used: int = 0
+        self._step_value: int = 0
+        self._stop_system_metrics_thread: bool = False
+        self._system_metrics_thread: threading.Thread = threading.Thread(
+            target=self.monitor_system_metrics,
+        )
 
-    @staticmethod
-    def _get_gpu_metrics(logger: Logger) -> Dict[str, Dict[str, float]]:
+    def __enter__(self) -> None:
+        self._system_metrics_thread.start()
+
+    def __exit__(
+        self, exception_type: Any, exception_value: Any, traceback: Any
+    ) -> None:
+        self._stop_system_metrics_thread = True
+        self._system_metrics_thread.join()
+
+    def _get_gpu_metrics(self) -> Dict[str, Dict[str, float]]:
         metrics = {}
         gpu_present = nvsmi.is_nvidia_smi_on_path() is not None
         if gpu_present:
             try:
                 gpus = nvsmi.get_gpus()
             except subprocess.CalledProcessError:
-                logger.info(
+                self._logger.info(
                     "Nvidia driver not running despite nvidia-smi being on the path. No GPU stats collected."
                 )
             for gpu in gpus:
@@ -78,9 +105,7 @@ class SystemMetrics:
             )
         return metrics
 
-    def _generate_remote_system_metrics(
-        self, start_time: int, start_cpu_used: int, logger: Logger
-    ) -> Tuple[Dict[str, float], int]:
+    def _generate_remote_system_metrics(self) -> Tuple[Dict[str, float], int]:
         def _read_value_from_file(path: str) -> int:
             with open(path, "r") as f:
                 return int(f.read())
@@ -110,17 +135,17 @@ class SystemMetrics:
 
         now_time = int(time.time())
         now_cpu_used = _get_cpu_used()
-        if self.start_time_temp is None:
-            diff_time = now_time - start_time
+        if self._start_time_temp == 0:
+            diff_time = now_time - self._start_time
         else:
-            diff_time = now_time - self.start_time_temp  # type: ignore
+            diff_time = now_time - self._start_time_temp
 
-        if self.cpu_used_temp is None:
-            diff_cpu = now_cpu_used - start_cpu_used
+        if self._cpu_used_temp == 0:
+            diff_cpu = now_cpu_used - self._start_cpu_used
         else:
-            diff_cpu = now_cpu_used - self.cpu_used_temp  # type: ignore
-        self.start_time_temp = now_time
-        self.cpu_used_temp = now_cpu_used
+            diff_cpu = now_cpu_used - self._cpu_used_temp
+        self._start_time_temp = now_time
+        self._cpu_used_temp = now_cpu_used
         cpus_available = _get_cpu_available()
         cpus_used = diff_cpu / diff_time / 1000000000
         fabric_cpu_utilisation_percent = _get_used_percent(cpus_used, cpus_available)
@@ -135,14 +160,12 @@ class SystemMetrics:
             round(cpus_used, 4),
             round(cpus_available, 2),
             fabric_cpu_utilisation_percent,
-            self._get_gpu_metrics(logger),
+            self._get_gpu_metrics(),
         )
 
-        return (metrics, self.step_value)
+        return (metrics, self._step_value)
 
-    def _generate_local_system_metrics(
-        self, start_time: int, start_cpu_used: int, logger: Logger
-    ) -> Tuple[Dict[str, float], int]:
+    def _generate_local_system_metrics(self) -> Tuple[Dict[str, float], int]:
         cpu_count = psutil.cpu_count()
         cpu_percent = psutil.cpu_percent(interval=None)
         cpu_used = cpu_count * cpu_percent / 100
@@ -159,66 +182,50 @@ class SystemMetrics:
             round(cpu_used, 2),
             cpu_count,
             round(cpu_percent, 2),
-            self._get_gpu_metrics(logger),
+            self._get_gpu_metrics(),
         )
-        return (metrics, self.step_value)
+        return (metrics, self._step_value)
 
     def _generate_system_metrics(
         self,
-        start_time: int,
-        start_cpu_used: int,
-        logger: Logger,
-        local: bool,
         log_data_runner: LogDataRunner,
     ) -> None:
         metrics = None
         step = None
-        if local:
-            metrics, step = self._generate_local_system_metrics(
-                start_time, start_cpu_used, logger
-            )
-        else:
-            metrics, step = self._generate_remote_system_metrics(
-                start_time, start_cpu_used, logger
-            )
+        metrics, step = (
+            self._generate_local_system_metrics()
+            if self._local
+            else self._generate_remote_system_metrics()
+        )
         log_data_runner.log(metrics, step)  # type: ignore
 
     def monitor_system_metrics(
         self,
-        stop: bool,
-        client: LayerClient,
-        train_id: UUID,
-        logger: Logger,
-        local: bool,
     ) -> None:
-        start_time = 0
-        start_cpu_used = 0
         log_data_runner = LogDataRunner(
-            client=client,
-            train_id=train_id,
-            logger=logger,
+            client=self._client,
+            train_id=self._train_id,
+            logger=self._logger,
         )
 
         def _metrics_step_function(step: int) -> int:
             step += 1
-            self.step_value += step
+            self._step_value += step
             return min(step, 15)
 
         # For remote system metrics collection, we calculate metrics based off cgroup CPU usage data.
         # For each iteration, we compare the current usage data with the previous iteration's data, allowing us to calculate the difference.
         # We capture the data which allows the first loop to run successfully, keeping the logic executed within the loop lean.
         # We also wait a second before going into the first loop to ensure the CPU usage data has changed.
-        if not local:
-            start_time = int(time.time())
+        if not self._local:
+            self._start_time = int(time.time())
             with open("/sys/fs/cgroup/cpu/cpuacct.usage_user", "r") as f:
-                start_cpu_used = int(f.read())
+                self._start_cpu_used = int(f.read())
             sleep(1)
 
         polling.poll(
-            lambda: self._generate_system_metrics(
-                start_time, start_cpu_used, logger, local, log_data_runner
-            ),
-            check_success=stop,
+            lambda: self._generate_system_metrics(log_data_runner),
+            check_success=lambda x: self._stop_system_metrics_thread,
             poll_forever=True,
             # get metrics every 1, then 2, then 3, then (...) until 15 seconds, then every 15 seconds
             # This will ensure that short trains still get at least a couple of data points
