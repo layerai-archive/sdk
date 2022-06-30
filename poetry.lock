@@ -1493,14 +1493,6 @@ python-versions = "*"
 ptyprocess = ">=0.5"
 
 [[package]]
-name = "pickle5"
-version = "0.0.12"
-description = "Backport of the pickle 5 protocol (PEP 574) and other pickle changes"
-category = "main"
-optional = false
-python-versions = ">=3.5, <3.8"
-
-[[package]]
 name = "pickleshare"
 version = "0.7.5"
 description = "Tiny 'shelve'-like database with concurrency support"
@@ -2521,14 +2513,6 @@ secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "cer
 socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
-name = "validate-email"
-version = "1.3"
-description = "Validate_email verify if an email address is valid and really exists."
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "wcwidth"
 version = "0.2.5"
 description = "Measures the displayed width of unicode strings in a terminal"
@@ -2633,7 +2617,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "90fabdbb5a3be7946a802394422a716480c5f8e6eb597e48b774d48528cb7a4b"
+content-hash = "319ad4c667c5cfecbe806953ab38abdecfabb3511edbb764cbd85f4c0ea141ba"
 
 [metadata.files]
 absl-py = [
@@ -3639,35 +3623,6 @@ pexpect = [
     {file = "pexpect-4.8.0-py2.py3-none-any.whl", hash = "sha256:0b48a55dcb3c05f3329815901ea4fc1537514d6ba867a152b581d69ae3710937"},
     {file = "pexpect-4.8.0.tar.gz", hash = "sha256:fc65a43959d153d0114afe13997d439c22823a27cefceb5ff35c2178c6784c0c"},
 ]
-pickle5 = [
-    {file = "pickle5-0.0.12-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:748a1252c86c9ba18778d2cc2d314ec36eec224acc1b965da4cdf74702086c88"},
-    {file = "pickle5-0.0.12-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:cc61c59343ad63745da4855846cfe459cf046ff669aad6373ea6b41f98ed835d"},
-    {file = "pickle5-0.0.12-cp36-cp36m-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:3fbdc106ae5551cd808897d30582e65bd1efa44c3610b2aee37df34397316b4f"},
-    {file = "pickle5-0.0.12-cp36-cp36m-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:49a51f75132b76747ad7b54196bca1a6c4c814fec116b2909fccaabf1073d919"},
-    {file = "pickle5-0.0.12-cp36-cp36m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:2141be966d40c1e6bbe4d77c4ea38df3be6f35b611941acbb50405a247bcedde"},
-    {file = "pickle5-0.0.12-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:5c7eb5a1b759bf0acf2cfb7ee3394b2935ec6de9174f4eb9044349cb06ca0ff7"},
-    {file = "pickle5-0.0.12-cp36-cp36m-musllinux_1_1_aarch64.whl", hash = "sha256:d68731aae66b0727aca64fc4a7b11e637088a33c829db70f6e9749474174eab6"},
-    {file = "pickle5-0.0.12-cp36-cp36m-musllinux_1_1_i686.whl", hash = "sha256:fa281642c1fe043fb3ad3cdfbdc9d4531ad47b1e9c0fdeaf76c54a7b84b3eb2d"},
-    {file = "pickle5-0.0.12-cp36-cp36m-musllinux_1_1_ppc64le.whl", hash = "sha256:91464df7f22f40d656e6b73ebf042710ebf6ea6a3fb232bd70b1c384626abd69"},
-    {file = "pickle5-0.0.12-cp36-cp36m-musllinux_1_1_s390x.whl", hash = "sha256:65297f87aef6aff5361a39d9f841437f08295e8dce985f08b97939ced749f3ff"},
-    {file = "pickle5-0.0.12-cp36-cp36m-musllinux_1_1_x86_64.whl", hash = "sha256:8d3c9d8110eb775828a5a5a636eca5e9c63bf3f41c3fd1b05f97a0b46e1c5255"},
-    {file = "pickle5-0.0.12-cp36-cp36m-win32.whl", hash = "sha256:167aa4cc2349513819267e8d8e84b1244e69132366830a2574889a3b5d3cacf8"},
-    {file = "pickle5-0.0.12-cp36-cp36m-win_amd64.whl", hash = "sha256:b844af6e179163b40020f06ed45cebfb9a227077dc512cc40d9e9bc8b3aa62a6"},
-    {file = "pickle5-0.0.12-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:c396073370353391ead10af3100234c9e4fe442e1719f49d469b70e6058589e9"},
-    {file = "pickle5-0.0.12-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:251ba2c996ccbc36147ae18d7ed80020c4739f828fd3cd2833291c6f473c7070"},
-    {file = "pickle5-0.0.12-cp37-cp37m-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a77e6c9c760abfee6875779b675577e2516206d17d6f4e0e6af76798d84be4db"},
-    {file = "pickle5-0.0.12-cp37-cp37m-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:9075a22b9ae42bb3f68b751561c152233529502ab91feab34ce87e0673530098"},
-    {file = "pickle5-0.0.12-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:17352fbea99a77c179cbdc58406dff84948b7675acfa1adaab1c153949fbbb43"},
-    {file = "pickle5-0.0.12-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:734ce538fdb441a78a40c333d744d66ca1fbf9803a14756ddad4bf9af8a82890"},
-    {file = "pickle5-0.0.12-cp37-cp37m-musllinux_1_1_aarch64.whl", hash = "sha256:66df777711fe548210cf11685e36be8bbd2ed201cfd18518da261a0375e57fb3"},
-    {file = "pickle5-0.0.12-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:ccda4c39b8beb3a58881c1a139b919e5b1644fa64f1b8596c6e3392b99cd191d"},
-    {file = "pickle5-0.0.12-cp37-cp37m-musllinux_1_1_ppc64le.whl", hash = "sha256:d8c0436ce4875133208fc458907466a631ac214d44e4e71b032b384d61599d97"},
-    {file = "pickle5-0.0.12-cp37-cp37m-musllinux_1_1_s390x.whl", hash = "sha256:c533bd89093ebb3e95465fbc45428082b68e1dca4ce039205c1530a4343dc792"},
-    {file = "pickle5-0.0.12-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:403eec60bb72ae4e4a01ff0b092509bf3822fda406363be472e18e70c5397a02"},
-    {file = "pickle5-0.0.12-cp37-cp37m-win32.whl", hash = "sha256:67c19d88cabce5c0730b6c09b0d0ade163b0881904cfc491790205f7d9a09a2b"},
-    {file = "pickle5-0.0.12-cp37-cp37m-win_amd64.whl", hash = "sha256:880883674f0ce0785709bdacec244dcb10b86db2d4cd84770006c1ff2aa852b6"},
-    {file = "pickle5-0.0.12.tar.gz", hash = "sha256:80143d4e4ea9d6cd70e841af8745dbc4d50adef5adf99e725d240bcb92e6f1e8"},
-]
 pickleshare = [
     {file = "pickleshare-0.7.5-py2.py3-none-any.whl", hash = "sha256:9649af414d74d4df115d5d718f82acb59c9d418196b7b4290ed47a12ce62df56"},
     {file = "pickleshare-0.7.5.tar.gz", hash = "sha256:87683d47965c1da65cdacaf31c8441d12b8044cdec9aca500cd78fc2c683afca"},
@@ -4428,9 +4383,6 @@ typing-extensions = [
 urllib3 = [
     {file = "urllib3-1.26.9-py2.py3-none-any.whl", hash = "sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14"},
     {file = "urllib3-1.26.9.tar.gz", hash = "sha256:aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e"},
-]
-validate-email = [
-    {file = "validate_email-1.3.tar.gz", hash = "sha256:784719dc5f780be319cdd185dc85dd93afebdb6ebb943811bc4c7c5f9c72aeaf"},
 ]
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
