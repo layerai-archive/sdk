@@ -1,4 +1,5 @@
 import abc
+import os
 import uuid
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
@@ -19,6 +20,11 @@ from layer.contracts.tracker import (
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 
 from .output import get_progress_ui
+
+
+LAYER_DISABLE_TRACKING_UI = (
+    os.environ.get("LAYER_DISABLE_TRACKING_UI", "False").lower() == "true"
+)
 
 
 class RunProgressTracker(abc.ABC):
@@ -57,8 +63,12 @@ class RunProgressTracker(abc.ABC):
         """
         Initializes tracking. Meant to be used with a `with` construct.
         """
-        self.__google_colab_ipykernel_fix()
-        with self._progress:
+        if not LAYER_DISABLE_TRACKING_UI:
+            self.__google_colab_ipykernel_fix()
+            with self._progress:
+                self._init_tasks()
+                yield self
+        else:
             self._init_tasks()
             yield self
 
