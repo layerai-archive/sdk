@@ -27,6 +27,8 @@ jobs:
           restore-keys: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-
       - name: Run check
         run: make check
+      - name: Run check-colab-violations
+        run: make check-colab-violations
 
   check-package-loads:
     runs-on: ubuntu-18.04
