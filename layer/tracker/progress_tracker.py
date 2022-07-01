@@ -1,4 +1,3 @@
-import abc
 import os
 import uuid
 from contextlib import contextmanager
@@ -19,6 +18,7 @@ from layer.contracts.tracker import (
 )
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 
+from .base_progress_tracker import BaseRunProgressTracker
 from .output import get_progress_ui
 
 
@@ -27,7 +27,7 @@ LAYER_DISABLE_TRACKING_UI = (
 )
 
 
-class RunProgressTracker(abc.ABC):
+class RunProgressTracker(BaseRunProgressTracker):
     def __init__(
         self,
         url: URL,
@@ -59,7 +59,7 @@ class RunProgressTracker(abc.ABC):
         )
 
     @contextmanager
-    def track(self) -> Iterator["RunProgressTracker"]:
+    def track(self) -> Iterator["BaseRunProgressTracker"]:
         """
         Initializes tracking. Meant to be used with a `with` construct.
         """

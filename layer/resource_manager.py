@@ -15,7 +15,7 @@ from layer.contracts.assets import AssetType
 from layer.contracts.definitions import FunctionDefinition, ResourcePath
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.base_progress_tracker import BaseRunProgressTracker
 
 
 def _strip_resource_root_path(path: str) -> str:
@@ -96,7 +96,7 @@ class ResourceManager:
         self,
         project_full_name: ProjectFullName,
         functions: List[FunctionDefinition],
-        tracker: RunProgressTracker,
+        tracker: BaseRunProgressTracker,
     ) -> None:
         """
         Collect and upload local files as resources for all functions decorated with `@resource`.
@@ -119,7 +119,7 @@ class ResourceManager:
         self,
         project_full_name: ProjectFullName,
         function: FunctionDefinition,
-        tracker: RunProgressTracker,
+        tracker: BaseRunProgressTracker,
         session: aiohttp.ClientSession,
     ) -> None:
         state = ResourceTransferState()
@@ -158,7 +158,7 @@ class ResourceManager:
         self,
         project_full_name: ProjectFullName,
         functions: List[FunctionDefinition],
-        tracker: RunProgressTracker,
+        tracker: BaseRunProgressTracker,
     ) -> None:
         """
         Collect and upload local files as resources for all functions decorated with `@resources`.

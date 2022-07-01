@@ -17,7 +17,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
 
@@ -30,7 +30,7 @@ def _run(user_function: Any) -> Any:
     current_project_full_name_ = get_current_project_full_name()
     config: Config = asyncio_run_in_thread(ConfigManager().refresh())
     with LayerClient(config.client, logger).init() as client:
-        progress_tracker = RunProgressTracker(
+        progress_tracker = get_progress_tracker(
             url=config.url,
             project_name=current_project_full_name_.project_name,
             account_name=current_project_full_name_.account_name,
