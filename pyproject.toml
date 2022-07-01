@@ -75,6 +75,7 @@ nvsmi = "^0.4.2"
 psutil = "^5.9.1"
 
 [tool.poetry.dev-dependencies]
+# h5py is a tensorflow transitive dependency and we limit it because of conda-miniforge
 h5py = "<3.7.0"
 black = "22.3.0"
 boto3-stubs = ">=1.23.4"
