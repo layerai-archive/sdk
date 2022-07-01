@@ -46,7 +46,7 @@ from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
 from layer.flavors.utils import get_flavor_for_proto
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.ui_progress_tracker import UIRunProgressTracker
 from layer.utils.grpc import create_grpc_channel
 from layer.utils.s3 import S3Util
 
@@ -228,7 +228,7 @@ class ModelCatalogClient:
         self,
         model: Model,
         model_object: ModelObject,
-        tracker: RunProgressTracker,
+        tracker: UIRunProgressTracker,
     ) -> ModelObject:
         self._logger.debug(f"Storing given model {model_object} for {model.path}")
         try:

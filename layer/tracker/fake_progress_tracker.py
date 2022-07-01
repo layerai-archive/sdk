@@ -9,10 +9,10 @@ from layer.contracts.asset import AssetType
 from layer.contracts.tracker import DatasetTransferState, ResourceTransferState
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 
-from .base_progress_tracker import BaseRunProgressTracker
+from .progress_tracker import RunProgressTracker
 
 
-class FakeRunProgressTracker(BaseRunProgressTracker):
+class FakeRunProgressTracker(RunProgressTracker):
     @contextmanager
     def track(self) -> Iterator["FakeRunProgressTracker"]:
         yield self

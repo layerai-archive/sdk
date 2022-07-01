@@ -15,7 +15,7 @@ from layer.projects.utils import (
     get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
 )
-from layer.tracker.base_progress_tracker import BaseRunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.training.runtime.model_train_failure_reporter import (
     ModelTrainFailureReporter,
@@ -149,7 +149,7 @@ def _model_wrapper(
         @staticmethod
         def _train_model_locally_and_store_remotely(
             model: FunctionDefinition,
-            tracker: BaseRunProgressTracker,
+            tracker: RunProgressTracker,
             client: LayerClient,
         ) -> Any:
             from layer.training.runtime.model_trainer import (

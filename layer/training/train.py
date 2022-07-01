@@ -10,7 +10,7 @@ from layer.clients.layer import LayerClient
 from layer.contracts.models import Model
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.flavors.utils import get_flavor_for_model
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.ui_progress_tracker import UIRunProgressTracker
 from layer.types import ModelObject
 
 from ..contracts.project_full_name import ProjectFullName
@@ -71,7 +71,7 @@ class Train(BaseTrain):
     def save_model(
         self,
         model_object: ModelObject,
-        tracker: RunProgressTracker,
+        tracker: UIRunProgressTracker,
     ) -> Any:
         assert self.__train_id
 

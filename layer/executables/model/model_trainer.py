@@ -26,7 +26,7 @@ from layer.global_context import (
     set_active_context,
 )
 from layer.resource_manager import ResourceManager
-from layer.tracker.base_progress_tracker import BaseRunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
 
@@ -92,7 +92,7 @@ class ModelTrainer:
     client: LayerClient
     train_context: TrainContext
     logger: Logger
-    tracker: BaseRunProgressTracker
+    tracker: RunProgressTracker
 
     def train(self) -> Any:
         self.tracker.mark_model_training(

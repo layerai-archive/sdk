@@ -27,7 +27,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
-from layer.tracker.base_progress_tracker import BaseRunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 from layer.utils.runtime_utils import check_and_convert_to_df
@@ -41,7 +41,7 @@ def _run_assertions(
     asset_name: str,
     result: Any,
     assertions: List[Assertion],
-    tracker: BaseRunProgressTracker,
+    tracker: RunProgressTracker,
 ) -> None:
     failed_assertions = []
     tracker.mark_dataset_running_assertions(asset_name)

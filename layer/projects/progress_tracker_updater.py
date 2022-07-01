@@ -21,7 +21,7 @@ from layer.exceptions.exceptions import (
 )
 from layer.exceptions.status_report import ExecutionStatusReportFactory
 from layer.projects.utils import get_current_project_full_name
-from layer.tracker.base_progress_tracker import BaseRunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.session import is_layer_debug_on
 
 
@@ -38,7 +38,7 @@ _FormattedRunMetadata = Dict[Tuple["PBTask.Type.ValueType", str, str], str]
 
 
 class ProgressTrackerUpdater:
-    tracker: BaseRunProgressTracker
+    tracker: RunProgressTracker
     client: LayerClient
     apply_metadata: ApplyResult
     run: Run
@@ -47,7 +47,7 @@ class ProgressTrackerUpdater:
 
     def __init__(
         self,
-        tracker: BaseRunProgressTracker,
+        tracker: RunProgressTracker,
         apply_metadata: ApplyResult,
         run: Run,
         definitions: List[FunctionDefinition],

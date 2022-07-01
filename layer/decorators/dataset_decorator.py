@@ -23,7 +23,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.settings import LayerSettings
-from layer.tracker.base_progress_tracker import BaseRunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 from layer.utils.runtime_utils import check_and_convert_to_df
@@ -193,7 +193,7 @@ def _build_dataset_locally_and_store_remotely(
     building_func: Callable[..., Any],
     layer: LayerSettings,
     dataset: FunctionDefinition,
-    tracker: BaseRunProgressTracker,
+    tracker: RunProgressTracker,
     client: LayerClient,
 ) -> Any:
     tracker.add_asset(AssetType.DATASET, layer.get_asset_name())
@@ -225,7 +225,7 @@ def _build_locally_update_remotely(
     client: LayerClient,
     function_that_builds_dataset: Callable[..., Any],
     dataset: FunctionDefinition,
-    tracker: BaseRunProgressTracker,
+    tracker: RunProgressTracker,
 ) -> Tuple[Any, UUID]:
     try:
         with Context() as context:
@@ -271,7 +271,7 @@ def _run_assertions(
     asset_name: str,
     result: Any,
     assertions: List[Assertion],
-    tracker: BaseRunProgressTracker,
+    tracker: RunProgressTracker,
 ) -> None:
     failed_assertions = []
     tracker.mark_dataset_running_assertions(asset_name)

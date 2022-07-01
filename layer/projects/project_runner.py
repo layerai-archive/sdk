@@ -42,7 +42,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.resource_manager import ResourceManager
-from layer.tracker.base_progress_tracker import BaseRunProgressTracker
+from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
 
@@ -83,7 +83,7 @@ class RunContext:
 
 
 class ProjectRunner:
-    _tracker: BaseRunProgressTracker
+    _tracker: RunProgressTracker
 
     def __init__(
         self,
@@ -98,7 +98,7 @@ class ProjectRunner:
         ]
         self.files_hash = calculate_hash_by_definitions(self.definitions)
 
-    def get_tracker(self) -> BaseRunProgressTracker:
+    def get_tracker(self) -> RunProgressTracker:
         return self._tracker
 
     def _apply(self, client: LayerClient) -> ApplyResult:
@@ -253,7 +253,7 @@ def register_dataset_function(
     client: LayerClient,
     dataset: FunctionDefinition,
     is_local: bool,
-    tracker: BaseRunProgressTracker,
+    tracker: RunProgressTracker,
 ) -> None:
     try:
         project_id = verify_project_exists_and_retrieve_project_id(
@@ -287,7 +287,7 @@ def register_model_function(
     client: LayerClient,
     model: FunctionDefinition,
     is_local: bool,
-    tracker: BaseRunProgressTracker,
+    tracker: RunProgressTracker,
 ) -> None:
     try:
         response = client.model_catalog.create_model_version(
