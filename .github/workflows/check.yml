@@ -45,6 +45,9 @@ jobs:
           make install
           poetry lock --no-update
           [ -z "$(git status --porcelain=v1 2>/dev/null)" ] || (echo "Lock file is not up to date, please run 'poetry lock --no-update'" && exit 1)
+      - name: Help on job failure
+        if: ${{ failure() }}
+        run: echo "Try running \"poetry cache clear --all pypi\" before \"poetry lock --no-update\""
   check:
     strategy:
       fail-fast: false
