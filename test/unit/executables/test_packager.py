@@ -123,7 +123,7 @@ class CallableMethod:
 )
 def test_only_funcions_could_be_packaged(callable):
     with pytest.raises(ValueError, match=r"function must be a function"):
-        package_function(lambda: 42)
+        package_function(callable)
 
 
 def func_simple() -> None:
