@@ -4,6 +4,8 @@ import sys
 import zipfile
 from pathlib import Path
 
+import pytest
+
 from layer.executables.packager import package_function
 
 
@@ -103,6 +105,25 @@ def test_executable_with_dependencies(tmpdir: Path):
     assert result.returncode == 0
     assert "running requests version 2.28.0" in result.stdout
     assert "running click version 8.1.3" in result.stdout
+
+
+class CallableClass:
+    def __call__(self):
+        return 42
+
+
+class CallableMethod:
+    def x(self):
+        return 42
+
+
+@pytest.mark.parametrize(
+    "callable",
+    [(lambda: 42), (CallableClass(),), (CallableMethod().x,), ("e",), (42,)],
+)
+def test_only_funcions_could_be_packaged(callable):
+    with pytest.raises(ValueError, match=r"function must be a function"):
+        package_function(lambda: 42)
 
 
 def func_simple() -> None:

@@ -7,7 +7,6 @@ import tempfile
 import zipapp
 from pathlib import Path
 from typing import Any, Callable, List, Optional
-from uuid import uuid4
 
 import cloudpickle  # type: ignore
 
@@ -19,6 +18,9 @@ def package_function(
     output_dir: Optional[Path] = None,
 ) -> Path:
     """Packages layer function as a Python executable."""
+
+    if not inspect.isfunction(function) or function.__name__ == "<lambda>":
+        raise ValueError("function must be a function")
 
     with tempfile.TemporaryDirectory() as source_dir:
         source = Path(source_dir)
@@ -42,10 +44,7 @@ def package_function(
             cloudpickle.register_pickle_by_value(sys.modules[function.__module__])
             cloudpickle.dump(function, function_, protocol=pickle.DEFAULT_PROTOCOL)
 
-        # executable name is the function name (and not all callables always have a name)
-        executable_name = getattr(function, "__name__", f"callable-{uuid4()}")
-
-        target = (output_dir or Path(".")) / executable_name
+        target = (output_dir or Path(".")) / function.__name__
 
         # create the executable
         zipapp.create_archive(
