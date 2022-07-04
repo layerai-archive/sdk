@@ -126,6 +126,26 @@ def test_only_funcions_could_be_packaged(callable):
         package_function(callable)
 
 
+@pytest.mark.skip(
+    reason="TODO: https://linear.app/layer/issue/LAY-3451/handle-package-conflicts-between-user-and-runtime-dependencies"
+)
+def test_cloudpickle_already_defined_in_pip_requirements(tmpdir: Path):
+    def use_cloudpickle():
+        import cloudpickle  # type: ignore
+
+        print(f"running cloudpickle version {cloudpickle.__version__}")
+
+    executable = package_function(
+        use_cloudpickle,
+        pip_dependencies=["cloudpickle==1.3.0"],
+        output_dir=tmpdir,
+    )
+    result = _subprocess_run(executable)
+
+    assert result.returncode == 0
+    assert "running cloudpickle version 2.1.0" in result.stdout
+
+
 def func_simple() -> None:
     print("running simple function")
 
