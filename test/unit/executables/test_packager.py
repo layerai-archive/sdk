@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePath
 
 import pytest
 
@@ -144,6 +144,14 @@ def test_cloudpickle_already_defined_in_pip_requirements(tmpdir: Path):
 
     assert result.returncode == 0
     assert "running cloudpickle version 2.1.0" in result.stdout
+
+
+def test_package_same_function_to_the_same_output_dir(tmpdir: Path):
+    exec1 = package_function(func_simple, output_dir=tmpdir)
+    exec2 = package_function(func_simple, output_dir=tmpdir)
+
+    assert exec1 == exec2
+    assert PurePath(exec1).name == "func_simple"
 
 
 def func_simple() -> None:
