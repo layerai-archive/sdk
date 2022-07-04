@@ -81,7 +81,7 @@ def _package_resources(source: Path, resources: List[Path]) -> None:
             _walk_dir(resource)
 
 
-# depenedencies required by the runtime itself
+# dependencies required by the runtime itself
 _runtime_requirements = ["cloudpickle==2.1.0"]
 
 
