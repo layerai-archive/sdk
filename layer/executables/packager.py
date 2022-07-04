@@ -11,6 +11,10 @@ from typing import Any, Callable, List, Optional
 import cloudpickle  # type: ignore
 
 
+# dependencies required by the runtime itself
+_RUNTIME_REQUIREMENTS = ["cloudpickle==2.1.0"]
+
+
 def package_function(
     function: Callable[..., Any],
     resources: Optional[List[Path]] = None,
@@ -28,7 +32,7 @@ def package_function(
         requirements_path = source / "requirements.txt"
         with open(requirements_path, mode="w", encoding="utf8") as requirements:
             requirements.write(
-                "\n".join(_runtime_requirements + (pip_dependencies or []))
+                "\n".join(_RUNTIME_REQUIREMENTS + (pip_dependencies or []))
             )
 
         main_path = source / "__main__.py"
@@ -79,10 +83,6 @@ def _package_resources(source: Path, resources: List[Path]) -> None:
             _copy_resource_file(resource)
         elif resource.is_dir():
             _walk_dir(resource)
-
-
-# dependencies required by the runtime itself
-_runtime_requirements = ["cloudpickle==2.1.0"]
 
 
 def _loader_source() -> str:
