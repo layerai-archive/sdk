@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from logging import Logger
 from typing import Iterator
 
-from layerapi.api.service.executor.executor_api_pb2 import GetUploadPathRequest
+from layerapi.api.service.executor.executor_api_pb2 import GetFunctionUploadPathRequest
 from layerapi.api.service.executor.executor_api_pb2_grpc import ExecutorAPIStub
 
 from layer.config import ClientConfig
@@ -40,8 +40,8 @@ class ExecutorClient:
         project_full_name: ProjectFullName,
         function_name: str,
     ) -> str:
-        request = GetUploadPathRequest(
+        request = GetFunctionUploadPathRequest(
             project_full_name=project_full_name.path,
             function_name=function_name,
         )
-        return self._service.GetUploadPath(request=request)
+        return self._service.GetFunctionUploadPath(request=request).function_upload_path
