@@ -43,6 +43,7 @@ from layer.projects.utils import (
 )
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.utils import get_progress_tracker
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
 
 
@@ -116,7 +117,7 @@ class ProjectRunner:
             definition.package()
         with LayerClient(self._config.client, logger).init() as client:
             get_or_create_remote_project(client, self.project_full_name)
-            with RunProgressTracker(
+            with get_progress_tracker(
                 url=self._config.url,
                 account_name=self.project_full_name.account_name,
                 project_name=self.project_full_name.project_name,

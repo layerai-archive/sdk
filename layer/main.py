@@ -60,7 +60,7 @@ from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.utils import get_current_project_full_name
 from layer.settings import LayerSettings
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.utils import get_progress_tracker
 from layer.training.train import Train
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -255,7 +255,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                         set_active_context(context)
                         context.with_asset_name(asset_path.asset_name)
                         context.with_asset_type(AssetType.DATASET)
-                        tracker = RunProgressTracker(
+                        tracker = get_progress_tracker(
                             url=config.url,
                             account_name=asset_path.must_org_name(),
                             project_name=asset_path.must_project_name(),
@@ -339,7 +339,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
                     set_active_context(context)
                     context.with_asset_name(asset_path.asset_name)
                     context.with_asset_type(AssetType.MODEL)
-                    tracker = RunProgressTracker(
+                    tracker = get_progress_tracker(
                         url=config.url,
                         account_name=asset_path.must_org_name(),
                         project_name=asset_path.must_project_name(),

@@ -16,6 +16,7 @@ from layer.projects.utils import (
     verify_project_exists_and_retrieve_project_id,
 )
 from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.utils import get_progress_tracker
 from layer.training.runtime.model_train_failure_reporter import (
     ModelTrainFailureReporter,
 )
@@ -133,7 +134,7 @@ def _model_wrapper(
             else:
                 current_project_full_name_ = get_current_project_full_name()
                 with LayerClient(config.client, logger).init() as client:
-                    progress_tracker = RunProgressTracker(
+                    progress_tracker = get_progress_tracker(
                         url=config.url,
                         project_name=current_project_full_name_.project_name,
                         account_name=current_project_full_name_.account_name,

@@ -24,6 +24,7 @@ from layer.projects.utils import (
 )
 from layer.settings import LayerSettings
 from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 from layer.utils.runtime_utils import check_and_convert_to_df
 
@@ -167,7 +168,7 @@ def _dataset_wrapper(
             else:
                 current_project_full_name_ = get_current_project_full_name()
                 with LayerClient(config.client, logger).init() as client:
-                    progress_tracker = RunProgressTracker(
+                    progress_tracker = get_progress_tracker(
                         url=config.url,
                         project_name=current_project_full_name_.project_name,
                         account_name=current_project_full_name_.account_name,

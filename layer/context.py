@@ -3,7 +3,7 @@ from typing import Optional
 
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.ui_progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
 
 

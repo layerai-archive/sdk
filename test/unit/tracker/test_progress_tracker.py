@@ -1,7 +1,7 @@
 from yarl import URL
 
 from layer.contracts.project_full_name import ProjectFullName
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.ui_progress_tracker import UIRunProgressTracker
 
 
 PROJECT = ProjectFullName(
@@ -14,7 +14,7 @@ TEST_URL = URL("https://test.layer.ai")
 
 
 def test_tracker_mark_model_training():
-    tracker = RunProgressTracker(
+    tracker = UIRunProgressTracker(
         project_name=PROJECT.project_name,
         account_name=PROJECT.account_name,
         url=TEST_URL,

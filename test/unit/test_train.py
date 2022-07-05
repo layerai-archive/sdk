@@ -11,7 +11,7 @@ from layer.clients.model_catalog import ModelCatalogClient
 from layer.config import ClientConfig
 from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import UnexpectedModelTypeException
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.tracker.ui_progress_tracker import UIRunProgressTracker
 from layer.training.train import Train
 
 from .. import IS_DARWIN
@@ -71,5 +71,5 @@ def test_when_save_model_gets_invalid_object_then_throw_exception(
     with pytest.raises(UnexpectedModelTypeException):
         train.save_model(
             invalid_model_object,
-            tracker=RunProgressTracker(url=URL(""), account_name="", project_name=""),
+            tracker=UIRunProgressTracker(url=URL(""), account_name="", project_name=""),
         )
