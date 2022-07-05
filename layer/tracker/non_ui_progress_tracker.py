@@ -12,9 +12,9 @@ from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
 from .progress_tracker import RunProgressTracker
 
 
-class FakeRunProgressTracker(RunProgressTracker):
+class NonUIRunProgressTracker(RunProgressTracker):
     @contextmanager
-    def track(self) -> Iterator["FakeRunProgressTracker"]:
+    def track(self) -> Iterator["NonUIRunProgressTracker"]:
         yield self
 
     def add_asset(self, asset_type: AssetType, asset_name: str) -> None:
