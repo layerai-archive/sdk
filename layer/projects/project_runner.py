@@ -11,7 +11,7 @@ from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
-from layer.config import Config, is_feature_active
+from layer.config import Config, is_executables_feature_active
 from layer.contracts.assets import AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.project_full_name import ProjectFullName
@@ -129,8 +129,8 @@ class ProjectRunner:
                     user_command = self._get_user_command(
                         execute_function=ProjectRunner.run, functions=self.definitions
                     )
-                    if is_feature_active("TAR_PACKAGING"):
-                        asyncio.run(self._upload_tar_packages(client))
+                    if is_executables_feature_active():
+                        asyncio.run(self._upload_executable_packages(client))
                     else:
                         ResourceManager(client).wait_resource_upload(
                             self.project_full_name, self.definitions, tracker
@@ -166,23 +166,25 @@ class ProjectRunner:
                     )
         return run
 
-    async def _upload_tar_packages(self, client: LayerClient) -> None:
+    async def _upload_executable_packages(self, client: LayerClient) -> None:
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             upload_tasks = [
-                self._upload_tar_package(client, definition, session)
+                self._upload_executable_package(client, definition, session)
                 for definition in self.definitions
             ]
             await asyncio.gather(*upload_tasks)
 
-    async def _upload_tar_package(
+    async def _upload_executable_package(
         self,
         client: LayerClient,
         function: FunctionDefinition,
         session: aiohttp.ClientSession,
     ) -> None:
-        with open(function.tar_path, "rb") as package_file:
+        package_path = function.package()
+        with open(package_path, "rb") as package_file:
             presigned_url = client.executor_service_client.get_upload_path(
-                self.project_full_name, f"{function.asset_name}.tar"
+                project_full_name=self.project_full_name,
+                function_name=function.func.__name__,
             )
             await session.put(
                 presigned_url,

@@ -23,8 +23,7 @@ from .config_client import ConfigClient  # noqa
 from .config_manager import ConfigManager  # noqa
 
 
-def is_feature_active(feature_name: str) -> bool:
+def is_executables_feature_active() -> bool:
     import os
 
-    env_var_value = os.environ.get(f"layer_{feature_name}".upper())
-    return env_var_value == "1"
+    return "LAYER_EXECUTABLES" in os.environ
