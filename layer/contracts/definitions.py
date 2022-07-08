@@ -59,6 +59,8 @@ class FunctionDefinition:
         self.source_code_digest = hashlib.sha256()
         self.source_code_digest.update(self.func_source.encode("utf-8"))
 
+        self._executable_path: Optional[Path] = None
+
     def __repr__(self) -> str:
         return f"FunctionDefinition({self.asset_type}, {self.asset_name})"
 
@@ -124,7 +126,8 @@ class FunctionDefinition:
     def package(self) -> Path:
         self._clean_function_home_dir()
         if is_executables_feature_active():
-            return self._package_executable()
+            self._executable_path = self._package_executable()
+            return self._executable_path
         else:
             # Dump pickled function to asset_name.pkl
             with open(self.pickle_path, mode="wb") as file:
@@ -143,3 +146,9 @@ class FunctionDefinition:
             pip_dependencies=self.pip_dependencies,
             output_dir=self.function_home_dir,
         )
+
+    @property
+    def executable_path(self) -> Path:
+        if self._executable_path is None:
+            self._executable_path = self._package_executable()
+        return self._executable_path
