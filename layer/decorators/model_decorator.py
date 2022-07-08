@@ -6,7 +6,7 @@ import wrapt  # type: ignore
 
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager, is_feature_active
+from layer.config import ConfigManager, is_executables_feature_active
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
 from layer.contracts.definitions import FunctionDefinition
@@ -111,16 +111,16 @@ def _model_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             model_definition = self.get_definition()
-            model_definition.package()
+            package_path = model_definition.package()
             config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            if is_feature_active("TAR_PACKAGING"):
+            if is_executables_feature_active():
                 import subprocess  # nosec: import_subprocess
                 import sys
 
                 subprocess.run(  # nosec: start_process_with_partial_path, subprocess_without_shell_equals_true
                     [
                         "sh",
-                        model_definition.tar_path,
+                        package_path,
                     ],
                     env={
                         "LAYER_CLIENT_AUTH_URL": str(config.url),

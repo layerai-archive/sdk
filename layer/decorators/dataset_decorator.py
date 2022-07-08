@@ -7,7 +7,7 @@ from layerapi.api.ids_pb2 import ProjectId
 
 from layer import Dataset, Model
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager, is_feature_active
+from layer.config import ConfigManager, is_executables_feature_active
 from layer.config.config import Config
 from layer.context import Context
 from layer.contracts.assertions import Assertion
@@ -145,16 +145,16 @@ def _dataset_wrapper(
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             self.layer.validate()
             dataset_definition = self.get_definition()
-            dataset_definition.package()
+            package_path = dataset_definition.package()
             config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            if is_feature_active("TAR_PACKAGING"):
+            if is_executables_feature_active():
                 import subprocess  # nosec: import_subprocess
                 import sys
 
                 subprocess.run(  # nosec: start_process_with_partial_path, subprocess_without_shell_equals_true
                     [
                         "sh",
-                        dataset_definition.tar_path,
+                        package_path,
                     ],
                     env={
                         "LAYER_CLIENT_AUTH_URL": str(config.url),

@@ -9,17 +9,13 @@ from typing import Any, Callable, List, Optional
 
 import cloudpickle  # type: ignore
 
-from layer.config import DEFAULT_FUNC_PATH, is_feature_active
+from layer.config import DEFAULT_FUNC_PATH, is_executables_feature_active
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import ResourcePath
-from layer.executables.tar import (
-    DATASET_BUILD_ENTRYPOINT_FILE,
-    MODEL_TRAIN_ENTRYPOINT_FILE,
-    build_executable_tar,
-)
+from layer.executables.packager import package_function
 
 
 class FunctionDefinition:
@@ -63,6 +59,8 @@ class FunctionDefinition:
         self.source_code_digest = hashlib.sha256()
         self.source_code_digest.update(self.func_source.encode("utf-8"))
 
+        self._executable_path: Optional[Path] = None
+
     def __repr__(self) -> str:
         return f"FunctionDefinition({self.asset_type}, {self.asset_name})"
 
@@ -105,10 +103,6 @@ class FunctionDefinition:
         return self.function_home_dir / self.entrypoint
 
     @property
-    def tar_path(self) -> Path:
-        return self.function_home_dir / f"{self.asset_name}.tar"
-
-    @property
     def environment(self) -> str:
         return "requirements.txt"
 
@@ -129,22 +123,11 @@ class FunctionDefinition:
             shutil.rmtree(function_home_dir)
         os.makedirs(function_home_dir)
 
-    def package(self) -> None:
+    def package(self) -> Path:
         self._clean_function_home_dir()
-        if is_feature_active("TAR_PACKAGING"):
-            build_executable_tar(
-                path=self.tar_path,
-                function=self.func,
-                entrypoint=MODEL_TRAIN_ENTRYPOINT_FILE
-                if self.asset_type == AssetType.MODEL
-                else DATASET_BUILD_ENTRYPOINT_FILE,
-                pip_dependencies=self.pip_dependencies,
-                resources=[
-                    Path(local_path)
-                    for resource_path in self.resource_paths
-                    for local_path in resource_path.local_relative_paths()
-                ],
-            )
+        if is_executables_feature_active():
+            self._executable_path = self._package_executable()
+            return self._executable_path
         else:
             # Dump pickled function to asset_name.pkl
             with open(self.pickle_path, mode="wb") as file:
@@ -152,3 +135,20 @@ class FunctionDefinition:
 
             with open(self.environment_path, "w") as reqs_file:
                 reqs_file.write("\n".join(self.pip_dependencies))
+
+            return self.pickle_path
+
+    def _package_executable(self) -> Path:
+        resource_paths = [Path(resource.path) for resource in self.resource_paths]
+        return package_function(
+            self.func,
+            resources=resource_paths,
+            pip_dependencies=self.pip_dependencies,
+            output_dir=self.function_home_dir,
+        )
+
+    @property
+    def executable_path(self) -> Path:
+        if self._executable_path is None:
+            self._executable_path = self._package_executable()
+        return self._executable_path
