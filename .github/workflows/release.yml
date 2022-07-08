@@ -117,6 +117,7 @@ jobs:
           key: poetry-venvs-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
           restore-keys: poetry-venvs-${{ runner.os }}-3.8-
       - name: Check lockfile
+        if: ${{ false }}
         run: |
           make install
           poetry lock --no-update
