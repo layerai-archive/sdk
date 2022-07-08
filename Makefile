@@ -7,6 +7,7 @@ IN_VENV := $(shell echo $(CONDA_DEFAULT_ENV)$(CONDA_PREFIX)$(VIRTUAL_ENV))
 CONDA_ENV_NAME := $(shell echo $(CONDA_DEFAULT_ENV))
 UNAME_SYS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
+REQUIRED_POETRY_VERSION := 1.1.14
 
 .DEFAULT_GOAL:=help
 
@@ -82,7 +83,10 @@ lint: $(INSTALL_STAMP) ## Run all linters
 
 .PHONY: check-poetry
 check-poetry:
-	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. See https://python-poetry.org/docs/"; exit 2; fi
+	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. Please install $(REQUIRED_POETRY_VERSION). See https://python-poetry.org/docs/"; exit 2; fi
+ifneq ($(shell $(POETRY) --version | awk '{print $$3}'), $(REQUIRED_POETRY_VERSION))
+	@echo "Please use Poetry version $(REQUIRED_POETRY_VERSION)" && exit 2
+endif
 
 .PHONY: check-package-loads
 check-package-loads: ## Check that we can load the package without the dev dependencies
