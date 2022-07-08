@@ -44,6 +44,7 @@ jobs:
         run: |
           make install
           poetry lock --no-update
+          git diff
           [ -z "$(git status --porcelain=v1 2>/dev/null)" ] || (echo "Lock file is not up to date, please run 'poetry cache clear --all pypi' then 'poetry lock --no-update'" && exit 1)
   check:
     strategy:
