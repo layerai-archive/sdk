@@ -18,7 +18,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.13
+          poetry-version: 1.1.14
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -40,7 +40,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.13
+          poetry-version: 1.1.14
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -65,7 +65,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.13
+          poetry-version: 1.1.14
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -109,7 +109,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.13
+          poetry-version: 1.1.14
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -117,7 +117,6 @@ jobs:
           key: poetry-venvs-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
           restore-keys: poetry-venvs-${{ runner.os }}-3.8-
       - name: Check lockfile
-        if: ${{ false }}
         run: |
           make install
           poetry lock --no-update

@@ -13,7 +13,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.13
+          poetry-version: 1.1.14
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -25,7 +25,6 @@ jobs:
 
   check-lockfile:
     runs-on: ubuntu-18.04
-    if: ${{ false }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -34,7 +33,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.13
+          poetry-version: 1.1.14
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -60,7 +59,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.13
+          poetry-version: 1.1.14
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -86,7 +85,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.13
+          poetry-version: 1.1.14
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
