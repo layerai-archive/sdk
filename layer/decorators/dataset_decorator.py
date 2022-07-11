@@ -17,7 +17,7 @@ from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.tracker import DatasetTransferState
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 from layer.global_context import reset_active_context, set_active_context
-from layer.projects.project_runner import register_dataset_function
+from layer.projects.project_runner import register_function
 from layer.projects.utils import (
     get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
@@ -198,7 +198,7 @@ def _build_dataset_locally_and_store_remotely(
 ) -> Any:
     tracker.add_asset(AssetType.DATASET, layer.get_asset_name())
 
-    register_dataset_function(client, dataset, True, tracker)
+    register_function(client, func=dataset, tracker=tracker)
     tracker.mark_dataset_building(layer.get_asset_name())
 
     (result, build_uuid) = _build_locally_update_remotely(
