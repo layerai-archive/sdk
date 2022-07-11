@@ -14,6 +14,7 @@ from layer.clients.layer import LayerClient
 from layer.config import Config, is_executables_feature_active
 from layer.contracts.assets import AssetType
 from layer.contracts.definitions import FunctionDefinition
+from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import ApplyResult
 from layer.contracts.runs import Run
@@ -103,10 +104,7 @@ class ProjectRunner:
 
     def _apply(self, client: LayerClient) -> ApplyResult:
         for definition in self.definitions:
-            if definition.asset_type == AssetType.DATASET:
-                register_dataset_function(client, definition, False, self._tracker)
-            elif definition.asset_type == AssetType.MODEL:
-                register_model_function(client, definition, False, self._tracker)
+            register_function(client, definition, self._tracker)
 
         execution_plan = build_execution_plan(self.definitions)
         return ApplyResult(execution_plan=execution_plan)
@@ -250,7 +248,7 @@ class ProjectRunner:
             return run_id
 
 
-def register_dataset_function(
+def _register_dataset_function(
     client: LayerClient,
     dataset: FunctionDefinition,
     is_local: bool,
@@ -284,7 +282,7 @@ def register_dataset_function(
         )
 
 
-def register_model_function(
+def _register_model_function(
     client: LayerClient,
     model: FunctionDefinition,
     is_local: bool,
@@ -326,3 +324,22 @@ def register_model_function(
             f"Failed to save model {model.asset_name!r}: {e}",
             "Please retry",
         )
+
+
+def register_function(
+    client: LayerClient,
+    func: FunctionDefinition,
+    tracker: RunProgressTracker,
+) -> None:
+    local_fabric = func.fabric == Fabric.F_LOCAL
+    function_registrator = _get_function_registrator(func.asset_type)
+    function_registrator(client, func, local_fabric, tracker)
+
+
+def _get_function_registrator(asset_type: AssetType) -> Callable[..., None]:
+    if asset_type == AssetType.DATASET:
+        return _register_dataset_function
+    elif asset_type == AssetType.MODEL:
+        return _register_model_function
+    else:
+        raise ValueError(f"unsupported asset type: {asset_type}")

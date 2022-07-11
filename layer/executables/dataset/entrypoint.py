@@ -21,7 +21,7 @@ from layer.global_context import (
     set_active_context,
     set_has_shown_update_message,
 )
-from layer.projects.project_runner import register_dataset_function
+from layer.projects.project_runner import register_function
 from layer.projects.utils import (
     get_current_project_full_name,
     verify_project_exists_and_retrieve_project_id,
@@ -84,7 +84,7 @@ def _run(user_function: Any) -> None:
                 assertions=settings.get_assertions(),
             )
 
-            register_dataset_function(client, dataset, True, tracker)
+            register_function(client, func=dataset, tracker=tracker)
             tracker.mark_dataset_building(settings.get_asset_name())
 
             try:
