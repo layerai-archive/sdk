@@ -159,6 +159,9 @@ class ProgressTrackerUpdater:
                 train_index=str(train_index),
                 version=version_name,
             )
+            self.tracker.mark_model_saved(
+                name=model_name,
+            )
         else:
             # TODO: alert for this
             _print_debug(f"Task type not handled {task_type}")
