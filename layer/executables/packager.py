@@ -6,16 +6,18 @@ import shutil  # nosec
 import sys
 import tempfile
 import zipapp
+import zipfile
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Generator, List, Optional
+from typing import Any, Callable, Generator, Optional, Sequence, Tuple
 
 from . import cloudpickle
 
 
 def package_function(
     function: Callable[..., Any],
-    resources: Optional[List[Path]] = None,
-    pip_dependencies: Optional[List[str]] = None,
+    resources: Optional[Sequence[Path]] = None,
+    pip_dependencies: Optional[Sequence[str]] = None,
     output_dir: Optional[Path] = None,
 ) -> Path:
     """Packages layer function as a Python executable."""
@@ -59,6 +61,19 @@ def package_function(
         return target
 
 
+@dataclass(frozen=True)
+class FunctionPackageInfo:
+    pip_dependencies: Tuple[str, ...]
+
+
+def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
+    """Returns package info from a function package file."""
+    with zipfile.ZipFile(package_path) as package:
+        with package.open("requirements.txt", "r") as requirements:
+            pip_dependencies = tuple(requirements.read().decode("utf8").splitlines())
+            return FunctionPackageInfo(pip_dependencies=pip_dependencies)
+
+
 def _copy_cloudpickle_package(target_path: Path) -> None:
     # source path to copy cloudpickle package from
     source_path = Path(cloudpickle.__file__).resolve().parent
@@ -75,7 +90,7 @@ def _copy_cloudpickle_package(target_path: Path) -> None:
         shutil.copyfile(file_path, cloudpickle_dir / file_path.name)
 
 
-def _package_resources(source: Path, resources: List[Path]) -> None:
+def _package_resources(source: Path, resources: Sequence[Path]) -> None:
     resource_root = source / "resources"
     resource_root.mkdir(parents=True, exist_ok=True)
 
@@ -102,8 +117,10 @@ def _package_resources(source: Path, resources: List[Path]) -> None:
 def _loader_source() -> str:
     """Returns the source code of the layer function loader."""
 
-    # entrypoint function body is inlined in the executable's __main__.py
     def _entrypoint() -> None:
+        """Entrypoint that is inlined in the executable's __main__.py to load the function
+        and communicate with the runtime."""
+
         # pylint: disable=W0404
         import os
         import shutil
@@ -111,32 +128,62 @@ def _loader_source() -> str:
         import zipfile
         from pathlib import Path
 
+        # cloudpickle is included in the executable
         import cloudpickle  # type: ignore
 
-        with tempfile.TemporaryDirectory() as env_dir:
-            with zipfile.ZipFile(os.path.dirname(__file__)) as exec:
-                # extract resources
-                for entry in exec.infolist():
-                    if entry.filename.startswith("resources/"):
-                        with exec.open(entry, mode="r") as resource:
-                            target_path = (
-                                Path(".") / entry.filename[len("resources/") :]
-                            )
-                            target_path.parent.mkdir(parents=True, exist_ok=True)
-                            if not entry.is_dir():
-                                with target_path.open(mode="wb") as f:
-                                    shutil.copyfileobj(resource, f)
+        def _get_function_runtime():  # type: ignore
+            """Load the function runtime from the globals dictionary.
+            If none is provided, load the default runtime, which calls the function directly."""
 
-                function_path = os.path.join(env_dir, "function")
+            # check for the runtime being provided from the outside
+            if "__function_runtime" in globals():
+                return __function_runtime  # type: ignore # noqa: F821 # pylint: disable=undefined-variable
+            else:
 
-                # extract user function
-                with exec.open("function", mode="r") as function:
-                    with open(function_path, mode="wb") as f:
-                        shutil.copyfileobj(function, f)
+                # return the default runtime, which calls the function directly
+                def _execute_function(function):  # type: ignore
+                    return function()
 
-                # load and run user function
-                with open(function_path, mode="rb") as f:
-                    cloudpickle.load(f)()
+                return _execute_function
+
+        def _extract_resources(exec):  # type: ignore
+            """Extracts resources from the executable."""
+            for entry in exec.infolist():
+                if entry.filename.startswith("resources/"):
+                    with exec.open(entry, mode="r") as resource:
+                        target_path = Path(".") / entry.filename[len("resources/") :]
+                        target_path.parent.mkdir(parents=True, exist_ok=True)
+                        if not entry.is_dir():
+                            with target_path.open(mode="wb") as f:
+                                shutil.copyfileobj(resource, f)
+
+        def _extract_function(exec, function_path):  # type: ignore
+            """Extracts the cloudpickled function from the executable."""
+            with exec.open("function", mode="r") as function:
+                with open(function_path, mode="wb") as f:
+                    shutil.copyfileobj(function, f)
+
+        def _load_function(function_path):  # type: ignore
+            """Loads the cloudpickled function."""
+            with open(function_path, mode="rb") as function:
+                return cloudpickle.load(function)
+
+        def _execute():  # type: ignore
+            """Extracts the contents of the executable and runs the function in the provided runtime."""
+            # get the function runtime
+            runtime_exec = _get_function_runtime()  # type: ignore
+
+            with tempfile.TemporaryDirectory() as work_dir:
+                function_path = os.path.join(work_dir, "function")
+
+                with zipfile.ZipFile(os.path.dirname(__file__)) as exec:
+                    _extract_resources(exec)  # type: ignore
+                    _extract_function(exec, function_path)  # type: ignore
+
+                function = _load_function(function_path)  # type: ignore
+                runtime_exec(function)
+
+        _execute()  # type: ignore
 
     return f"""
 if __name__ == "__main__":
