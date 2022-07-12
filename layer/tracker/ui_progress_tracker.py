@@ -61,6 +61,7 @@ class UIRunProgressTracker(RunProgressTracker):
         with self._progress:
             self._init_tasks()
             yield self
+            self._progress.refresh()
 
     def _get_url(self, asset_type: AssetType, name: str) -> URL:
         return AssetPath(
@@ -82,7 +83,6 @@ class UIRunProgressTracker(RunProgressTracker):
         task_key = (asset_type, asset_name)
         if task_key not in self._tasks:
             task_id = self._progress.add_task(
-                status=AssetTrackerStatus.PENDING,
                 start=False,
                 asset=AssetTracker(
                     type=asset_type, name=asset_name, status=AssetTrackerStatus.PENDING
@@ -266,11 +266,19 @@ class UIRunProgressTracker(RunProgressTracker):
             status=AssetTrackerStatus.SAVING,
         )
 
-    def mark_model_saved(self, name: str) -> None:
+    def mark_model_saved(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        train_index: Optional[str] = None,
+    ) -> None:
         self._update_asset(
             AssetType.MODEL,
             name,
-            status=AssetTrackerStatus.PENDING,
+            status=AssetTrackerStatus.DONE,
+            url=self._get_url(AssetType.MODEL, name),
+            version=version,
+            build_idx=train_index,
         )
 
     def mark_model_training(

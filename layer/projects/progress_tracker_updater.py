@@ -154,7 +154,7 @@ class ProgressTrackerUpdater:
             version_name = self.client.model_catalog.get_model_version(
                 ModelVersionId(value=str(task_id))
             ).name
-            self.tracker.mark_model_trained(
+            self.tracker.mark_model_saved(
                 name=model_name,
                 train_index=str(train_index),
                 version=version_name,

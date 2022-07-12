@@ -314,7 +314,6 @@ def _register_model_function(
                 model.get_fabric(is_local),
             )
 
-        tracker.mark_model_saved(model.asset_name)
     except LayerClientServiceUnavailableException as e:
         tracker.mark_model_train_failed(model.asset_name, "")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))

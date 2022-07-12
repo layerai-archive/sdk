@@ -347,6 +347,8 @@ class AssetColumn(ProgressColumn):
             text = "from cache"
         elif asset.status == AssetTrackerStatus.ASSET_LOADED:
             text = "loaded"
+        elif asset.status == AssetTrackerStatus.DONE:
+            text = "done"
         else:
             text = task.description
         if (
