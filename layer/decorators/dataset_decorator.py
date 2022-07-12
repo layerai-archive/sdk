@@ -143,48 +143,30 @@ def _dataset_wrapper(
         # This is not serialized with cloudpickle, so it will only be run locally.
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
+            if is_executables_feature_active():
+                # execute the function, metadata capture will be done by the runtime
+                return self.__wrapped__(*args, **kwargs)
             self.layer.validate()
             dataset_definition = self.get_definition()
-            package_path = dataset_definition.package()
+            dataset_definition.package()
             config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            if is_executables_feature_active():
-                import subprocess  # nosec: import_subprocess
-                import sys
-
-                subprocess.run(  # nosec: start_process_with_partial_path, subprocess_without_shell_equals_true
-                    [
-                        "sh",
-                        package_path,
-                    ],
-                    env={
-                        "LAYER_CLIENT_AUTH_URL": str(config.url),
-                        "LAYER_CLIENT_AUTH_TOKEN": config.credentials.access_token,
-                        "LAYER_PROJECT_NAME": dataset_definition.project_name,
-                        "PYTHON_EXECUTABLE_PATH": sys.executable,
-                    },
-                    stderr=sys.stderr,
-                    stdout=sys.stdout,
+            current_project_full_name_ = get_current_project_full_name()
+            with LayerClient(config.client, logger).init() as client:
+                progress_tracker = get_progress_tracker(
+                    url=config.url,
+                    project_name=current_project_full_name_.project_name,
+                    account_name=current_project_full_name_.account_name,
                 )
-            else:
-                current_project_full_name_ = get_current_project_full_name()
-                with LayerClient(config.client, logger).init() as client:
-                    progress_tracker = get_progress_tracker(
-                        url=config.url,
-                        project_name=current_project_full_name_.project_name,
-                        account_name=current_project_full_name_.account_name,
+                with progress_tracker.track() as tracker:
+                    tracker.add_asset(AssetType.DATASET, self.layer.get_asset_name())
+                    result = _build_dataset_locally_and_store_remotely(
+                        lambda: dataset_definition.func(*args, **kwargs),
+                        self.layer,
+                        dataset_definition,
+                        tracker,
+                        client,
                     )
-                    with progress_tracker.track() as tracker:
-                        tracker.add_asset(
-                            AssetType.DATASET, self.layer.get_asset_name()
-                        )
-                        result = _build_dataset_locally_and_store_remotely(
-                            lambda: dataset_definition.func(*args, **kwargs),
-                            self.layer,
-                            dataset_definition,
-                            tracker,
-                            client,
-                        )
-                        return result
+                    return result
 
     return DatasetFunctionWrapper
 
