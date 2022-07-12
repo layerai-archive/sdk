@@ -60,7 +60,12 @@ class RunProgressTracker(ABC):
         pass
 
     @abstractmethod
-    def mark_model_saved(self, name: str) -> None:
+    def mark_model_saved(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        train_index: Optional[str] = None,
+    ) -> None:
         pass
 
     @abstractmethod

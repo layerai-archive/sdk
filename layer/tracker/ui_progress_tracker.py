@@ -1,4 +1,3 @@
-import time
 import uuid
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
@@ -62,9 +61,7 @@ class UIRunProgressTracker(RunProgressTracker):
         with self._progress:
             self._init_tasks()
             yield self
-            time.sleep(
-                0.5
-            )  # Give some time so the latest metadata gets a chance to get rendered
+            self._progress.refresh()
 
     def _get_url(self, asset_type: AssetType, name: str) -> URL:
         return AssetPath(
@@ -269,11 +266,19 @@ class UIRunProgressTracker(RunProgressTracker):
             status=AssetTrackerStatus.SAVING,
         )
 
-    def mark_model_saved(self, name: str) -> None:
+    def mark_model_saved(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        train_index: Optional[str] = None,
+    ) -> None:
         self._update_asset(
             AssetType.MODEL,
             name,
             status=AssetTrackerStatus.DONE,
+            url=self._get_url(AssetType.MODEL, name),
+            version=version,
+            build_idx=train_index,
         )
 
     def mark_model_training(
@@ -304,7 +309,7 @@ class UIRunProgressTracker(RunProgressTracker):
         self._update_asset(
             AssetType.MODEL,
             name,
-            status=AssetTrackerStatus.TRAINING,
+            status=AssetTrackerStatus.DONE,
             url=self._get_url(AssetType.MODEL, name),
             version=version,
             build_idx=train_index,
