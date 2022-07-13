@@ -7,7 +7,7 @@ import pytest
 from layerapi.api.entity.account_view_pb2 import AccountView
 from layerapi.api.entity.project_pb2 import Project
 from layerapi.api.entity.project_view_pb2 import ProjectView
-from layerapi.api.ids_pb2 import AccountId, OrganizationId, ProjectId
+from layerapi.api.ids_pb2 import AccountId, ProjectId
 from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
     CreateProjectResponse,
@@ -42,12 +42,12 @@ def _get_project_service_client_with_mocks(
 def _get_mock_project() -> Project:
     expected_project_uuid = str(uuid.uuid4())
     proto_project_id = ProjectId(value=expected_project_uuid)
-    proto_org_id = OrganizationId(value=str(uuid.uuid4()))
+    proto_account_id = AccountId(value=str(uuid.uuid4()))
     return Project(
         id=proto_project_id,
         name="name",
         description="description",
-        organization_id=proto_org_id,
+        account_id=proto_account_id,
         visibility=Project.VISIBILITY_PRIVATE,
     )
 
@@ -137,7 +137,7 @@ def test_given_project_exists_when_get_project_by_path_then_project_returned():
     assert mock_project.id.value == str(project.id)
     assert mock_project.name == str(project.name)
     assert "acc" == str(project.account.name)
-    assert mock_project.organization_id.value == str(project.account.id)
+    assert mock_project.account_id.value == str(project.account.id)
 
 
 def test_given_no_project_when_get_project_by_path_then_returns_none():

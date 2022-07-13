@@ -59,7 +59,7 @@ class ProjectServiceClient:
         full_name: ProjectFullName, project_msg: ProjectMessage
     ) -> Project:
         project_id = UUID(project_msg.id.value)
-        account_id = UUID(project_msg.organization_id.value)
+        account_id = UUID(project_msg.account_id.value)
         return Project(
             name=full_name.project_name,
             id=project_id,
