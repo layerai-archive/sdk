@@ -34,6 +34,26 @@ class LayerSettings:
             raise LayerClientException("Asset type cannot be empty")
         return self._asset_type
 
+    @property
+    def asset_type(self) -> AssetType:
+        return self.get_asset_type()
+
+    @property
+    def asset_name(self) -> str:
+        return self.get_asset_name()
+
+    @property
+    def pip_packages(self) -> List[str]:
+        return self.get_pip_packages()
+
+    @property
+    def pip_requirements_file(self) -> str:
+        return self.get_pip_requirements_file()
+
+    @property
+    def resource_paths(self) -> List[ResourcePath]:
+        return self.get_resource_paths()
+
     def get_asset_name(self) -> str:
         if self._name is None:
             raise LayerClientException("Asset name cannot be empty")
