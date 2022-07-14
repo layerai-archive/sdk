@@ -60,6 +60,11 @@ def test_package_contents(tmpdir: Path):
             "resources/test/unit/executables/data/dir/a/3",
             "resources/test/unit/executables/data/dir/a/b/",
             "resources/test/unit/executables/data/dir/a/b/4",
+            "cloudpickle/",
+            "cloudpickle/__init__.py",
+            "cloudpickle/cloudpickle.py",
+            "cloudpickle/cloudpickle_fast.py",
+            "cloudpickle/compat.py",
         }
 
 
@@ -94,19 +99,6 @@ def test_execute_func_with_resources(tmpdir: Path):
     )
 
 
-def test_executable_with_dependencies(tmpdir: Path):
-    executable = package_function(
-        func_with_dependencies,
-        pip_dependencies=["requests==2.28.0", "click==8.1.3"],
-        output_dir=tmpdir,
-    )
-    result = _subprocess_run(executable)
-
-    assert result.returncode == 0
-    assert "running requests version 2.28.0" in result.stdout
-    assert "running click version 8.1.3" in result.stdout
-
-
 class CallableClass:
     def __call__(self):
         return 42
@@ -126,26 +118,6 @@ def test_only_funcions_could_be_packaged(callable):
         package_function(callable)
 
 
-@pytest.mark.skip(
-    reason="TODO: https://linear.app/layer/issue/LAY-3451/handle-package-conflicts-between-user-and-runtime-dependencies"
-)
-def test_cloudpickle_already_defined_in_pip_requirements(tmpdir: Path):
-    def use_cloudpickle():
-        import cloudpickle  # type: ignore
-
-        print(f"running cloudpickle version {cloudpickle.__version__}")
-
-    executable = package_function(
-        use_cloudpickle,
-        pip_dependencies=["cloudpickle==1.3.0"],
-        output_dir=tmpdir,
-    )
-    result = _subprocess_run(executable)
-
-    assert result.returncode == 0
-    assert "running cloudpickle version 2.1.0" in result.stdout
-
-
 def test_package_same_function_to_the_same_output_dir(tmpdir: Path):
     exec1 = package_function(func_simple, output_dir=tmpdir)
     exec2 = package_function(func_simple, output_dir=tmpdir)
@@ -156,14 +128,6 @@ def test_package_same_function_to_the_same_output_dir(tmpdir: Path):
 
 def func_simple() -> None:
     print("running simple function")
-
-
-def func_with_dependencies() -> None:
-    import click  # type: ignore
-    import requests  # type: ignore
-
-    print(f"running requests version {requests.__version__}")
-    print(f"running click version {click.__version__}")
 
 
 def _subprocess_run(executable, cwd=None):

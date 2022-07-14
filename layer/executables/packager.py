@@ -1,3 +1,4 @@
+import glob
 import inspect
 import os
 import pickle  # nosec
@@ -8,11 +9,7 @@ import zipapp
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-import cloudpickle  # type: ignore
-
-
-# dependencies required by the runtime itself
-_RUNTIME_REQUIREMENTS = ["cloudpickle==2.1.0"]
+from . import cloudpickle
 
 
 def package_function(
@@ -29,11 +26,17 @@ def package_function(
     with tempfile.TemporaryDirectory() as source_dir:
         source = Path(source_dir)
 
+        # include cloudpickle itself in the executable
+        cloudpickle_source = Path(cloudpickle.__file__).resolve().parent
+        cloudpickle_dest = source / "cloudpickle"
+        cloudpickle_dest.mkdir(parents=True, exist_ok=True)
+        for module_file in glob.iglob(f"{cloudpickle_source}{os.sep}*.py"):
+            module_path = Path(module_file)
+            shutil.copyfile(module_path, cloudpickle_dest / module_path.name)
+
         requirements_path = source / "requirements.txt"
         with open(requirements_path, mode="w", encoding="utf8") as requirements:
-            requirements.write(
-                "\n".join(_RUNTIME_REQUIREMENTS + (pip_dependencies or []))
-            )
+            requirements.write("\n".join(pip_dependencies or []))
 
         main_path = source / "__main__.py"
         with open(main_path, mode="w", encoding="utf8") as main:
@@ -45,8 +48,8 @@ def package_function(
         function_path = source / "function"
         with open(function_path, mode="wb") as function_:
             # register to pickle by value to ensure unpickling works anywhere, even if a module is not accessible for the runtime
-            cloudpickle.register_pickle_by_value(sys.modules[function.__module__])
-            cloudpickle.dump(function, function_, protocol=pickle.DEFAULT_PROTOCOL)
+            cloudpickle.register_pickle_by_value(sys.modules[function.__module__])  # type: ignore
+            cloudpickle.dump(function, function_, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
 
         target = (output_dir or Path(".")) / function.__name__
 
@@ -93,31 +96,14 @@ def _loader_source() -> str:
         # pylint: disable=W0404
         import os
         import shutil
-        import subprocess  # nosec
         import tempfile
-        import venv
         import zipfile
         from pathlib import Path
 
+        import cloudpickle  # type: ignore
+
         with tempfile.TemporaryDirectory() as env_dir:
-            # create virtual environment
-            venv.create(env_dir, with_pip=True)
-
-            python_path = os.path.join(env_dir, "bin", "python")
-
             with zipfile.ZipFile(os.path.dirname(__file__)) as exec:
-                # install dependencies
-                with exec.open("requirements.txt", mode="r") as requirements:
-                    pip_install = [
-                        python_path,
-                        "-m",
-                        "pip",
-                        "--quiet",
-                        "--disable-pip-version-check",
-                        "install",
-                    ] + [package.decode("utf-8") for package in requirements]
-                subprocess.check_call(pip_install)  # nosec
-
                 # extract resources
                 for entry in exec.infolist():
                     if entry.filename.startswith("resources/"):
@@ -137,14 +123,9 @@ def _loader_source() -> str:
                     with open(function_path, mode="wb") as f:
                         shutil.copyfileobj(function, f)
 
-                # execute user function in the newly created virtual environment
-                subprocess.check_call(  # nosec
-                    [
-                        python_path,
-                        "-c",
-                        f"import cloudpickle;cloudpickle.load(open('{function_path}','rb'))()",
-                    ]
-                )
+                # load and run user function
+                with open(function_path, mode="rb") as f:
+                    cloudpickle.load(f)()
 
     return f"""
 if __name__ == "__main__":

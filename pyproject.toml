@@ -344,7 +344,8 @@ enable = [
 [tool.bandit]
 exclude_dirs = [
     "test",
-    ".eggs"
+    ".eggs",
+    "cloudpickle",
 ]
 skips = [
     "B101", # assert_used
