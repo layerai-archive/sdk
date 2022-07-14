@@ -1,4 +1,5 @@
 import hashlib
+import re
 from typing import List
 from uuid import UUID
 
@@ -8,6 +9,9 @@ from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import current_project_full_name
+
+
+_PROJECT_NAME_PATTERN = re.compile(r"^(([a-zA-Z0-9_-]+)\/)?([a-zA-Z0-9_-]+)$")
 
 
 def verify_project_exists_and_retrieve_project_id(
@@ -41,6 +45,16 @@ def get_current_project_full_name() -> ProjectFullName:
             " 'layer.init(\"account-name/project-name\")' or 'layer.init(\"project-name\")'"
         )
     return project_full_name
+
+
+def validate_project_name(project_name: str) -> None:
+    result = _PROJECT_NAME_PATTERN.search(project_name)
+    if not result:
+        raise ValueError(
+            "Invalid project or account name. Please provide project name in the format"
+            ' "account-name/project-name" or "project-name". Names can only'
+            " contain letters a-z A-Z, numbers 0-9, hyphens (-) and underscores (_)."
+        )
 
 
 def calculate_hash_by_definitions(definitions: List[FunctionDefinition]) -> str:

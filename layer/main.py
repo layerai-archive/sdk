@@ -58,7 +58,7 @@ from layer.global_context import (
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
-from layer.projects.utils import get_current_project_full_name
+from layer.projects.utils import get_current_project_full_name, validate_project_name
 from layer.settings import LayerSettings
 from layer.tracker.utils import get_progress_tracker
 from layer.training.train import Train
@@ -524,6 +524,8 @@ def init(
         project = layer.init("my_project_name", fabric="x-small")
     """
     _check_latest_version()
+
+    validate_project_name(project_name)
 
     if pip_packages and pip_requirements_file:
         raise ValueError(
