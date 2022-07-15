@@ -4,7 +4,12 @@ from typing import Iterator, List, Optional, cast
 from uuid import UUID
 
 from layerapi.api.entity.logged_model_metric_pb2 import LoggedModelMetric
-from layerapi.api.ids_pb2 import DatasetBuildId, ModelMetricId, ModelTrainId
+from layerapi.api.ids_pb2 import (
+    DatasetBuildId,
+    LoggedMetricGroupId,
+    ModelMetricId,
+    ModelTrainId,
+)
 from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     GetLoggedDataRequest,
     LogDataRequest,
@@ -70,7 +75,11 @@ class LoggedDataClient:
         )
 
     def log_model_metric(
-        self, train_id: UUID, tag: str, points: List[ModelMetricPoint]
+        self,
+        train_id: UUID,
+        tag: str,
+        points: List[ModelMetricPoint],
+        metric_group_uuid: UUID,
     ) -> ModelMetricId:
         metric = LoggedModelMetric(
             unique_tag=tag,
@@ -78,6 +87,7 @@ class LoggedDataClient:
                 LoggedModelMetric.ModelMetricPoint(epoch=p.epoch, value=p.value)
                 for p in points
             ],
+            group_id=LoggedMetricGroupId(value=str(metric_group_uuid)),
         )
         request = LogModelMetricRequest(
             model_train_id=ModelTrainId(value=str(train_id)), metric=metric
