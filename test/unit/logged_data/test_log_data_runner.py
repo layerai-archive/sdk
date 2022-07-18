@@ -137,12 +137,14 @@ def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() 
         train_id=train_id,
         tag=tag1,
         points=[ModelMetricPoint(epoch=epoch, value=numeric_value1)],
+        metric_group_uuid=ANY,
     )
 
     logged_data_client.log_model_metric.assert_any_call(
         train_id=train_id,
         tag=tag2,
         points=[ModelMetricPoint(epoch=epoch, value=numeric_value2)],
+        metric_group_uuid=ANY,
     )
 
 

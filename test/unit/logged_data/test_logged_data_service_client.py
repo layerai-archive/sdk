@@ -3,7 +3,12 @@ from unittest.mock import MagicMock
 
 import pytest
 from layerapi.api.entity.logged_model_metric_pb2 import LoggedModelMetric
-from layerapi.api.ids_pb2 import LoggedDataId, ModelMetricId, ModelTrainId
+from layerapi.api.ids_pb2 import (
+    LoggedDataId,
+    LoggedMetricGroupId,
+    ModelMetricId,
+    ModelTrainId,
+)
 from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     LogDataRequest,
     LogDataResponse,
@@ -119,9 +124,12 @@ def test_given_tag_not_exists_when_log_model_metric_then_calls_log_metric():  # 
     train_id = uuid.uuid4()
     tag = "foo-test-tag"
     points = [ModelMetricPoint(epoch=1, value=1), ModelMetricPoint(epoch=2, value=2)]
+    metric_group_uuid = uuid.uuid4()
 
     # when
-    logged_data_client.log_model_metric(train_id=train_id, tag=tag, points=points)
+    logged_data_client.log_model_metric(
+        train_id=train_id, tag=tag, points=points, metric_group_uuid=metric_group_uuid
+    )
 
     # then
     mock_logged_data_api.LogModelMetric.assert_called_with(
@@ -133,6 +141,7 @@ def test_given_tag_not_exists_when_log_model_metric_then_calls_log_metric():  # 
                     LoggedModelMetric.ModelMetricPoint(epoch=1, value=1),
                     LoggedModelMetric.ModelMetricPoint(epoch=2, value=2),
                 ],
+                group_id=LoggedMetricGroupId(value=str(metric_group_uuid)),
             ),
         )
     )
