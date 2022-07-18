@@ -7,7 +7,7 @@ import sys
 import tempfile
 import zipapp
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Generator, List, Optional
 
 from . import cloudpickle
 
@@ -27,12 +27,7 @@ def package_function(
         source = Path(source_dir)
 
         # include cloudpickle itself in the executable
-        cloudpickle_source = Path(cloudpickle.__file__).resolve().parent
-        cloudpickle_dest = source / "cloudpickle"
-        cloudpickle_dest.mkdir(parents=True, exist_ok=True)
-        for module_file in glob.iglob(f"{cloudpickle_source}{os.sep}*.py"):
-            module_path = Path(module_file)
-            shutil.copyfile(module_path, cloudpickle_dest / module_path.name)
+        _copy_cloudpickle_package(source)
 
         requirements_path = source / "requirements.txt"
         with open(requirements_path, mode="w", encoding="utf8") as requirements:
@@ -62,6 +57,22 @@ def package_function(
         target.chmod(0o744)
 
         return target
+
+
+def _copy_cloudpickle_package(target_path: Path) -> None:
+    # source path to copy cloudpickle package from
+    source_path = Path(cloudpickle.__file__).resolve().parent
+
+    def _package_contents() -> Generator[str, None, None]:
+        for module_file in glob.iglob(f"{source_path}{os.sep}*.py"):
+            yield module_file
+        yield str(source_path / "LICENSE")
+
+    cloudpickle_dir = target_path / "cloudpickle"
+    cloudpickle_dir.mkdir(parents=True, exist_ok=True)
+    for file in _package_contents():
+        file_path = Path(file)
+        shutil.copyfile(file_path, cloudpickle_dir / file_path.name)
 
 
 def _package_resources(source: Path, resources: List[Path]) -> None:

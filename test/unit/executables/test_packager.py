@@ -61,6 +61,7 @@ def test_package_contents(tmpdir: Path):
             "resources/test/unit/executables/data/dir/a/b/",
             "resources/test/unit/executables/data/dir/a/b/4",
             "cloudpickle/",
+            "cloudpickle/LICENSE",
             "cloudpickle/__init__.py",
             "cloudpickle/cloudpickle.py",
             "cloudpickle/cloudpickle_fast.py",
