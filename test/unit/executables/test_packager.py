@@ -46,9 +46,10 @@ def test_package_contents(tmpdir: Path):
         exec_entries = {entry.filename for entry in exec.infolist()}
         assert exec_entries == {
             "requirements.txt",
-            "resources/",
             "function",
+            "metadata.json",
             "__main__.py",
+            "resources/",
             "resources/test/",
             "resources/test/unit/",
             "resources/test/unit/executables/",
@@ -84,11 +85,11 @@ def test_get_function_package_info_with_pip_dependencies(tmpdir: Path):
         pip_dependencies=(
             "package1=0.0.1",
             "package2",
-        )
+        ),
     )
 
 
-def test_get_function_package_info_(tmpdir: Path):
+def test_get_function_package_info_without_pip_dependecies(tmpdir: Path):
     def func_without_pip_dependencies():
         pass
 
@@ -100,6 +101,32 @@ def test_get_function_package_info_(tmpdir: Path):
     package_info = get_function_package_info(executable)
 
     assert package_info == FunctionPackageInfo(pip_dependencies=())
+
+
+def test_get_function_package_info_metadata(tmpdir: Path):
+    def func_with_metadata():
+        pass
+
+    executable = package_function(
+        func_with_metadata,
+        metadata={"a": 1, "b": "2", "c": [3, 4], "d": {"e": 5}},
+        output_dir=tmpdir,
+    )
+    package_info = get_function_package_info(executable)
+
+    assert package_info == FunctionPackageInfo(
+        metadata={"a": 1, "b": "2", "c": [3, 4], "d": {"e": 5}}
+    )
+
+
+def test_get_function_package_info_empty(tmpdir: Path):
+    def func_empty():
+        pass
+
+    executable = package_function(func_empty, output_dir=tmpdir)
+    package_info = get_function_package_info(executable)
+
+    assert package_info == FunctionPackageInfo()
 
 
 class CallableClass:
