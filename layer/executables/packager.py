@@ -1,5 +1,6 @@
 import glob
 import inspect
+import json
 import os
 import pickle  # nosec
 import shutil  # nosec
@@ -7,9 +8,9 @@ import sys
 import tempfile
 import zipapp
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Generator, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Generator, Optional, Sequence, Tuple
 
 from . import cloudpickle
 
@@ -18,6 +19,7 @@ def package_function(
     function: Callable[..., Any],
     resources: Optional[Sequence[Path]] = None,
     pip_dependencies: Optional[Sequence[str]] = None,
+    metadata: Optional[Dict[str, Any]] = None,
     output_dir: Optional[Path] = None,
 ) -> Path:
     """Packages layer function as a Python executable."""
@@ -48,6 +50,10 @@ def package_function(
             cloudpickle.register_pickle_by_value(sys.modules[function.__module__])  # type: ignore
             cloudpickle.dump(function, function_, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
 
+        metadata_path = source / "metadata.json"
+        with open(metadata_path, mode="w", encoding="utf8") as metadata_:
+            json.dump(metadata or {}, metadata_, separators=(",", ":"))
+
         target = (output_dir or Path(".")) / function.__name__
 
         # create the executable
@@ -63,15 +69,20 @@ def package_function(
 
 @dataclass(frozen=True)
 class FunctionPackageInfo:
-    pip_dependencies: Tuple[str, ...]
+    pip_dependencies: Tuple[str, ...] = ()
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
     """Returns package info from a function package file."""
+    pip_dependencies: Tuple[str, ...] = ()
+    metadata = {}
     with zipfile.ZipFile(package_path) as package:
         with package.open("requirements.txt", "r") as requirements:
             pip_dependencies = tuple(requirements.read().decode("utf8").splitlines())
-            return FunctionPackageInfo(pip_dependencies=pip_dependencies)
+        with package.open("metadata.json", "r") as metadata_:
+            metadata = json.loads(metadata_.read().decode("utf8"))
+    return FunctionPackageInfo(pip_dependencies=pip_dependencies, metadata=metadata)
 
 
 def _copy_cloudpickle_package(target_path: Path) -> None:
