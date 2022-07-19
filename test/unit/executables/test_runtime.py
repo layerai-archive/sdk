@@ -1,8 +1,11 @@
 import contextlib
+import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+from venv import EnvBuilder
 
 import pytest
 
@@ -80,22 +83,34 @@ def func_simple() -> None:
     print("running simple function")
 
 
+class VirtualEnv(EnvBuilder):
+    def post_setup(self, context):
+        self._python_bin = Path(context.env_exe)
+
+    @property
+    def python_bin(self) -> Path:
+        return self._python_bin
+
+
 @contextlib.contextmanager
 def _virtual_env_python() -> Path:
-    import venv
-
     with tempfile.TemporaryDirectory() as venv_dir:
-        python_bin = Path(venv_dir) / "bin" / "python"
-        venv.create(venv_dir, with_pip=True, system_site_packages=True)
-        yield python_bin
+        test_venv = VirtualEnv(with_pip=True)
+        test_venv.create(venv_dir)
+        yield test_venv.python_bin
 
 
 def _execute_runtime_module(executable: Path) -> subprocess.CompletedProcess:
+    """Execute the runtime module with the given executable in a virtual environment."""
     with _virtual_env_python() as python_bin:
+        # assume layer is pre-installed in the virtual environment
+        env = {"PYTHONPATH": os.pathsep.join(sys.path)}
+
         # run in a virtual environment, not to mess the current one
         return subprocess.run(
             [python_bin, "-m", "layer.executables.runtime", str(executable)],
             check=True,
             capture_output=True,
             text=True,
+            env=env,
         )
