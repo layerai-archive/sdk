@@ -7,8 +7,6 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-import cloudpickle  # type: ignore
-
 from layer.config import DEFAULT_FUNC_PATH, is_executables_feature_active
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
@@ -16,6 +14,8 @@ from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import ResourcePath
 from layer.executables.packager import package_function
+
+from .. import cloudpickle
 
 
 class FunctionDefinition:
@@ -92,7 +92,7 @@ class FunctionDefinition:
 
     # DEPRECATED below, will remove once we build the simplified backend
     def get_pickled_function(self) -> bytes:
-        return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)
+        return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
 
     @property
     def entrypoint(self) -> str:
@@ -131,7 +131,7 @@ class FunctionDefinition:
         else:
             # Dump pickled function to asset_name.pkl
             with open(self.pickle_path, mode="wb") as file:
-                cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)
+                cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
 
             with open(self.environment_path, "w") as reqs_file:
                 reqs_file.write("\n".join(self.pip_dependencies))

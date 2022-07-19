@@ -3,12 +3,12 @@ import pickle
 from pathlib import Path
 from typing import Any
 
-import cloudpickle
 import pandas as pd
 from pandas import DataFrame as pdDataFrame
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
+import layer.cloudpickle as cloudpickle
 from layer.training.runtime.common import import_function
 
 

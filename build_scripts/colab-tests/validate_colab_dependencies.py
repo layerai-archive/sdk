@@ -12,7 +12,6 @@ from poetry.factory import Factory
 
 # If you add any new entries to this list, please make sure you test your changes in Colab manually first!
 IGNORED_VIOLATIONS = {
-    "Version check failed for 'cloudpickle'. Colab has 1.3.0, but 'layer' requires >=2.0.0",
     "Version check failed for 'grpcio'. Colab has 1.46.3, but 'grpcio-tools' requires >=1.47.0",
     "Version check failed for 'humanize'. Colab has 0.5.1, but 'layer' requires >=3.11.0",
     "Version check failed for 'protobuf'. Colab has 3.17.3, but 'layer-api' requires >=3.19.4",

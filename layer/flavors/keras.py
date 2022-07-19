@@ -49,14 +49,15 @@ class KerasModelFlavor(ModelFlavor):
     def save_model_to_directory(
         self, model_object: ModelObject, directory: Path
     ) -> None:
-        import cloudpickle  # type: ignore
         import keras
         import mlflow.keras
+
+        from .. import cloudpickle
 
         if isinstance(model_object, keras.preprocessing.text.Tokenizer):
             directory.mkdir(parents=True, exist_ok=True)
             with open(directory / KerasModelFlavor.TOKENIZER_FILE, "wb") as handle:
-                cloudpickle.dump(model_object, handle)
+                cloudpickle.dump(model_object, handle)  # type: ignore
         else:
             mlflow.keras.save_model(model_object, path=directory.as_posix())
 
@@ -66,10 +67,10 @@ class KerasModelFlavor(ModelFlavor):
         tokenizer_file = directory / KerasModelFlavor.TOKENIZER_FILE
 
         if tokenizer_file.exists():
-            import cloudpickle
+            from .. import cloudpickle
 
             with open(directory / KerasModelFlavor.TOKENIZER_FILE, "rb") as handle:
-                model = cloudpickle.load(handle)
+                model = cloudpickle.load(handle)  # type: ignore
                 return ModelRuntimeObjects(
                     model, lambda input_df: self.__predict(model, input_df)
                 )
