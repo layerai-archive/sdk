@@ -6,21 +6,21 @@ from pathlib import Path, PurePath
 
 import pytest
 
-from layer.executables.packager import package_function
+from layer.executables.packager import (
+    FunctionPackageInfo,
+    get_function_package_info,
+    package_function,
+)
+
+
+def func_simple() -> None:
+    print("running simple function")
 
 
 def test_executable_has_execute_permissions(tmpdir: Path):
     executable = package_function(func_simple, output_dir=tmpdir)
 
     assert os.access(executable, os.X_OK)
-
-
-def test_execute_func_simple(tmpdir: Path):
-    executable = package_function(func_simple, output_dir=tmpdir)
-    result = _subprocess_run(executable)
-
-    assert result.returncode == 0
-    assert "running simple function" in result.stdout
 
 
 def test_execute_func_simple_as_python_script(tmpdir: Path):
@@ -69,35 +69,37 @@ def test_package_contents(tmpdir: Path):
         }
 
 
-def test_execute_func_with_resources(tmpdir: Path):
-    resources_parent = Path("test") / "unit" / "executables" / "data"
-    resource_paths = [
-        resources_parent / "1",
-        resources_parent / "dir" / "a",
-        resources_parent / "dir" / "2",
-    ]
-
-    def func_with_resources():
-        content = ""
-        for resource_path in resource_paths:
-            resource = Path(resource_path)
-            if resource.is_file():
-                with open(resource_path, "r") as f:
-                    content += f"file:{resource}={f.read()},"
-            elif resource.is_dir():
-                content += f"dir:{resource},"
-        print(f"content is '{content}'")
+def test_get_function_package_info_with_pip_dependencies(tmpdir: Path):
+    def func_with_pip_dependencies():
+        pass
 
     executable = package_function(
-        func_with_resources, resources=resource_paths, output_dir=tmpdir
+        func_with_pip_dependencies,
+        pip_dependencies=["package1=0.0.1", "package2"],
+        output_dir=tmpdir,
     )
-    result = _subprocess_run(executable, cwd=tmpdir)
+    package_info = get_function_package_info(executable)
 
-    assert result.returncode == 0
-    assert (
-        "content is 'file:test/unit/executables/data/1=1,dir:test/unit/executables/data/dir/a,file:test/unit/executables/data/dir/2=2,'"
-        in result.stdout
+    assert package_info == FunctionPackageInfo(
+        pip_dependencies=(
+            "package1=0.0.1",
+            "package2",
+        )
     )
+
+
+def test_get_function_package_info_(tmpdir: Path):
+    def func_without_pip_dependencies():
+        pass
+
+    executable = package_function(
+        func_without_pip_dependencies,
+        pip_dependencies=[],
+        output_dir=tmpdir,
+    )
+    package_info = get_function_package_info(executable)
+
+    assert package_info == FunctionPackageInfo(pip_dependencies=())
 
 
 class CallableClass:
@@ -125,13 +127,3 @@ def test_package_same_function_to_the_same_output_dir(tmpdir: Path):
 
     assert exec1 == exec2
     assert PurePath(exec1).name == "func_simple"
-
-
-def func_simple() -> None:
-    print("running simple function")
-
-
-def _subprocess_run(executable, cwd=None):
-    return subprocess.run(
-        [executable], capture_output=True, text=True, shell=True, cwd=cwd
-    )
