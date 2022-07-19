@@ -57,10 +57,10 @@ def test_from_decorated_resources():
         return [42]
 
     function = Function.from_decorated(dataset_function)
-    assert function.resources == [
+    assert function.resources == (
         Path("path/to/resource"),
         Path("path/to/other/resource"),
-    ]
+    )
 
 
 def test_from_decorated_pip_dependencies_packages():
@@ -70,10 +70,10 @@ def test_from_decorated_pip_dependencies_packages():
         return [42]
 
     function = Function.from_decorated(dataset_function)
-    assert function.pip_dependencies == [
+    assert function.pip_dependencies == (
         "package1",
         "package2==0.0.42",
-    ]
+    )
 
 
 def test_from_decorated_pip_dependencies_requirements(tmp_path):
@@ -89,10 +89,10 @@ def test_from_decorated_pip_dependencies_requirements(tmp_path):
         return [42]
 
     function = Function.from_decorated(dataset_function)
-    assert function.pip_dependencies == [
+    assert function.pip_dependencies == (
         "package1",
         "package2==0.0.42",
-    ]
+    )
 
 
 def test_package_function():
@@ -114,6 +114,6 @@ def test_package_function():
         package_function.assert_called_once_with(
             dataset_function,
             output_dir=package_dir,
-            resources=[Path("path/to/resource"), Path("path/to/other/resource")],
-            pip_dependencies=["package1", "package2==0.0.42"],
+            resources=(Path("path/to/resource"), Path("path/to/other/resource")),
+            pip_dependencies=("package1", "package2==0.0.42"),
         )
