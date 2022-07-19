@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Sequence, Tuple
 
-from . import cloudpickle
+from .. import cloudpickle
 
 
 def package_function(
