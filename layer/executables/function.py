@@ -27,8 +27,12 @@ class Function:
         output = _get_function_output(func)
         pip_dependencies = _get_function_pip_dependencies(func)
         resources = _get_function_resources(func)
+        wrapped_func = _undecorate_function(func)
         return Function(
-            func, output=output, pip_dependencies=pip_dependencies, resources=resources
+            wrapped_func,
+            output=output,
+            pip_dependencies=pip_dependencies,
+            resources=resources,
         )
 
     @property
@@ -54,6 +58,28 @@ class Function:
             resources=self._resources,
             output_dir=output_dir,
         )
+
+
+# the names of the function decorators to unwrap user functions from
+_DECORATOR_FUNCTION_WRAPPERS = frozenset(
+    (
+        "DatasetFunctionWrapper",
+        "FunctionWrapper",
+        "PipRequirementsFunctionWrapper",
+        "FabricFunctionWrapper",
+        "ResourcesFunctionWrapper",
+    )
+)
+
+
+def _undecorate_function(func: Callable[..., Any]) -> Callable[..., Any]:
+    # check if function is decorated with any of the layer decorators
+    if type(func).__name__ in _DECORATOR_FUNCTION_WRAPPERS and hasattr(
+        func, "__wrapped__"
+    ):
+        return _undecorate_function(func.__wrapped__)  # type: ignore
+    else:
+        return func
 
 
 def _get_function_output(func: Callable[..., Any]) -> FunctionOutput:
