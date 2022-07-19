@@ -91,8 +91,6 @@ class ModelCatalogClient:
         """
         Given a model metadata it makes a request to the backend
         and creates a corresponding entity.
-        :param project_full_name: the project full name of the model
-        :param model: the structured of the parsed entity
         :return: the created model version entity
         """
         self._logger.debug(f"Creating model version for the model: {asset_path}")
