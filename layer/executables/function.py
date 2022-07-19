@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
 from layer.contracts.asset import AssetType
 from layer.executables.packager import package_function
@@ -14,8 +14,8 @@ class Function:
         self,
         func: Callable[..., Any],
         output: FunctionOutput,
-        pip_dependencies: List[str],
-        resources: List[Path],
+        pip_dependencies: Sequence[str],
+        resources: Sequence[Path],
     ) -> None:
         self._func = func
         self._output = output
@@ -40,11 +40,11 @@ class Function:
         return self._output
 
     @property
-    def pip_dependencies(self) -> List[str]:
+    def pip_dependencies(self) -> Sequence[str]:
         return self._pip_dependencies
 
     @property
-    def resources(self) -> List[Path]:
+    def resources(self) -> Sequence[Path]:
         return self._resources
 
     def package(self, output_dir: Optional[Path] = None) -> Path:
@@ -73,18 +73,18 @@ def _get_function_output(func: Callable[..., Any]) -> FunctionOutput:
     raise FunctionError(f"unsupported asset type: '{asset_type}'")
 
 
-def _get_function_pip_dependencies(func: Callable[..., Any]) -> List[str]:
+def _get_function_pip_dependencies(func: Callable[..., Any]) -> Sequence[str]:
     pip_packages = _get_decorator_attr(func, "pip_packages") or []
     requirements = _get_decorator_attr(func, "pip_requirements_file")
     if requirements is not None and len(requirements) > 0:
         with open(requirements, "r") as f:
             pip_packages += f.read().splitlines()
-    return pip_packages
+    return tuple(pip_packages)
 
 
-def _get_function_resources(func: Callable[..., Any]) -> List[Path]:
+def _get_function_resources(func: Callable[..., Any]) -> Sequence[Path]:
     resource_paths = _get_decorator_attr(func, "resource_paths") or []
-    return [Path(resource_path.path) for resource_path in resource_paths]
+    return tuple(Path(resource_path.path) for resource_path in resource_paths)
 
 
 def _get_decorator_attr(func: Callable[..., Any], attr: str) -> Optional[Any]:
