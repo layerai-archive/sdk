@@ -22,7 +22,7 @@ from uuid import UUID
 
 from yarl import URL
 
-from layer import Image
+from layer import Image, Markdown
 from layer.cache.cache import Cache
 from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
@@ -727,6 +727,7 @@ def log(
             Image,
             ModuleType,
             Path,
+            Markdown,
         ],
     ],
     step: Optional[int] = None,
@@ -751,6 +752,13 @@ def log(
     ``float``,
     ``bool``,
     ``int``
+
+    **Markdown**
+
+    You can put markdown syntax and it will be rendered in the web UI accordingly.
+
+    Accepted Types:
+    ``layer.Markdown``
 
     **Images**
 

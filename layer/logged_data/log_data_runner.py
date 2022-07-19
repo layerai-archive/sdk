@@ -50,6 +50,7 @@ class LogDataRunner:
                 Image,
                 ModuleType,
                 Path,
+                Markdown,
             ],
         ],
         epoch: Optional[int] = None,
