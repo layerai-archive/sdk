@@ -761,6 +761,13 @@ def log(
     ``path.Path``
     ``layer.Image``
 
+    **Videos**
+
+    We support MP4, WebM, Ogg formats.
+
+    Accepted Types:
+    ``path.Path``
+
     **Charts**
 
     You can track your metrics in detail with charts
