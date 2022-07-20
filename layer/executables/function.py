@@ -1,9 +1,14 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Union
 
+import layer
 from layer.contracts.asset import AssetType
-from layer.executables.packager import package_function
+from layer.executables.packager import (
+    FUNCTION_SERIALIZER_NAME,
+    FUNCTION_SERIALIZER_VERSION,
+    package_function,
+)
 
 
 FunctionOutput = Union["DatasetOutput", "ModelOutput"]
@@ -27,8 +32,12 @@ class Function:
         output = _get_function_output(func)
         pip_dependencies = _get_function_pip_dependencies(func)
         resources = _get_function_resources(func)
+        wrapped_func = _undecorate_function(func)
         return Function(
-            func, output=output, pip_dependencies=pip_dependencies, resources=resources
+            wrapped_func,
+            output=output,
+            pip_dependencies=pip_dependencies,
+            resources=resources,
         )
 
     @property
@@ -47,13 +56,61 @@ class Function:
     def resources(self) -> Sequence[Path]:
         return self._resources
 
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        return {
+            "sdk": {
+                "version": layer.__version__,
+            },
+            "function": {
+                "serializer": {
+                    "name": FUNCTION_SERIALIZER_NAME,
+                    "version": FUNCTION_SERIALIZER_VERSION,
+                },
+                "output": {
+                    "name": self._output.name,
+                    "type": self._output_type_name,
+                },
+            },
+        }
+
+    @property
+    def _output_type_name(self) -> str:
+        if isinstance(self._output, DatasetOutput):
+            return "dataset"
+        if isinstance(self._output, ModelOutput):
+            return "model"
+
     def package(self, output_dir: Optional[Path] = None) -> Path:
         return package_function(
             self._func,
             pip_dependencies=self._pip_dependencies,
             resources=self._resources,
             output_dir=output_dir,
+            metadata=self.metadata,
         )
+
+
+# the names of the function decorators to unwrap user functions from
+_DECORATOR_FUNCTION_WRAPPERS = frozenset(
+    (
+        "DatasetFunctionWrapper",
+        "FunctionWrapper",
+        "PipRequirementsFunctionWrapper",
+        "FabricFunctionWrapper",
+        "ResourcesFunctionWrapper",
+    )
+)
+
+
+def _undecorate_function(func: Callable[..., Any]) -> Callable[..., Any]:
+    # check if function is decorated with any of the layer decorators
+    if type(func).__name__ in _DECORATOR_FUNCTION_WRAPPERS and hasattr(
+        func, "__wrapped__"
+    ):
+        return _undecorate_function(func.__wrapped__)  # type: ignore
+    else:
+        return func
 
 
 def _get_function_output(func: Callable[..., Any]) -> FunctionOutput:
