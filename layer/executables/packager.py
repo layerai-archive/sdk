@@ -181,7 +181,7 @@ def _loader_source() -> str:
         def _load_function(function_path):  # type: ignore
             """Loads the cloudpickled function."""
             with open(function_path, mode="rb") as function:
-                return cloudpickle.load(function)  # type: ignore
+                return cloudpickle.load(function)
 
         def _execute():  # type: ignore
             """Extracts the contents of the executable and runs the function in the provided runtime."""
