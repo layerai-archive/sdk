@@ -257,7 +257,7 @@ def _default_function_metadata(output: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "sdk": {"version": layer.__version__},
         "function": {
-            "serialiser": {"name": "layer.cloudpickle", "version": "2.1.0"},
+            "serializer": {"name": "layer.cloudpickle", "version": "2.1.0"},
             "output": output,
         },
     }

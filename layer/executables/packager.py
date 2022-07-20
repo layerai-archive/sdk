@@ -15,8 +15,8 @@ from typing import Any, Callable, Dict, Generator, Optional, Sequence, Tuple
 from .. import cloudpickle
 
 
-FUNCTION_SERIALISER_NAME = cloudpickle.__name__
-FUNCTION_SERIALISER_VERSION = cloudpickle.__version__  # type: ignore
+FUNCTION_SERIALIZER_NAME = cloudpickle.__name__
+FUNCTION_SERIALIZER_VERSION = cloudpickle.__version__  # type: ignore
 
 
 def package_function(

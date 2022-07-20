@@ -5,8 +5,8 @@ from typing import Any, Callable, Dict, Optional, Sequence, Union
 import layer
 from layer.contracts.asset import AssetType
 from layer.executables.packager import (
-    FUNCTION_SERIALISER_NAME,
-    FUNCTION_SERIALISER_VERSION,
+    FUNCTION_SERIALIZER_NAME,
+    FUNCTION_SERIALIZER_VERSION,
     package_function,
 )
 
@@ -63,9 +63,9 @@ class Function:
                 "version": layer.__version__,
             },
             "function": {
-                "serialiser": {
-                    "name": FUNCTION_SERIALISER_NAME,
-                    "version": FUNCTION_SERIALISER_VERSION,
+                "serializer": {
+                    "name": FUNCTION_SERIALIZER_NAME,
+                    "version": FUNCTION_SERIALIZER_VERSION,
                 },
                 "output": {
                     "name": self._output.name,
