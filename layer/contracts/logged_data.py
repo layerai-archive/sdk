@@ -78,7 +78,15 @@ class Video:
         clip = mpy.ImageSequenceClip(list(tensor), fps=fps)
 
         filename = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
-        clip.write_videofile(filename, verbose=False, progress_bar=None, fps=fps)
+        try:  # newer version of moviepy use logger instead of progress_bar argument.
+            clip.write_videofile(filename, verbose=False, logger=None, fps=fps)
+        except TypeError:
+            try:  # older version of moviepy does not support progress_bar argument.
+                clip.write_videofile(
+                    filename, verbose=False, progress_bar=False, fps=fps
+                )
+            except TypeError:
+                clip.write_videofile(filename, verbose=False, fps=fps)
 
         return Path(filename)
 
