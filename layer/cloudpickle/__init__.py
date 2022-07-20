@@ -1,6 +1,6 @@
 # type: ignore
-from cloudpickle.cloudpickle import *  # noqa
-from cloudpickle.cloudpickle_fast import CloudPickler, dump, dumps  # noqa
+from .cloudpickle import *  # noqa
+from .cloudpickle_fast import CloudPickler, dump, dumps  # noqa
 
 
 # Conform to the convention used by python serialization libraries, which
