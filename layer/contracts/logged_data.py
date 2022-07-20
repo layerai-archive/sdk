@@ -58,7 +58,7 @@ class Video:
         return video_path
 
     @staticmethod
-    def _make_video(tensor: np.ndarray[Any, Any], fps: Union[float, int]) -> Path:
+    def _make_video(tensor: np.ndarray, fps: Union[float, int]) -> Path:  # type: ignore
         try:
             import moviepy  # type: ignore # noqa pylint: disable=unused-import
         except ImportError:
@@ -83,12 +83,12 @@ class Video:
         return Path(filename)
 
     @staticmethod
-    def _calc_scale_factor(tensor: Union[np.ndarray[Any, Any], "torch.Tensor"]) -> int:
+    def _calc_scale_factor(tensor: Union[np.ndarray, "torch.Tensor"]) -> int:  # type: ignore
         converted = tensor.numpy() if not isinstance(tensor, np.ndarray) else tensor
         return 1 if converted.dtype == np.uint8 else 255
 
     @staticmethod
-    def _prepare_video(video_tensor: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
+    def _prepare_video(video_tensor: np.ndarray) -> np.ndarray:  # type: ignore
         """
         Converts a 5D tensor [batchsize, time(frame), channel(color), height, width]
         into 4D tensor with dimension [time(frame), new_width, new_height, channel].
@@ -122,7 +122,7 @@ class Video:
         return video_tensor
 
     @staticmethod
-    def _make_np(x: "torch.Tensor") -> np.ndarray[Any, Any]:
+    def _make_np(x: "torch.Tensor") -> np.ndarray:  # type: ignore
         """
         Args:
           x: An instance of torch tensor
