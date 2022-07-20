@@ -66,6 +66,22 @@ class BaseFunctionRuntime:
 
         cls.execute(**vars(args))
 
+    @classmethod
+    def main(cls) -> None:
+        from argparse import ArgumentParser
+
+        parser = ArgumentParser(description="Function runtime")
+
+        parser.add_argument(
+            "executable_path",
+            type=Path,
+            help="the local file path of the executable",
+        )
+
+        args = parser.parse_args()
+
+        cls.execute(args.executable_path)
+
 
 def _validate_executable_path(executable_path: Path) -> None:
     if not executable_path:
