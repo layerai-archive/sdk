@@ -1,10 +1,12 @@
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any, Dict
 from unittest.mock import patch
 
 import pytest
 
+import layer
 from layer.decorators.assertions import assert_unique
 from layer.decorators.dataset_decorator import dataset
 from layer.decorators.fabric_decorator import fabric
@@ -121,6 +123,9 @@ def test_package_function():
             output_dir=package_dir,
             resources=(Path("path/to/resource"), Path("path/to/other/resource")),
             pip_dependencies=("package1", "package2==0.0.42"),
+            metadata=_default_function_metadata(
+                output={"name": "test_dataset", "type": "dataset"}
+            ),
         )
 
 
@@ -222,3 +227,37 @@ def test_packaged_function_is_unwrapped_from_all_the_decorators(tmpdir: Path):
     assert type(function.func).__name__ == "function"
     # the decorators should have no effect on the function execution (fails otherwise)
     assert subprocess.check_call([sys.executable, str(executable)]) == 0
+
+
+def test_dataset_asset_metadata():
+    @dataset("d")
+    def f1():
+        return [42]
+
+    function = Function.from_decorated(f1)
+
+    assert function.metadata == _default_function_metadata(
+        output={"name": "d", "type": "dataset"},
+    )
+
+
+def test_model_asset_metadata():
+    @model("m")
+    def f1():
+        return [42]
+
+    function = Function.from_decorated(f1)
+
+    assert function.metadata == _default_function_metadata(
+        output={"name": "m", "type": "model"},
+    )
+
+
+def _default_function_metadata(output: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "sdk": {"version": layer.__version__},
+        "function": {
+            "serialiser": {"name": "layer.cloudpickle", "version": "2.1.0"},
+            "output": output,
+        },
+    }
