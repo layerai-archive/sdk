@@ -78,7 +78,7 @@ class Video:
         clip = mpy.ImageSequenceClip(list(tensor), fps=fps)
 
         filename = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
-        clip.write_videofile(filename, verbose=False, logger=None, fps=fps)
+        clip.write_videofile(filename, verbose=False, progress_bar=None, fps=fps)
 
         return Path(filename)
 
