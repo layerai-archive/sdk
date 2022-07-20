@@ -79,7 +79,7 @@ class Video:
 
         filename = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
         try:  # newer version of moviepy use logger instead of progress_bar argument.
-            clip.write_videofile(filename, verbose=False, logger=None, fps=fps)
+            clip.write_videofile(filename, verbose=False, logger=None, fps=fps)  # pylint: disable=unexpected-keyword-arg
         except TypeError:
             try:  # older version of moviepy does not support progress_bar argument.
                 clip.write_videofile(
