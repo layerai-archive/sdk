@@ -16,7 +16,7 @@ from layerapi.api.service.flowmanager.project_api_pb2 import (
 )
 
 from layer.clients.project_service import ProjectServiceClient
-from layer.config import ClientConfig, ProjectServiceConfig
+from layer.config import ClientConfig
 from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import (
     LayerClientException,
@@ -28,7 +28,6 @@ def _get_project_service_client_with_mocks(
     project_api_stub: Optional[MagicMock] = None,
 ) -> ProjectServiceClient:
     config_mock = MagicMock(spec=ClientConfig)
-    config_mock.project_service = MagicMock(spec_set=ProjectServiceConfig)
     project_service_client = ProjectServiceClient(
         config=config_mock, logger=MagicMock(spec_set=logging.getLogger())
     )

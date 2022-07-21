@@ -31,21 +31,13 @@ class LayerClient:
     @contextmanager
     def init(self) -> Iterator["LayerClient"]:
         with ExitStack() as exit_stack:
-            # TODO(emin): remove unused config objects
-            if self._config.data_catalog.is_enabled:
-                exit_stack.enter_context(self._data_catalog.init())
-            if self._config.model_catalog.is_enabled:
-                exit_stack.enter_context(self._model_catalog.init())
-            if self._config.model_training.is_enabled:
-                exit_stack.enter_context(self._model_training.init())
-            if self._config.account_service.is_enabled:
-                exit_stack.enter_context(self._account.init())
-            if self._config.flow_manager.is_enabled:
-                exit_stack.enter_context(self._flow_manager.init())
-            if self._config.user_logs.is_enabled:
-                exit_stack.enter_context(self._user_logs.init())
-            if self._config.project_service.is_enabled:
-                exit_stack.enter_context(self.project_service_client.init())
+            exit_stack.enter_context(self._data_catalog.init())
+            exit_stack.enter_context(self._model_catalog.init())
+            exit_stack.enter_context(self._model_training.init())
+            exit_stack.enter_context(self._account.init())
+            exit_stack.enter_context(self._flow_manager.init())
+            exit_stack.enter_context(self._user_logs.init())
+            exit_stack.enter_context(self.project_service_client.init())
             exit_stack.enter_context(self._executor_client.init())
             exit_stack.enter_context(self._logged_data_client.init())
             yield self

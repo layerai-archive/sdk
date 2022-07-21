@@ -26,52 +26,6 @@ ROOT_LAYER_URL = URL("https://layer.co")
 
 
 @dataclass(frozen=True)
-class ServiceConfig:
-    address: str = ""
-
-    @property
-    def is_enabled(self) -> bool:
-        return bool(self.address)
-
-
-@dataclass(frozen=True)
-class ProjectServiceConfig(ServiceConfig):
-    pass
-
-
-@dataclass(frozen=True)
-class DataCatalogConfig(ServiceConfig):
-    pass
-
-
-@dataclass(frozen=True)
-class ModelCatalogConfig(ServiceConfig):
-    pass
-
-
-@dataclass(frozen=True)
-class ModelTrainingConfig(ServiceConfig):
-    pass
-
-
-@dataclass(frozen=True)
-class AccountServiceConfig(ServiceConfig):
-    pass
-
-
-@dataclass(frozen=True)
-class FlowManagerServiceConfig(ServiceConfig):
-    pass
-
-
-@dataclass(frozen=True)
-class UserLogsServiceConfig(ServiceConfig):
-    @property
-    def max_receive_message_length(self) -> int:
-        return 100 * 1024 * 1024
-
-
-@dataclass(frozen=True)
 class S3Config:
     endpoint_url: Optional[URL] = None
 
@@ -95,13 +49,6 @@ class LogsConfig:
 
 @dataclass(frozen=True)
 class ClientConfig:
-    data_catalog: DataCatalogConfig
-    model_catalog: ModelCatalogConfig
-    model_training: ModelTrainingConfig
-    account_service: AccountServiceConfig
-    flow_manager: FlowManagerServiceConfig
-    user_logs: UserLogsServiceConfig
-    project_service: ProjectServiceConfig
     grpc_gateway_address: str = ""
     access_token: str = ""
     grpc_do_verify_ssl: bool = True
@@ -304,13 +251,6 @@ class ConfigRecord:
         else:
             s3_config = S3Config.create_default()
         return ClientConfig(
-            data_catalog=DataCatalogConfig(address=grpc_gateway_address),
-            model_catalog=ModelCatalogConfig(address=grpc_gateway_address),
-            model_training=ModelTrainingConfig(address=grpc_gateway_address),
-            account_service=AccountServiceConfig(address=grpc_gateway_address),
-            flow_manager=FlowManagerServiceConfig(address=grpc_gateway_address),
-            user_logs=UserLogsServiceConfig(address=grpc_gateway_address),
-            project_service=ProjectServiceConfig(address=grpc_gateway_address),
             grpc_gateway_address=grpc_gateway_address,
             access_token=access_token,
             grpc_do_verify_ssl=grpc_do_verify_ssl,

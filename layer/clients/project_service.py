@@ -37,7 +37,7 @@ class ProjectServiceClient:
         config: ClientConfig,
         logger: Logger,
     ):
-        self._config = config.project_service
+        self._grpc_gateway_address = config.grpc_gateway_address
         self._logger = logger
         self._access_token = config.access_token
         self._do_verify_ssl = config.grpc_do_verify_ssl
@@ -46,7 +46,7 @@ class ProjectServiceClient:
     @contextmanager
     def init(self) -> Iterator["ProjectServiceClient"]:
         with create_grpc_channel(
-            self._config.address,
+            self._grpc_gateway_address,
             self._access_token,
             do_verify_ssl=self._do_verify_ssl,
             logs_file_path=self._logs_file_path,

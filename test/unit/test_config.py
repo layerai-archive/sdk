@@ -7,20 +7,13 @@ import pytest
 from yarl import URL
 
 from layer.config import (
-    AccountServiceConfig,
     AuthConfig,
     ClientConfig,
     Config,
     ConfigRecord,
     ConfigStore,
     Credentials,
-    DataCatalogConfig,
-    FlowManagerServiceConfig,
-    ModelCatalogConfig,
-    ModelTrainingConfig,
-    ProjectServiceConfig,
     S3Config,
-    UserLogsServiceConfig,
 )
 from layer.exceptions.exceptions import (
     InvalidConfigurationError,
@@ -77,13 +70,6 @@ class TestConfigStore:
                 refresh_token="testrefreshtoken",
             ),
             client=ClientConfig(
-                data_catalog=DataCatalogConfig(address="grpcgatewayaddress"),
-                model_catalog=ModelCatalogConfig(address="grpcgatewayaddress"),
-                model_training=ModelTrainingConfig(address="grpcgatewayaddress"),
-                account_service=AccountServiceConfig(address="grpcgatewayaddress"),
-                flow_manager=FlowManagerServiceConfig(address="grpcgatewayaddress"),
-                user_logs=UserLogsServiceConfig(address="grpcgatewayaddress"),
-                project_service=ProjectServiceConfig(address="grpcgatewayaddress"),
                 grpc_gateway_address="grpcgatewayaddress",
                 access_token="testaccesstoken",
             ),
@@ -119,40 +105,6 @@ class TestConfigStore:
 
         store = ConfigStore(path)
         store.delete()
-
-
-class TestClientConfig:
-    def test_is_enabled(self) -> None:
-        config = ClientConfig(
-            data_catalog=DataCatalogConfig(),
-            model_catalog=ModelCatalogConfig(),
-            model_training=ModelTrainingConfig(),
-            account_service=AccountServiceConfig(),
-            flow_manager=FlowManagerServiceConfig(),
-            user_logs=UserLogsServiceConfig(),
-            project_service=ProjectServiceConfig(),
-        )
-        assert not config.data_catalog.is_enabled
-        assert not config.model_catalog.is_enabled
-        assert not config.model_training.is_enabled
-        assert not config.account_service.is_enabled
-        assert not config.project_service.is_enabled
-
-        config = ClientConfig(
-            data_catalog=DataCatalogConfig(address="testaddress"),
-            model_catalog=ModelCatalogConfig(address="testaddress"),
-            model_training=ModelTrainingConfig(address="testaddress"),
-            account_service=AccountServiceConfig(address="testaddress"),
-            flow_manager=FlowManagerServiceConfig(address="testaddress"),
-            user_logs=UserLogsServiceConfig(address="testaddress"),
-            project_service=ProjectServiceConfig(address="testaddress"),
-        )
-        assert config.data_catalog.is_enabled
-        assert config.model_catalog.is_enabled
-        assert config.model_training.is_enabled
-        assert config.account_service.is_enabled
-        assert config.flow_manager.is_enabled
-        assert config.project_service.is_enabled
 
 
 class TestConfigRecord:
@@ -220,13 +172,6 @@ class TestConfigRecord:
             {"grpc_gateway_address": address},
             "testaccesstoken",
         ) == ClientConfig(
-            data_catalog=DataCatalogConfig(address=address),
-            model_catalog=ModelCatalogConfig(address=address),
-            model_training=ModelTrainingConfig(address=address),
-            account_service=AccountServiceConfig(address=address),
-            flow_manager=FlowManagerServiceConfig(address=address),
-            user_logs=UserLogsServiceConfig(address=address),
-            project_service=ProjectServiceConfig(address=address),
             grpc_gateway_address=address,
             access_token="testaccesstoken",
             s3=S3Config(),
@@ -241,13 +186,6 @@ class TestConfigRecord:
             },
             "testaccesstoken",
         ) == ClientConfig(
-            data_catalog=DataCatalogConfig(address=address),
-            model_catalog=ModelCatalogConfig(address=address),
-            model_training=ModelTrainingConfig(address=address),
-            account_service=AccountServiceConfig(address=address),
-            flow_manager=FlowManagerServiceConfig(address=address),
-            user_logs=UserLogsServiceConfig(address=address),
-            project_service=ProjectServiceConfig(address=address),
             grpc_gateway_address=address,
             access_token="testaccesstoken",
             s3=S3Config(endpoint_url=URL("http://localhost:12345")),
@@ -262,13 +200,6 @@ class TestConfigRecord:
             },
             "testaccesstoken",
         ) == ClientConfig(
-            data_catalog=DataCatalogConfig(address=address),
-            model_catalog=ModelCatalogConfig(address=address),
-            model_training=ModelTrainingConfig(address=address),
-            account_service=AccountServiceConfig(address=address),
-            flow_manager=FlowManagerServiceConfig(address=address),
-            user_logs=UserLogsServiceConfig(address=address),
-            project_service=ProjectServiceConfig(address=address),
             grpc_gateway_address=address,
             grpc_do_verify_ssl=False,
             access_token="testaccesstoken",
@@ -279,13 +210,6 @@ class TestConfigRecord:
         address = "localhost:54321"
         assert ConfigRecord.from_client(
             ClientConfig(
-                data_catalog=DataCatalogConfig(address=address),
-                model_catalog=ModelCatalogConfig(address=address),
-                model_training=ModelTrainingConfig(address=address),
-                account_service=AccountServiceConfig(address=address),
-                flow_manager=FlowManagerServiceConfig(address=address),
-                user_logs=UserLogsServiceConfig(address=address),
-                project_service=ProjectServiceConfig(address=address),
                 grpc_gateway_address=address,
                 access_token="testaccesstoken",
                 s3=S3Config(),
@@ -296,13 +220,6 @@ class TestConfigRecord:
         address = "localhost:54321"
         assert ConfigRecord.from_client(
             ClientConfig(
-                data_catalog=DataCatalogConfig(address=address),
-                model_catalog=ModelCatalogConfig(address=address),
-                model_training=ModelTrainingConfig(address=address),
-                account_service=AccountServiceConfig(address=address),
-                flow_manager=FlowManagerServiceConfig(address=address),
-                user_logs=UserLogsServiceConfig(address=address),
-                project_service=ProjectServiceConfig(address=address),
                 grpc_gateway_address=address,
                 access_token="testaccesstoken",
                 s3=S3Config(endpoint_url=URL("http://localhost:12345")),
@@ -316,13 +233,6 @@ class TestConfigRecord:
         address = "localhost:54321"
         assert ConfigRecord.from_client(
             ClientConfig(
-                data_catalog=DataCatalogConfig(address=address),
-                model_catalog=ModelCatalogConfig(address=address),
-                model_training=ModelTrainingConfig(address=address),
-                account_service=AccountServiceConfig(address=address),
-                flow_manager=FlowManagerServiceConfig(address=address),
-                user_logs=UserLogsServiceConfig(address=address),
-                project_service=ProjectServiceConfig(address=address),
                 grpc_gateway_address=address,
                 grpc_do_verify_ssl=False,
                 access_token="testaccesstoken",
