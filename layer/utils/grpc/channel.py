@@ -2,7 +2,7 @@ import json
 import ssl
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple
 
 import grpc
 
@@ -19,13 +19,10 @@ def create_grpc_channel(
     *,
     do_verify_ssl: bool = True,
     logs_file_path: Path,
-    options: Optional[List[Tuple[str, Union[str, int]]]] = None,
 ) -> Any:
     # https://grpc.github.io/grpc/cpp/md_doc_keepalive.html
     # https://github.com/grpc/proposal/blob/master/A8-client-side-keepalive.md
-    if options is None:
-        options = []
-    options = options.copy()
+    options: List[Tuple[str, Any]] = []
     ssl_config = create_grpc_ssl_config(address, do_verify_ssl=do_verify_ssl)
     if ssl_config.hostname_override:
         options.append(("grpc.ssl_target_name_override", ssl_config.hostname_override))
@@ -51,6 +48,7 @@ def create_grpc_channel(
     options.append(("grpc.keepalive_timeout_ms", 5000))
     options.append(("grpc.keepalive_permit_without_calls", 1))
     options.append(("grpc.http2.max_pings_without_data", 0))
+    options.append(("grpc.max_receive_message_length", 100 * 1024 * 1024))
     credentials = grpc.ssl_channel_credentials(ssl_config.cadata)
 
     client_interceptors = [

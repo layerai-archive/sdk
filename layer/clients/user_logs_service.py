@@ -40,12 +40,6 @@ class UserLogsClient:
             self._access_token,
             do_verify_ssl=self._do_verify_ssl,
             logs_file_path=self._logs_file_path,
-            options=[
-                (
-                    "grpc.max_receive_message_length",
-                    self._config.max_receive_message_length,
-                )
-            ],
         ) as channel:
             self._service = UserLogsAPIStub(channel=channel)
             yield self
