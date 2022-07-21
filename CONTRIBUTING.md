@@ -228,6 +228,12 @@ make e2e-test
 
 You will be asked for your key which will be stored for subsequent runs in `.test-token`
 
+#### Testing your local SDK build within a Google Colab notebook
+
+1. Run `poetry build`
+2. Upload `dist/layer-0.10.0-py3-none-any.whl` to the Colab notebook after a runtime recreation (hint: you can do by `from google.colab import files` and `files.upload()` inside Colab)
+3. `pip install layer-0.10.0-py3-none-any.whl`
+4. Run the rest of the notebook as normal
 
 #### Linters
 
