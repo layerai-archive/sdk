@@ -1,4 +1,4 @@
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager
 from logging import Logger
 from typing import Iterator, Optional
 
@@ -32,8 +32,10 @@ class LayerClient:
 
     @contextmanager
     def init(self) -> Iterator["LayerClient"]:
-        with ExitStack():
+        try:
             yield self
+        finally:
+            self.close()
 
     @property
     def data_catalog(self) -> DataCatalogClient:
