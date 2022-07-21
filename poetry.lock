@@ -1179,7 +1179,7 @@ typing-extensions = {version = "*", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "layer-api"
-version = "0.9.372953"
+version = "0.9.373122"
 description = ""
 category = "main"
 optional = false
@@ -2647,7 +2647,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "638f7df7ff1d7685374356e85de6d5b303e3e25c707f878662219861a70db2bd"
+content-hash = "270204a4c142140db3fbcfe64eb2815e47190fa8679da75fa737a5864f49366e"
 
 [metadata.files]
 absl-py = [
@@ -3310,7 +3310,7 @@ kiwisolver = [
     {file = "kiwisolver-1.4.3.tar.gz", hash = "sha256:ab8a15c2750ae8d53e31f77a94f846d0a00772240f1c12817411fa2344351f86"},
 ]
 layer-api = [
-    {file = "layer_api-0.9.372953-py3-none-any.whl", hash = "sha256:df9c165105ccb742e79a0608905e2ca3576122062312450643cb3bb783ed2271"},
+    {file = "layer_api-0.9.373122-py3-none-any.whl", hash = "sha256:fe2568a11051b120fdc81b6b5f497be9c9537c88cefd87044985e8a0f4c06c68"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.7.1.tar.gz", hash = "sha256:d609c75b986def706743cdebe5e47553f4a5a1da9c5ff66d76013ef396b5a8a4"},
