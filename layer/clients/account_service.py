@@ -50,10 +50,10 @@ class AccountServiceClient:
         return get_my_org_resp.account_view.name
 
     def get_my_account(self) -> Account:
-        account = self._account_api.GetMyAccountView(
+        account_view = self._account_api.GetMyAccountView(
             GetMyAccountViewRequest(),
-        )
+        ).account_view
         return Account(
-            id=uuid.UUID(account.id),
-            name=account.name,
+            id=uuid.UUID(account_view.id),
+            name=account_view.name,
         )
