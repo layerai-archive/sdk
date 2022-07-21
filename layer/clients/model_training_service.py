@@ -1,9 +1,7 @@
 import tempfile
 import uuid
-from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import Iterator
 
 import polling  # type: ignore
 from layerapi.api.entity.model_train_status_pb2 import (
@@ -25,7 +23,7 @@ from layerapi.api.value.s3_path_pb2 import S3Path
 from layer.config import ClientConfig
 from layer.exceptions.exceptions import LayerClientException
 from layer.utils.file_utils import tar_directory
-from layer.utils.grpc import create_grpc_channel
+from layer.utils.grpc.channel import get_grpc_channel
 from layer.utils.s3 import S3Util
 
 
@@ -44,16 +42,14 @@ class ModelTrainingClient:
         self._do_verify_ssl = config.grpc_do_verify_ssl
         self._logs_file_path = config.logs_file_path
 
-    @contextmanager
-    def init(self) -> Iterator["ModelTrainingClient"]:
-        with create_grpc_channel(
-            self._grpc_gateway_address,
-            self._access_token,
-            do_verify_ssl=self._do_verify_ssl,
-            logs_file_path=self._logs_file_path,
-        ) as channel:
-            self._service = ModelTrainingAPIStub(channel=channel)
-            yield self
+    @staticmethod
+    def create(config: ClientConfig, logger: Logger) -> "ModelTrainingClient":
+        client = ModelTrainingClient(config=config, logger=logger)
+        channel = get_grpc_channel(config)
+        client._service = ModelTrainingAPIStub(  # pylint: disable=protected-access
+            channel
+        )
+        return client
 
     def upload_training_files(
         self, asset_name: str, function_home_dir: Path, model_version_id: uuid.UUID
