@@ -2,7 +2,7 @@ import json
 import ssl
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import grpc
 
@@ -67,6 +67,31 @@ def create_grpc_channel(
             options,
         ),
         *client_interceptors,
+    )
+
+
+def grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., Any]:
+    """Maintains a single GRPC channel for all client calls."""
+
+    channel: List[Any] = []  # a pool for the channel
+
+    def _get_grpc_channel(*args: Any, **kwargs: Any) -> Any:
+        if len(channel) == 0:
+            channel.append(channel_factory(*args, **kwargs))
+        return channel[0]
+
+    return _get_grpc_channel
+
+
+@grpc_single_channel
+def get_grpc_channel(
+    address: str, access_token: str, logs_file_path: Path, do_verify_ssl: bool
+) -> Any:
+    return create_grpc_channel(
+        address,
+        access_token,
+        logs_file_path=logs_file_path,
+        do_verify_ssl=do_verify_ssl,
     )
 
 
