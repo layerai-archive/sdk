@@ -27,14 +27,13 @@ class LayerClient:
         self._flow_manager: Optional[FlowManagerClient] = None
         self._user_logs: Optional[UserLogsClient] = None
         self._project_service_client: Optional[ProjectServiceClient] = None
-        self._logged_data_client = LoggedDataClient(config, logger)
+        self._logged_data_client: Optional[LoggedDataClient] = None
         self._executor_client = ExecutorClient(config, logger)
 
     @contextmanager
     def init(self) -> Iterator["LayerClient"]:
         with ExitStack() as exit_stack:
             exit_stack.enter_context(self._executor_client.init())
-            exit_stack.enter_context(self._logged_data_client.init())
             yield self
 
     @property
@@ -85,6 +84,10 @@ class LayerClient:
 
     @property
     def logged_data_service_client(self) -> LoggedDataClient:
+        if self._logged_data_client is None:
+            self._logged_data_client = LoggedDataClient.create(
+                self._config, self._logger
+            )
         return self._logged_data_client
 
     @property
