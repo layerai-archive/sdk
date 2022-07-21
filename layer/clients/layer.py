@@ -32,10 +32,8 @@ class LayerClient:
 
     @contextmanager
     def init(self) -> Iterator["LayerClient"]:
-        try:
-            yield self
-        finally:
-            self.close()
+        # kept for backwards compatibility only
+        yield self
 
     @property
     def data_catalog(self) -> DataCatalogClient:
