@@ -1,13 +1,11 @@
-from contextlib import contextmanager
 from logging import Logger
-from typing import Iterator
 
 from layerapi.api.service.executor.executor_api_pb2 import GetFunctionUploadPathRequest
 from layerapi.api.service.executor.executor_api_pb2_grpc import ExecutorAPIStub
 
 from layer.config import ClientConfig
 from layer.contracts.project_full_name import ProjectFullName
-from layer.utils.grpc import create_grpc_channel
+from layer.utils.grpc.channel import get_grpc_channel
 
 
 class ExecutorClient:
@@ -24,16 +22,12 @@ class ExecutorClient:
         self._do_verify_ssl = config.grpc_do_verify_ssl
         self._logs_file_path = config.logs_file_path
 
-    @contextmanager
-    def init(self) -> Iterator["ExecutorClient"]:
-        with create_grpc_channel(
-            self._grpc_gateway_address,
-            self._access_token,
-            do_verify_ssl=self._do_verify_ssl,
-            logs_file_path=self._logs_file_path,
-        ) as channel:
-            self._service = ExecutorAPIStub(channel=channel)
-            yield self
+    @staticmethod
+    def create(config: ClientConfig, logger: Logger) -> "ExecutorClient":
+        client = ExecutorClient(config=config, logger=logger)
+        channel = get_grpc_channel(config)
+        client._service = ExecutorAPIStub(channel)  # pylint: disable=protected-access
+        return client
 
     def get_upload_path(
         self,
