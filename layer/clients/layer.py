@@ -23,7 +23,7 @@ class LayerClient:
         self._data_catalog: Optional[DataCatalogClient] = None
         self._model_catalog: Optional[ModelCatalogClient] = None
         self._model_training: Optional[ModelTrainingClient] = None
-        self._account = AccountServiceClient(config, logger)
+        self._account: Optional[AccountServiceClient] = None
         self._flow_manager = FlowManagerClient(config, logger)
         self._user_logs = UserLogsClient(config, logger)
         self._project_service_client: Optional[ProjectServiceClient] = None
@@ -33,7 +33,6 @@ class LayerClient:
     @contextmanager
     def init(self) -> Iterator["LayerClient"]:
         with ExitStack() as exit_stack:
-            exit_stack.enter_context(self._account.init())
             exit_stack.enter_context(self._flow_manager.init())
             exit_stack.enter_context(self._user_logs.init())
             exit_stack.enter_context(self._executor_client.init())
@@ -62,6 +61,8 @@ class LayerClient:
 
     @property
     def account(self) -> AccountServiceClient:
+        if self._account is None:
+            self._account = AccountServiceClient.create(self._config, self._logger)
         return self._account
 
     @property

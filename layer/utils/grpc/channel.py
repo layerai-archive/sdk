@@ -87,7 +87,7 @@ def grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., An
             channel.append(channel_factory(*args, **kwargs))
         else:
             if closing:
-                # do not memoize the channel if it is being closed
+                # do not memoize the channel anymore if it is being closed
                 return channel.pop()
 
         return channel[0]
