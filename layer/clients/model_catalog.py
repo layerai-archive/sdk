@@ -60,13 +60,8 @@ class ModelCatalogClient:
     def __init__(
         self, config: ClientConfig, logger: Logger, cache_dir: Optional[Path] = None
     ):
-        self._grpc_gateway_address = config.grpc_gateway_address
         self._s3_endpoint_url = config.s3.endpoint_url
         self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
         self._cache = Cache(cache_dir).initialise()
 
     @staticmethod

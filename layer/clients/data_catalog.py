@@ -40,7 +40,6 @@ from layerapi.api.value.python_source_pb2 import PythonSource
 from layerapi.api.value.s3_path_pb2 import S3Path
 from layerapi.api.value.storage_location_pb2 import StorageLocation
 from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket
-from pyarrow import flight
 
 from layer.config import ClientConfig
 from layer.contracts.assets import AssetPath, AssetType
@@ -63,19 +62,10 @@ class DataCatalogClient:
         self,
         config: ClientConfig,
         logger: Logger,
-        *,
-        service_factory: Callable[..., DataCatalogAPIStub] = DataCatalogAPIStub,
-        flight_client: flight.FlightClient = None,
         dataset_client: Optional["DatasetClient"] = None,
     ):
-        self._grpc_gateway_address = config.grpc_gateway_address
         self._logger = logger
-        self._service_factory = service_factory
-        self._access_token = config.access_token
         self._call_metadata = [("authorization", f"Bearer {config.access_token}")]
-        self._flight_client = flight_client
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
         self._s3_endpoint_url = config.s3.endpoint_url
         self._dataset_client = (
             DatasetClient(

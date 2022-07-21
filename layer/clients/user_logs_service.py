@@ -1,5 +1,4 @@
 import uuid
-from logging import Logger
 from typing import TYPE_CHECKING, List, Tuple
 
 from layerapi.api.entity.user_log_line_pb2 import UserLogLine
@@ -21,20 +20,9 @@ if TYPE_CHECKING:
 class UserLogsClient:
     _service: UserLogsAPIStub
 
-    def __init__(
-        self,
-        config: ClientConfig,
-        logger: Logger,
-    ):
-        self._grpc_gateway_address = config.grpc_gateway_address
-        self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
     @staticmethod
-    def create(config: ClientConfig, logger: Logger) -> "UserLogsClient":
-        client = UserLogsClient(config=config, logger=logger)
+    def create(config: ClientConfig) -> "UserLogsClient":
+        client = UserLogsClient()
         channel = get_grpc_channel(config)
         client._service = UserLogsAPIStub(channel)  # pylint: disable=protected-access
         return client

@@ -60,41 +60,37 @@ class LayerClient:
     @property
     def account(self) -> AccountServiceClient:
         if self._account is None:
-            self._account = AccountServiceClient.create(self._config, self._logger)
+            self._account = AccountServiceClient.create(self._config)
         return self._account
 
     @property
     def flow_manager(self) -> FlowManagerClient:
         if self._flow_manager is None:
-            self._flow_manager = FlowManagerClient.create(self._config, self._logger)
+            self._flow_manager = FlowManagerClient.create(self._config)
         return self._flow_manager
 
     @property
     def user_logs(self) -> UserLogsClient:
         if self._user_logs is None:
-            self._user_logs = UserLogsClient.create(self._config, self._logger)
+            self._user_logs = UserLogsClient.create(self._config)
         return self._user_logs
 
     @property
     def project_service_client(self) -> ProjectServiceClient:
         if self._project_service_client is None:
-            self._project_service_client = ProjectServiceClient.create(
-                self._config, self._logger
-            )
+            self._project_service_client = ProjectServiceClient.create(self._config)
         return self._project_service_client
 
     @property
     def logged_data_service_client(self) -> LoggedDataClient:
         if self._logged_data_client is None:
-            self._logged_data_client = LoggedDataClient.create(
-                self._config, self._logger
-            )
+            self._logged_data_client = LoggedDataClient.create(self._config)
         return self._logged_data_client
 
     @property
     def executor_service_client(self) -> ExecutorClient:
         if self._executor_client is None:
-            self._executor_client = ExecutorClient.create(self._config, self._logger)
+            self._executor_client = ExecutorClient.create(self._config)
         return self._executor_client
 
     def close(self) -> None:

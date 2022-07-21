@@ -1,5 +1,4 @@
 import contextlib
-import logging
 from typing import Optional
 from unittest.mock import MagicMock, patch
 from uuid import UUID
@@ -58,10 +57,7 @@ VALID_UUID = UUID(int=0x12345678123456781234567812345678)
 def _get_mock_project_service_client(
     project_api_stub: Optional[MagicMock] = None,
 ) -> ProjectServiceClient:
-    config_mock = MagicMock(spec=ClientConfig)
-    project_client = ProjectServiceClient(
-        config=config_mock, logger=MagicMock(spec_set=logging.getLogger())
-    )
+    project_client = ProjectServiceClient()
     if project_api_stub is None:
         valid_response = Project(
             id=VALID_UUID,

@@ -1,4 +1,3 @@
-from logging import Logger
 from typing import List, Tuple
 
 from layerapi.api.entity.history_event_pb2 import HistoryEvent
@@ -24,20 +23,9 @@ from layer.utils.grpc.channel import get_grpc_channel
 class FlowManagerClient:
     _service: FlowManagerAPIStub
 
-    def __init__(
-        self,
-        config: ClientConfig,
-        logger: Logger,
-    ):
-        self._grpc_gateway_address = config.grpc_gateway_address
-        self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
     @staticmethod
-    def create(config: ClientConfig, logger: Logger) -> "FlowManagerClient":
-        client = FlowManagerClient(config=config, logger=logger)
+    def create(config: ClientConfig) -> "FlowManagerClient":
+        client = FlowManagerClient()
         channel = get_grpc_channel(config)
         client._service = FlowManagerAPIStub(  # pylint: disable=protected-access
             channel

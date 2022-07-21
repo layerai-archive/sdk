@@ -1,5 +1,4 @@
 import uuid
-from logging import Logger
 from typing import Optional
 from uuid import UUID
 
@@ -32,20 +31,9 @@ from layer.utils.grpc.channel import get_grpc_channel
 class ProjectServiceClient:
     _service: ProjectAPIStub
 
-    def __init__(
-        self,
-        config: ClientConfig,
-        logger: Logger,
-    ):
-        self._grpc_gateway_address = config.grpc_gateway_address
-        self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
     @staticmethod
-    def create(config: ClientConfig, logger: Logger) -> "ProjectServiceClient":
-        client = ProjectServiceClient(config=config, logger=logger)
+    def create(config: ClientConfig) -> "ProjectServiceClient":
+        client = ProjectServiceClient()
         channel = get_grpc_channel(config)
         client._service = ProjectAPIStub(channel)  # pylint: disable=protected-access
         return client

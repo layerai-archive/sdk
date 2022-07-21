@@ -1,4 +1,3 @@
-from logging import Logger
 from typing import List, Optional, cast
 from uuid import UUID
 
@@ -23,20 +22,9 @@ from layer.utils.grpc.channel import get_grpc_channel
 class LoggedDataClient:
     _service: LoggedDataAPIStub
 
-    def __init__(
-        self,
-        config: ClientConfig,
-        logger: Logger,
-    ):
-        self._config = config
-        self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
     @staticmethod
-    def create(config: ClientConfig, logger: Logger) -> "LoggedDataClient":
-        client = LoggedDataClient(config=config, logger=logger)
+    def create(config: ClientConfig) -> "LoggedDataClient":
+        client = LoggedDataClient()
         channel = get_grpc_channel(config)
         client._service = LoggedDataAPIStub(channel)  # pylint: disable=protected-access
         return client
