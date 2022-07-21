@@ -8,7 +8,7 @@ from layer.clients.account_service import AccountServiceClient
 from layer.clients.data_catalog import DataCatalogClient
 from layer.clients.layer import LayerClient
 from layer.clients.project_service import ProjectServiceClient
-from layer.config import ClientConfig, Config, ProjectServiceConfig
+from layer.config import ClientConfig, Config
 from layer.contracts.accounts import Account
 from layer.contracts.projects import Project
 
@@ -59,7 +59,6 @@ def _get_mock_project_service_client(
     project_api_stub: Optional[MagicMock] = None,
 ) -> ProjectServiceClient:
     config_mock = MagicMock(spec=ClientConfig)
-    config_mock.project_service = MagicMock(spec_set=ProjectServiceConfig)
     project_client = ProjectServiceClient(
         config=config_mock, logger=MagicMock(spec_set=logging.getLogger())
     )

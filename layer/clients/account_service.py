@@ -24,7 +24,7 @@ class AccountServiceClient:
         config: ClientConfig,
         logger: Logger,
     ):
-        self._config = config.account_service
+        self._grpc_gateway_address = config.grpc_gateway_address
         self._logger = logger
         self._access_token = config.access_token
         self._do_verify_ssl = config.grpc_do_verify_ssl
@@ -33,7 +33,7 @@ class AccountServiceClient:
     @contextmanager
     def init(self) -> Iterator["AccountServiceClient"]:
         with create_grpc_channel(
-            self._config.address,
+            self._grpc_gateway_address,
             self._access_token,
             do_verify_ssl=self._do_verify_ssl,
             logs_file_path=self._logs_file_path,

@@ -2,19 +2,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from yarl import URL
 
-from layer.config import (
-    AccountServiceConfig,
-    AuthConfig,
-    ClientConfig,
-    Config,
-    DataCatalogConfig,
-    FlowManagerServiceConfig,
-    ModelCatalogConfig,
-    ModelTrainingConfig,
-    ProjectServiceConfig,
-    S3Config,
-    UserLogsServiceConfig,
-)
+from layer.config import AuthConfig, ClientConfig, Config, S3Config
 
 
 if TYPE_CHECKING:
@@ -82,13 +70,6 @@ class ConfigClient:
             do_verify_ssl = self._do_verify_ssl
         grpc_gateway_address = f"{url.host}:{url.port}"
         return ClientConfig(
-            data_catalog=DataCatalogConfig(address=grpc_gateway_address),
-            model_catalog=ModelCatalogConfig(address=grpc_gateway_address),
-            model_training=ModelTrainingConfig(address=grpc_gateway_address),
-            account_service=AccountServiceConfig(address=grpc_gateway_address),
-            flow_manager=FlowManagerServiceConfig(address=grpc_gateway_address),
-            user_logs=UserLogsServiceConfig(address=grpc_gateway_address),
-            project_service=ProjectServiceConfig(address=grpc_gateway_address),
             grpc_gateway_address=grpc_gateway_address,
             grpc_do_verify_ssl=do_verify_ssl,
             s3=self._create_s3_config(payload),

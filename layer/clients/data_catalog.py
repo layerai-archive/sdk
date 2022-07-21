@@ -68,7 +68,7 @@ class DataCatalogClient:
         flight_client: flight.FlightClient = None,
         dataset_client: Optional["DatasetClient"] = None,
     ):
-        self._config = config.data_catalog
+        self._grpc_gateway_address = config.grpc_gateway_address
         self._logger = logger
         self._service_factory = service_factory
         self._access_token = config.access_token
@@ -89,7 +89,7 @@ class DataCatalogClient:
     @contextmanager
     def init(self) -> Iterator["DataCatalogClient"]:
         with create_grpc_channel(
-            self._config.address,
+            self._grpc_gateway_address,
             self._access_token,
             do_verify_ssl=self._do_verify_ssl,
             logs_file_path=self._logs_file_path,

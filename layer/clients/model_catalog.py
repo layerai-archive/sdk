@@ -61,7 +61,7 @@ class ModelCatalogClient:
     def __init__(
         self, config: ClientConfig, logger: Logger, cache_dir: Optional[Path] = None
     ):
-        self._config = config.model_catalog
+        self._grpc_gateway_address = config.grpc_gateway_address
         self._s3_endpoint_url = config.s3.endpoint_url
         self._logger = logger
         self._access_token = config.access_token
@@ -73,7 +73,7 @@ class ModelCatalogClient:
     @contextmanager
     def init(self) -> Iterator["ModelCatalogClient"]:
         with create_grpc_channel(
-            self._config.address,
+            self._grpc_gateway_address,
             self._access_token,
             do_verify_ssl=self._do_verify_ssl,
             logs_file_path=self._logs_file_path,
