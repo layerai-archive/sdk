@@ -54,6 +54,6 @@ class AccountServiceClient:
             GetMyAccountViewRequest(),
         )
         return Account(
-            id=account.id,
+            id=uuid.UUID(account.id),
             name=account.name,
         )
