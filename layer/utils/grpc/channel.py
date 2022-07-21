@@ -76,22 +76,32 @@ def grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., An
     channel: List[Any] = []  # a pool for the channel
 
     def _get_grpc_channel(*args: Any, **kwargs: Any) -> Any:
+        closing = kwargs.get("closing", False)
+
         if len(channel) == 0:
+            # if the channel is being closed, do not create new one
+            if closing:
+                return None
+
+            # create and memoize a new channel
             channel.append(channel_factory(*args, **kwargs))
+        else:
+            if closing:
+                # do not memoize the channel if it is being closed
+                return channel.pop()
+
         return channel[0]
 
     return _get_grpc_channel
 
 
 @grpc_single_channel
-def get_grpc_channel(
-    address: str, access_token: str, logs_file_path: Path, do_verify_ssl: bool
-) -> Any:
+def get_grpc_channel(client_config: Any) -> Any:
     return create_grpc_channel(
-        address,
-        access_token,
-        logs_file_path=logs_file_path,
-        do_verify_ssl=do_verify_ssl,
+        address=client_config.grpc_gateway_address,
+        access_token=client_config.access_token,
+        logs_file_path=client_config.logs_file_path,
+        do_verify_ssl=client_config.grpc_do_verify_ssl,
     )
 
 

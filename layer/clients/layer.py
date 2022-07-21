@@ -1,8 +1,9 @@
 from contextlib import ExitStack, contextmanager
 from logging import Logger
-from typing import Iterator
+from typing import Iterator, Optional
 
 from layer.config import ClientConfig
+from layer.utils.grpc.channel import get_grpc_channel
 
 from .account_service import AccountServiceClient
 from .data_catalog import DataCatalogClient
@@ -18,7 +19,8 @@ from .user_logs_service import UserLogsClient
 class LayerClient:
     def __init__(self, config: ClientConfig, logger: Logger):
         self._config = config
-        self._data_catalog = DataCatalogClient(config, logger)
+        self._logger = logger
+        self._data_catalog: Optional[DataCatalogClient] = None
         self._model_catalog = ModelCatalogClient(config, logger)
         self._model_training = ModelTrainingClient(config, logger)
         self._account = AccountServiceClient(config, logger)
@@ -31,7 +33,6 @@ class LayerClient:
     @contextmanager
     def init(self) -> Iterator["LayerClient"]:
         with ExitStack() as exit_stack:
-            exit_stack.enter_context(self._data_catalog.init())
             exit_stack.enter_context(self._model_catalog.init())
             exit_stack.enter_context(self._model_training.init())
             exit_stack.enter_context(self._account.init())
@@ -44,6 +45,8 @@ class LayerClient:
 
     @property
     def data_catalog(self) -> DataCatalogClient:
+        if self._data_catalog is None:
+            self._data_catalog = DataCatalogClient.create(self._config, self._logger)
         return self._data_catalog
 
     @property
@@ -77,3 +80,8 @@ class LayerClient:
     @property
     def executor_service_client(self) -> ExecutorClient:
         return self._executor_client
+
+    def close(self) -> None:
+        channel = get_grpc_channel(self._config, closing=True)
+        if channel is not None:
+            channel.close()
