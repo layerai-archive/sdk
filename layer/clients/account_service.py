@@ -7,10 +7,9 @@ from layerapi.api.ids_pb2 import AccountId
 from layerapi.api.service.account.account_api_pb2 import (
     GetAccountViewByIdRequest,
     GetAccountViewByIdResponse,
+    GetMyAccountViewRequest,
 )
 from layerapi.api.service.account.account_api_pb2_grpc import AccountAPIStub
-from layerapi.api.service.account.user_api_pb2 import GetMyOrganizationRequest
-from layerapi.api.service.account.user_api_pb2_grpc import UserAPIStub
 
 from layer.config import ClientConfig
 from layer.contracts.accounts import Account
@@ -18,7 +17,6 @@ from layer.utils.grpc import create_grpc_channel
 
 
 class AccountServiceClient:
-    _service: UserAPIStub
     _account_api: AccountAPIStub
 
     def __init__(
@@ -40,7 +38,6 @@ class AccountServiceClient:
             do_verify_ssl=self._do_verify_ssl,
             logs_file_path=self._logs_file_path,
         ) as channel:
-            self._service = UserAPIStub(channel=channel)
             self._account_api = AccountAPIStub(channel=channel)
             yield self
 
@@ -53,11 +50,10 @@ class AccountServiceClient:
         return get_my_org_resp.account_view.name
 
     def get_my_account(self) -> Account:
-        # TODO LAY-2692
-        org = self._service.GetMyOrganization(
-            GetMyOrganizationRequest(),
-        ).organization
+        account = self._account_api.GetMyAccountView(
+            GetMyAccountViewRequest(),
+        )
         return Account(
-            id=uuid.UUID(org.id.value),
-            name=org.name,
+            id=account.id,
+            name=account.name,
         )
