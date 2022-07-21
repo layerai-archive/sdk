@@ -26,7 +26,7 @@ class LayerClient:
         self._account = AccountServiceClient(config, logger)
         self._flow_manager = FlowManagerClient(config, logger)
         self._user_logs = UserLogsClient(config, logger)
-        self._project_service_client = ProjectServiceClient(config, logger)
+        self._project_service_client: Optional[ProjectServiceClient] = None
         self._logged_data_client = LoggedDataClient(config, logger)
         self._executor_client = ExecutorClient(config, logger)
 
@@ -38,7 +38,6 @@ class LayerClient:
             exit_stack.enter_context(self._account.init())
             exit_stack.enter_context(self._flow_manager.init())
             exit_stack.enter_context(self._user_logs.init())
-            exit_stack.enter_context(self.project_service_client.init())
             exit_stack.enter_context(self._executor_client.init())
             exit_stack.enter_context(self._logged_data_client.init())
             yield self
@@ -71,6 +70,10 @@ class LayerClient:
 
     @property
     def project_service_client(self) -> ProjectServiceClient:
+        if self._project_service_client is None:
+            self._project_service_client = ProjectServiceClient.create(
+                self._config, self._logger
+            )
         return self._project_service_client
 
     @property
