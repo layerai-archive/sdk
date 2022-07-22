@@ -70,7 +70,7 @@ def create_grpc_channel(
     )
 
 
-def grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., Any]:
+def _grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., Any]:
     """Maintains a single GRPC channel for all client calls."""
 
     channel: List[Any] = []  # a pool for the channel
@@ -95,7 +95,7 @@ def grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., An
     return _get_grpc_channel
 
 
-@grpc_single_channel
+@_grpc_single_channel
 def get_grpc_channel(client_config: Any) -> Any:
     return create_grpc_channel(
         address=client_config.grpc_gateway_address,
