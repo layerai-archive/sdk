@@ -65,7 +65,7 @@ ifdef CI
 	$(eval DATADOG_ARGS := --ddtrace-patch-all --ddtrace)
 endif
 	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run python build_scripts/sdk_login.py $(TEST_TOKEN_FILE)
-	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run pytest test/e2e -s -n 16 -vv $(DATADOG_ARGS)
+	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run pytest test/e2e -s -k test_image_and_video_logged -vv $(DATADOG_ARGS)
 
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters

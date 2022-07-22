@@ -135,6 +135,7 @@ def create_sample_video_pytorch_tensor():
         # Get the RGB buffer from the figure
         data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        print('!!!!!!!!!!!1', fig.canvas.get_width_height()[::-1] + (3,))
         return data
 
     size = 50
