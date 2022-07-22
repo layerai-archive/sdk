@@ -1,6 +1,4 @@
-from contextlib import contextmanager
-from logging import Logger
-from typing import Iterator, List, Optional, cast
+from typing import List, Optional, cast
 from uuid import UUID
 
 from layerapi.api.entity.logged_model_metric_pb2 import LoggedModelMetric
@@ -18,33 +16,18 @@ from layer.config import ClientConfig
 from layer.contracts.logged_data import LoggedData
 from layer.contracts.logged_data import LoggedDataType as LDType
 from layer.contracts.logged_data import ModelMetricPoint
-from layer.utils.grpc import create_grpc_channel
+from layer.utils.grpc.channel import get_grpc_channel
 
 
 class LoggedDataClient:
     _service: LoggedDataAPIStub
 
-    def __init__(
-        self,
-        config: ClientConfig,
-        logger: Logger,
-    ):
-        self._config = config
-        self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
-    @contextmanager
-    def init(self) -> Iterator["LoggedDataClient"]:
-        with create_grpc_channel(
-            self._config.grpc_gateway_address,
-            self._access_token,
-            do_verify_ssl=self._do_verify_ssl,
-            logs_file_path=self._logs_file_path,
-        ) as channel:
-            self._service = LoggedDataAPIStub(channel=channel)
-            yield self
+    @staticmethod
+    def create(config: ClientConfig) -> "LoggedDataClient":
+        client = LoggedDataClient()
+        channel = get_grpc_channel(config)
+        client._service = LoggedDataAPIStub(channel)  # pylint: disable=protected-access
+        return client
 
     def get_logged_data(
         self,

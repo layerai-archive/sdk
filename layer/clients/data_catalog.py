@@ -1,10 +1,9 @@
 import sys
 import tempfile
 import uuid
-from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import Any, Callable, Generator, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Generator, List, Optional, Tuple
 
 import pandas
 import pyarrow
@@ -41,7 +40,6 @@ from layerapi.api.value.python_source_pb2 import PythonSource
 from layerapi.api.value.s3_path_pb2 import S3Path
 from layerapi.api.value.storage_location_pb2 import StorageLocation
 from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket
-from pyarrow import flight
 
 from layer.config import ClientConfig
 from layer.contracts.assets import AssetPath, AssetType
@@ -50,7 +48,8 @@ from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import LayerClientException
 from layer.pandas_extensions import _infer_custom_types
 from layer.utils.file_utils import tar_directory
-from layer.utils.grpc import create_grpc_channel, generate_client_error_from_grpc_error
+from layer.utils.grpc import generate_client_error_from_grpc_error
+from layer.utils.grpc.channel import get_grpc_channel
 from layer.utils.s3 import S3Util
 
 from .dataset_service import DatasetClient, DatasetClientError
@@ -63,19 +62,10 @@ class DataCatalogClient:
         self,
         config: ClientConfig,
         logger: Logger,
-        *,
-        service_factory: Callable[..., DataCatalogAPIStub] = DataCatalogAPIStub,
-        flight_client: flight.FlightClient = None,
         dataset_client: Optional["DatasetClient"] = None,
     ):
-        self._grpc_gateway_address = config.grpc_gateway_address
         self._logger = logger
-        self._service_factory = service_factory
-        self._access_token = config.access_token
         self._call_metadata = [("authorization", f"Bearer {config.access_token}")]
-        self._flight_client = flight_client
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
         self._s3_endpoint_url = config.s3.endpoint_url
         self._dataset_client = (
             DatasetClient(
@@ -86,16 +76,14 @@ class DataCatalogClient:
             else dataset_client
         )
 
-    @contextmanager
-    def init(self) -> Iterator["DataCatalogClient"]:
-        with create_grpc_channel(
-            self._grpc_gateway_address,
-            self._access_token,
-            do_verify_ssl=self._do_verify_ssl,
-            logs_file_path=self._logs_file_path,
-        ) as channel:
-            self._service = self._service_factory(channel)
-            yield self
+    @staticmethod
+    def create(config: ClientConfig, logger: Logger) -> "DataCatalogClient":
+        client = DataCatalogClient(config=config, logger=logger)
+        channel = get_grpc_channel(config)
+        client._service = DataCatalogAPIStub(  # pylint: disable=protected-access
+            channel
+        )
+        return client
 
     def _get_python_dataset_access_credentials(
         self, dataset_path: AssetPath

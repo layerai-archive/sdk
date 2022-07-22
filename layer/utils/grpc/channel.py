@@ -2,7 +2,7 @@ import json
 import ssl
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import grpc
 
@@ -67,6 +67,45 @@ def create_grpc_channel(
             options,
         ),
         *client_interceptors,
+    )
+
+
+def _grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., Any]:
+    """Maintains a single GRPC channel for all client calls."""
+
+    channels = {}
+
+    def _get_grpc_channel(config: Any, **kwargs: Any) -> Any:
+        closing = kwargs.get("closing", False)
+        config_key = (
+            config.grpc_gateway_address,
+            config.access_token,
+        )
+
+        if config_key not in channels:
+            # if the channel is being closed, do not create new one
+            if closing:
+                return None
+
+            # create and memoize a new channel
+            channels[config_key] = channel_factory(config, **kwargs)
+        else:
+            if closing:
+                # do not memoize the channel anymore if it is being closed
+                return channels.pop(config_key)
+
+        return channels[config_key]
+
+    return _get_grpc_channel
+
+
+@_grpc_single_channel
+def get_grpc_channel(client_config: Any) -> Any:
+    return create_grpc_channel(
+        address=client_config.grpc_gateway_address,
+        access_token=client_config.access_token,
+        logs_file_path=client_config.logs_file_path,
+        do_verify_ssl=client_config.grpc_do_verify_ssl,
     )
 
 

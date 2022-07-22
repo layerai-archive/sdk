@@ -1,6 +1,4 @@
-from contextlib import contextmanager
-from logging import Logger
-from typing import Iterator, List, Tuple
+from typing import List, Tuple
 
 from layerapi.api.entity.history_event_pb2 import HistoryEvent
 from layerapi.api.entity.operations_pb2 import ExecutionPlan
@@ -19,33 +17,20 @@ from layerapi.api.value.sha256_pb2 import Sha256
 
 from layer.config import ClientConfig
 from layer.contracts.project_full_name import ProjectFullName
-from layer.utils.grpc import create_grpc_channel
+from layer.utils.grpc.channel import get_grpc_channel
 
 
 class FlowManagerClient:
     _service: FlowManagerAPIStub
 
-    def __init__(
-        self,
-        config: ClientConfig,
-        logger: Logger,
-    ):
-        self._grpc_gateway_address = config.grpc_gateway_address
-        self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
-    @contextmanager
-    def init(self) -> Iterator["FlowManagerClient"]:
-        with create_grpc_channel(
-            self._grpc_gateway_address,
-            self._access_token,
-            do_verify_ssl=self._do_verify_ssl,
-            logs_file_path=self._logs_file_path,
-        ) as channel:
-            self._service = FlowManagerAPIStub(channel=channel)
-            yield self
+    @staticmethod
+    def create(config: ClientConfig) -> "FlowManagerClient":
+        client = FlowManagerClient()
+        channel = get_grpc_channel(config)
+        client._service = FlowManagerAPIStub(  # pylint: disable=protected-access
+            channel
+        )
+        return client
 
     def start_run(
         self,

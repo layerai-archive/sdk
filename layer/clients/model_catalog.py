@@ -1,10 +1,9 @@
 import sys
 import tempfile
 import warnings
-from contextlib import contextmanager
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
 from layerapi.api.entity.model_train_status_pb2 import (
@@ -47,7 +46,7 @@ from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
 from layer.flavors.utils import get_flavor_for_proto
 from layer.tracker.ui_progress_tracker import UIRunProgressTracker
-from layer.utils.grpc import create_grpc_channel
+from layer.utils.grpc.channel import get_grpc_channel
 from layer.utils.s3 import S3Util
 
 
@@ -61,25 +60,18 @@ class ModelCatalogClient:
     def __init__(
         self, config: ClientConfig, logger: Logger, cache_dir: Optional[Path] = None
     ):
-        self._grpc_gateway_address = config.grpc_gateway_address
         self._s3_endpoint_url = config.s3.endpoint_url
         self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
         self._cache = Cache(cache_dir).initialise()
 
-    @contextmanager
-    def init(self) -> Iterator["ModelCatalogClient"]:
-        with create_grpc_channel(
-            self._grpc_gateway_address,
-            self._access_token,
-            do_verify_ssl=self._do_verify_ssl,
-            logs_file_path=self._logs_file_path,
-        ) as channel:
-            self._service = ModelCatalogAPIStub(channel=channel)
-            yield self
+    @staticmethod
+    def create(config: ClientConfig, logger: Logger) -> "ModelCatalogClient":
+        client = ModelCatalogClient(config=config, logger=logger)
+        channel = get_grpc_channel(config)
+        client._service = ModelCatalogAPIStub(  # pylint: disable=protected-access
+            channel
+        )
+        return client
 
     def create_model_version(
         self,

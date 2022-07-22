@@ -1,7 +1,5 @@
 import uuid
-from contextlib import contextmanager
-from logging import Logger
-from typing import Iterator, Optional
+from typing import Optional
 from uuid import UUID
 
 from layerapi.api.entity.project_pb2 import Project as ProjectMessage
@@ -26,33 +24,19 @@ from layer.exceptions.exceptions import (
     LayerClientResourceAlreadyExistsException,
     LayerClientResourceNotFoundException,
 )
-from layer.utils.grpc import create_grpc_channel, generate_client_error_from_grpc_error
+from layer.utils.grpc import generate_client_error_from_grpc_error
+from layer.utils.grpc.channel import get_grpc_channel
 
 
 class ProjectServiceClient:
     _service: ProjectAPIStub
 
-    def __init__(
-        self,
-        config: ClientConfig,
-        logger: Logger,
-    ):
-        self._grpc_gateway_address = config.grpc_gateway_address
-        self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
-    @contextmanager
-    def init(self) -> Iterator["ProjectServiceClient"]:
-        with create_grpc_channel(
-            self._grpc_gateway_address,
-            self._access_token,
-            do_verify_ssl=self._do_verify_ssl,
-            logs_file_path=self._logs_file_path,
-        ) as channel:
-            self._service = ProjectAPIStub(channel=channel)
-            yield self
+    @staticmethod
+    def create(config: ClientConfig) -> "ProjectServiceClient":
+        client = ProjectServiceClient()
+        channel = get_grpc_channel(config)
+        client._service = ProjectAPIStub(channel)  # pylint: disable=protected-access
+        return client
 
     @staticmethod
     def _map_project_message_to_project_contract(
