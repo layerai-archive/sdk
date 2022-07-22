@@ -32,7 +32,8 @@ class LayerClient:
 
     @contextmanager
     def init(self) -> Iterator["LayerClient"]:
-        # kept for backwards compatibility only
+        # kept for backwards compatibility only, remove in future version:
+        # https://linear.app/layer/issue/LAY-3547/remove-layerclientconfigclient-loggerinit-method
         yield self
 
     @property
