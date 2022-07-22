@@ -8,7 +8,8 @@ from layer.utils.grpc.channel import get_grpc_channel
 
 
 _ChannelConfig = namedtuple(
-    "_ChannelConfig", ("grpc_gateway_address", "access_token", "logs_file_path")
+    "_ChannelConfig",
+    ("grpc_gateway_address", "access_token", "logs_file_path", "grpc_do_verify_ssl"),
 )
 
 
@@ -17,6 +18,7 @@ def _get_channel_config(url: str) -> _ChannelConfig:
         grpc_gateway_address=url,
         access_token="",
         logs_file_path=LogsConfig().logs_file_path,
+        grpc_do_verify_ssl=True,
     )
 
 

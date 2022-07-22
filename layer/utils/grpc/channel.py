@@ -73,24 +73,28 @@ def create_grpc_channel(
 def _grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., Any]:
     """Maintains a single GRPC channel for all client calls."""
 
-    channel: List[Any] = []  # a pool for the channel
+    channels = {}
 
-    def _get_grpc_channel(*args: Any, **kwargs: Any) -> Any:
+    def _get_grpc_channel(config: Any, **kwargs: Any) -> Any:
         closing = kwargs.get("closing", False)
+        config_key = (
+            config.grpc_gateway_address,
+            config.access_token,
+        )
 
-        if len(channel) == 0:
+        if config_key not in channels:
             # if the channel is being closed, do not create new one
             if closing:
                 return None
 
             # create and memoize a new channel
-            channel.append(channel_factory(*args, **kwargs))
+            channels[config_key] = channel_factory(config, **kwargs)
         else:
             if closing:
                 # do not memoize the channel anymore if it is being closed
-                return channel.pop()
+                return channels.pop(config_key)
 
-        return channel[0]
+        return channels[config_key]
 
     return _get_grpc_channel
 
