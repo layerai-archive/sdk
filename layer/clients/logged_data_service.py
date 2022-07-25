@@ -62,7 +62,7 @@ class LoggedDataClient:
         train_id: UUID,
         tag: str,
         points: List[ModelMetricPoint],
-        metric_group_uuid: UUID,
+        metric_group_id: UUID,
     ) -> ModelMetricId:
         metric = LoggedModelMetric(
             unique_tag=tag,
@@ -70,7 +70,7 @@ class LoggedDataClient:
                 LoggedModelMetric.ModelMetricPoint(epoch=p.epoch, value=p.value)
                 for p in points
             ],
-            group_id=LoggedMetricGroupId(value=str(metric_group_uuid)),
+            group_id=LoggedMetricGroupId(value=str(metric_group_id)),
         )
         request = LogModelMetricRequest(
             model_train_id=ModelTrainId(value=str(train_id)), metric=metric

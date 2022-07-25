@@ -128,7 +128,7 @@ def test_given_tag_not_exists_when_log_model_metric_then_calls_log_metric():  # 
 
     # when
     logged_data_client.log_model_metric(
-        train_id=train_id, tag=tag, points=points, metric_group_uuid=metric_group_uuid
+        train_id=train_id, tag=tag, points=points, metric_group_id=metric_group_uuid
     )
 
     # then

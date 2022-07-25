@@ -71,7 +71,7 @@ class LogDataRunner:
                         tag=tag,
                         numeric_value=value,
                         epoch=epoch,
-                        metric_group_uuid=metric_group_uuid,
+                        metric_group_id=metric_group_uuid,
                     )
                 else:
                     self._log_number(tag=tag, number=value)
@@ -156,7 +156,7 @@ class LogDataRunner:
         tag: str,
         numeric_value: Union[float, int],
         epoch: Optional[int],
-        metric_group_uuid: UUID,
+        metric_group_id: UUID,
     ) -> None:
         assert self._train_id
         # store numeric values w/o an explicit epoch as metric with the special epoch:-1
@@ -165,7 +165,7 @@ class LogDataRunner:
             train_id=self._train_id,
             tag=tag,
             points=[ModelMetricPoint(epoch=epoch, value=float(numeric_value))],
-            metric_group_uuid=metric_group_uuid,
+            metric_group_id=metric_group_id,
         )
 
     def _log_text(self, tag: str, text: str) -> None:
