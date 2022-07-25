@@ -615,7 +615,7 @@ optional = false
 python-versions = "*"
 
 [package.extras]
-test = ["flake8 (==3.7.8)", "hypothesis (==3.55.3)"]
+test = ["hypothesis (==3.55.3)", "flake8 (==3.7.8)"]
 
 [[package]]
 name = "coverage"
@@ -792,7 +792,7 @@ flake8 = "*"
 more-itertools = {version = "*", markers = "python_version < \"3.10\""}
 
 [package.extras]
-dev = ["black", "isort", "flake8", "hacking (>=4)", "flake8-black", "flake8-isort", "pep8-naming", "flake8-broken-line", "flake8-builtins", "flake8-2020", "flake8-docstrings", "flake8-rst-docstrings", "darglint", "mypy", "coverage", "codecov"]
+dev = ["codecov", "coverage", "mypy", "darglint", "flake8-rst-docstrings", "flake8-docstrings", "flake8-2020", "flake8-builtins", "flake8-broken-line", "pep8-naming", "flake8-isort", "flake8-black", "hacking (>=4)", "flake8", "isort", "black"]
 
 [[package]]
 name = "flatbuffers"
@@ -982,13 +982,13 @@ tqdm = "*"
 typing-extensions = ">=3.7.4.3"
 
 [package.extras]
-all = ["pytest", "pytest-cov", "datasets", "soundfile", "black (>=22.0,<23.0)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
-dev = ["pytest", "pytest-cov", "datasets", "soundfile", "black (>=22.0,<23.0)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
-fastai = ["toml", "fastai (>=2.4)", "fastcore (>=1.3.27)"]
-quality = ["black (>=22.0,<23.0)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
-tensorflow = ["tensorflow", "pydot", "graphviz"]
-testing = ["pytest", "pytest-cov", "datasets", "soundfile"]
 torch = ["torch"]
+testing = ["soundfile", "datasets", "pytest-cov", "pytest"]
+tensorflow = ["graphviz", "pydot", "tensorflow"]
+quality = ["flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (>=22.0,<23.0)"]
+fastai = ["fastcore (>=1.3.27)", "fastai (>=2.4)", "toml"]
+dev = ["flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (>=22.0,<23.0)", "soundfile", "datasets", "pytest-cov", "pytest"]
+all = ["flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (>=22.0,<23.0)", "soundfile", "datasets", "pytest-cov", "pytest"]
 
 [[package]]
 name = "humanize"
@@ -1162,9 +1162,9 @@ numpy = ">=1.9.1"
 six = ">=1.9.0"
 
 [package.extras]
-image = ["scipy (>=0.14)", "Pillow (>=5.2.0)"]
+tests = ["pytest-cov", "pytest-xdist", "pytest", "keras", "tensorflow", "pillow", "pandas"]
 pep8 = ["flake8"]
-tests = ["pandas", "pillow", "tensorflow", "keras", "pytest", "pytest-xdist", "pytest-cov"]
+image = ["Pillow (>=5.2.0)", "scipy (>=0.14)"]
 
 [[package]]
 name = "kiwisolver"
@@ -1563,8 +1563,8 @@ python-versions = ">=3.6"
 importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
 
 [package.extras]
-dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark"]
+testing = ["pytest-benchmark", "pytest"]
+dev = ["tox", "pre-commit"]
 
 [[package]]
 name = "polling"
@@ -1663,7 +1663,7 @@ numpy = "*"
 pyhumps = "*"
 
 [package.extras]
-dev = ["black (==22.3.0)", "click (==8.0.4)", "deepdiff (==5.5.0)", "flake8 (==3.9.2)", "isort (==5.9.2)", "pytest (>=7.0.1)", "pytest-cov (>=3.0.0)", "pytest-timeout (>=2.1.0)"]
+dev = ["pytest-timeout (>=2.1.0)", "pytest-cov (>=3.0.0)", "pytest (>=7.0.1)", "isort (==5.9.2)", "flake8 (==3.9.2)", "deepdiff (==5.5.0)", "click (==8.0.4)", "black (==22.3.0)"]
 
 [[package]]
 name = "pybboxes"
@@ -1677,7 +1677,7 @@ python-versions = ">=3.6"
 numpy = "*"
 
 [package.extras]
-dev = ["black (==22.3.0)", "click (==8.0.4)", "deepdiff (==5.5.0)", "flake8 (==3.9.2)", "isort (==5.9.2)", "pytest (>=7.0.1)", "pytest-cov (>=3.0.0)", "pytest-timeout (>=2.1.0)"]
+dev = ["pytest-timeout (>=2.1.0)", "pytest-cov (>=3.0.0)", "pytest (>=7.0.1)", "isort (==5.9.2)", "flake8 (==3.9.2)", "deepdiff (==5.5.0)", "click (==8.0.4)", "black (==22.3.0)"]
 
 [[package]]
 name = "pycodestyle"
@@ -1728,10 +1728,10 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
+tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
+docs = ["zope.interface", "sphinx-rtd-theme", "sphinx"]
+dev = ["pre-commit", "mypy", "coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)", "cryptography (>=3.3.1)", "zope.interface", "sphinx-rtd-theme", "sphinx"]
 crypto = ["cryptography (>=3.3.1)"]
-dev = ["sphinx", "sphinx-rtd-theme", "zope.interface", "cryptography (>=3.3.1)", "pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)", "mypy", "pre-commit"]
-docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
-tests = ["pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)"]
 
 [[package]]
 name = "pylint"
@@ -1815,7 +1815,7 @@ coverage = {version = ">=5.2.1", extras = ["toml"]}
 pytest = ">=4.6"
 
 [package.extras]
-testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtualenv"]
+testing = ["virtualenv", "pytest-xdist", "six", "process-tests", "hunter", "fields"]
 
 [[package]]
 name = "pytest-dotenv"
@@ -2032,10 +2032,10 @@ scipy = ">=1.1.0"
 threadpoolctl = ">=2.0.0"
 
 [package.extras]
-benchmark = ["matplotlib (>=2.2.3)", "pandas (>=0.25.0)", "memory-profiler (>=0.57.0)"]
-docs = ["matplotlib (>=2.2.3)", "scikit-image (>=0.14.5)", "pandas (>=0.25.0)", "seaborn (>=0.9.0)", "memory-profiler (>=0.57.0)", "sphinx (>=4.0.1)", "sphinx-gallery (>=0.7.0)", "numpydoc (>=1.0.0)", "Pillow (>=7.1.2)", "sphinx-prompt (>=1.3.0)", "sphinxext-opengraph (>=0.4.2)"]
-examples = ["matplotlib (>=2.2.3)", "scikit-image (>=0.14.5)", "pandas (>=0.25.0)", "seaborn (>=0.9.0)"]
-tests = ["matplotlib (>=2.2.3)", "scikit-image (>=0.14.5)", "pandas (>=0.25.0)", "pytest (>=5.0.1)", "pytest-cov (>=2.9.0)", "flake8 (>=3.8.2)", "black (>=21.6b0)", "mypy (>=0.770)", "pyamg (>=4.0.0)"]
+tests = ["pyamg (>=4.0.0)", "mypy (>=0.770)", "black (>=21.6b0)", "flake8 (>=3.8.2)", "pytest-cov (>=2.9.0)", "pytest (>=5.0.1)", "pandas (>=0.25.0)", "scikit-image (>=0.14.5)", "matplotlib (>=2.2.3)"]
+examples = ["seaborn (>=0.9.0)", "pandas (>=0.25.0)", "scikit-image (>=0.14.5)", "matplotlib (>=2.2.3)"]
+docs = ["sphinxext-opengraph (>=0.4.2)", "sphinx-prompt (>=1.3.0)", "Pillow (>=7.1.2)", "numpydoc (>=1.0.0)", "sphinx-gallery (>=0.7.0)", "sphinx (>=4.0.1)", "memory-profiler (>=0.57.0)", "seaborn (>=0.9.0)", "pandas (>=0.25.0)", "scikit-image (>=0.14.5)", "matplotlib (>=2.2.3)"]
+benchmark = ["memory-profiler (>=0.57.0)", "pandas (>=0.25.0)", "matplotlib (>=2.2.3)"]
 
 [[package]]
 name = "scipy"
