@@ -1,4 +1,5 @@
 import io
+import uuid
 from logging import Logger
 from pathlib import Path
 from types import ModuleType
@@ -57,6 +58,7 @@ class LogDataRunner:
     ) -> None:
         LogDataRunner._check_epoch(epoch)
 
+        metric_group_uuid = uuid.uuid4()
         for tag, value in data.items():
             if isinstance(value, str):
                 self._log_text(tag=tag, text=value)
@@ -65,7 +67,12 @@ class LogDataRunner:
                 self._log_boolean(tag=tag, bool_val=value)
             elif isinstance(value, (int, float)):
                 if self._train_id and epoch is not None:
-                    self._log_metric(tag=tag, numeric_value=value, epoch=epoch)
+                    self._log_metric(
+                        tag=tag,
+                        numeric_value=value,
+                        epoch=epoch,
+                        metric_group_id=metric_group_uuid,
+                    )
                 else:
                     self._log_number(tag=tag, number=value)
             elif isinstance(value, Markdown):
@@ -145,7 +152,11 @@ class LogDataRunner:
                 self._log_pil_image(tag=tag, image=img)
 
     def _log_metric(
-        self, tag: str, numeric_value: Union[float, int], epoch: Optional[int]
+        self,
+        tag: str,
+        numeric_value: Union[float, int],
+        epoch: Optional[int],
+        metric_group_id: UUID,
     ) -> None:
         assert self._train_id
         # store numeric values w/o an explicit epoch as metric with the special epoch:-1
@@ -154,6 +165,7 @@ class LogDataRunner:
             train_id=self._train_id,
             tag=tag,
             points=[ModelMetricPoint(epoch=epoch, value=float(numeric_value))],
+            metric_group_id=metric_group_id,
         )
 
     def _log_text(self, tag: str, text: str) -> None:

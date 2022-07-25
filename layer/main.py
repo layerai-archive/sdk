@@ -778,7 +778,8 @@ def log(
 
     **Charts**
 
-    You can track your metrics in detail with charts
+    You can track your metrics in detail with charts. Metrics logged with the same layer.log(...) call will be
+    grouped and visualized together in the web UI.
 
     Accepted Types:
     ``matplotlib.figure.Figure``,
