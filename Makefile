@@ -64,8 +64,8 @@ e2e-test: $(INSTALL_STAMP) $(TEST_TOKEN_FILE)
 ifdef CI
 	$(eval DATADOG_ARGS := --ddtrace-patch-all --ddtrace)
 endif
-	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run python build_scripts/sdk_login.py $(TEST_TOKEN_FILE)
-	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) $(POETRY) run pytest test/e2e -s -n 16 -vv $(DATADOG_ARGS)
+	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run python build_scripts/sdk_login.py $(TEST_TOKEN_FILE)
+	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run pytest test/e2e -s -n 16 -vv $(DATADOG_ARGS)
 
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters

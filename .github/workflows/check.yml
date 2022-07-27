@@ -76,8 +76,6 @@ jobs:
       matrix:
         python-version: [3.7, 3.8]
     runs-on: ubuntu-18.04
-    env:
-      SDK_E2E_TESTS_LOGS_DIR: build/e2e-home/stdout-logs/
     steps:
       - uses: actions/checkout@v2
       - run: git fetch origin ${{ github.event.pull_request.base.sha }}
