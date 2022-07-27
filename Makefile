@@ -1,6 +1,8 @@
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 INSTALL_STAMP := .install.stamp
 E2E_TEST_HOME := $(ROOT_DIR)/build/e2e-home
+E2E_TEST_SELECTOR := test/e2e
+E2E_TEST_PARALLELISM := 16
 TEST_TOKEN_FILE := .test-token
 POETRY := $(shell command -v poetry 2> /dev/null)
 IN_VENV := $(shell echo $(CONDA_DEFAULT_ENV)$(CONDA_PREFIX)$(VIRTUAL_ENV))
@@ -65,7 +67,7 @@ ifdef CI
 	$(eval DATADOG_ARGS := --ddtrace-patch-all --ddtrace)
 endif
 	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run python build_scripts/sdk_login.py $(TEST_TOKEN_FILE)
-	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run pytest test/e2e -s -n 16 -vv $(DATADOG_ARGS)
+	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run pytest $(E2E_TEST_SELECTOR) -s -n $(E2E_TEST_PARALLELISM) -vv $(DATADOG_ARGS)
 
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters
