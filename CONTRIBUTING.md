@@ -226,7 +226,8 @@ In order to run the  tests, first you need to [create an api key](https://docs.a
 make e2e-test
 ```
 
-You will be asked for your key which will be stored for subsequent runs in `.test-token`
+You will be asked for your key which will be stored for subsequent runs in `.test-token`.
+You can find the test logs under `build/e2e-home/logs` and also the standard output generated during tests under `build/e2e-home/stdout-logs`.
 
 #### Testing your local SDK build within a Google Colab notebook
 
