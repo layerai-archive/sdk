@@ -85,7 +85,7 @@ lint: $(INSTALL_STAMP) ## Run all linters
 check-poetry:
 	@if [ -z $(POETRY) ]; then echo "Poetry could not be found. Please install $(REQUIRED_POETRY_VERSION). See https://python-poetry.org/docs/"; exit 2; fi
 ifneq ($(shell $(POETRY) --version | awk '{print $$3}'), $(REQUIRED_POETRY_VERSION))
-	@echo "Please use Poetry version $(REQUIRED_POETRY_VERSION)" && exit 2
+	@echo "Please use Poetry version $(REQUIRED_POETRY_VERSION). Simply run: poetry self update $(REQUIRED_POETRY_VERSION)" && exit 2
 endif
 
 .PHONY: check-package-loads
