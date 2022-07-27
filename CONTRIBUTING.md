@@ -226,7 +226,8 @@ In order to run the  tests, first you need to [create an api key](https://docs.a
 make e2e-test
 ```
 
-You will be asked for your key which will be stored for subsequent runs in `.test-token`
+You will be asked for your key which will be stored for subsequent runs in `.test-token`.
+You can find the test logs under `build/e2e-home/logs` and also the standard output generated during tests under `build/e2e-home/stdout-logs`.
 
 #### Testing your local SDK build within a Google Colab notebook
 
@@ -249,6 +250,8 @@ Set these up with your IDE to have a smoother development experience and fewer f
 ### Submitting a pull request
 
 The final step after developing and testing your changes locally is to submit a pull request and get your contribution merged back into `layerai/sdk`. Please follow the instructions in the GitHub template when creating your PR and fix any status checks that are failing.
+
+To help debug E2E test issues, network logs are captured, zipped and available in the Summary page of each Check GitHub Action page after the E2E tests are executed.
 
 When the PR passes all checks, a `layerai/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests. When everything is satisfied, the PR can then be merged onto the `main` branch.
 
