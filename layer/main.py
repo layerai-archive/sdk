@@ -739,6 +739,8 @@ def log(
 
     Logs arbitrary data associated with a model train or a dataset build into Layer backend.
 
+    Extra line to trigger e2e-tests.
+
     This function can only be run inside functions decorated with ``@model`` or ``@dataset``. The logged data can then be discovered and analyzed through the Layer UI.
 
     We support Python primitives, images, tables and plots to enable better experiment tracking and version comparison.
