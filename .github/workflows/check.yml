@@ -119,9 +119,7 @@ jobs:
           datadog_site: datadoghq.eu
       - name: Run e2e tests
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: |
-          echo ${{ secrets.APP_API_KEY }} > .test-token
-          make e2e-test
+        run: bash build_scripts/ci/e2e_tests.sh ${{ secrets.APP_API_KEY }}
       - uses: actions/upload-artifact@v3
         with:
           name: e2e-test-logs (${{ matrix.python-version }})
