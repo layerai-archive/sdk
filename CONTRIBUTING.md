@@ -250,6 +250,8 @@ Set these up with your IDE to have a smoother development experience and fewer f
 
 The final step after developing and testing your changes locally is to submit a pull request and get your contribution merged back into `layerai/sdk`. Please follow the instructions in the GitHub template when creating your PR and fix any status checks that are failing.
 
+To help debug E2E test issues, network logs are captured, zipped and available in the Summary page of each Check GitHub Action page after the E2E tests are executed.
+
 When the PR passes all checks, a `layerai/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests. When everything is satisfied, the PR can then be merged onto the `main` branch.
 
 That's it! We are looking forward to your contributions!
