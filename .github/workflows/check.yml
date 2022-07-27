@@ -126,7 +126,7 @@ jobs:
           make e2e-test
       - uses: actions/upload-artifact@v3
         with:
-          name: e2e-test-logs
+          name: e2e-test-logs (${{ matrix.python-version }})
           path: |
             build/e2e-home/logs/*
             build/e2e-home/stdout-logs/*
