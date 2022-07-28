@@ -230,7 +230,7 @@ You will be asked for your key which will be stored for subsequent runs in `.tes
 You can find the test logs under `build/e2e-home/logs` and also the standard output generated during tests under `build/e2e-home/stdout-logs`.
 
 ##### Run a subset of the e2e-tests
-You can pass `E2E_TEST_SELECTOR` to `make e2e-test` to select a subset of the tests to run. In this example we are running a single test:
+You can pass `E2E_TEST_SELECTOR` to `make e2e-test` to select a subset of the tests to run. Use the [standard pytest syntax](https://docs.pytest.org/en/latest/how-to/usage.html#specifying-tests-selecting-tests) to specify which tests to invoke.
 
 ```shell
 make e2e-test E2E_TEST_SELECTOR=test/e2e/test_guest_user_reads.py::test_guest_user_private_model_read
