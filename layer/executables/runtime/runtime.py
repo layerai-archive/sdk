@@ -23,7 +23,7 @@ class BaseFunctionRuntime:
 
     def install_packages(self, packages: Sequence[str]) -> None:
         """Installs packages required to run the function."""
-        _run_pip_install(packages)
+        # _run_pip_install(packages)
 
     def __call__(self, func: Callable[..., Any]) -> Any:
         """Called from the executable to run the function."""
