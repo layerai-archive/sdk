@@ -10,7 +10,7 @@ from venv import EnvBuilder
 import pytest
 
 from layer.executables.packager import package_function
-from layer.executables.runtime import BaseFunctionRuntime, FunctionRuntimeError
+from layer.executables.runtime.runtime import BaseFunctionRuntime, FunctionRuntimeError
 
 
 def test_executable_path_does_not_exist():

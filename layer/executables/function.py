@@ -1,9 +1,12 @@
+import hashlib
+import inspect
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 import layer
 from layer.contracts.asset import AssetType
+from layer.contracts.fabrics import Fabric
 from layer.executables.packager import (
     FUNCTION_SERIALIZER_NAME,
     FUNCTION_SERIALIZER_VERSION,
@@ -21,23 +24,37 @@ class Function:
         output: FunctionOutput,
         pip_dependencies: Sequence[str],
         resources: Sequence[Path],
+        fabric: Fabric,
+        source_code: str,
+        source_code_digest: str,
     ) -> None:
         self._func = func
         self._output = output
         self._pip_dependencies = pip_dependencies
         self._resources = resources
+        self._fabric = fabric
+        self._source_code = source_code
+        self._source_code_digest = source_code_digest
 
     @staticmethod
     def from_decorated(func: Callable[..., Any]) -> "Function":
         output = _get_function_output(func)
         pip_dependencies = _get_function_pip_dependencies(func)
         resources = _get_function_resources(func)
+        fabric = _get_function_fabric(func)
         wrapped_func = _undecorate_function(func)
+        source_code = inspect.getsource(func)
+        source_code_digest = hashlib.sha256()
+        source_code_digest.update(source_code.encode("utf-8"))
+        source_code_digest = source_code_digest.hexdigest()
         return Function(
             wrapped_func,
             output=output,
             pip_dependencies=pip_dependencies,
             resources=resources,
+            fabric=fabric,
+            source_code=source_code,
+            source_code_digest=source_code_digest,
         )
 
     @property
@@ -57,6 +74,18 @@ class Function:
         return self._resources
 
     @property
+    def fabric(self) -> Fabric:
+        return self._fabric
+
+    @property
+    def source_code(self) -> str:
+        return self._source_code
+
+    @property
+    def source_code_digest(self) -> str:
+        return self._source_code_digest
+
+    @property
     def metadata(self) -> Dict[str, Any]:
         return {
             "sdk": {
@@ -69,17 +98,22 @@ class Function:
                 },
                 "output": {
                     "name": self._output.name,
-                    "type": self._output_type_name,
+                    "type": self.output_type_name,
+                },
+                "fabric": {"name": self._fabric.value},
+                "source": {
+                    "source_code": self._source_code,
+                    "digest": self._source_code_digest,
                 },
             },
         }
 
     @property
-    def _output_type_name(self) -> str:
+    def output_type_name(self) -> str:
         if isinstance(self._output, DatasetOutput):
-            return "dataset"
+            return "datasets"
         if isinstance(self._output, ModelOutput):
-            return "model"
+            return "models"
 
     def package(self, output_dir: Optional[Path] = None) -> Path:
         return package_function(
@@ -142,6 +176,10 @@ def _get_function_pip_dependencies(func: Callable[..., Any]) -> Sequence[str]:
 def _get_function_resources(func: Callable[..., Any]) -> Sequence[Path]:
     resource_paths = _get_decorator_attr(func, "resource_paths") or []
     return tuple(Path(resource_path.path) for resource_path in resource_paths)
+
+
+def _get_function_fabric(func: Callable[..., Any]) -> Fabric:
+    return _get_decorator_attr(func, "fabric") or Fabric.default()
 
 
 def _get_decorator_attr(func: Callable[..., Any], attr: str) -> Optional[Any]:
