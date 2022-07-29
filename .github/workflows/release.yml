@@ -95,6 +95,7 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         run: bash build_scripts/ci/e2e_tests.sh ${{ secrets.APP_API_KEY }}
       - uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: e2e-test-logs (${{ matrix.python-version }})
           path: |
