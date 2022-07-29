@@ -43,6 +43,8 @@ def test_remote_run_succeeds_and_registers_metadata_when_assertion_succeeds(
                 for _ in range(10)
             ]
         )
+        if True is True:
+            raise RuntimeError("Kaboom!")
         return pandas_df
 
     # when
