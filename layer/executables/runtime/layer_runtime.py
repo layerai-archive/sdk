@@ -2,7 +2,7 @@ import logging
 import uuid
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Sequence
 
 from layerapi.api.ids_pb2 import ProjectId
 
@@ -26,6 +26,9 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
         self._project_id = None
         self._client_config = None
         self._logger = logging.getLogger(__name__)
+
+    def install_packages(self, packages: Sequence[str]) -> None:
+        pass
 
     def initialise(self, package_info: FunctionPackageInfo) -> None:
         self._function_metadata = package_info.metadata
