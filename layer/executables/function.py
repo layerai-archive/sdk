@@ -111,9 +111,9 @@ class Function:
     @property
     def output_type_name(self) -> str:
         if isinstance(self._output, DatasetOutput):
-            return "datasets"
+            return AssetType.DATASET.value
         if isinstance(self._output, ModelOutput):
-            return "models"
+            return AssetType.MODEL.value
 
     def package(self, output_dir: Optional[Path] = None) -> Path:
         return package_function(

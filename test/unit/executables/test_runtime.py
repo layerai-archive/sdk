@@ -108,7 +108,7 @@ def _execute_runtime_module(executable: Path) -> subprocess.CompletedProcess:
 
         # run in a virtual environment, not to mess the current one
         return subprocess.run(
-            [python_bin, "-m", "layer.executables.runtime", str(executable)],
+            [python_bin, "-m", "layer.executables.runtime.runtime", str(executable)],
             check=True,
             capture_output=True,
             text=True,
