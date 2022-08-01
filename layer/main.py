@@ -538,7 +538,9 @@ def init(
     reset_to(project_full_name)
 
     init_project_runner = InitProjectRunner(project_full_name, logger=logger)
-    fabric_to_set = Fabric(fabric) if fabric else None
+    fabric_to_set = (
+        Fabric(fabric) if fabric else None  # type:ignore # pylint: disable=E1120
+    )
     return init_project_runner.setup_project(
         fabric=fabric_to_set,
         pip_packages=pip_packages,
@@ -546,7 +548,9 @@ def init(
     )
 
 
-def run(functions: List[Any], debug: bool = False, cluster_address: str = None) -> Run:
+def run(
+    functions: List[Any], debug: bool = False, ray_address: Optional[str] = None
+) -> Run:
     """
     :param functions: List of decorated functions to run in the Layer backend.
     :param debug: Stream logs to console from infra executing the project remotely.
@@ -583,22 +587,23 @@ def run(functions: List[Any], debug: bool = False, cluster_address: str = None) 
 
     layer_config: Config = asyncio_run_in_thread(ConfigManager().refresh())
     project_full_name = get_current_project_full_name()
-    if cluster_address is not None:
+    if ray_address is not None:
         from layer.projects.ray_project_runner import RayProjectRunner
 
-        project_runner = RayProjectRunner(
+        ray_project_runner = RayProjectRunner(
             config=layer_config,
             project_full_name=project_full_name,
             functions=functions,
-            ray_address=f"ray://{cluster_address}",
+            ray_address=ray_address,
         )
+        run = ray_project_runner.run()
     else:
         project_runner = ProjectRunner(
             config=layer_config,
             project_full_name=project_full_name,
             functions=functions,
         )
-    run = project_runner.run(debug=debug)
+        run = project_runner.run(debug=debug)
     _make_notebook_links_open_in_new_tab()
     return run
 

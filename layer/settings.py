@@ -91,7 +91,7 @@ class LayerSettings:
 
     def set_fabric(self, f: str) -> None:
         if Fabric.has_member_key(f):
-            self._fabric = Fabric(f)
+            self._fabric = Fabric(f)  # type:ignore # pylint: disable=E1120
             return
         raise ValueError(
             'Fabric setting "{}" is not valid. You can check valid values in Fabric enum definition.'.format(

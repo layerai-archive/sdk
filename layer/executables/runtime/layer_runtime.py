@@ -2,15 +2,10 @@ import logging
 import uuid
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Any, Callable, Optional, Sequence
-
-from layerapi.api.ids_pb2 import ProjectId
+from typing import Any, Callable, Dict, Optional, Sequence
 
 import layer
-from layer.clients.data_catalog import DataCatalogClient
-from layer.clients.project_service import ProjectServiceClient
-from layer.contracts.asset import AssetPath, AssetType
-from layer.contracts.fabrics import Fabric
+from layer.contracts.asset import AssetType
 from layer.executables.packager import FunctionPackageInfo
 from layer.executables.runtime.runtime import BaseFunctionRuntime
 from layer.global_context import current_project_full_name, set_has_shown_update_message
@@ -24,7 +19,9 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
         super().__init__(executable_path)
         self._project = project or _get_current_project_name()
         self._project_id = None
-        self._client_config = None
+        self._function_metadata: Optional[Dict[str, Any]] = None
+        self._asset_name: Optional[str] = None
+        self._asset_type: Optional[AssetType] = None
         self._logger = logging.getLogger(__name__)
 
     def install_packages(self, packages: Sequence[str]) -> None:
@@ -39,20 +36,15 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
         # required to ensure project exists
         self._layer_init()
 
-        # if self._project is None:
-        #     raise LayerFunctionRuntimeError(
-        #         "project not specified and could not be resolved"
-        #     )
-
-        # # required to ensure project exists
-        # self._layer_init()
-
-        # self._client_config = ConfigManager().load().client
-        # self._project_id = self._get_project_id()
+        if self._project is None:
+            raise LayerFunctionRuntimeError(
+                "project not specified and could not be resolved"
+            )
 
     def __call__(self, func: Callable[..., Any]) -> Any:
         if self._asset_type == AssetType.MODEL:
             import traceback
+
             try:
                 from layer.executables.model.entrypoint import (
                     _run as model_train_entrypoint,
@@ -60,7 +52,7 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
 
                 model_train_entrypoint(func)
             except Exception as e:
-                print('Error during train:', e)
+                print("Error during train:", e)
                 traceback.print_exc()
         elif self._asset_type == AssetType.DATASET:
             from layer.executables.dataset.entrypoint import (
@@ -71,45 +63,18 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
         else:
             raise ValueError(f"Unknown asset type: {self._asset_type}")
 
-        # self._create_dataset("test", func)
-
     def _layer_init(self) -> None:
         set_has_shown_update_message(True)
         import os
 
-        LAYER_CLIENT_AUTH_URL = os.environ["LAYER_CLIENT_AUTH_URL"]
-        LAYER_CLIENT_AUTH_TOKEN = os.environ["LAYER_CLIENT_AUTH_TOKEN"]
-        LAYER_PROJECT_NAME = os.environ["LAYER_PROJECT_NAME"]
-
+        client_auth_url = os.environ["LAYER_CLIENT_AUTH_URL"]
+        client_auth_token = os.environ["LAYER_CLIENT_AUTH_TOKEN"]
+        project_name = os.environ["LAYER_PROJECT_NAME"]
         layer.login_with_access_token(
-            access_token=LAYER_CLIENT_AUTH_TOKEN, url=LAYER_CLIENT_AUTH_URL
+            access_token=client_auth_token, url=client_auth_url
         )
-        layer.init(project_name=LAYER_PROJECT_NAME)
-
-    def _get_project_id(self) -> _ProjectId:
-        project_name = current_project_full_name()
-        client = ProjectServiceClient.create(self._client_config)
-        project = client.get_project(project_name)
-        return project.id
-
-    def _create_dataset(self, name: str, func: Callable[..., Any]) -> None:
-        client = DataCatalogClient.create(self._client_config, self._logger)
-        fabric = Fabric.F_LOCAL.value
-        asset_path = AssetPath(name, AssetType.DATASET)
-        client.add_dataset(
-            project_id=self._project_id,
-            asset_path=asset_path,
-            description="",
-            fabric=fabric,
-            func_source="",
-            entrypoint="",
-            environment="",
-        )
-        build_response = client.initiate_build(
-            ProjectId(value=str(self._project_id)), name, fabric
-        )
-        client.store_dataset(func(), uuid.UUID(build_response.id.value))
-        client.complete_build(build_response.id, name, fabric.value)
+        layer.init(project_name=project_name)
+        self._project = project_name
 
 
 def _add_cli_args(parser: ArgumentParser) -> None:

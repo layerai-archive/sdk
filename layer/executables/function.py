@@ -44,9 +44,9 @@ class Function:
         fabric = _get_function_fabric(func)
         wrapped_func = _undecorate_function(func)
         source_code = inspect.getsource(func)
-        source_code_digest = hashlib.sha256()
-        source_code_digest.update(source_code.encode("utf-8"))
-        source_code_digest = source_code_digest.hexdigest()
+        sha256 = hashlib.sha256()
+        sha256.update(source_code.encode("utf-8"))
+        source_code_digest = sha256.hexdigest()
         return Function(
             wrapped_func,
             output=output,
