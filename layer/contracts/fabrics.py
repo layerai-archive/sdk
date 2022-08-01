@@ -9,7 +9,9 @@ class Fabric(enum.Enum):
     F_SMALL = "f-small", 2, 4, 0
     F_MEDIUM = "f-medium", 3, 14, 0
     F_GPU_SMALL = "f-gpu-small", 3, 48, 1
-    F_GPU_LARGE = "f-gpu-large", 3, 48, 2
+    F_GPU_MEDIUM = "f-gpu-medium", 3, 48, 2
+    F_GPU_LARGE = "f-gpu-large", 3, 48, 4
+    F_GPU_XLARGE = "f-gpu-xlarge", 3, 48, 8
 
     def __new__(cls, *args, **kwds):
         obj = object.__new__(cls)
