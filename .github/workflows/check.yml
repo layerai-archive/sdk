@@ -70,6 +70,12 @@ jobs:
         run: make check
       - name: Run check-colab-violations
         run: make check-colab-violations
+  colab-test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run colab test
+        run: make colab-test
   e2e-test:
     strategy:
       fail-fast: false

@@ -1,8 +1,23 @@
 include include.Makefile
 include environment.Makefile
-
+ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+INSTALL_STAMP := .install.stamp
+E2E_TEST_HOME := $(ROOT_DIR)/build/e2e-home
+COLAB_TEST_HOME := $(ROOT_DIR)/build/colab-test
+COLAB_IMAGE_BUILD_STAMP := .image-built.stamp
+TEST_TOKEN_FILE := .test-token
+POETRY := $(shell command -v poetry 2> /dev/null)
+IN_VENV := $(shell echo $(CONDA_DEFAULT_ENV)$(CONDA_PREFIX)$(VIRTUAL_ENV))
+CONDA_ENV_NAME := $(shell echo $(CONDA_DEFAULT_ENV))
+UNAME_SYS := $(shell uname -s)
+UNAME_ARCH := $(shell uname -m)
+REQUIRED_POETRY_VERSION := 1.1.14
+DOCKER_IMAGE_NAME = layerco/colab-lite
+DOCKER_RUN = @docker run -v $(shell pwd):/usr/src/app:ro -v $(shell pwd)/dist:/usr/src/app/dist:rw --rm --platform=linux/amd64 -e LAYER_API_KEY=$(shell cat .test-token) --name colab-test -it $(DOCKER_IMAGE_NAME)
 
 .DEFAULT_GOAL:=help
+
+include test/colab/colab-test.mk
 
 define get_python_package_version
   $(1)==$(shell $(POETRY) show $1 --no-ansi --no-dev | grep version | awk '{print $$3}')
@@ -72,6 +87,20 @@ endif
 	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run python build_scripts/sdk_login.py $(TEST_TOKEN_FILE)
 	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run pytest $(E2E_TEST_SELECTOR) -s -n $(E2E_TEST_PARALLELISM) -vv $(DATADOG_ARGS)
 
+.PHONY: colab-test
+colab-test: ## Run colab test against image pulled from dockerhub
+# Catching sigint/sigterm to forcefully interrupt run on ctrl+c
+	@/bin/bash -c "trap \"trap - SIGINT SIGTERM ERR; echo colab-test cancelled by user; exit 1\" SIGINT SIGTERM ERR; $(MAKE) colab-test-internal"
+
+.PHONY: colab-test-local
+colab-test-local: ## Run colab test against image built locally
+# Catching sigint/sigterm to forcefully interrupt run on ctrl+c
+	@/bin/bash -c "trap \"trap - SIGINT SIGTERM ERR; echo colab-test cancelled by user; exit 1\" SIGINT SIGTERM ERR; $(MAKE) colab-test-internal-local"
+
+.PHONY: colab-test-push
+colab-test-push: colab-test-build ## Push image built locally to dockerhub
+	@docker push $(DOCKER_IMAGE_NAME)
+
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters
 	$(POETRY) run isort .
@@ -120,6 +149,22 @@ publish: ## Publish to PyPi - should only run in CI
 	$(POETRY) version $(PARTIAL_VERSION).$(PATCH_VERSION)
 	$(POETRY) publish --build --username $(PYPI_USER) --password $(PYPI_PASSWORD)
 	$(POETRY) version $(CURRENT_VERSION)
+
+.PHONY: clean
+clean: ## Resets development environment.
+	@echo 'cleaning repo...'
+	@rm -rf .mypy_cache
+	@rm -rf .pytest_cache
+	@rm -f .coverage
+	@find . -type d -name '*.egg-info' | xargs rm -rf {};
+	@find . -depth -type d -name '*.egg-info' -delete
+	@rm -rf dist/
+	@rm -f $(INSTALL_STAMP)
+	@rm -f $(COLAB_IMAGE_BUILD_STAMP)
+	@rm -rf $(ROOT_DIR)/build/
+	@find . -type f -name '*.pyc' -delete
+	@find . -type d -name "__pycache__" | xargs rm -rf {};
+	@echo 'done.'
 
 .PHONY: deepclean
 deepclean: clean ## Resets development environment including test credentials and venv
