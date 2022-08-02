@@ -1,4 +1,5 @@
 import logging
+from tkinter import E
 import uuid
 from argparse import ArgumentParser
 from pathlib import Path
@@ -52,11 +53,14 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
 
     def __call__(self, func: Callable[..., Any]) -> Any:
         if self._asset_type == AssetType.MODEL:
-            from layer.executables.model.entrypoint import (
-                _run as model_train_entrypoint,
-            )
+            try:
+                from layer.executables.model.entrypoint import (
+                    _run as model_train_entrypoint,
+                )
 
-            model_train_entrypoint(func)
+                model_train_entrypoint(func)
+            except Exception as e:
+                print('Error during train:', e)
         elif self._asset_type == AssetType.DATASET:
             from layer.executables.dataset.entrypoint import (
                 _run as dataset_build_entrypoint,
