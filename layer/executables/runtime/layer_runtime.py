@@ -52,6 +52,7 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
 
     def __call__(self, func: Callable[..., Any]) -> Any:
         if self._asset_type == AssetType.MODEL:
+            import traceback
             try:
                 from layer.executables.model.entrypoint import (
                     _run as model_train_entrypoint,
@@ -60,6 +61,7 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
                 model_train_entrypoint(func)
             except Exception as e:
                 print('Error during train:', e)
+                traceback.print_exc()
         elif self._asset_type == AssetType.DATASET:
             from layer.executables.dataset.entrypoint import (
                 _run as dataset_build_entrypoint,
