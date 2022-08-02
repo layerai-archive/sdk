@@ -1,5 +1,4 @@
 import logging
-from tkinter import E
 import uuid
 from argparse import ArgumentParser
 from pathlib import Path
