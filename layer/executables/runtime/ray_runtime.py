@@ -41,13 +41,12 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
             package_info.metadata["function"]["fabric"]["name"]
         )
         print(f"Connecting to the Ray instance at {self._address}")
-        p = [p for p in self._packages]
-        p.append("layer@git+https://github.com/layerai/sdk.git@emin/ray-poc")
+        pip_packages = ["layer", *[p for p in self._packages]]
         self._client = ray.init(
             address=self._address,
             runtime_env={
                 "working_dir": f"{self.executable_path.parent}",
-                "pip": p,
+                "pip": pip_packages,
                 "env_vars": {
                     "LAYER_PROJECT_NAME": project.project_name,
                     "LAYER_CLIENT_AUTH_URL": str(self._config.url),
