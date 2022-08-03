@@ -590,7 +590,7 @@ def run(functions: List[Any], debug: bool = False, cluster_address: str = None) 
             config=layer_config,
             project_full_name=project_full_name,
             functions=functions,
-            ray_address=cluster_address,
+            ray_address=f"ray://{cluster_address}",
         )
     else:
         project_runner = ProjectRunner(
