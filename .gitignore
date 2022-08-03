@@ -93,6 +93,7 @@ venv/
 .vscode/
 
 # make outputs
+.environment.M1.yml
 .install.stamp
 .test-token
 

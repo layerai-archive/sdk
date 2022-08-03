@@ -1,15 +1,6 @@
-ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-INSTALL_STAMP := .install.stamp
-E2E_TEST_HOME := $(ROOT_DIR)/build/e2e-home
-E2E_TEST_SELECTOR := test/e2e
-E2E_TEST_PARALLELISM := 16
-TEST_TOKEN_FILE := .test-token
-POETRY := $(shell command -v poetry 2> /dev/null)
-IN_VENV := $(shell echo $(CONDA_DEFAULT_ENV)$(CONDA_PREFIX)$(VIRTUAL_ENV))
-CONDA_ENV_NAME := $(shell echo $(CONDA_DEFAULT_ENV))
-UNAME_SYS := $(shell uname -s)
-UNAME_ARCH := $(shell uname -m)
-REQUIRED_POETRY_VERSION := 1.1.14
+include include.Makefile
+include environment.Makefile
+
 
 .DEFAULT_GOAL:=help
 
@@ -17,8 +8,8 @@ define get_python_package_version
   $(1)==$(shell $(POETRY) show $1 --no-ansi --no-dev | grep version | awk '{print $$3}')
 endef
 
-install: check-poetry apple-arm-prereq-install $(INSTALL_STAMP) ## Install dependencies
-$(INSTALL_STAMP): pyproject.toml poetry.lock
+install: check-poetry prereq-$(UNAME_SYS) $(INSTALL_STAMP) ## Install dependencies
+$(INSTALL_STAMP): pyproject.toml poetry.lock .python-version
 ifdef IN_VENV
 	$(POETRY) install
 else
@@ -26,9 +17,11 @@ else
 endif
 	touch $(INSTALL_STAMP)
 
-.PHONY: apple-arm-prereq-install
-apple-arm-prereq-install:
-ifeq ($(UNAME_SYS), Darwin)
+.PHONY: prereq-Linux
+prereq-Linux:
+
+.PHONY: prereq-Darwin
+prereq-Darwin:
 ifeq ($(UNAME_ARCH), arm64)
 ifdef CONDA_ENV_NAME
 ifeq ($(CONDA_ENV_NAME), base)
@@ -45,7 +38,6 @@ else
 	@echo 'Not inside a conda environment or conda not installed, this is a requirement for Apple arm processors'
 	@echo 'See https://github.com/conda-forge/miniforge/'
 	@exit 1
-endif
 endif
 endif
 
@@ -118,23 +110,10 @@ publish: ## Publish to PyPi - should only run in CI
 	$(POETRY) publish --build --username $(PYPI_USER) --password $(PYPI_PASSWORD)
 	$(POETRY) version $(CURRENT_VERSION)
 
-.PHONY: clean
-clean: ## Resets development environment.
-	@echo 'cleaning repo...'
-	@rm -rf .mypy_cache
-	@rm -rf .pytest_cache
-	@rm -f .coverage
-	@find . -type d -name '*.egg-info' | xargs rm -rf {};
-	@find . -depth -type d -name '*.egg-info' -delete
-	@rm -rf dist/
-	@rm -f $(INSTALL_STAMP)
-	@find . -type f -name '*.pyc' -delete
-	@find . -type d -name "__pycache__" | xargs rm -rf {};
-	@echo 'done.'
-
 .PHONY: deepclean
 deepclean: clean ## Resets development environment including test credentials and venv
 	@rm -rf `poetry env info -p`
+	@rm -rf build/$(PROJECT_NAME)
 	@rm -f $(TEST_TOKEN_FILE)
 
 .PHONY: help
