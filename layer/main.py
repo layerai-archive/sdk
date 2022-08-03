@@ -546,7 +546,7 @@ def init(
     )
 
 
-def run(functions: List[Any], debug: bool = False) -> Run:
+def run(functions: List[Any], debug: bool = False, cluster_address: str = None) -> Run:
     """
     :param functions: List of decorated functions to run in the Layer backend.
     :param debug: Stream logs to console from infra executing the project remotely.
@@ -582,17 +582,24 @@ def run(functions: List[Any], debug: bool = False) -> Run:
     _ensure_all_functions_are_decorated(functions)
 
     layer_config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-
     project_full_name = get_current_project_full_name()
-    project_runner = ProjectRunner(
-        config=layer_config,
-        project_full_name=project_full_name,
-        functions=functions,
-    )
+    if cluster_address is not None:
+        from layer.projects.ray_project_runner import RayProjectRunner
+
+        project_runner = RayProjectRunner(
+            config=layer_config,
+            project_full_name=project_full_name,
+            functions=functions,
+            ray_address=f"ray://{cluster_address}",
+        )
+    else:
+        project_runner = ProjectRunner(
+            config=layer_config,
+            project_full_name=project_full_name,
+            functions=functions,
+        )
     run = project_runner.run(debug=debug)
-
     _make_notebook_links_open_in_new_tab()
-
     return run
 
 

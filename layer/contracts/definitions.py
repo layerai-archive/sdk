@@ -54,7 +54,7 @@ class FunctionDefinition:
         self.description = description
         self.uri = uri
 
-        self.func_source = inspect.getsource(self.func)
+        self.func_source = self._get_source()
 
         self.source_code_digest = hashlib.sha256()
         self.source_code_digest.update(self.func_source.encode("utf-8"))
@@ -63,6 +63,12 @@ class FunctionDefinition:
 
     def __repr__(self) -> str:
         return f"FunctionDefinition({self.asset_type}, {self.asset_name})"
+
+    def _get_source(self) -> str:
+        try:
+            return inspect.getsource(self.func)
+        except Exception:
+            return "source code not available"
 
     @property
     def project_full_name(self) -> ProjectFullName:

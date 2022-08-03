@@ -54,6 +54,10 @@ class LayerSettings:
     def resource_paths(self) -> List[ResourcePath]:
         return self.get_resource_paths()
 
+    @property
+    def fabric(self) -> Fabric:
+        return self.get_fabric()
+
     def get_asset_name(self) -> str:
         if self._name is None:
             raise LayerClientException("Asset name cannot be empty")
