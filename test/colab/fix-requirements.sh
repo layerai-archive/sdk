@@ -9,7 +9,7 @@ sed -i'' -e "s/keras==/# keras==/" build/colab-test/requirements-fixed.txt
 sed -i'' -e "s/tensorflow==/# tensorflow==/" build/colab-test/requirements-fixed.txt
 
 # Remove non-existing versions
-sed -i'' -e "s/google-colab @/# google-colab @/" build/colab-test/requirements-fixed.txt
+sed -i'' -e "s|google-colab @ file:///colabtools/dist/google-colab-1.0.0.tar.gz|git+https://github.com/googlecolab/colabtools.git@master#egg=google-colab|" build/colab-test/requirements-fixed.txt
 sed -i'' -e "s/python-apt==0.0.0/# python-apt==0.0.0/" build/colab-test/requirements-fixed.txt
 sed -i'' -e "s/screen-resolution-extra==0.0.0/# screen-resolution-extra==0.0.0/" build/colab-test/requirements-fixed.txt
 sed -i'' -e "s/xkit==0.0.0/# xkit==0.0.0/" build/colab-test/requirements-fixed.txt

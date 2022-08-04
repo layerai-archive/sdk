@@ -1,3 +1,10 @@
+ifdef CI
+	DOCKER_RUN = @docker run -v $(shell pwd):/usr/src/app:ro -v $(shell pwd)/dist:/usr/src/app/dist:rw --rm --platform=linux/amd64 -e LAYER_API_KEY=$(shell cat .test-token) --name colab-test $(DOCKER_IMAGE_NAME)
+else
+	DOCKER_RUN = @docker run -v $(shell pwd):/usr/src/app:ro -v $(shell pwd)/dist:/usr/src/app/dist:rw --rm --platform=linux/amd64 -e LAYER_API_KEY=$(shell cat .test-token) --name colab-test -it $(DOCKER_IMAGE_NAME)
+endif
+
+
 .PHONY: colab-test-internal
 colab-test-internal: $(TEST_TOKEN_FILE) $(COLAB_TEST_HOME)/test_import_login_init.ipynb colab-test-pull
 	$(DOCKER_RUN)
@@ -18,7 +25,7 @@ $(COLAB_IMAGE_BUILD_STAMP): $(COLAB_TEST_HOME)/requirements-fixed.txt test/colab
 
 .DELETE_ON_ERROR: $(COLAB_TEST_HOME)/requirements-fixed.txt $(COLAB_TEST_HOME)/test_import_login_init.ipynb
 
-$(COLAB_TEST_HOME)/requirements-fixed.txt: test/colab/requirements.txt
+$(COLAB_TEST_HOME)/requirements-fixed.txt: test/colab/requirements.txt test/colab/fix-requirements.sh
 	@mkdir -p $(COLAB_TEST_HOME)
 # Fix requirements.txt to make them compatible with running on M1 mac/linux, outside of colab itself.
 	@./test/colab/fix-requirements.sh

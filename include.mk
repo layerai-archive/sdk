@@ -14,9 +14,4 @@ PROJECT_NAME := sdk
 COLAB_TEST_HOME := $(ROOT_DIR)/build/colab-test
 COLAB_IMAGE_BUILD_STAMP := .image-built.stamp
 DOCKER_IMAGE_NAME = layerco/colab-lite
-ifdef CI
-	DOCKER_RUN = @docker run -v $(shell pwd):/usr/src/app:ro -v $(shell pwd)/dist:/usr/src/app/dist:rw --rm --platform=linux/amd64 -e LAYER_API_KEY=$(shell cat .test-token) --name colab-test $(DOCKER_IMAGE_NAME)
-else
-	DOCKER_RUN = @docker run -v $(shell pwd):/usr/src/app:ro -v $(shell pwd)/dist:/usr/src/app/dist:rw --rm --platform=linux/amd64 -e LAYER_API_KEY=$(shell cat .test-token) --name colab-test -it $(DOCKER_IMAGE_NAME)
-endif
 

@@ -50,6 +50,15 @@ jobs:
       - name: Check package loads without dev dependencies
         run: make check-package-loads
 
+  colab-test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Write token
+        run: echo ${{ secrets.APP_API_KEY }} > .test-token
+      - name: Run colab test
+        run: make colab-test
+
   e2e-test:
     strategy:
       fail-fast: false
