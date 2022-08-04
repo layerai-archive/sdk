@@ -119,16 +119,14 @@ This repo uses `make` as the build system. The following targets can be used thr
 ### Python setup
 We recommend using `pyenv`
 
-Please run `pyenv install $(cat .python-version)` in the root of this repository to setup the recommended python version.
+Please run `make create-environment` to setup the recommended python version.
 
-If you are using an M1 machine, we recommend using `conda` via [Miniforge3](https://github.com/conda-forge/miniforge/). Please run
+If you are using an Apple M1 machine, we recommend using `conda` via [Miniforge3](https://github.com/conda-forge/miniforge/). After installing conda please run
 
 ```
-# Install Miniforge3 if required
-/bin/bash -c "$(curl -fsSL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh)"
 # Create and activate conda environment
-conda create -yq -n sdk python=3.8
-conda activate sdk
+make create-environment
+conda activate build/sdk
 ```
 
 After that you should be able to run the rest of the `make` targets as normal
