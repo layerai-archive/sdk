@@ -11,3 +11,7 @@ UNAME_SYS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
 REQUIRED_POETRY_VERSION := 1.1.14
 PROJECT_NAME := sdk
+COLAB_TEST_HOME := $(ROOT_DIR)/build/colab-test
+COLAB_IMAGE_BUILD_STAMP := .image-built.stamp
+DOCKER_IMAGE_NAME = layerco/colab-lite
+DOCKER_RUN = @docker run -v $(shell pwd):/usr/src/app:ro -v $(shell pwd)/dist:/usr/src/app/dist:rw --rm --platform=linux/amd64 -e LAYER_API_KEY=$(shell cat .test-token) --name colab-test -it $(DOCKER_IMAGE_NAME)
