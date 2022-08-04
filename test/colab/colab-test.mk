@@ -32,4 +32,4 @@ $(COLAB_TEST_HOME)/test_import_login_init.ipynb: test/colab/test_import_login_in
 	ls -al $(COLAB_TEST_HOME)
 	cp test/colab/test_import_login_init.ipynb $(COLAB_TEST_HOME)/test_import_login_init.ipynb
 	ls -al $(COLAB_TEST_HOME)
-	sed -i '' "s/\"execution_count\": null,/\"execution_count\": 0,/g" $(COLAB_TEST_HOME)/test_import_login_init.ipynb
+	sed -i'' -e "s/\"execution_count\": null,/\"execution_count\": 0,/g" $(COLAB_TEST_HOME)/test_import_login_init.ipynb
