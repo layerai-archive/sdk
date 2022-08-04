@@ -1,10 +1,7 @@
 import logging
-import os
-import pickle  # nosec import_pickle
 from typing import Any
 from uuid import UUID
 
-import layer
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
@@ -59,7 +56,7 @@ def _run(user_function: Any) -> Any:
                 model_definition.asset_path,
                 model_definition.description,
                 model_definition.source_code_digest.hexdigest(),
-                model_definition.get_fabric(True),
+                model_definition.get_fabric(False),
             ).model_version
             train_id = client.model_catalog.create_model_train_from_version_id(
                 model_version.id
@@ -89,19 +86,3 @@ def _run(user_function: Any) -> Any:
             )
 
             return result
-
-
-LAYER_CLIENT_AUTH_URL = os.environ["LAYER_CLIENT_AUTH_URL"]
-LAYER_CLIENT_AUTH_TOKEN = os.environ["LAYER_CLIENT_AUTH_TOKEN"]
-LAYER_PROJECT_NAME = os.environ["LAYER_PROJECT_NAME"]
-
-layer.login_with_access_token(
-    access_token=LAYER_CLIENT_AUTH_TOKEN, url=LAYER_CLIENT_AUTH_URL
-)
-layer.init(LAYER_PROJECT_NAME)
-
-# load the entrypoint function
-with open("function.pkl", "rb") as file:
-    user_function = pickle.load(file)  # nosec pickle
-
-_run(user_function)

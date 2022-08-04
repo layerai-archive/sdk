@@ -54,6 +54,10 @@ class LayerSettings:
     def resource_paths(self) -> List[ResourcePath]:
         return self.get_resource_paths()
 
+    @property
+    def fabric(self) -> Fabric:
+        return self.get_fabric()
+
     def get_asset_name(self) -> str:
         if self._name is None:
             raise LayerClientException("Asset name cannot be empty")
@@ -87,7 +91,7 @@ class LayerSettings:
 
     def set_fabric(self, f: str) -> None:
         if Fabric.has_member_key(f):
-            self._fabric = Fabric(f)
+            self._fabric = Fabric(f)  # type:ignore # pylint: disable=E1120
             return
         raise ValueError(
             'Fabric setting "{}" is not valid. You can check valid values in Fabric enum definition.'.format(
