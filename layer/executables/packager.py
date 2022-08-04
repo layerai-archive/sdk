@@ -144,7 +144,7 @@ def _loader_source() -> str:
         from pathlib import Path
 
         # cloudpickle is included in the executable
-        import cloudpickle  # type: ignore
+        import cloudpickle
 
         def _get_function_runtime():  # type: ignore
             """Load the function runtime from the globals dictionary.

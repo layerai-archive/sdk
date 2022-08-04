@@ -262,11 +262,11 @@ def _register_dataset_function(
             dataset.asset_path,
             project_id,
             dataset.description,
-            dataset.function_home_dir,
             dataset.get_fabric(is_local),
             dataset.func_source,
             dataset.entrypoint,
             dataset.environment,
+            dataset.function_home_dir,
         )
         dataset.set_repository_id(uuid.UUID(dataset_id))
         assert dataset.repository_id
