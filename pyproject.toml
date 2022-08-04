@@ -111,6 +111,7 @@ types-Pillow = "^9.0.15"
 pytest-xdist = "^2.5.0"
 pylint = "^2.13.9"
 Markdown = "3.3.6"
+jupyter = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
