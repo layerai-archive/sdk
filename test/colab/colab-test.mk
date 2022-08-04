@@ -24,12 +24,8 @@ $(COLAB_TEST_HOME)/requirements-fixed.txt: test/colab/requirements.txt
 	@./test/colab/fix-requirements.sh
 
 $(COLAB_TEST_HOME)/test_import_login_init.ipynb: test/colab/test_import_login_init.ipynb
-	mkdir -p $(COLAB_TEST_HOME)
+	@mkdir -p $(COLAB_TEST_HOME)
 # VSC saves notebooks with `null` in place of `0` for `execution_count`, e.g. `"execution_count": null,`.\
 `nbconvert` crashes on these, so we fix that here. 
-	pwd
-	ls -al
-	ls -al $(COLAB_TEST_HOME)
-	cp test/colab/test_import_login_init.ipynb $(COLAB_TEST_HOME)/test_import_login_init.ipynb
-	ls -al $(COLAB_TEST_HOME)
-	sed -i'' -e "s/\"execution_count\": null,/\"execution_count\": 0,/g" $(COLAB_TEST_HOME)/test_import_login_init.ipynb
+	@cp test/colab/test_import_login_init.ipynb $(COLAB_TEST_HOME)/test_import_login_init.ipynb
+	@sed -i'' -e "s/\"execution_count\": null,/\"execution_count\": 0,/g" $(COLAB_TEST_HOME)/test_import_login_init.ipynb
