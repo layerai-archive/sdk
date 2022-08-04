@@ -99,5 +99,3 @@ venv/
 .image-built.stamp
 
 catboost_info/
-
-test/colab/requirements-fixed.txt
