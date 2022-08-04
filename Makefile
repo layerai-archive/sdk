@@ -82,7 +82,7 @@ lint: $(INSTALL_STAMP) ## Run all linters
 	$(POETRY) run isort --check-only .
 	$(POETRY) run black --check . --diff
 	$(POETRY) run flake8 .
-	$(POETRY) run pylint  --recursive yes .
+	$(POETRY) run pylint  --recursive yes . --ignore=build
 	$(POETRY) run mypy .
 	$(POETRY) run bandit -c pyproject.toml -r .
 
