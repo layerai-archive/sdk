@@ -113,7 +113,7 @@ publish: ## Publish to PyPi - should only run in CI
 .PHONY: deepclean
 deepclean: clean ## Resets development environment including test credentials and venv
 	@rm -rf `poetry env info -p`
-	@rm -rf build/$(PROJECT_NAME)
+	@rm -rf build
 	@rm -f $(TEST_TOKEN_FILE)
 
 .PHONY: help
