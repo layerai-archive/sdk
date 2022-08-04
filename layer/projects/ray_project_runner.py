@@ -12,7 +12,7 @@ from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import Run
 from layer.executables.function import Function
-from layer.executables.runtime.ray_runtime import RayClientFunctionRuntime
+from layer.executables.ray_runtime import RayClientFunctionRuntime
 
 
 logger = logging.getLogger()

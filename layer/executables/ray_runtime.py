@@ -8,15 +8,15 @@ from ray.client_builder import (  # type:ignore #  pylint: disable=import-error
 
 from layer.config.config_manager import ConfigManager
 from layer.contracts.fabrics import Fabric
+from layer.executables.entrypoint_layer_runtime import EntrypointLayerFunctionRuntime
 from layer.executables.packager import FunctionPackageInfo
-from layer.executables.runtime.layer_runtime import LayerFunctionRuntime
-from layer.executables.runtime.runtime import BaseFunctionRuntime
+from layer.executables.runtime import BaseFunctionRuntime
 from layer.global_context import current_project_full_name
 
 
 @ray.remote
 def ray_runtime(executable_path: Path) -> None:
-    LayerFunctionRuntime.execute(executable_path=Path(executable_path.name))
+    EntrypointLayerFunctionRuntime.execute(executable_path=Path(executable_path.name))
 
 
 class RayClientFunctionRuntime(BaseFunctionRuntime):

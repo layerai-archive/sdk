@@ -7,14 +7,14 @@ from typing import Any, Callable, Dict, Optional, Sequence
 import layer
 from layer.contracts.asset import AssetType
 from layer.executables.packager import FunctionPackageInfo
-from layer.executables.runtime.runtime import BaseFunctionRuntime
+from layer.executables.runtime import BaseFunctionRuntime
 from layer.global_context import current_project_full_name, set_has_shown_update_message
 
 
 _ProjectId = uuid.UUID
 
 
-class LayerFunctionRuntime(BaseFunctionRuntime):
+class EntrypointLayerFunctionRuntime(BaseFunctionRuntime):
     def __init__(self, executable_path: Path, project: Optional[str] = None) -> None:
         super().__init__(executable_path)
         self._project = project or _get_current_project_name()
@@ -95,4 +95,4 @@ class LayerFunctionRuntimeError(Exception):
 
 
 if __name__ == "__main__":
-    LayerFunctionRuntime.main(add_cli_args=_add_cli_args)
+    EntrypointLayerFunctionRuntime.main(add_cli_args=_add_cli_args)
