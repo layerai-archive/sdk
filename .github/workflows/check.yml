@@ -74,6 +74,8 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - name: Write token
+        run: echo ${{ secrets.APP_API_KEY }} > .test-token
       - name: Run colab test
         run: make colab-test
   e2e-test:
