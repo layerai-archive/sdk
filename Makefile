@@ -1,5 +1,5 @@
-include include.Makefile
-include environment.Makefile
+include include.mk
+include environment.mk
 include test/colab/colab-test.mk
 
 .DEFAULT_GOAL:=help
