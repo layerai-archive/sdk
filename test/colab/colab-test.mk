@@ -1,3 +1,4 @@
+# We need -it to be able to interrupt locally, however on CI -t leads to the the input device is not a TTY error
 ifdef CI
 	DOCKER_RUN = @docker run -v $(shell pwd):/usr/src/app:ro -v $(shell pwd)/dist:/usr/src/app/dist:rw --rm --platform=linux/amd64 -e LAYER_API_KEY=$(shell cat .test-token) --name colab-test $(DOCKER_IMAGE_NAME)
 else
