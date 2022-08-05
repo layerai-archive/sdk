@@ -76,6 +76,13 @@ jobs:
       - uses: actions/checkout@v2
       - name: Write token
         run: echo ${{ secrets.APP_API_KEY }} > .test-token
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.14
       - name: Run colab test
         run: make colab-test
   e2e-test:
