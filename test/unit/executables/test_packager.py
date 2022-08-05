@@ -6,6 +6,7 @@ from pathlib import Path, PurePath
 
 import pytest
 
+from layer.contracts.conda import CondaEnv
 from layer.executables.packager import (
     FunctionPackageInfo,
     get_function_package_info,
@@ -89,6 +90,32 @@ def test_get_function_package_info_with_pip_dependencies(tmpdir: Path):
     )
 
 
+def test_get_function_package_info_with_conda_dependencies(tmpdir: Path):
+    def func_with_conda_dependencies():
+        pass
+
+    conda_env = CondaEnv(
+        environment={
+            "name": "test",
+            "dependencies": [
+                "package1",
+                "pip",
+                {"pip": ["pippackage1", "pippackage2"]},
+            ],
+        }
+    )
+    executable = package_function(
+        func_with_conda_dependencies,
+        conda_env=conda_env,
+        output_dir=tmpdir,
+    )
+    package_info = get_function_package_info(executable)
+
+    assert package_info == FunctionPackageInfo(
+        conda_env=conda_env,
+    )
+
+
 def test_get_function_package_info_without_pip_dependecies(tmpdir: Path):
     def func_without_pip_dependencies():
         pass
@@ -101,6 +128,21 @@ def test_get_function_package_info_without_pip_dependecies(tmpdir: Path):
     package_info = get_function_package_info(executable)
 
     assert package_info == FunctionPackageInfo(pip_dependencies=())
+
+
+def test_get_function_package_info_without_conda_dependecies(tmpdir: Path):
+    def func_without_conda_dependencies():
+        pass
+
+    executable = package_function(
+        func_without_conda_dependencies,
+        pip_dependencies=[],
+        conda_env=None,
+        output_dir=tmpdir,
+    )
+    package_info = get_function_package_info(executable)
+
+    assert package_info == FunctionPackageInfo(conda_env=None)
 
 
 def test_get_function_package_info_metadata(tmpdir: Path):

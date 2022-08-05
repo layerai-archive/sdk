@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 import layer
 from layer.contracts.asset import AssetType
+from layer.contracts.conda import CondaEnv
 from layer.contracts.fabrics import Fabric
 from layer.executables.packager import (
     FUNCTION_SERIALIZER_NAME,
@@ -23,6 +24,7 @@ class Function:
         func: Callable[..., Any],
         output: FunctionOutput,
         pip_dependencies: Sequence[str],
+        conda_environment: Optional[CondaEnv],
         resources: Sequence[Path],
         fabric: Fabric,
         source_code: str,
@@ -31,6 +33,7 @@ class Function:
         self._func = func
         self._output = output
         self._pip_dependencies = pip_dependencies
+        self._conda_environment = conda_environment
         self._resources = resources
         self._fabric = fabric
         self._source_code = source_code
@@ -40,6 +43,7 @@ class Function:
     def from_decorated(func: Callable[..., Any]) -> "Function":
         output = _get_function_output(func)
         pip_dependencies = _get_function_pip_dependencies(func)
+        conda_environment = _get_function_conda_environment(func)
         resources = _get_function_resources(func)
         fabric = _get_function_fabric(func)
         wrapped_func = _undecorate_function(func)
@@ -51,6 +55,7 @@ class Function:
             wrapped_func,
             output=output,
             pip_dependencies=pip_dependencies,
+            conda_environment=conda_environment,
             resources=resources,
             fabric=fabric,
             source_code=source_code,
@@ -68,6 +73,10 @@ class Function:
     @property
     def pip_dependencies(self) -> Sequence[str]:
         return self._pip_dependencies
+
+    @property
+    def conda_environment(self) -> Optional[CondaEnv]:
+        return self.conda_environment
 
     @property
     def resources(self) -> Sequence[Path]:
@@ -119,6 +128,7 @@ class Function:
         return package_function(
             self._func,
             pip_dependencies=self._pip_dependencies,
+            conda_env=self.conda_environment,
             resources=self._resources,
             output_dir=output_dir,
             metadata=self.metadata,
@@ -180,6 +190,10 @@ def _get_function_resources(func: Callable[..., Any]) -> Sequence[Path]:
 
 def _get_function_fabric(func: Callable[..., Any]) -> Fabric:
     return _get_decorator_attr(func, "fabric") or Fabric.default()
+
+
+def _get_function_conda_environment(func: Callable[..., Any]) -> Optional[CondaEnv]:
+    return _get_decorator_attr(func, "conda_environment")
 
 
 def _get_decorator_attr(func: Callable[..., Any], attr: str) -> Optional[Any]:

@@ -2,6 +2,7 @@ from typing import Any, List, Optional
 
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.conda import CondaEnv
 from layer.contracts.fabrics import Fabric
 from layer.contracts.runs import ResourcePath
 from layer.exceptions.exceptions import ConfigError, LayerClientException
@@ -28,6 +29,7 @@ class LayerSettings:
     _resource_paths: Optional[List[ResourcePath]] = None
     _dependencies: Optional[List[AssetPath]] = None
     _assertions: Optional[List[Assertion]] = None
+    _conda_environment: Optional[CondaEnv] = None
 
     def get_asset_type(self) -> AssetType:
         if self._asset_type is None:
@@ -49,6 +51,10 @@ class LayerSettings:
     @property
     def pip_requirements_file(self) -> str:
         return self.get_pip_requirements_file()
+
+    @property
+    def conda_env(self) -> Optional[CondaEnv]:
+        return self._conda_environment
 
     @property
     def resource_paths(self) -> List[ResourcePath]:
@@ -104,6 +110,9 @@ class LayerSettings:
 
     def set_pip_packages(self, packages: Optional[List[str]]) -> None:
         self._pip_packages = packages
+
+    def set_conda_environment(self, conda_environment: CondaEnv) -> None:
+        self._conda_environment = conda_environment
 
     def set_resource_paths(self, paths: Optional[List[ResourcePath]]) -> None:
         self._resource_paths = paths
