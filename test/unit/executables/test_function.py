@@ -126,6 +126,7 @@ def test_package_function():
             output_dir=package_dir,
             resources=(Path("path/to/resource"), Path("path/to/other/resource")),
             pip_dependencies=("package1", "package2==0.0.42"),
+            conda_env=None,
             metadata=_default_function_metadata(
                 output={"name": "test_dataset", "type": AssetType.DATASET.value}
             ),
