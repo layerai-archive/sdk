@@ -3,7 +3,7 @@ import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, Optional, Tuple
 
 import ddtrace
 import pytest
@@ -37,18 +37,51 @@ def _default_function_path(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(layer.config, "DEFAULT_FUNC_PATH", tmp_path)
 
 
-def pseudo_random_slug(fixture_request: Any) -> str:
-    test_name_parametrized: str
-    if fixture_request.cls is not None:
-        test_name_parametrized = f"{fixture_request.cls.__module__}-{fixture_request.cls.__name__}-{fixture_request.node.name}"
-    else:
-        test_name_parametrized = (
-            f"{fixture_request.module.__name__}-{fixture_request.node.name}"
-        )
-    test_name_parametrized = test_name_parametrized.replace("[", "-").replace("]", "")
-    test_name_parametrized = _cut_off_prefixing_dirs(test_name_parametrized)
+def pseudo_random_project_name(fixture_request: Any) -> str:
+    module, test_name = _extract_module_and_test_name(fixture_request)
+    module, test_name = _slugify_name(module), _slugify_name(test_name)
+    test_name_parametrized = f"{module}-{test_name}"
 
-    return f"sdk-e2e-{test_name_parametrized}-{str(uuid.uuid4())[:8]}"
+    random_suffix = str(uuid.uuid4())[:8]
+
+    return f"sdk-e2e-{test_name_parametrized}-{random_suffix}"
+
+
+def pseudo_random_account_name(fixture_request: Any) -> str:
+    name_max_length = 50
+    # We remove all useless characters to have a valid account name helpful in debugging
+    module, test_name = _extract_module_and_test_name(fixture_request)
+    module, test_name = module.replace("test_", ""), test_name.replace("test_", "")
+    module, test_name = truncate(_slugify_name(module), 20), truncate(
+        _slugify_name(test_name), 22
+    )
+    test_name = truncate(_slugify_name(test_name), name_max_length - len(module))
+
+    random_suffix = str(uuid.uuid4()).replace("-", "")
+    full_name_parametrized = f"{module}-{test_name}{random_suffix}"
+
+    return truncate(full_name_parametrized, name_max_length)
+
+
+def truncate(src: str, max_length: int) -> str:
+    if max_length > len(src):
+        return src
+
+    return src[:max_length]
+
+
+def _extract_module_and_test_name(fixture_request: Any) -> Tuple[str, str]:
+    if fixture_request.cls is not None:
+        return (
+            f"{fixture_request.cls.__module__}-{fixture_request.cls.__name__}",
+            fixture_request.node.name,
+        )
+    else:
+        return fixture_request.module.__name__, fixture_request.node.name
+
+
+def _slugify_name(src: str) -> str:
+    return _cut_off_prefixing_dirs(src).replace("[", "-").replace("]", "")
 
 
 def _cut_off_prefixing_dirs(module_name: str) -> str:
@@ -123,7 +156,7 @@ def client(client_config: ClientConfig) -> Iterator[LayerClient]:
 def initialized_organization_account(
     client: LayerClient, request: Any
 ) -> Iterator[Account]:
-    org_account_name = pseudo_random_slug(request)
+    org_account_name = pseudo_random_account_name(request)
     account = client.account.create_organization_account(org_account_name)
 
     yield account
@@ -149,7 +182,7 @@ def initialized_organization_project(
 
 @pytest.fixture()
 def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
-    project_name = pseudo_random_slug(request)
+    project_name = pseudo_random_project_name(request)
     project = layer.init(project_name, fabric=Fabric.F_XSMALL.value)
 
     yield project
