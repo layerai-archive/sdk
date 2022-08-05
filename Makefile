@@ -1,6 +1,6 @@
-include include.Makefile
-include environment.Makefile
-
+include include.mk
+include environment.mk
+include test/colab/colab-test.mk
 
 .DEFAULT_GOAL:=help
 
@@ -17,8 +17,8 @@ ipython.magic("autoreload 2")
 endef
 export autoreloadpy
 
-install: check-poetry prereq-$(UNAME_SYS) $(INSTALL_STAMP) ## Install dependencies
-$(INSTALL_STAMP): pyproject.toml poetry.lock .python-version
+install: $(INSTALL_STAMP) ## Install dependencies
+$(INSTALL_STAMP): pyproject.toml poetry.lock .python-version prereq-$(UNAME_SYS) check-poetry
 ifdef IN_VENV
 	$(POETRY) install
 else
@@ -39,6 +39,7 @@ ifeq ($(CONDA_ENV_NAME), base)
 	@echo 'Please create a conda environment and make it active'
 	@exit 1
 else
+	echo "installing conda deps"
 	@conda install -y $(call get_python_package_version,tokenizers) \
                          $(call get_python_package_version,xgboost) \
                          $(call get_python_package_version,lightgbm) \
@@ -71,6 +72,20 @@ ifdef CI
 endif
 	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run python build_scripts/sdk_login.py $(TEST_TOKEN_FILE)
 	LAYER_DEFAULT_PATH=$(E2E_TEST_HOME) SDK_E2E_TESTS_LOGS_DIR=$(E2E_TEST_HOME)/stdout-logs/ $(POETRY) run pytest $(E2E_TEST_SELECTOR) -s -n $(E2E_TEST_PARALLELISM) -vv $(DATADOG_ARGS)
+
+.PHONY: colab-test
+colab-test: ## Run colab test against image pulled from dockerhub
+# Catching sigint/sigterm to forcefully interrupt run on ctrl+c
+	@/bin/bash -c "trap \"trap - SIGINT SIGTERM ERR; echo colab-test cancelled by user; exit 1\" SIGINT SIGTERM ERR; $(MAKE) colab-test-internal"
+
+.PHONY: colab-test-local
+colab-test-local: ## Run colab test against image built locally
+# Catching sigint/sigterm to forcefully interrupt run on ctrl+c
+	@/bin/bash -c "trap \"trap - SIGINT SIGTERM ERR; echo colab-test cancelled by user; exit 1\" SIGINT SIGTERM ERR; $(MAKE) colab-test-internal-local"
+
+.PHONY: colab-test-push
+colab-test-push: colab-test-build ## Push image built locally to dockerhub
+	@docker push $(DOCKER_IMAGE_NAME)
 
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters

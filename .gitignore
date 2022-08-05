@@ -96,5 +96,6 @@ venv/
 .environment.M1.yml
 .install.stamp
 .test-token
+.image-built.stamp
 
 catboost_info/

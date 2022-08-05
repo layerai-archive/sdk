@@ -11,3 +11,7 @@ UNAME_SYS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
 REQUIRED_POETRY_VERSION := 1.1.14
 PROJECT_NAME := sdk
+COLAB_TEST_HOME := $(ROOT_DIR)/build/colab-test
+COLAB_IMAGE_BUILD_STAMP := .image-built.stamp
+DOCKER_IMAGE_NAME = layerco/colab-lite
+
