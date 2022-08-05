@@ -56,7 +56,6 @@ endif
 
 .PHONY: jupyter
 jupyter: install ## Start a jupyter notebook with editable layer package
-	@pip install -e .
 	@IPYTHONDIR=$(ROOT_DIR)/build/ipython poetry run jupyter-notebook
 
 .PHONY: clean

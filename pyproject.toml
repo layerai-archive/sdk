@@ -123,7 +123,7 @@ omit = [
 ]
 
 [tool.pylint.MASTER]
-ignore-patterns=[ ".*pb2.py" , ".*pb2_grpc.p", ".*egg-info.*", ".*ini", ".*.gradle", "MANIFEST.in", ".*.md", 'build_scripts/*']
+ignore-patterns=[ ".*pb2.py" , ".*pb2_grpc.p", ".*egg-info.*", ".*ini", ".*.gradle", "MANIFEST.in", ".*.md", 'build_scripts/*', 'build/*']
 max-line-length=120
 load-plugins="pylint_django"
 known-third-party="layer_client"

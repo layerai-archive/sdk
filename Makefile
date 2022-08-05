@@ -4,6 +4,10 @@ include environment.Makefile
 
 .DEFAULT_GOAL:=help
 
+define get_python_package_version
+  $(1)==$(shell $(POETRY) show $1 --no-ansi --no-dev | grep version | awk '{print $$3}')
+endef
+
 define autoreloadpy
 from IPython import get_ipython
 ipython = get_ipython()
@@ -12,10 +16,6 @@ ipython.magic("load_ext autoreload")
 ipython.magic("autoreload 2")
 endef
 export autoreloadpy
-
-define get_python_package_version
-  $(1)==$(shell $(POETRY) show $1 --no-ansi --no-dev | grep version | awk '{print $$3}')
-endef
 
 install: check-poetry prereq-$(UNAME_SYS) $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock .python-version
@@ -82,7 +82,7 @@ lint: $(INSTALL_STAMP) ## Run all linters
 	$(POETRY) run isort --check-only .
 	$(POETRY) run black --check . --diff
 	$(POETRY) run flake8 .
-	$(POETRY) run pylint  --recursive yes . --ignore=build
+	$(POETRY) run pylint  --recursive yes .
 	$(POETRY) run mypy .
 	$(POETRY) run bandit -c pyproject.toml -r .
 
