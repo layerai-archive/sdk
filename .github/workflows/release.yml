@@ -120,7 +120,7 @@ jobs:
           retention-days: 30
 
   publish:
-    needs: [ check , check-package-loads, e2e-test]
+    needs: [ check , check-package-loads, e2e-test, colab-test]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
