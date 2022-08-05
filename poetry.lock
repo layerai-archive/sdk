@@ -1441,7 +1441,7 @@ typing-extensions = {version = "*", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "layer-api"
-version = "0.9.375709"
+version = "0.9.376004"
 description = ""
 category = "main"
 optional = false
@@ -3972,7 +3972,7 @@ kiwisolver = [
     {file = "kiwisolver-1.4.3.tar.gz", hash = "sha256:ab8a15c2750ae8d53e31f77a94f846d0a00772240f1c12817411fa2344351f86"},
 ]
 layer-api = [
-    {file = "layer_api-0.9.375709-py3-none-any.whl", hash = "sha256:9225236915073bcce75339772eaf89435abed52fe7ecf6898446522bc6ae51c0"},
+    {file = "layer_api-0.9.376004-py3-none-any.whl", hash = "sha256:861ce4fefcfb3380c4444b7fdce222dcfa18eb11bcca36fb10d522d3f8cedb3e"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.7.1.tar.gz", hash = "sha256:d609c75b986def706743cdebe5e47553f4a5a1da9c5ff66d76013ef396b5a8a4"},
