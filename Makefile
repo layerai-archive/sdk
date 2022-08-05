@@ -8,6 +8,15 @@ define get_python_package_version
   $(1)==$(shell $(POETRY) show $1 --no-ansi --no-dev | grep version | awk '{print $$3}')
 endef
 
+define autoreloadpy
+from IPython import get_ipython
+ipython = get_ipython()
+
+ipython.magic("load_ext autoreload")
+ipython.magic("autoreload 2")
+endef
+export autoreloadpy
+
 install: check-poetry prereq-$(UNAME_SYS) $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock .python-version
 ifdef IN_VENV
@@ -15,6 +24,8 @@ ifdef IN_VENV
 else
 	$(POETRY) install --remove-untracked
 endif
+	@poetry run ipython profile create --ipython-dir=build/ipython
+	@echo "$$autoreloadpy" > build/ipython/profile_default/startup/00-autoreload.py
 	touch $(INSTALL_STAMP)
 
 .PHONY: prereq-Linux
@@ -121,5 +132,5 @@ help: ## Show this help message.
 	@echo 'usage: make [target]'
 	@echo
 	@echo 'targets:'
-	@grep -E '^[8+a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep --no-filename -E '^[8+a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo
