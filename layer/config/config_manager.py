@@ -92,7 +92,7 @@ class ConfigManager:
             )
             creds = await creds_client.request(code)
 
-            if creds.is_authenticated_outside_organization:
+            if creds.is_authenticated_without_personal_account:
                 raise UserWithoutAccountError(config.url)
 
         config = config.with_credentials(creds)
