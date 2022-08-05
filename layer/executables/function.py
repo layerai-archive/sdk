@@ -76,7 +76,7 @@ class Function:
 
     @property
     def conda_environment(self) -> Optional[CondaEnv]:
-        return self.conda_environment
+        return self._conda_environment
 
     @property
     def resources(self) -> Sequence[Path]:
@@ -128,7 +128,7 @@ class Function:
         return package_function(
             self._func,
             pip_dependencies=self._pip_dependencies,
-            conda_env=self.conda_environment,
+            conda_env=self._conda_environment,
             resources=self._resources,
             output_dir=output_dir,
             metadata=self.metadata,
