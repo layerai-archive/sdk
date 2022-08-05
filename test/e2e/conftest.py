@@ -11,6 +11,7 @@ import pytest
 import layer
 from layer.clients.layer import LayerClient
 from layer.config import ClientConfig, Config, ConfigManager
+from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
 from layer.projects.project_runner import ProjectRunner
@@ -36,7 +37,7 @@ def _default_function_path(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(layer.config, "DEFAULT_FUNC_PATH", tmp_path)
 
 
-def pseudo_random_project_name(fixture_request: Any) -> str:
+def pseudo_random_slug(fixture_request: Any) -> str:
     test_name_parametrized: str
     if fixture_request.cls is not None:
         test_name_parametrized = f"{fixture_request.cls.__module__}-{fixture_request.cls.__name__}-{fixture_request.node.name}"
@@ -119,8 +120,36 @@ def client(client_config: ClientConfig) -> Iterator[LayerClient]:
 
 
 @pytest.fixture()
+def initialized_organization_account(
+    client: LayerClient, request: Any
+) -> Iterator[Account]:
+    org_account_name = pseudo_random_slug(request)
+    account = client.account.create_organization_account(org_account_name)
+
+    yield account
+    _cleanup_account(client, account)
+
+
+def _cleanup_account(client: LayerClient, account: Account):
+    client.account.delete_account(account_id=account.id)
+
+
+@pytest.fixture()
+def initialized_organization_project(
+    client: LayerClient, initialized_organization_account: Account
+) -> Iterator[Project]:
+    account_name = initialized_organization_account.name
+    # no need for pseudo randomness here, already done at the organization account level
+    project_name = "organization-project"
+    project = layer.init(f"{account_name}/{project_name}", fabric=Fabric.F_XSMALL.value)
+
+    yield project
+    _cleanup_project(client, project)
+
+
+@pytest.fixture()
 def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
-    project_name = pseudo_random_project_name(request)
+    project_name = pseudo_random_slug(request)
     project = layer.init(project_name, fabric=Fabric.F_XSMALL.value)
 
     yield project
