@@ -20,7 +20,7 @@ colab-test-pull:
 .PHONY: colab-test-build
 colab-test-build: $(COLAB_IMAGE_BUILD_STAMP)
 $(COLAB_IMAGE_BUILD_STAMP): $(COLAB_TEST_HOME)/requirements-fixed.txt test/colab/Dockerfile
-	@docker build -t $(DOCKER_IMAGE_NAME) -f test/colab/Dockerfile .
+	@DOCKER_BUILDKIT=1 docker build -t $(DOCKER_IMAGE_NAME) -f test/colab/Dockerfile .
 	@touch $(COLAB_IMAGE_BUILD_STAMP)
 
 .DELETE_ON_ERROR: $(COLAB_TEST_HOME)/requirements-fixed.txt $(COLAB_TEST_HOME)/test_import_login_init.ipynb
