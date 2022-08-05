@@ -58,7 +58,7 @@ jobs:
         run: echo ${{ secrets.APP_API_KEY }} > .test-token
       - uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.7
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
