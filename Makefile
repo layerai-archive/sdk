@@ -17,8 +17,8 @@ ipython.magic("autoreload 2")
 endef
 export autoreloadpy
 
-install: check-poetry prereq-$(UNAME_SYS) $(INSTALL_STAMP) ## Install dependencies
-$(INSTALL_STAMP): pyproject.toml poetry.lock .python-version
+install: $(INSTALL_STAMP) ## Install dependencies
+$(INSTALL_STAMP): pyproject.toml poetry.lock .python-version prereq-$(UNAME_SYS) check-poetry
 ifdef IN_VENV
 	$(POETRY) install
 else
@@ -39,6 +39,7 @@ ifeq ($(CONDA_ENV_NAME), base)
 	@echo 'Please create a conda environment and make it active'
 	@exit 1
 else
+	echo "installing conda deps"
 	@conda install -y $(call get_python_package_version,tokenizers) \
                          $(call get_python_package_version,xgboost) \
                          $(call get_python_package_version,lightgbm) \
