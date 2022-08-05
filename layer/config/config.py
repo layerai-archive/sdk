@@ -137,9 +137,8 @@ class Credentials:
         return self.is_empty or time.time() >= self._access_token_expiration_time
 
     @property
-    def is_authenticated_outside_organization(self) -> bool:
-        # todo: update this to account_id along with LAY-2716
-        return self.is_empty or f"{ROOT_LAYER_URL}/organization_id" not in jwt.decode(
+    def is_authenticated_without_personal_account(self) -> bool:
+        return self.is_empty or f"{ROOT_LAYER_URL}/account_id" not in jwt.decode(
             self.access_token, options={"verify_signature": False}, algorithms=["HS256"]
         )
 
