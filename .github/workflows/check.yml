@@ -42,6 +42,7 @@ jobs:
           restore-keys: poetry-vevns-${{ runner.os }}-3.8-
       - name: Check lockfile
         run: |
+          pip show toml
           make install
           poetry lock --no-update
           [ -z "$(git status --porcelain=v1 2>/dev/null)" ] || ( git diff && echo "Lock file is not up to date, please run 'poetry cache clear --all pypi' then 'poetry lock --no-update'" && exit 1)
