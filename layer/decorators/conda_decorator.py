@@ -26,7 +26,7 @@ def conda(
         layer.login()
         layer.init("your-project-name")
 
-        @layer.conda(environment_file="environment.yaml")
+        @layer.conda(environment_file="environment.yml")
         @layer.dataset("product-data")
         def create_product_dataset():
             data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
