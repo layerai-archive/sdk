@@ -20,13 +20,13 @@ export autoreloadpy
 install: $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock .python-version prereq-$(UNAME_SYS) check-poetry
 ifdef IN_VENV
-	$(POETRY) install
+	@$(POETRY) install
 else
-	$(POETRY) install --remove-untracked
+	@$(POETRY) install --remove-untracked
 endif
-	poetry run ipython profile create --ipython-dir=build/ipython
-	echo "$$autoreloadpy" > build/ipython/profile_default/startup/00-autoreload.py
-	touch $(INSTALL_STAMP)
+	@$(POETRY) run ipython profile create --ipython-dir=build/ipython
+	@echo "$$autoreloadpy" > build/ipython/profile_default/startup/00-autoreload.py
+	@touch $(INSTALL_STAMP)
 
 .PHONY: prereq-Linux
 prereq-Linux:

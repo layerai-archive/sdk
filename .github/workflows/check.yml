@@ -60,12 +60,6 @@ jobs:
         uses: abatilo/actions-poetry@v2.0.0
         with:
           poetry-version: 1.1.14
-      - name: Cache poetry virtualenvs
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/.cache/pypoetry/virtualenvs
-          key: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
-          restore-keys: poetry-venvs-${{ runner.os }}-${{ matrix.python-version }}-
       - name: Run check
         run: make check
       - name: Run check-colab-violations
