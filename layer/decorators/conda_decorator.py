@@ -11,6 +11,28 @@ def conda(
     environment_file: Optional[str] = None,
     environment: Optional[Dict[str, str]] = None,
 ) -> Callable[..., Any]:
+    """
+    Allows setting up the execution environment with Conda package/environment management system.
+    It can be used with Layer dataset and model entities.
+
+    :param environment_file: Path to Conda YAML file
+    :param environment: Conda environment as a dictionary object
+    :return: Function object.
+
+    .. code-block:: python
+
+        import layer
+
+        layer.login()
+        layer.init("your-project-name")
+
+        @layer.conda(environment_file="environment.yaml")
+        @layer.dataset("product-data")
+        def create_product_dataset():
+            data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
+            dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
+            return dataframe
+    """
     if environment_file and environment:
         raise ValueError(
             "either environment_file or environment dictionary should be provided, not both."
