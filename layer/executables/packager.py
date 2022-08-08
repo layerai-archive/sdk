@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Sequence, Tuple
 
+from layer.contracts.conda import CondaEnv
+
 from .. import cloudpickle
 
 
@@ -23,6 +25,7 @@ def package_function(
     function: Callable[..., Any],
     resources: Optional[Sequence[Path]] = None,
     pip_dependencies: Optional[Sequence[str]] = None,
+    conda_env: Optional[CondaEnv] = None,
     metadata: Optional[Dict[str, Any]] = None,
     output_dir: Optional[Path] = None,
 ) -> Path:
@@ -36,6 +39,10 @@ def package_function(
 
         # include cloudpickle itself in the executable
         _copy_cloudpickle_package(source)
+
+        if conda_env is not None:
+            conda_environment_file_path = source / "environment.yml"
+            conda_env.dump_to_file(conda_environment_file_path)
 
         requirements_path = source / "requirements.txt"
         with open(requirements_path, mode="w", encoding="utf8") as requirements:
@@ -75,18 +82,25 @@ def package_function(
 class FunctionPackageInfo:
     pip_dependencies: Tuple[str, ...] = ()
     metadata: Dict[str, Any] = field(default_factory=dict)
+    conda_env: Optional[CondaEnv] = None
 
 
 def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
     """Returns package info from a function package file."""
     pip_dependencies: Tuple[str, ...] = ()
     metadata = {}
+    conda_env = None
     with zipfile.ZipFile(package_path) as package:
+        if "environment.yml" in package.namelist():
+            with package.open("environment.yml", "r") as stream:
+                conda_env = CondaEnv.load_from_stream(stream=stream)
         with package.open("requirements.txt", "r") as requirements:
             pip_dependencies = tuple(requirements.read().decode("utf8").splitlines())
         with package.open("metadata.json", "r") as metadata_:
             metadata = json.loads(metadata_.read().decode("utf8"))
-    return FunctionPackageInfo(pip_dependencies=pip_dependencies, metadata=metadata)
+    return FunctionPackageInfo(
+        pip_dependencies=pip_dependencies, metadata=metadata, conda_env=conda_env
+    )
 
 
 def _copy_cloudpickle_package(target_path: Path) -> None:
