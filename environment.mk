@@ -14,7 +14,7 @@ dependencies:\\n
 endef
 
 .PHONY: create-environment
-create-environment: create-environment-$(UNAME_SYS)
+create-environment: create-environment-$(UNAME_SYS) ## Set up python environment
 
 .PHONY: create-environment-Linux
 create-environment-Linux: .python-version
@@ -28,7 +28,7 @@ else
 endif
 
 .PHONY: create-environment-Darwin
-create-environment-Darwin: ## Set up virtual (conda) environment for MacOS
+create-environment-Darwin:
 ifeq ($(UNAME_ARCH), arm64)
 ifdef CONDA_ENV_NAME
 	$(shell echo $(conda_environment_file) > .environment.M1.yml)
