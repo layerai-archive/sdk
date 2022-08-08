@@ -1,9 +1,10 @@
+import asyncio
 import logging
 import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional, Tuple
+from typing import Any, Callable, Iterator, Tuple
 
 import ddtrace
 import pytest
@@ -11,7 +12,6 @@ import pytest
 import layer
 from layer.clients.layer import LayerClient
 from layer.config import ClientConfig, Config, ConfigManager
-from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
 from layer.projects.project_runner import ProjectRunner
@@ -81,7 +81,7 @@ def _extract_module_and_test_name(fixture_request: Any) -> Tuple[str, str]:
 
 
 def _slugify_name(src: str) -> str:
-    return _cut_off_prefixing_dirs(src).replace("[", "-").replace("]", "")
+    return _cut_off_prefixing_dirs(src).replace("[", "-").replace("]", "").lower()
 
 
 def _cut_off_prefixing_dirs(module_name: str) -> str:
@@ -90,7 +90,7 @@ def _cut_off_prefixing_dirs(module_name: str) -> str:
     return module_name.split(".")[-1]
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def _write_stdout_stderr_to_file(capsys, request) -> Iterator[Any]:
     """
     Since we parallelize pytest tests via xdist, stdout and stderr are swallowed.
@@ -136,48 +136,27 @@ def _write_stdout_stderr_to_file(capsys, request) -> Iterator[Any]:
                 f.write(captured.err)
 
 
-@pytest.fixture()
-async def config(_write_stdout_stderr_to_file: Any) -> Config:
+# https://github.com/tortoise/tortoise-orm/issues/638#issuecomment-830124562
+# so that async fixtures with session scope can be run
+@pytest.fixture(scope="class")
+def event_loop():
+    return asyncio.get_event_loop()
+
+
+@pytest.fixture(scope="class")
+async def config() -> Config:
     return await ConfigManager().refresh()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 async def client_config(config: Config) -> ClientConfig:
     return config.client
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def client(client_config: ClientConfig) -> Iterator[LayerClient]:
     with LayerClient(client_config, logger).init() as client:
         yield client
-
-
-@pytest.fixture()
-def initialized_organization_account(
-    client: LayerClient, request: Any
-) -> Iterator[Account]:
-    org_account_name = pseudo_random_account_name(request)
-    account = client.account.create_organization_account(org_account_name)
-
-    yield account
-    _cleanup_account(client, account)
-
-
-def _cleanup_account(client: LayerClient, account: Account):
-    client.account.delete_account(account_id=account.id)
-
-
-@pytest.fixture()
-def initialized_organization_project(
-    client: LayerClient, initialized_organization_account: Account
-) -> Iterator[Project]:
-    account_name = initialized_organization_account.name
-    # no need for pseudo randomness here, already done at the organization account level
-    project_name = "organization-project"
-    project = layer.init(f"{account_name}/{project_name}", fabric=Fabric.F_XSMALL.value)
-
-    yield project
-    _cleanup_project(client, project)
 
 
 @pytest.fixture()

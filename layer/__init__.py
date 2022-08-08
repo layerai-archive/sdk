@@ -27,6 +27,7 @@ from .main import login_as_guest  # noqa
 from .main import login_with_access_token  # noqa
 from .main import login_with_api_key  # noqa
 from .main import logout  # noqa
+from .main import refresh_login  # noqa
 from .main import run  # noqa
 from .main import show_api_key  # noqa
 from .pandas_extensions import Arrays, Images, _register_type_extensions  # noqa

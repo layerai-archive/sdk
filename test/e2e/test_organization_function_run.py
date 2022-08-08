@@ -1,84 +1,82 @@
-import pandas as pd
-from sklearn.svm import SVC
+from pathlib import Path
+from typing import Any, Iterator
+
+import pytest
 
 import layer
-from layer import Dataset
+from layer import refresh_login
+from layer.clients import LayerClient
+from layer.contracts.accounts import Account
+from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
-from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
+from test.e2e.conftest import (
+    _cleanup_project,
+    pseudo_random_account_name,
+    pseudo_random_project_name,
+)
+from test.e2e.test_function_dataset_run import (
+    test_remote_run_with_dependent_datasets_succeeds_and_registers_metadata as test_remote_dependent_datasets,
+)
+from test.e2e.test_function_model_run import (
+    test_remote_run_succeeds_and_registers_metadata as test_remote_model_train,
+)
+from test.e2e.test_layer_runtime import (
+    test_dataset_build as test_remote_layer_runtime_dataset_build,
+)
 
 
-def test_remote_run_with_dependent_datasets_succeeds_and_registers_metadata(
-    initialized_project: Project, asserter: E2ETestAsserter
-):
-    # given
-    dataset_name = "users"
-    transformed_dataset_name = "tusers"
+# We use a wrapping Test class so we create only one organization
+# until we handle newly acquired permissions (after org creation)
+# better
+class TestOrganization:
+    @pytest.fixture(scope="class")
+    def initialized_organization_account(
+        self, client: LayerClient, request: Any
+    ) -> Iterator[Account]:
+        org_account_name = pseudo_random_account_name(request)
+        account = client.account.create_organization_account(org_account_name)
 
-    @dataset(dataset_name)
-    @pip_requirements(packages=["Faker==13.2.0"])
-    def prepare_data():
-        from faker import Faker
+        # We need a new token with permissions for the new org account
+        # TODO LAY-3583 LAY-3652
+        refresh_login(force=True)
 
-        fake = Faker()
-        pandas_df = pd.DataFrame(
-            [
-                {
-                    "name": fake.name(),
-                    "address": fake.address(),
-                    "email": fake.email(),
-                    "city": fake.city(),
-                    "state": fake.state(),
-                }
-                for _ in range(10)
-            ]
+        yield account
+        self._cleanup_account(client, account)
+
+    @staticmethod
+    def _cleanup_account(client: LayerClient, account: Account):
+        client.account.delete_account(account_id=account.id)
+
+    @pytest.fixture()
+    def initialized_organization_project(
+        self,
+        client: LayerClient,
+        initialized_organization_account: Account,
+        request: Any,
+    ) -> Iterator[Project]:
+        account_name = initialized_organization_account.name
+        project_name = pseudo_random_project_name(request)
+        project = layer.init(
+            f"{account_name}/{project_name}", fabric=Fabric.F_XSMALL.value
         )
-        return pandas_df
 
-    @dataset(transformed_dataset_name, dependencies=[Dataset(dataset_name)])
-    def transform_data():
-        df = layer.get_dataset(dataset_name).to_pandas()
-        df = df.drop(["address"], axis=1)
-        return df
+        yield project
+        _cleanup_project(client, project)
 
-    # when
-    run = layer.run([prepare_data, transform_data])
+    def test_remote_run_dependent_datasets(
+        self, initialized_organization_project: Project, asserter: E2ETestAsserter
+    ):
+        test_remote_dependent_datasets(initialized_organization_project, asserter)
 
-    # then
-    asserter.assert_run_succeeded(run.id)
+    def test_remote_run_model_train(
+        self, initialized_organization_project: Project, asserter: E2ETestAsserter
+    ):
+        test_remote_model_train(initialized_organization_project, asserter)
 
-    first_ds = layer.get_dataset(dataset_name)
-    first_pandas = first_ds.to_pandas()
-    assert len(first_pandas.index) == 10
-    assert len(first_pandas.values[0]) == 5
-
-    ds = layer.get_dataset(transformed_dataset_name)
-    pandas = ds.to_pandas()
-    assert len(pandas.index) == 10
-    assert len(pandas.values[0]) == 4  # only 4 columns in modified dataset
-
-
-def test_remote_run_succeeds_and_registers_model_metadata(
-    initialized_organization_project: Project, asserter: E2ETestAsserter
-):
-    # given
-    model_name = "foo-model"
-
-    @model(model_name)
-    @pip_requirements(packages=["scikit-learn==0.23.2"])
-    def train_model():
-        from sklearn import datasets
-
-        iris = datasets.load_iris()
-        clf = SVC()
-        result = clf.fit(iris.data, iris.target)
-        print("model1 computed")
-        return result
-
-    # when
-    run = layer.run([train_model])
-
-    # then
-    asserter.assert_run_succeeded(run.id)
-    mdl = layer.get_model(model_name)
-    assert isinstance(mdl.get_train(), SVC)
+    def test_layer_runtime_dataset_build(
+        self, initialized_organization_project: Project, tmpdir: Path
+    ):
+        test_remote_layer_runtime_dataset_build(
+            initialized_organization_project, tmpdir
+        )
