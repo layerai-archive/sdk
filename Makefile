@@ -22,7 +22,7 @@ $(INSTALL_STAMP): pyproject.toml poetry.lock .python-version prereq-$(UNAME_SYS)
 ifdef IN_VENV
 	@$(POETRY) install
 else
-	@$(POETRY) install --remove-untracked
+	@$(POETRY) install --remove-untracked -vvv
 endif
 	@$(POETRY) run ipython profile create --ipython-dir=build/ipython
 	@echo "$$autoreloadpy" > build/ipython/profile_default/startup/00-autoreload.py
