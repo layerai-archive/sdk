@@ -53,7 +53,7 @@ class LayerSettings:
         return self.get_pip_requirements_file()
 
     @property
-    def conda_env(self) -> Optional[CondaEnv]:
+    def conda_environment(self) -> Optional[CondaEnv]:
         return self._conda_environment
 
     @property
