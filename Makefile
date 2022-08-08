@@ -24,8 +24,8 @@ ifdef IN_VENV
 else
 	$(POETRY) install --remove-untracked
 endif
-	@poetry run ipython profile create --ipython-dir=build/ipython
-	@echo "$$autoreloadpy" > build/ipython/profile_default/startup/00-autoreload.py
+	poetry run ipython profile create --ipython-dir=build/ipython
+	echo "$$autoreloadpy" > build/ipython/profile_default/startup/00-autoreload.py
 	touch $(INSTALL_STAMP)
 
 .PHONY: prereq-Linux
