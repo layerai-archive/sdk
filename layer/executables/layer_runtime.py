@@ -69,7 +69,7 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
             self._create_model(function_output.name, func)
         else:
             raise LayerFunctionRuntimeError(
-                f"unsupported function output type: {function_output.type}"
+                f"missing function output type: {function_output.type}"
             )
 
     def _layer_init(self) -> None:
