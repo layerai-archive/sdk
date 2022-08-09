@@ -39,11 +39,9 @@ def test_scalar_values_logged(
         return dataframe
 
     # when
-    run = layer.run([scalar])
+    scalar()
 
     # then
-    asserter.assert_run_succeeded(run.id)
-
     first_ds = client.data_catalog.get_dataset_by_name(
         initialized_project.id, dataset_name
     )
