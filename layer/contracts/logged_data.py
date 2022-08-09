@@ -7,6 +7,7 @@ import numpy as np
 
 from ..logged_data.utils import get_base_module_list, has_allowed_extension
 
+
 if TYPE_CHECKING:
     import numpy.typing as npt
     import PIL
@@ -74,6 +75,7 @@ class Image:
 
                 assert isinstance(self.img, torch.Tensor)
 
+                # Torchvision expects torch tensor image in CHW format, here we transpose the HWC array to match it
                 if self.format == "HWC":
                     self.img = torch.transpose(self.img, 2, 0)
 

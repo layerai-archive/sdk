@@ -316,7 +316,7 @@ def test_given_runner_when_log_nparray_image_then_calls_log_binary(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
 @patch.object(Session, "put")
-def test_given_runner_when_log_torch_tensor_image_then_calls_log_binary(
+def test_given_runner_when_log_hwc_torch_tensor_image_then_calls_log_binary(
     mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
 ) -> None:
     # given
@@ -336,7 +336,7 @@ def test_given_runner_when_log_torch_tensor_image_then_calls_log_binary(
     image = layer.Image(image, format="HWC")
 
     # when
-    runner.log({tag: image}, epoch=1)
+    runner.log({tag: image})
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -392,7 +392,7 @@ def test_given_runner_when_log_hw_nparray_image_then_calls_log_binary(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
 @patch.object(Session, "put")
-def test_given_runner_when_log_torch_tensor_image_then_calls_log_binary(
+def test_given_runner_when_log_hw_torch_tensor_image_then_calls_log_binary(
     mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
 ) -> None:
     # given
