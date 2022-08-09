@@ -1,7 +1,7 @@
 from .context import Context  # noqa
 from .contracts.datasets import Dataset  # noqa
-from .contracts.logged_data import Image, Video  # noqa
 from .contracts.logged_data import Markdown  # noqa
+from .contracts.logged_data import Image, Video  # noqa
 from .contracts.models import Model  # noqa
 from .contracts.projects import Project  # noqa
 from .contracts.runs import Run  # noqa
