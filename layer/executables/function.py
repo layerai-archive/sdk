@@ -1,9 +1,13 @@
+import hashlib
+import inspect
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 import layer
 from layer.contracts.asset import AssetType
+from layer.contracts.conda import CondaEnv
+from layer.contracts.fabrics import Fabric
 from layer.executables.packager import (
     FUNCTION_SERIALIZER_NAME,
     FUNCTION_SERIALIZER_VERSION,
@@ -20,24 +24,42 @@ class Function:
         func: Callable[..., Any],
         output: FunctionOutput,
         pip_dependencies: Sequence[str],
+        conda_environment: Optional[CondaEnv],
         resources: Sequence[Path],
+        fabric: Fabric,
+        source_code: str,
+        source_code_digest: str,
     ) -> None:
         self._func = func
         self._output = output
         self._pip_dependencies = pip_dependencies
+        self._conda_environment = conda_environment
         self._resources = resources
+        self._fabric = fabric
+        self._source_code = source_code
+        self._source_code_digest = source_code_digest
 
     @staticmethod
     def from_decorated(func: Callable[..., Any]) -> "Function":
         output = _get_function_output(func)
         pip_dependencies = _get_function_pip_dependencies(func)
+        conda_environment = _get_function_conda_environment(func)
         resources = _get_function_resources(func)
+        fabric = _get_function_fabric(func)
         wrapped_func = _undecorate_function(func)
+        source_code = inspect.getsource(func)
+        sha256 = hashlib.sha256()
+        sha256.update(source_code.encode("utf-8"))
+        source_code_digest = sha256.hexdigest()
         return Function(
             wrapped_func,
             output=output,
             pip_dependencies=pip_dependencies,
+            conda_environment=conda_environment,
             resources=resources,
+            fabric=fabric,
+            source_code=source_code,
+            source_code_digest=source_code_digest,
         )
 
     @property
@@ -53,8 +75,24 @@ class Function:
         return self._pip_dependencies
 
     @property
+    def conda_environment(self) -> Optional[CondaEnv]:
+        return self._conda_environment
+
+    @property
     def resources(self) -> Sequence[Path]:
         return self._resources
+
+    @property
+    def fabric(self) -> Fabric:
+        return self._fabric
+
+    @property
+    def source_code(self) -> str:
+        return self._source_code
+
+    @property
+    def source_code_digest(self) -> str:
+        return self._source_code_digest
 
     @property
     def metadata(self) -> Dict[str, Any]:
@@ -69,22 +107,28 @@ class Function:
                 },
                 "output": {
                     "name": self._output.name,
-                    "type": self._output_type_name,
+                    "type": self.output_type_name,
+                },
+                "fabric": {"name": self._fabric.value},
+                "source": {
+                    "source_code": self._source_code,
+                    "digest": self._source_code_digest,
                 },
             },
         }
 
     @property
-    def _output_type_name(self) -> str:
+    def output_type_name(self) -> str:
         if isinstance(self._output, DatasetOutput):
-            return "dataset"
+            return AssetType.DATASET.value
         if isinstance(self._output, ModelOutput):
-            return "model"
+            return AssetType.MODEL.value
 
     def package(self, output_dir: Optional[Path] = None) -> Path:
         return package_function(
             self._func,
             pip_dependencies=self._pip_dependencies,
+            conda_env=self._conda_environment,
             resources=self._resources,
             output_dir=output_dir,
             metadata=self.metadata,
@@ -142,6 +186,14 @@ def _get_function_pip_dependencies(func: Callable[..., Any]) -> Sequence[str]:
 def _get_function_resources(func: Callable[..., Any]) -> Sequence[Path]:
     resource_paths = _get_decorator_attr(func, "resource_paths") or []
     return tuple(Path(resource_path.path) for resource_path in resource_paths)
+
+
+def _get_function_fabric(func: Callable[..., Any]) -> Fabric:
+    return _get_decorator_attr(func, "fabric") or Fabric.default()
+
+
+def _get_function_conda_environment(func: Callable[..., Any]) -> Optional[CondaEnv]:
+    return _get_decorator_attr(func, "conda_environment")
 
 
 def _get_decorator_attr(func: Callable[..., Any], attr: str) -> Optional[Any]:

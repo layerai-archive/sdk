@@ -1,63 +1,65 @@
 import uuid
-from contextlib import contextmanager
-from logging import Logger
-from typing import Iterator
+from typing import Optional
 
+from layerapi.api.entity.account_view_pb2 import AccountView
 from layerapi.api.ids_pb2 import AccountId
 from layerapi.api.service.account.account_api_pb2 import (
+    CreateOrganizationAccountRequest,
+    DeleteAccountRequest,
     GetAccountViewByIdRequest,
-    GetAccountViewByIdResponse,
+    GetMyAccountViewRequest,
 )
 from layerapi.api.service.account.account_api_pb2_grpc import AccountAPIStub
-from layerapi.api.service.account.user_api_pb2 import GetMyOrganizationRequest
-from layerapi.api.service.account.user_api_pb2_grpc import UserAPIStub
 
 from layer.config import ClientConfig
 from layer.contracts.accounts import Account
-from layer.utils.grpc import create_grpc_channel
+from layer.utils.grpc.channel import get_grpc_channel
 
 
 class AccountServiceClient:
-    _service: UserAPIStub
     _account_api: AccountAPIStub
 
-    def __init__(
-        self,
-        config: ClientConfig,
-        logger: Logger,
-    ):
-        self._config = config.account_service
-        self._logger = logger
-        self._access_token = config.access_token
-        self._do_verify_ssl = config.grpc_do_verify_ssl
-        self._logs_file_path = config.logs_file_path
-
-    @contextmanager
-    def init(self) -> Iterator["AccountServiceClient"]:
-        with create_grpc_channel(
-            self._config.address,
-            self._access_token,
-            do_verify_ssl=self._do_verify_ssl,
-            logs_file_path=self._logs_file_path,
-        ) as channel:
-            self._service = UserAPIStub(channel=channel)
-            self._account_api = AccountAPIStub(channel=channel)
-            yield self
+    @staticmethod
+    def create(config: ClientConfig) -> "AccountServiceClient":
+        client = AccountServiceClient()
+        channel = get_grpc_channel(config)
+        client._account_api = AccountAPIStub(  # pylint: disable=protected-access
+            channel
+        )
+        return client
 
     def get_account_name_by_id(self, account_id: uuid.UUID) -> str:
-        get_my_org_resp: GetAccountViewByIdResponse = (
+        account_view: AccountView = (
             self._account_api.GetAccountViewById(
                 GetAccountViewByIdRequest(id=AccountId(value=str(account_id))),
             )
-        )
-        return get_my_org_resp.account_view.name
+        ).account_view
+        return account_view.name
 
     def get_my_account(self) -> Account:
-        # TODO LAY-2692
-        org = self._service.GetMyOrganization(
-            GetMyOrganizationRequest(),
-        ).organization
+        account_view: AccountView = self._account_api.GetMyAccountView(
+            GetMyAccountViewRequest(),
+        ).account_view
+        return self._account_from_view(account_view)
+
+    def create_organization_account(
+        self, name: str, display_name: Optional[str] = None
+    ) -> Account:
+        account_view: AccountView = self._account_api.CreateOrganizationAccount(
+            CreateOrganizationAccountRequest(
+                name=name, display_name=display_name if display_name else name
+            )
+        ).account_view
+        return self._account_from_view(account_view)
+
+    @staticmethod
+    def _account_from_view(account_view: AccountView) -> Account:
         return Account(
-            id=uuid.UUID(org.id.value),
-            name=org.name,
+            id=uuid.UUID(account_view.id.value),
+            name=account_view.name,
+        )
+
+    def delete_account(self, account_id: uuid.UUID) -> None:
+        self._account_api.DeleteAccount(
+            DeleteAccountRequest(account_id=AccountId(value=str(account_id)))
         )

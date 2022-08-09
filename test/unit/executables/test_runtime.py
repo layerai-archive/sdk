@@ -5,12 +5,17 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 from venv import EnvBuilder
 
 import pytest
 
 from layer.executables.packager import package_function
-from layer.executables.runtime import BaseFunctionRuntime, FunctionRuntimeError
+from layer.executables.runtime import (
+    BaseFunctionRuntime,
+    FunctionRuntimeError,
+    _get_local_executable_path,
+)
 
 
 def test_executable_path_does_not_exist():
@@ -77,6 +82,38 @@ def test_execute_func_with_packages(tmpdir: Path):
     result = _execute_runtime_module(executable)
 
     assert "running marshmallow version 3.17.0" in result.stdout
+
+
+def test_get_local_executable_path_local_path():
+    assert Path("test") == _get_local_executable_path(Path("test"))
+
+
+def test_get_local_executable_path_local_path_string():
+    assert Path("test") == _get_local_executable_path("test")
+    assert Path(".", "test") == _get_local_executable_path("./test")
+    assert Path("..", "test") == _get_local_executable_path("../test")
+
+
+def test_get_local_executable_path_file_uri_scheme():
+    assert Path("/test") == _get_local_executable_path("file:///test")
+
+
+@pytest.mark.parametrize("uri_scheme", ["https", "http"])
+def test_get_local_executable_path_https_uri_scheme(uri_scheme: str):
+    with patch("urllib.request.urlretrieve") as urlretrieve:
+        urlretrieve.return_value = (Path("/tmp/test_executable"), None)
+
+        executable_path = _get_local_executable_path(
+            f"{uri_scheme}://test/test_executable"
+        )
+
+        assert executable_path == Path("/tmp/test_executable")
+        urlretrieve.assert_called_once_with(f"{uri_scheme}://test/test_executable")
+
+
+def test_get_local_executable_path_unsupported_uri_scheme():
+    with pytest.raises(ValueError, match="unsupported scheme: unsupported"):
+        _get_local_executable_path("unsupported://test")
 
 
 def func_simple() -> None:

@@ -119,16 +119,14 @@ This repo uses `make` as the build system. The following targets can be used thr
 ### Python setup
 We recommend using `pyenv`
 
-Please run `pyenv install $(cat .python-version)` in the root of this repository to setup the recommended python version.
+Please run `make create-environment` to setup the recommended python version.
 
-If you are using an M1 machine, we recommend using `conda` via [Miniforge3](https://github.com/conda-forge/miniforge/). Please run
+If you are using an Apple M1 machine, we recommend using `conda` via [Miniforge3](https://github.com/conda-forge/miniforge/). After installing conda please run
 
 ```
-# Install Miniforge3 if required
-/bin/bash -c "$(curl -fsSL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh)"
 # Create and activate conda environment
-conda create -yq -n sdk python=3.8
-conda activate sdk
+make create-environment
+conda activate build/sdk
 ```
 
 After that you should be able to run the rest of the `make` targets as normal
@@ -226,8 +224,29 @@ In order to run the  tests, first you need to [create an api key](https://docs.a
 make e2e-test
 ```
 
-You will be asked for your key which will be stored for subsequent runs in `.test-token`
+You will be asked for your key which will be stored for subsequent runs in `.test-token`.
+You can find the test logs under `build/e2e-home/logs` and also the standard output generated during tests under `build/e2e-home/stdout-logs`.
 
+##### Run a subset of the e2e-tests
+You can pass `E2E_TEST_SELECTOR` to `make e2e-test` to select a subset of the tests to run. Use the [standard pytest syntax](https://docs.pytest.org/en/latest/how-to/usage.html#specifying-tests-selecting-tests) to specify which tests to invoke.
+
+```shell
+make e2e-test E2E_TEST_SELECTOR=test/e2e/test_guest_user_reads.py::test_guest_user_private_model_read
+```
+
+##### Reduce e2e-test parallelism
+By default `e2e-tests` run with 16x parallelism. You can pass `E2E_TEST_PARALLELISM` to `make e2e-test` to reduce the parallelism. This can be useful if you are on the free Tier and have limited parallelism. In this example we run the tests sequencially.
+
+```shell
+make e2e-test E2E_TEST_PARALLELISM=1
+```
+
+#### Testing your local SDK build within a Google Colab notebook
+
+1. Run `poetry build`
+2. Upload `dist/layer-0.10.0-py3-none-any.whl` to the Colab notebook after a runtime recreation (hint: you can do by `from google.colab import files` and `files.upload()` inside Colab)
+3. `pip install layer-0.10.0-py3-none-any.whl`
+4. Run the rest of the notebook as normal
 
 #### Linters
 
@@ -243,6 +262,8 @@ Set these up with your IDE to have a smoother development experience and fewer f
 ### Submitting a pull request
 
 The final step after developing and testing your changes locally is to submit a pull request and get your contribution merged back into `layerai/sdk`. Please follow the instructions in the GitHub template when creating your PR and fix any status checks that are failing.
+
+To help debug E2E test issues, network logs are captured, zipped and available in the Summary page of each Check GitHub Action page after the E2E tests are executed.
 
 When the PR passes all checks, a `layerai/sdk` maintainer will review your PR. The maintainer may suggest changes to improve code style or clarity, or to add missing tests. When everything is satisfied, the PR can then be merged onto the `main` branch.
 

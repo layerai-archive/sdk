@@ -1,10 +1,14 @@
 import os
 import runpy
 import sys
+from argparse import ArgumentParser
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Optional, Sequence, Union
 
-from layer.executables.packager import get_function_package_info
+from layer.executables.packager import FunctionPackageInfo, get_function_package_info
+
+
+ExecutablePath = Union[str, Path]
 
 
 class BaseFunctionRuntime:
@@ -13,11 +17,8 @@ class BaseFunctionRuntime:
     def __init__(self, executable_path: Path) -> None:
         self._executable_path = executable_path
 
-    def initialise(self) -> None:
+    def initialise(self, package_info: FunctionPackageInfo) -> None:
         """Any initialisation required to run the function."""
-
-    def process_function_output(self, output: Any, *args: Any, **kwargs: Any) -> None:
-        pass
 
     @property
     def executable_path(self) -> Path:
@@ -29,27 +30,65 @@ class BaseFunctionRuntime:
 
     def __call__(self, func: Callable[..., Any]) -> Any:
         """Called from the executable to run the function."""
-        output = func()
-        self.process_function_output(output)
-        return output
+        return func()
 
-    def run_executable(self, executable_path: Path) -> Any:
+    def run_executable(self) -> Any:
         """Runs the packaged function."""
         runpy.run_path(
-            str(executable_path),
+            str(self.executable_path),
             run_name="__main__",
             init_globals={"__function_runtime": self},
         )
 
     @classmethod
-    def execute(cls, executable_path: Path, *args: Any, **kwargs: Any) -> None:
+    def execute(
+        cls, executable_path: ExecutablePath, *args: Any, **kwargs: Any
+    ) -> None:
         """Initialises the environment, installs packages and runs the executable."""
-        _validate_executable_path(executable_path)
-        package_info = get_function_package_info(executable_path)
-        runtime = cls(executable_path, *args, **kwargs)
-        runtime.initialise()
+        local_executable_path = _get_local_executable_path(executable_path)
+        _validate_executable_path(local_executable_path)
+        package_info = get_function_package_info(local_executable_path)
+        runtime = cls(local_executable_path, *args, **kwargs)
+        runtime.initialise(package_info)
         runtime.install_packages(packages=package_info.pip_dependencies)
-        runtime.run_executable(executable_path)
+        runtime.run_executable()
+
+    @classmethod
+    def main(
+        cls, add_cli_args: Optional[Callable[[ArgumentParser], None]] = None
+    ) -> None:
+        parser = ArgumentParser(description="Function runtime")
+
+        parser.add_argument(
+            "executable_path",
+            type=str,
+            help="the local file path of the executable",
+        )
+
+        if add_cli_args is not None:
+            add_cli_args(parser)
+
+        args = parser.parse_args()
+
+        cls.execute(**vars(args))
+
+
+def _get_local_executable_path(executable_path: ExecutablePath) -> Path:
+    if not isinstance(executable_path, str):
+        return executable_path
+
+    from urllib import parse, request
+
+    uri = parse.urlparse(executable_path)
+    if uri.scheme == "":
+        return Path(executable_path)
+    if uri.scheme == "file":
+        return Path(uri.path)
+    elif uri.scheme == "http" or uri.scheme == "https":
+        local_path, _ = request.urlretrieve(executable_path)  # nosec
+        return Path(local_path)
+    else:
+        raise ValueError(f"unsupported scheme: {uri.scheme}")
 
 
 def _validate_executable_path(executable_path: Path) -> None:
@@ -75,29 +114,23 @@ def _run_pip_install(packages: Sequence[str]) -> None:
         "pip",
         "--quiet",
         "--disable-pip-version-check",
+        "--no-color",
         "install",
     ] + list(packages)
 
     import subprocess  # nosec
 
-    subprocess.check_call(pip_install)  # nosec
-
-
-def main() -> None:
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser(description="Function runtime")
-
-    parser.add_argument(
-        "executable_path",
-        type=Path,
-        help="the local file path of the executable",
+    result = subprocess.run(
+        pip_install,
+        shell=False,  # nosec
+        text=True,
+        check=False,
+        capture_output=True,
     )
 
-    args = parser.parse_args()
-
-    BaseFunctionRuntime.execute(args.executable_path)
+    if result.returncode != 0:
+        raise FunctionRuntimeError(f"package instalation failed:\n{result.stderr}")
 
 
 if __name__ == "__main__":
-    main()
+    BaseFunctionRuntime.main()

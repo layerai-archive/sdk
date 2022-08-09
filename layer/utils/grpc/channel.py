@@ -2,7 +2,7 @@ import json
 import ssl
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple
 
 import grpc
 
@@ -19,13 +19,10 @@ def create_grpc_channel(
     *,
     do_verify_ssl: bool = True,
     logs_file_path: Path,
-    options: Optional[List[Tuple[str, Union[str, int]]]] = None,
 ) -> Any:
     # https://grpc.github.io/grpc/cpp/md_doc_keepalive.html
     # https://github.com/grpc/proposal/blob/master/A8-client-side-keepalive.md
-    if options is None:
-        options = []
-    options = options.copy()
+    options: List[Tuple[str, Any]] = []
     ssl_config = create_grpc_ssl_config(address, do_verify_ssl=do_verify_ssl)
     if ssl_config.hostname_override:
         options.append(("grpc.ssl_target_name_override", ssl_config.hostname_override))
@@ -51,6 +48,7 @@ def create_grpc_channel(
     options.append(("grpc.keepalive_timeout_ms", 5000))
     options.append(("grpc.keepalive_permit_without_calls", 1))
     options.append(("grpc.http2.max_pings_without_data", 0))
+    options.append(("grpc.max_receive_message_length", 100 * 1024 * 1024))
     credentials = grpc.ssl_channel_credentials(ssl_config.cadata)
 
     client_interceptors = [
@@ -69,6 +67,45 @@ def create_grpc_channel(
             options,
         ),
         *client_interceptors,
+    )
+
+
+def _grpc_single_channel(channel_factory: Callable[..., Any]) -> Callable[..., Any]:
+    """Maintains a single GRPC channel for all client calls."""
+
+    channels = {}
+
+    def _get_grpc_channel(config: Any, **kwargs: Any) -> Any:
+        closing = kwargs.get("closing", False)
+        config_key = (
+            config.grpc_gateway_address,
+            config.access_token,
+        )
+
+        if config_key not in channels:
+            # if the channel is being closed, do not create new one
+            if closing:
+                return None
+
+            # create and memoize a new channel
+            channels[config_key] = channel_factory(config, **kwargs)
+        else:
+            if closing:
+                # do not memoize the channel anymore if it is being closed
+                return channels.pop(config_key)
+
+        return channels[config_key]
+
+    return _get_grpc_channel
+
+
+@_grpc_single_channel
+def get_grpc_channel(client_config: Any) -> Any:
+    return create_grpc_channel(
+        address=client_config.grpc_gateway_address,
+        access_token=client_config.access_token,
+        logs_file_path=client_config.logs_file_path,
+        do_verify_ssl=client_config.grpc_do_verify_ssl,
     )
 
 

@@ -69,6 +69,7 @@ class _TestAuthHandler:
                 "code": self._code,
                 "client_id": self._client_id,
                 "redirect_uri": mock.ANY,
+                "audience": mock.ANY,
             }
             resp_payload = {
                 "access_token": self._access_token,
@@ -80,6 +81,7 @@ class _TestAuthHandler:
                 "grant_type": "refresh_token",
                 "refresh_token": self._refresh_token,
                 "client_id": self._client_id,
+                "audience": mock.ANY,
             }
             resp_payload = {
                 "access_token": self._access_token_refreshed,
@@ -132,6 +134,7 @@ class TestCredentialsClient:
                 client=client,
                 url=auth_config.token_url,
                 client_id=auth_config.client_id,
+                audience=auth_config.audience,
             )
             creds = await creds_client.request(code)
             assert creds.access_token == "test_access_token"
@@ -148,6 +151,7 @@ class TestCredentialsClient:
                 client=client,
                 url=auth_config.token_url,
                 client_id=auth_config.client_id,
+                audience=auth_config.audience,
             )
             new_creds = await creds_client.refresh(creds)
             assert new_creds.access_token == "test_access_token_refreshed"
@@ -165,6 +169,7 @@ class TestCredentialsClient:
                 client=client,
                 url=auth_config.token_url,
                 client_id=auth_config.client_id,
+                audience=auth_config.audience,
             )
             with pytest.raises(AuthException, match="failed to get an access token."):
                 await creds_client.request(code)

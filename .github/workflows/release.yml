@@ -50,6 +50,22 @@ jobs:
       - name: Check package loads without dev dependencies
         run: make check-package-loads
 
+  colab-test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Write token
+        run: echo ${{ secrets.APP_API_KEY }} > .test-token
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.14
+      - name: Run colab test
+        run: make colab-test
+
   e2e-test:
     strategy:
       fail-fast: false
@@ -93,12 +109,18 @@ jobs:
           datadog_site: datadoghq.eu
       - name: Run e2e tests
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: |
-          echo ${{ secrets.APP_API_KEY }} > .test-token
-          make e2e-test
+        run: bash build_scripts/ci/e2e_tests.sh ${{ secrets.APP_API_KEY }}
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-logs (${{ matrix.python-version }})
+          path: |
+            build/e2e-home/logs/*
+            build/e2e-home/stdout-logs/*
+          retention-days: 30
 
   publish:
-    needs: [ check , check-package-loads, e2e-test]
+    needs: [ check , check-package-loads, e2e-test, colab-test]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -118,9 +140,11 @@ jobs:
           restore-keys: poetry-venvs-${{ runner.os }}-3.8-
       - name: Check lockfile
         run: |
-          make install
+          pip install yq
+          old_hash=$(cat poetry.lock | tomlq '.metadata["content-hash"]' --raw-output)
           poetry lock --no-update
-          [ -z "$(git status --porcelain=v1 2>/dev/null)" ] || (echo "Lock file is not up to date, please run 'poetry lock --no-update'" && exit 1)
+          new_hash=$(cat poetry.lock | tomlq '.metadata["content-hash"]' --raw-output)
+          [[ "$old_hash" == "$new_hash" ]] || ( git diff && echo "Lock file is not up to date, please run 'poetry cache clear --all pypi' then 'poetry lock --no-update'" && exit 1)
       - name: Compute package dependencies
         id: deps
         run: |

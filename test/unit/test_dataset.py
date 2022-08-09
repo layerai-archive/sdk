@@ -112,7 +112,6 @@ def _dataset_client_mock(dataset_client_mock=None):
     data_catalog_client = DataCatalogClient(
         config=MagicMock(),
         logger=MagicMock(),
-        flight_client=MagicMock(),
         dataset_client=dataset_client,
     )
 

@@ -2,11 +2,14 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict
+from unittest import mock
 from unittest.mock import patch
 
 import pytest
 
 import layer
+from layer.contracts.asset import AssetType
+from layer.contracts.fabrics import Fabric
 from layer.decorators.assertions import assert_unique
 from layer.decorators.dataset_decorator import dataset
 from layer.decorators.fabric_decorator import fabric
@@ -123,8 +126,9 @@ def test_package_function():
             output_dir=package_dir,
             resources=(Path("path/to/resource"), Path("path/to/other/resource")),
             pip_dependencies=("package1", "package2==0.0.42"),
+            conda_env=None,
             metadata=_default_function_metadata(
-                output={"name": "test_dataset", "type": "dataset"}
+                output={"name": "test_dataset", "type": AssetType.DATASET.value}
             ),
         )
 
@@ -237,7 +241,7 @@ def test_dataset_asset_metadata():
     function = Function.from_decorated(f1)
 
     assert function.metadata == _default_function_metadata(
-        output={"name": "d", "type": "dataset"},
+        output={"name": "d", "type": AssetType.DATASET.value},
     )
 
 
@@ -249,7 +253,7 @@ def test_model_asset_metadata():
     function = Function.from_decorated(f1)
 
     assert function.metadata == _default_function_metadata(
-        output={"name": "m", "type": "model"},
+        output={"name": "m", "type": AssetType.MODEL.value},
     )
 
 
@@ -259,5 +263,10 @@ def _default_function_metadata(output: Dict[str, Any]) -> Dict[str, Any]:
         "function": {
             "serializer": {"name": "layer.cloudpickle", "version": "2.1.0"},
             "output": output,
+            "fabric": {"name": Fabric.F_SMALL.value},
+            "source": {
+                "source_code": mock.ANY,
+                "digest": mock.ANY,
+            },
         },
     }

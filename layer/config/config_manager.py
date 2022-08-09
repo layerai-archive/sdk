@@ -62,6 +62,7 @@ class ConfigManager:
                 client=client,
                 url=config.auth.token_url,
                 client_id=config.auth.client_id,
+                audience=config.auth.audience,
             )
             creds = await creds_client.refresh(config.credentials)
 
@@ -89,10 +90,11 @@ class ConfigManager:
                 client=client,
                 url=config.auth.token_url,
                 client_id=config.auth.client_id,
+                audience=config.auth.audience,
             )
             creds = await creds_client.request(code)
 
-            if creds.is_authenticated_outside_organization:
+            if creds.is_authenticated_without_personal_account:
                 raise UserWithoutAccountError(config.url)
 
         config = config.with_credentials(creds)

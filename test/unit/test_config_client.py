@@ -8,19 +8,7 @@ from yarl import URL
 
 from layer.auth import create_app_server_once
 from layer.config import ConfigClient
-from layer.config.config import (
-    AccountServiceConfig,
-    AuthConfig,
-    ClientConfig,
-    Config,
-    DataCatalogConfig,
-    FlowManagerServiceConfig,
-    ModelCatalogConfig,
-    ModelTrainingConfig,
-    ProjectServiceConfig,
-    S3Config,
-    UserLogsServiceConfig,
-)
+from layer.config.config import AuthConfig, ClientConfig, Config, S3Config
 
 
 pytestmark = pytest.mark.asyncio
@@ -95,27 +83,6 @@ class TestConfigClient:
                 failure_redirect_url=server / "oauth" / "code",
             ),
             client=ClientConfig(
-                data_catalog=DataCatalogConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                model_catalog=ModelCatalogConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                model_training=ModelTrainingConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                account_service=AccountServiceConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                flow_manager=FlowManagerServiceConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                user_logs=UserLogsServiceConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                project_service=ProjectServiceConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
                 grpc_gateway_address=f"grpc.{server.host}:{server.port}",
             ),
         )
@@ -149,27 +116,6 @@ class TestConfigClient:
                 failure_redirect_url=server / "oauth" / "code",
             ),
             client=ClientConfig(
-                data_catalog=DataCatalogConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                model_catalog=ModelCatalogConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                model_training=ModelTrainingConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                account_service=AccountServiceConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                flow_manager=FlowManagerServiceConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                user_logs=UserLogsServiceConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
-                project_service=ProjectServiceConfig(
-                    address=f"grpc.{server.host}:{server.port}"
-                ),
                 grpc_gateway_address=f"grpc.{server.host}:{server.port}",
                 s3=S3Config(endpoint_url=URL("http://localhost:12345")),
             ),
@@ -205,13 +151,6 @@ class TestConfigClient:
                 failure_redirect_url=server / "oauth" / "code",
             ),
             client=ClientConfig(
-                data_catalog=DataCatalogConfig(address="localhost:65443"),
-                model_catalog=ModelCatalogConfig(address="localhost:65443"),
-                model_training=ModelTrainingConfig(address="localhost:65443"),
-                account_service=AccountServiceConfig(address="localhost:65443"),
-                flow_manager=FlowManagerServiceConfig(address="localhost:65443"),
-                user_logs=UserLogsServiceConfig(address="localhost:65443"),
-                project_service=ProjectServiceConfig(address="localhost:65443"),
                 grpc_gateway_address="localhost:65443",
                 grpc_do_verify_ssl=False,
                 s3=S3Config(),
@@ -231,13 +170,6 @@ class TestConfigClient:
             url=server,
             auth=AuthConfig.create_disabled(),
             client=ClientConfig(
-                data_catalog=DataCatalogConfig(address="localhost:65443"),
-                model_catalog=ModelCatalogConfig(address="localhost:65443"),
-                model_training=ModelTrainingConfig(address="localhost:65443"),
-                account_service=AccountServiceConfig(address="localhost:65443"),
-                flow_manager=FlowManagerServiceConfig(address="localhost:65443"),
-                user_logs=UserLogsServiceConfig(address="localhost:65443"),
-                project_service=ProjectServiceConfig(address="localhost:65443"),
                 grpc_gateway_address="localhost:65443",
                 grpc_do_verify_ssl=False,
                 s3=S3Config(),
