@@ -10,6 +10,7 @@ from layer.contracts.projects import Project
 from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
 
+
 def test_scalar_values_logged(
     initialized_project: Project, asserter: E2ETestAsserter, client: LayerClient
 ):
