@@ -15,8 +15,8 @@ keywords = [
     "ML Model Store",
     "ML Metadata Store",
 ]
+# As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
 classifiers = [
-    # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
@@ -67,13 +67,11 @@ rich = ">=11"
 transformers = "*"
 yarl  = ">=1.6.3"
 wrapt  = ">=1.13.3"
-layer-api = "0.9.372631"
+layer-api = "0.9.376781"
 numpy = { version = "<1.22", python = "~3.7" } # 1.22 doesn't support python 3.7, this is a transitive dependency comming from various other packages
 requests = ">=2.23.0"
 nvsmi = "^0.4.2"
-psutil = "^5.9.1"
-moviepy = "^0.2.3.5"
-imageio = "<=2.4.1"
+psutil = ">=5.4.8" # Google Colab comes with 5.4.8 by default. If it gets upgraded an error message is shown saying the runtime needs to be restarted.
 
 [tool.poetry.dev-dependencies]
 # h5py is a tensorflow transitive dependency and we limit it because of conda-miniforge
@@ -113,6 +111,7 @@ types-Pillow = "^9.0.15"
 pytest-xdist = "^2.5.0"
 pylint = "^2.13.9"
 Markdown = "3.3.6"
+jupyter = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -124,7 +123,7 @@ omit = [
 ]
 
 [tool.pylint.MASTER]
-ignore-patterns=[ ".*pb2.py" , ".*pb2_grpc.p", ".*egg-info.*", ".*ini", ".*.gradle", "MANIFEST.in", ".*.md", 'build_scripts/*']
+ignore-patterns=[ ".*pb2.py" , ".*pb2_grpc.p", ".*egg-info.*", ".*ini", ".*.gradle", "MANIFEST.in", ".*.md", 'build_scripts/*', 'build/*']
 max-line-length=120
 load-plugins="pylint_django"
 known-third-party="layer_client"
