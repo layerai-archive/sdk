@@ -79,7 +79,7 @@ def test_scalar_values_logged(
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=list_tag, dataset_build_id=first_ds.build.id
     )
-    assert logged_data.data == "['a', 'b', 'c']"
+    assert logged_data.data == "[\"a\", \"b\", \"c\"]"
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == list_tag
 
