@@ -10,7 +10,6 @@ from layer.contracts.projects import Project
 from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
 
-
 def test_scalar_values_logged(
     initialized_project: Project, asserter: E2ETestAsserter, client: LayerClient
 ):
@@ -39,11 +38,9 @@ def test_scalar_values_logged(
         return dataframe
 
     # when
-    run = layer.run([scalar])
+    scalar()
 
     # then
-    asserter.assert_run_succeeded(run.id)
-
     first_ds = client.data_catalog.get_dataset_by_name(
         initialized_project.id, dataset_name
     )
