@@ -316,6 +316,43 @@ def test_given_runner_when_log_nparray_image_then_calls_log_binary(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
 @patch.object(Session, "put")
+def test_given_runner_when_log_torch_tensor_image_then_calls_log_binary(
+    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+
+    import torch
+    image = torch.rand((480, 640, 3))
+    tag = "nparray-image-tag"
+    image = layer.Image(image, format="HWC")
+
+    # when
+    runner.log({tag: image}, epoch=1)
+
+    # then
+    logged_data_client.log_binary_data.assert_called_with(
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+        epoch=None,
+    )
+    mock_put.assert_called_with("http://path/for/upload", data=ANY)
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
+@patch.object(Session, "put")
 def test_given_runner_when_log_hw_nparray_image_then_calls_log_binary(
     mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
 ) -> None:
