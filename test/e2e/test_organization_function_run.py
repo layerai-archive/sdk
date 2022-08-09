@@ -6,13 +6,13 @@ from test.e2e.common_scenarios import (
 )
 
 
-def test_remote_run_dependent_dataset(
+def test_remote_runs(
     initialized_organization_project: Project, asserter: E2ETestAsserter
 ):
+    """
+    Due to max_active_runs=1 limitation on a new organization account, we cannot
+    have parallel tests.
+    """
     remote_run_with_dependent_datasets_succeeds_and_registers_metadata(asserter)
 
-
-def test_remote_run_model_train(
-    initialized_organization_project: Project, asserter: E2ETestAsserter
-):
     remote_run_with_model_train_succeeds_and_registers_metadata(asserter)
