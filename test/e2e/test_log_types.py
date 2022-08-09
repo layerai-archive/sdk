@@ -27,7 +27,15 @@ def test_scalar_values_logged(
     def scalar():
         data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
         dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
-        layer.log({str_tag: "bar", int_tag: 123, bool_tag: True, float_tag: 1.11, list_tag: ["a", "b", "c"]})
+        layer.log(
+            {
+                str_tag: "bar",
+                int_tag: 123,
+                bool_tag: True,
+                float_tag: 1.11,
+                list_tag: ["a", "b", "c"],
+            }
+        )
         return dataframe
 
     # when

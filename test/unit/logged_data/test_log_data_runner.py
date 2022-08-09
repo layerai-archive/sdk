@@ -56,11 +56,12 @@ def test_given_runner_when_log_data_with_string_value_then_calls_log_text_data(
         dataset_build_id=dataset_build_id,
     )
 
+
 @pytest.mark.parametrize(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
 def test_given_runner_when_log_data_with_list_value_then_calls_log_text_data(
-        train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
 ) -> None:
     # given
     logged_data_client = MagicMock(spec=LoggedDataClient)
@@ -75,7 +76,7 @@ def test_given_runner_when_log_data_with_list_value_then_calls_log_text_data(
     tag1 = "list-tag-1"
     value1 = [1, 2, "a"]
     tag2 = "list-tag-2"
-    value2 =  ["x", 5.6, ["a", "b"]]
+    value2 = ["x", 5.6, ["a", "b"]]
 
     # when
     runner.log({tag1: value1, tag2: value2})
