@@ -331,6 +331,7 @@ def test_given_runner_when_log_hwc_torch_tensor_image_then_calls_log_binary(
     )
 
     import torch
+
     image = torch.rand((480, 640, 3))
     tag = "nparray-image-tag"
     image = layer.Image(image, format="HWC")
