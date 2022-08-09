@@ -1,20 +1,22 @@
 import asyncio
+import configparser
 import logging
 import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Iterator, Tuple
+from typing import Any, Callable, Iterator, Optional, Tuple
 
 import ddtrace
 import pytest
+import xdist
 
 import layer
 from layer.clients.layer import LayerClient
-from layer.config import ClientConfig, Config, ConfigManager
+from layer.config import DEFAULT_LAYER_PATH, ClientConfig, Config, ConfigManager
+from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
-from layer.projects.project_runner import ProjectRunner
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
@@ -30,6 +32,94 @@ REFERENCE_E2E_PROJECT_PYTEST_CACHE_KEY = "e2e_reference_project_id"
 def pytest_sessionstart(session):
     if os.getenv("CI"):
         ddtrace.patch_all()
+
+    if xdist.is_xdist_worker(session):
+        return
+
+    loop = asyncio.get_event_loop()
+    org_account: Account = loop.run_until_complete(create_organization_account())
+
+    _write_organization_account_to_test_session_config(org_account)
+
+
+def _write_organization_account_to_test_session_config(org_account):
+    with open(_test_session_config_file_path(), "w") as f:
+        f.write(
+            f"""[ORGANIZATION_ACCOUNT]
+id={str(org_account.id)}
+name={org_account.name}
+"""
+        )
+
+    account_to_verify = _read_organization_account_from_test_session_config()
+    assert account_to_verify
+    assert account_to_verify.id == org_account.id
+    assert account_to_verify.name == org_account.name
+
+
+def _read_organization_account_from_test_session_config() -> Optional[Account]:
+    """
+    Returns None if there is no organization account for this session.
+    One reason being that it got deleted already by a fixture cleanup.
+    """
+    config = configparser.ConfigParser()
+    if not config.read(_test_session_config_file_path()):
+        return None
+
+    return Account(
+        id=uuid.UUID(config.get("ORGANIZATION_ACCOUNT", "id")),
+        name=config.get("ORGANIZATION_ACCOUNT", "name"),
+    )
+
+
+def _test_session_config_file_path() -> str:
+    return DEFAULT_LAYER_PATH / "e2e_test_session.ini"
+
+
+async def create_organization_account() -> Account:
+    config = await ConfigManager().refresh()
+    client = LayerClient(config.client, logger)
+    org_account_name, display_name = pseudo_random_account_name()
+    account = client.account.create_organization_account(org_account_name, display_name)
+
+    # We need a new token with permissions for the new org account
+    # TODO LAY-3583 LAY-3652
+    await ConfigManager().refresh(force=True)
+
+    return account
+
+
+def _cleanup_organization_account(client: LayerClient) -> None:
+    account = _read_organization_account_from_test_session_config()
+    if not account:
+        # we assume there is no more account to cleanup
+        return
+    try:
+        client.account.delete_account(account_id=account.id)
+        os.remove(_test_session_config_file_path())
+    except Exception as e:
+        print(f"could not delete account: {e}")
+
+
+@pytest.fixture()
+def initialized_organization_account(client: LayerClient) -> Iterator[Account]:
+    account = _read_organization_account_from_test_session_config()
+    yield account
+    _cleanup_organization_account(client)
+
+
+@pytest.fixture()
+def initialized_organization_project(
+    client: LayerClient,
+    initialized_organization_account: Account,
+    request: Any,
+) -> Iterator[Project]:
+    account_name = initialized_organization_account.name
+    project_name = pseudo_random_project_name(request)
+    project = layer.init(f"{account_name}/{project_name}", fabric=Fabric.F_XSMALL.value)
+
+    yield project
+    _cleanup_project(client, project)
 
 
 @pytest.fixture(autouse=True)
@@ -47,20 +137,16 @@ def pseudo_random_project_name(fixture_request: Any) -> str:
     return f"sdk-e2e-{test_name_parametrized}-{random_suffix}"
 
 
-def pseudo_random_account_name(fixture_request: Any) -> str:
+def pseudo_random_account_name() -> Tuple[str, str]:
     name_max_length = 50
     # We remove all useless characters to have a valid account name helpful in debugging
-    module, test_name = _extract_module_and_test_name(fixture_request)
-    module, test_name = module.replace("test_", ""), test_name.replace("test_", "")
-    module, test_name = truncate(_slugify_name(module), 20), truncate(
-        _slugify_name(test_name), 22
-    )
-    test_name = truncate(_slugify_name(test_name), name_max_length - len(module))
 
-    random_suffix = str(uuid.uuid4()).replace("-", "")
-    full_name_parametrized = f"{module}-{test_name}{random_suffix}"
+    name = f"sdk-e2e-org-"
+    random_suffix = str(uuid.uuid4()).replace("-", "")[: name_max_length - len(name)]
+    name += random_suffix
+    display_name = f"SDK E2E Test Organization Account - {random_suffix}"
 
-    return truncate(full_name_parametrized, name_max_length)
+    return name, display_name
 
 
 def truncate(src: str, max_length: int) -> str:
@@ -136,27 +222,19 @@ def _write_stdout_stderr_to_file(capsys, request) -> Iterator[Any]:
                 f.write(captured.err)
 
 
-# https://github.com/tortoise/tortoise-orm/issues/638#issuecomment-830124562
-# so that async fixtures with session scope can be run
-@pytest.fixture(scope="class")
-def event_loop():
-    return asyncio.get_event_loop()
-
-
-@pytest.fixture(scope="class")
+@pytest.fixture()
 async def config() -> Config:
     return await ConfigManager().refresh()
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 async def client_config(config: Config) -> ClientConfig:
     return config.client
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def client(client_config: ClientConfig) -> Iterator[LayerClient]:
-    with LayerClient(client_config, logger).init() as client:
-        yield client
+    yield LayerClient(client_config, logger)
 
 
 @pytest.fixture()
@@ -165,7 +243,7 @@ def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
     project = layer.init(project_name, fabric=Fabric.F_XSMALL.value)
 
     yield project
-    _cleanup_project(client, project)
+    # _cleanup_project(client, project)
 
 
 def _cleanup_project(client: LayerClient, project: Project):
@@ -173,11 +251,6 @@ def _cleanup_project(client: LayerClient, project: Project):
     if project:
         print(f"project {project.name} exists, will remove")
         client.project_service_client.remove_project(project.id)
-
-
-@pytest.fixture()
-def project_runner(config: Config) -> ProjectRunner:
-    return ProjectRunner(config)
 
 
 @pytest.fixture()

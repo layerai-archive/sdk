@@ -2,64 +2,23 @@ import pandas as pd
 import pytest
 
 import layer
-from layer import Dataset, global_context
+from layer import global_context
 from layer.clients.layer import LayerClient
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
-from layer.decorators import dataset, pip_requirements
+from layer.decorators import dataset
 from layer.exceptions.exceptions import LayerClientException
 from test.e2e.assertion_utils import E2ETestAsserter
+from test.e2e.common_scenarios import (
+    remote_run_with_dependent_datasets_succeeds_and_registers_metadata,
+)
 from test.e2e.conftest import _cleanup_project
 
 
 def test_remote_run_with_dependent_datasets_succeeds_and_registers_metadata(
     initialized_project: Project, asserter: E2ETestAsserter
 ):
-    # given
-    dataset_name = "users"
-    transformed_dataset_name = "tusers"
-
-    @dataset(dataset_name)
-    @pip_requirements(packages=["Faker==13.2.0"])
-    def prepare_data():
-        from faker import Faker
-
-        fake = Faker()
-        pandas_df = pd.DataFrame(
-            [
-                {
-                    "name": fake.name(),
-                    "address": fake.address(),
-                    "email": fake.email(),
-                    "city": fake.city(),
-                    "state": fake.state(),
-                }
-                for _ in range(10)
-            ]
-        )
-        return pandas_df
-
-    @dataset(transformed_dataset_name, dependencies=[Dataset(dataset_name)])
-    def transform_data():
-        df = layer.get_dataset(dataset_name).to_pandas()
-        df = df.drop(["address"], axis=1)
-        return df
-
-    # when
-    run = layer.run([prepare_data, transform_data])
-
-    # then
-    asserter.assert_run_succeeded(run.id)
-
-    first_ds = layer.get_dataset(dataset_name)
-    first_pandas = first_ds.to_pandas()
-    assert len(first_pandas.index) == 10
-    assert len(first_pandas.values[0]) == 5
-
-    ds = layer.get_dataset(transformed_dataset_name)
-    pandas = ds.to_pandas()
-    assert len(pandas.index) == 10
-    assert len(pandas.values[0]) == 4  # only 4 columns in modified dataset
+    remote_run_with_dependent_datasets_succeeds_and_registers_metadata(asserter)
 
 
 def test_multiple_inits_switch_context(
