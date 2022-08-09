@@ -62,7 +62,9 @@ is_finished=True
 
 
 def _cleanup_test_session_config() -> None:
-    os.remove(_test_session_config_file_path())
+    config_path = _test_session_config_file_path()
+    if os.path.exists(config_path):
+        os.remove(config_path)
 
 
 def _is_test_session_finished() -> bool:
@@ -75,7 +77,7 @@ def _is_test_session_finished() -> bool:
     if not config.read(_test_session_config_file_path()):
         return False
 
-    return config.get("STATE", "is_finished") == "True"
+    return config.get("STATE", "is_finished", fallback="False") == "True"
 
 
 def _write_organization_account_to_test_session_config(org_account):
@@ -126,10 +128,27 @@ async def create_organization_account() -> Account:
     return account
 
 
+@pytest.fixture(autouse=True)
+def _test_session_teardown(
+    initialized_organization_account: Account, client: LayerClient
+) -> Iterator:
+    """
+    Invoked on every test teardown.
+
+    Since we parallelize tests, and fixture teardowns happen after pytest_sessionfinish hook, we need
+    this autoUse fixture to clean up the global test session.
+    """
+    yield
+    session_finished = _is_test_session_finished()
+    if not session_finished:
+        return
+    _cleanup_organization_account(client)
+    _cleanup_test_session_config()
+
+
 def _cleanup_organization_account(client: LayerClient) -> None:
     account = _read_organization_account_from_test_session_config()
-    session_finished = _is_test_session_finished()
-    if not session_finished or not account:
+    if not account:
         # we assume there is no more account to cleanup
         return
     try:
@@ -137,16 +156,17 @@ def _cleanup_organization_account(client: LayerClient) -> None:
     except Exception as e:
         print(f"could not delete account: {e}")
 
-    _cleanup_test_session_config()
-
 
 @pytest.fixture()
-def initialized_organization_account(client: LayerClient) -> Iterator[Account]:
+def initialized_organization_account(client: LayerClient) -> Account:
+    """
+    Cleanup is handled by an autoUse fixture which checks the session state.
+    Otherwise, we could cleanup the account too soon.
+    """
     account = _read_organization_account_from_test_session_config()
     assert account
 
-    yield account
-    _cleanup_organization_account(client)
+    return account
 
 
 @pytest.fixture()
@@ -180,9 +200,7 @@ def pseudo_random_project_name(fixture_request: Any) -> str:
 
 def pseudo_random_account_name() -> Tuple[str, str]:
     name_max_length = 50
-    # We remove all useless characters to have a valid account name helpful in debugging
-
-    name_prefix = f"sdk-e2e-org-"
+    name_prefix = "sdk-e2e-org-"
     random_suffix = str(uuid.uuid4()).replace("-", "")[
         : name_max_length - len(name_prefix)
     ]
