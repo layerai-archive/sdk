@@ -179,7 +179,7 @@ class ProjectRunner:
         session: aiohttp.ClientSession,
     ) -> None:
         with open(function.executable_path, "rb") as package_file:
-            presigned_url = client.executor_service_client.get_upload_path(
+            presigned_url = client.executor_service_client.get_function_upload_path(
                 project_full_name=self.project_full_name,
                 function_name=function.func.__name__,
             )
