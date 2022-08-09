@@ -140,9 +140,11 @@ jobs:
           restore-keys: poetry-venvs-${{ runner.os }}-3.8-
       - name: Check lockfile
         run: |
-          make install
+          pip install yq
+          old_hash=$(cat poetry.lock | tomlq '.metadata["content-hash"]' --raw-output)
           poetry lock --no-update
-          [ -z "$(git status --porcelain=v1 2>/dev/null)" ] || (git diff && echo "Lock file is not up to date, please run 'poetry lock --no-update'" && exit 1)
+          new_hash=$(cat poetry.lock | tomlq '.metadata["content-hash"]' --raw-output)
+          [[ "$old_hash" == "$new_hash" ]] || ( git diff && echo "Lock file is not up to date, please run 'poetry cache clear --all pypi' then 'poetry lock --no-update'" && exit 1)
       - name: Compute package dependencies
         id: deps
         run: |
