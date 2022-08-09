@@ -3,7 +3,7 @@ import uuid
 from logging import Logger
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union, List
 from uuid import UUID
 
 import pandas as pd
@@ -44,6 +44,7 @@ class LogDataRunner:
                 float,
                 bool,
                 int,
+                List,
                 Dict[str, Any],
                 pd.DataFrame,
                 "PIL.Image.Image",
@@ -62,6 +63,8 @@ class LogDataRunner:
         for tag, value in data.items():
             if isinstance(value, str):
                 self._log_text(tag=tag, text=value)
+            elif isinstance(value, list):
+                self._log_text(tag=tag, text=str(value))
             # boolean check must be done before numeric check as it also returns true for booleans.
             elif isinstance(value, bool):
                 self._log_boolean(tag=tag, bool_val=value)

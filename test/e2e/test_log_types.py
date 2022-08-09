@@ -21,12 +21,13 @@ def test_scalar_values_logged(
     int_tag = "int_tag"
     bool_tag = "bool_tag"
     float_tag = "float_tag"
+    list_tag = "list_tag"
 
     @dataset(dataset_name)
     def scalar():
         data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
         dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
-        layer.log({str_tag: "bar", int_tag: 123, bool_tag: True, float_tag: 1.11})
+        layer.log({str_tag: "bar", int_tag: 123, bool_tag: True, float_tag: 1.11, list_tag: ["a", "b", "c"]})
         return dataframe
 
     # when
@@ -66,6 +67,13 @@ def test_scalar_values_logged(
     assert logged_data.data == "1.11"
     assert logged_data.logged_data_type == LoggedDataType.NUMBER
     assert logged_data.tag == float_tag
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=list_tag, dataset_build_id=first_ds.build.id
+    )
+    assert logged_data.data == "['a', 'b', 'c']"
+    assert logged_data.logged_data_type == LoggedDataType.TEXT
+    assert logged_data.tag == list_tag
 
 
 def test_pandas_dataframe_logged(initialized_project: Project, client: LayerClient):
