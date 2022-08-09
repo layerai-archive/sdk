@@ -731,7 +731,7 @@ def log(
             float,
             bool,
             int,
-            List,
+            List[Any],
             Dict[str, Any],
             "pandas.DataFrame",
             "PIL.Image.Image",

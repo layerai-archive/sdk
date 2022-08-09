@@ -44,7 +44,7 @@ class LogDataRunner:
                 float,
                 bool,
                 int,
-                List,
+                List[Any],
                 Dict[str, Any],
                 pd.DataFrame,
                 "PIL.Image.Image",
