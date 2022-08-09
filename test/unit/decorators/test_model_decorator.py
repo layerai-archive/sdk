@@ -57,7 +57,7 @@ class TestModelDecorator:
         ) as mock_create_model:
             func()
 
-            mock_create_model.assert_called_with(ANY, ANY, ANY)
+            mock_create_model.assert_called_with(ANY, ANY, ANY, ANY, ANY)
             args = mock_create_model.call_args
             model_definition: FunctionDefinition = args[0][0]
 

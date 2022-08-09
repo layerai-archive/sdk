@@ -12,7 +12,7 @@ def test_conda_decorator_assigns_environment_to_function_before_calling_function
     def create_my_dataset():
         return pd.DataFrame()
 
-    conda_env = create_my_dataset.layer.conda_env
+    conda_env = create_my_dataset.layer.conda_environment
     assert conda_env
     assert conda_env.environment == {"name": "test", "dependencies": ["tensorflow"]}
 
@@ -25,7 +25,7 @@ def test_conda_decorator_assigns_files_to_function_before_calling_function():
     def create_my_dataset():
         return pd.DataFrame()
 
-    conda_env = create_my_dataset.layer.conda_env
+    conda_env = create_my_dataset.layer.conda_environment
     assert conda_env
     assert conda_env.environment == {
         "name": "stats2",

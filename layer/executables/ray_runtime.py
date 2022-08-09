@@ -66,7 +66,6 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
                     pip_dict["pip"].append("layer")
                 else:
                     pip_dict["pip"] = ["layer"]
-            environment["dependencies"] = "layer"
             runtime_env["conda"] = environment
         else:
             runtime_env["pip"] = ["layer", *[p for p in package_info.pip_dependencies]]
@@ -75,7 +74,6 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
             package_info.metadata["function"]["fabric"]["name"]
         )
         print(f"Connecting to the Ray instance at {self._address}")
-
         self._client = ray.init(
             address=self._address,
             runtime_env=runtime_env,

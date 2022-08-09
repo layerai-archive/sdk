@@ -148,6 +148,7 @@ class ModelTrainer:
                 project_full_name=project_full_name,
                 version=self.train_context.model_version,
                 train_id=self.train_context.train_id,
+                train_index=self.train_context.train_index,
             ) as train:
                 context.with_train(train)
                 context.with_tracker(self.tracker)

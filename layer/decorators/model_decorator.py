@@ -127,7 +127,7 @@ def _model_wrapper(
                 with progress_tracker.track() as tracker:
                     tracker.add_asset(AssetType.MODEL, self.layer.get_asset_name())
                     return self._train_model_locally_and_store_remotely(
-                        model_definition, tracker, client
+                        model_definition, tracker, client, args, kwargs
                     )
 
         @staticmethod
@@ -135,6 +135,8 @@ def _model_wrapper(
             model: FunctionDefinition,
             tracker: RunProgressTracker,
             client: LayerClient,
+            args: Any,
+            kwargs: Any,
         ) -> Any:
             from layer.training.runtime.model_trainer import (
                 LocalTrainContext,
@@ -178,6 +180,8 @@ def _model_wrapper(
                 logger=logger,
                 failure_reporter=failure_reporter,
                 tracker=tracker,
+                args=args,
+                kwargs=kwargs,
             )
             result = trainer.train()
             return result

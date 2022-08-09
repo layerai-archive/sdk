@@ -15,8 +15,8 @@ keywords = [
     "ML Model Store",
     "ML Metadata Store",
 ]
+# As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
 classifiers = [
-    # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
@@ -67,11 +67,11 @@ rich = ">=11"
 transformers = "*"
 yarl  = ">=1.6.3"
 wrapt  = ">=1.13.3"
-layer-api = "0.9.376416"
+layer-api = "0.9.376781"
 numpy = { version = "<1.22", python = "~3.7" } # 1.22 doesn't support python 3.7, this is a transitive dependency comming from various other packages
 requests = ">=2.23.0"
 nvsmi = "^0.4.2"
-psutil = "^5.9.1"
+psutil = ">=5.4.8" # Google Colab comes with 5.4.8 by default. If it gets upgraded an error message is shown saying the runtime needs to be restarted.
 
 [tool.poetry.dev-dependencies]
 # h5py is a tensorflow transitive dependency and we limit it because of conda-miniforge
