@@ -42,10 +42,47 @@ def pytest_sessionstart(session):
     _write_organization_account_to_test_session_config(org_account)
 
 
+def pytest_sessionfinish(session):
+    """
+    WARNING This hook runs BEFORE fixture teardown.
+
+    We use it to set a flag across processes that the global session has finished,
+    so we can safely cleanup shared setup. Otherwise this shared setup can be deleted
+    while some tests have not started yet due to parallelism.
+    """
+    if xdist.is_xdist_worker(session):
+        return
+
+    with open(_test_session_config_file_path(), "a") as f:
+        f.write(
+            """[STATE]
+is_finished=True
+"""
+        )
+
+
+def _cleanup_test_session_config() -> None:
+    os.remove(_test_session_config_file_path())
+
+
+def _is_test_session_finished() -> bool:
+    """
+    Since we parallelize tests via xdist and fixture tear downs run after
+    pytest_sessionfinish hook, we need this inter process communication via
+    file
+    """
+    config = configparser.ConfigParser()
+    if not config.read(_test_session_config_file_path()):
+        return False
+
+    return config.get("STATE", "is_finished") == "True"
+
+
 def _write_organization_account_to_test_session_config(org_account):
     with open(_test_session_config_file_path(), "w") as f:
         f.write(
-            f"""[ORGANIZATION_ACCOUNT]
+            f"""
+[ORGANIZATION_ACCOUNT]
 id={str(org_account.id)}
 name={org_account.name}
 """
@@ -91,19 +128,23 @@ async def create_organization_account() -> Account:
 
 def _cleanup_organization_account(client: LayerClient) -> None:
     account = _read_organization_account_from_test_session_config()
-    if not account:
+    session_finished = _is_test_session_finished()
+    if not session_finished or not account:
         # we assume there is no more account to cleanup
         return
     try:
         client.account.delete_account(account_id=account.id)
-        os.remove(_test_session_config_file_path())
     except Exception as e:
         print(f"could not delete account: {e}")
+
+    _cleanup_test_session_config()
 
 
 @pytest.fixture()
 def initialized_organization_account(client: LayerClient) -> Iterator[Account]:
     account = _read_organization_account_from_test_session_config()
+    assert account
+
     yield account
     _cleanup_organization_account(client)
 
@@ -141,9 +182,11 @@ def pseudo_random_account_name() -> Tuple[str, str]:
     name_max_length = 50
     # We remove all useless characters to have a valid account name helpful in debugging
 
-    name = f"sdk-e2e-org-"
-    random_suffix = str(uuid.uuid4()).replace("-", "")[: name_max_length - len(name)]
-    name += random_suffix
+    name_prefix = f"sdk-e2e-org-"
+    random_suffix = str(uuid.uuid4()).replace("-", "")[
+        : name_max_length - len(name_prefix)
+    ]
+    name = f"{name_prefix}{random_suffix}"
     display_name = f"SDK E2E Test Organization Account - {random_suffix}"
 
     return name, display_name
