@@ -92,6 +92,8 @@ class ModelTrainer:
     logger: Logger
     failure_reporter: ModelTrainFailureReporter
     tracker: RunProgressTracker
+    args: Any = None
+    kwargs: Any = None
 
     def train(self) -> Any:
         self.tracker.mark_model_training(
@@ -182,7 +184,9 @@ class ModelTrainer:
                     train_model_func.__name__,
                     target_dir=str(work_dir),
                 )
-                model = train_model_func()
+                args = self.args or []
+                kwargs = self.kwargs or {}
+                model = train_model_func(*args, **kwargs)
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
                 )
