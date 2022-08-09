@@ -69,6 +69,7 @@ class _TestAuthHandler:
                 "code": self._code,
                 "client_id": self._client_id,
                 "redirect_uri": mock.ANY,
+                "audience": mock.ANY,
             }
             resp_payload = {
                 "access_token": self._access_token,
@@ -80,6 +81,7 @@ class _TestAuthHandler:
                 "grant_type": "refresh_token",
                 "refresh_token": self._refresh_token,
                 "client_id": self._client_id,
+                "audience": mock.ANY,
             }
             resp_payload = {
                 "access_token": self._access_token_refreshed,
