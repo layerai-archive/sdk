@@ -191,6 +191,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     pytorch_tensor_video_tag = "pytorch_tensor_video_tag"
 
     @dataset(ds_name)
+    @pip_requirements(packages=["moviepy==0.2.3.5"])
     def multimedia():
         import os
         from pathlib import Path
@@ -211,7 +212,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
 
         return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
 
-    multimedia()
+    layer.run([multimedia])
 
     ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
 
