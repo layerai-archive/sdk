@@ -132,6 +132,7 @@ class TestCredentialsClient:
                 client=client,
                 url=auth_config.token_url,
                 client_id=auth_config.client_id,
+                audience=auth_config.audience,
             )
             creds = await creds_client.request(code)
             assert creds.access_token == "test_access_token"
@@ -148,6 +149,7 @@ class TestCredentialsClient:
                 client=client,
                 url=auth_config.token_url,
                 client_id=auth_config.client_id,
+                audience=auth_config.audience,
             )
             new_creds = await creds_client.refresh(creds)
             assert new_creds.access_token == "test_access_token_refreshed"
@@ -165,6 +167,7 @@ class TestCredentialsClient:
                 client=client,
                 url=auth_config.token_url,
                 client_id=auth_config.client_id,
+                audience=auth_config.audience,
             )
             with pytest.raises(AuthException, match="failed to get an access token."):
                 await creds_client.request(code)

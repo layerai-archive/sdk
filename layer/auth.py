@@ -221,11 +221,14 @@ class HeadlessCodeClient(CodeClient):
 
 
 class CredentialsClient:
-    def __init__(self, *, client: "ClientSession", url: URL, client_id: str) -> None:
+    def __init__(
+        self, *, client: "ClientSession", url: URL, client_id: str, audience: str
+    ) -> None:
         self._client = client
 
         self._url = url
         self._client_id = client_id
+        self._audience = audience
 
     async def request(self, code: Code) -> Credentials:
         from aiohttp import ClientResponseError
@@ -236,6 +239,7 @@ class CredentialsClient:
             "code": code.value,
             "client_id": self._client_id,
             "redirect_uri": str(code.callback_url),
+            "audience": self._audience,
         }
         async with self._client.post(
             self._url,
@@ -262,6 +266,7 @@ class CredentialsClient:
             "grant_type": "refresh_token",
             "refresh_token": creds.refresh_token,
             "client_id": self._client_id,
+            "audience": self._audience,
         }
         async with self._client.post(
             self._url,
