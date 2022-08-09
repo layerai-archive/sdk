@@ -17,8 +17,8 @@ ipython.magic("autoreload 2")
 endef
 export autoreloadpy
 
-install: $(INSTALL_STAMP) ## Install dependencies
-$(INSTALL_STAMP): pyproject.toml poetry.lock .python-version prereq-$(UNAME_SYS) check-poetry
+install: $(INSTALL_STAMP) check-poetry ## Install dependencies
+$(INSTALL_STAMP): pyproject.toml poetry.lock $(PREREQ_STAMP)
 ifdef IN_VENV
 	$(POETRY) install
 else
@@ -26,32 +26,7 @@ else
 endif
 	@poetry run ipython profile create --ipython-dir=build/ipython
 	@echo "$$autoreloadpy" > build/ipython/profile_default/startup/00-autoreload.py
-	touch $(INSTALL_STAMP)
-
-.PHONY: prereq-Linux
-prereq-Linux:
-
-.PHONY: prereq-Darwin
-prereq-Darwin:
-ifeq ($(UNAME_ARCH), arm64)
-ifdef CONDA_ENV_NAME
-ifeq ($(CONDA_ENV_NAME), base)
-	@echo 'Please create a conda environment and make it active'
-	@exit 1
-else
-	echo "installing conda deps"
-	@conda install -y $(call get_python_package_version,tokenizers) \
-                         $(call get_python_package_version,xgboost) \
-                         $(call get_python_package_version,lightgbm) \
-                         $(call get_python_package_version,h5py) \
-                         $(call get_python_package_version,pyarrow)
-endif
-else
-	@echo 'Not inside a conda environment or conda not installed, this is a requirement for Apple arm processors'
-	@echo 'See https://github.com/conda-forge/miniforge/'
-	@exit 1
-endif
-endif
+	@touch $(INSTALL_STAMP)
 
 .PHONY: test
 test: $(INSTALL_STAMP) ## Run unit tests
