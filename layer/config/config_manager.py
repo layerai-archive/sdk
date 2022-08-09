@@ -62,6 +62,7 @@ class ConfigManager:
                 client=client,
                 url=config.auth.token_url,
                 client_id=config.auth.client_id,
+                audience=config.auth.audience,
             )
             creds = await creds_client.refresh(config.credentials)
 
@@ -89,6 +90,7 @@ class ConfigManager:
                 client=client,
                 url=config.auth.token_url,
                 client_id=config.auth.client_id,
+                audience=config.auth.audience,
             )
             creds = await creds_client.request(code)
 
