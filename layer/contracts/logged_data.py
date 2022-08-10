@@ -165,9 +165,9 @@ class Video:
         except TypeError:
             try:  # even older versions of moviepy do not support progress_bar argument
                 kwargs = {"verbose": False, "progress_bar": False}
-                clip.write_videofile(
+                clip.write_videofile(  # type:ignore # pylint: disable=E1123;
                     filename, **kwargs
-                )  # type:ignore # pylint: disable=E1123;
+                )
             except TypeError:
                 kwargs = {
                     "verbose": False,
