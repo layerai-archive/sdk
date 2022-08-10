@@ -199,6 +199,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
         layer.log({video_path_tag: video_path})
 
         import torchvision
+
         tensor_video = torchvision.io.read_video(str(video_path))
         tensor_video = tensor_video[0].permute(0, 3, 1, 2)
 
