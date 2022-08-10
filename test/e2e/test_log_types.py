@@ -197,9 +197,6 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
         video_path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_video.mp4")
         layer.log({video_path_tag: video_path})
 
-        # import torchvision
-        # tensor_video = torchvision.io.read_video(str(video_path))
-        # tensor_video = tensor_video[0].permute(0, 3, 1, 2)
         import torch
 
         tensor_video = torch.rand(10, 3, 100, 200)
@@ -230,6 +227,13 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     )
     assert logged_data.data.startswith("https://logged-data--layer")
     assert logged_data.data.endswith(video_path_tag)
+    assert logged_data.logged_data_type == LoggedDataType.VIDEO
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=pytorch_tensor_video_tag, dataset_build_id=ds.build.id
+    )
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(pytorch_tensor_video_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
 
     @pip_requirements(packages=["scikit-learn==0.23.2"])
