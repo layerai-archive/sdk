@@ -96,7 +96,6 @@ clean: ## Resets development environment.
 	@find . -depth -type d -name '*.egg-info' -not -path "*build/$(PROJECT_NAME)/*" -delete
 	@rm -rf dist/
 	@rm -f $(INSTALL_STAMP)
-	@rm -f $(COLAB_IMAGE_BUILD_STAMP)
 	@find . -type f -name '*.pyc' -not -path "*build/$(PROJECT_NAME)/*" -delete
 	@find . -type d -name "__pycache__" -not -path "*build/$(PROJECT_NAME)/*" | xargs rm -rf {};
 	@rm -rf $(OUTPUTS_DIR)
