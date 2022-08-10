@@ -79,7 +79,7 @@
 from dataclasses import dataclass
 from enum import Enum, unique
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
 
@@ -156,15 +156,21 @@ class Video:
         clip = mpy.ImageSequenceClip(list(tensor), fps=fps)
 
         filename = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
-        try:  # newer version of moviepy use logger instead of progress_bar argument.
-            clip.write_videofile(filename, verbose=False, logger=None, fps=fps)
+        if TYPE_CHECKING:
+            kwargs: Dict[str, Optional[bool]] = {}
+
+        try:  # older versions of moviepy do not support logger argument
+            kwargs = {"logger": None}
+            clip.write_videofile(filename, **kwargs)
         except TypeError:
-            try:  # older version of moviepy does not support progress_bar argument.
-                clip.write_videofile(
-                    filename, verbose=False, progress_bar=False, fps=fps
-                )
+            try:  # even older versions of moviepy do not support progress_bar argument
+                kwargs = {"verbose": False, "progress_bar": False}
+                clip.write_videofile(filename, **kwargs)
             except TypeError:
-                clip.write_videofile(filename, verbose=False, fps=fps)
+                kwargs = {
+                    "verbose": False,
+                }
+                clip.write_videofile(filename, **kwargs)
 
         return Path(filename)
 
