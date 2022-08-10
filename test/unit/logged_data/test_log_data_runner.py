@@ -371,9 +371,15 @@ def test_given_runner_when_log_hwc_torch_tensor_image_then_calls_log_binary(
 
     import torch
 
-    image = torch.rand((480, 640, 3))
+    img_width = 480
+    img_height = 640
+    image_tensor = torch.rand((img_height, img_width, 3))
     tag = "nparray-image-tag"
-    image = layer.Image(image, format="HWC")
+    image = layer.Image(image_tensor, format="HWC")
+    image_object = image.get_image()
+    assert isinstance(image_object, PIL.Image.Image)
+    assert image_object.width == img_width
+    assert image_object.height == img_height
 
     # when
     runner.log({tag: image})
