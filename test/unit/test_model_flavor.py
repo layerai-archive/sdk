@@ -212,36 +212,36 @@ class TestModelFlavors:
         loaded_model = pt_flavor.load_model_from_directory(tmp_path).model_object
         assert isinstance(loaded_model, torch.nn.Module)
 
-    def test_yolo_save_load(self, tmp_path):
-        import torch
-        from yolov5.models.yolo import AutoShape
-
-        # Load a YOLO model with random weights from torch hub
-        model_def = "yolov5s.yaml"
-        model = AutoShape(torch.nn.Sequential())
-
-        # Save model
-        pt_flavor = PyTorchModelFlavor()
-        pt_flavor.save_model_to_directory(model, tmp_path)
-
-        # Check if we have the necessary files to load the model
-        p = Path(str(tmp_path)).rglob("*.*")
-        files = [x.name for x in p if x.is_file()]
-        assert model_def in files
-
-        # Unload the `models` module (installed with torch.hub.load above) to make sure Layer can load the module
-        # without YOLO installation
-        import sys
-
-        if "models" in sys.modules:
-            del sys.modules["models"]
-            del sys.modules["utils"]
-        if "yolov5" in sys.modules:
-            del sys.modules["yolov5"]
-
-        # Load and check the type of the model
-        model = pt_flavor.load_model_from_directory(tmp_path).model_object
-        assert model.__class__.__name__ == "AutoShape"
+    # def test_yolo_save_load(self, tmp_path):
+    #     import torch
+    #     from yolov5.models.yolo import AutoShape
+    #
+    #     # Load a YOLO model with random weights from torch hub
+    #     model_def = "yolov5s.yaml"
+    #     model = AutoShape(torch.nn.Sequential())
+    #
+    #     # Save model
+    #     pt_flavor = PyTorchModelFlavor()
+    #     pt_flavor.save_model_to_directory(model, tmp_path)
+    #
+    #     # Check if we have the necessary files to load the model
+    #     p = Path(str(tmp_path)).rglob("*.*")
+    #     files = [x.name for x in p if x.is_file()]
+    #     assert model_def in files
+    #
+    #     # Unload the `models` module (installed with torch.hub.load above) to make sure Layer can load the module
+    #     # without YOLO installation
+    #     import sys
+    #
+    #     if "models" in sys.modules:
+    #         del sys.modules["models"]
+    #         del sys.modules["utils"]
+    #     if "yolov5" in sys.modules:
+    #         del sys.modules["yolov5"]
+    #
+    #     # Load and check the type of the model
+    #     model = pt_flavor.load_model_from_directory(tmp_path).model_object
+    #     assert model.__class__.__name__ == "AutoShape"
 
     def test_custom_flavor(self, tmp_path):
         from .common.dummy_model import DummyModel
