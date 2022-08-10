@@ -5,7 +5,7 @@ from sklearn.svm import SVC
 
 import layer
 from layer.clients.layer import LayerClient
-from layer.contracts.logged_data import LoggedDataType
+from layer.contracts.logged_data import LoggedDataType, Video
 from layer.contracts.projects import Project
 from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
@@ -179,10 +179,9 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     image_path_tag = "image_path_tag"
     video_path_tag = "video_path_tag"
     stepped_pil_image_tab = "stepped_pil_image_tag"
-    # pytorch_tensor_video_tag = "pytorch_tensor_video_tag"
+    pytorch_tensor_video_tag = "pytorch_tensor_video_tag"
 
     @dataset(ds_name)
-    # @pip_requirements(packages=["moviepy==0.2.3.5"])
     def multimedia():
         import os
         from pathlib import Path
@@ -198,15 +197,15 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
         video_path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_video.mp4")
         layer.log({video_path_tag: video_path})
 
-        # Disabled until backend updated
-        # import torchvision
-        # tensor_video = torchvision.io.read_video(str(video_path))
-        # tensor_video = tensor_video[0].permute(0, 3, 1, 2)
-        # layer.log({pytorch_tensor_video_tag: Video(tensor_video)})
+        import torchvision
+
+        tensor_video = torchvision.io.read_video(str(video_path))
+        tensor_video = tensor_video[0].permute(0, 3, 1, 2)
+        layer.log({pytorch_tensor_video_tag: Video(tensor_video)})
 
         return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
 
-    layer.run([multimedia])
+    multimedia()
 
     ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
 
