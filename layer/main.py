@@ -124,15 +124,6 @@ def login_with_access_token(
     _refresh_and_login_if_needed(url, _login)
 
 
-# TODO LAY-3583 LAY-3652
-def refresh_login(force: bool) -> None:
-    async def _refresh() -> None:
-        manager = ConfigManager(DEFAULT_PATH)
-        await manager.refresh(force=force)
-
-    asyncio_run_in_thread(_refresh())
-
-
 def _refresh_and_login_if_needed(
     url: Union[URL, str], login_func: Callable[[ConfigManager, URL], Awaitable[None]]
 ) -> None:

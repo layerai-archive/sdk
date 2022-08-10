@@ -56,7 +56,7 @@ def _track_session_counts_and_cleanup() -> Iterator:
     """
     This will run for every pytest session.
     Since we optionally use xdist to parallelize test runs,
-    we need extra logic tp do track parallel pytest sessions and do teardown once there are no more.
+    we need extra logic to track parallel pytest sessions and do teardown once there are no more.
     """
     _increment_session_count()
     yield
@@ -160,13 +160,14 @@ def _cleanup_organization_account() -> None:
     async def refresh() -> Config:
         return await ConfigManager().refresh()
 
-    loop = asyncio.get_event_loop()
-    config = loop.run_until_complete(refresh())
-    client = LayerClient(config.client, logger)
     account = _read_organization_account_from_test_session_config()
     if not account:
         # we assume there is no more account to cleanup
         return
+
+    loop = asyncio.get_event_loop()
+    config = loop.run_until_complete(refresh())
+    client = LayerClient(config.client, logger)
     try:
         client.account.delete_account(account_id=account.id)
     except LayerClientResourceNotFoundException as e:
