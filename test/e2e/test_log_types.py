@@ -5,7 +5,7 @@ from sklearn.svm import SVC
 
 import layer
 from layer.clients.layer import LayerClient
-from layer.contracts.logged_data import LoggedDataType, Video
+from layer.contracts.logged_data import LoggedDataType
 from layer.contracts.projects import Project
 from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
@@ -179,7 +179,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     image_path_tag = "image_path_tag"
     video_path_tag = "video_path_tag"
     stepped_pil_image_tab = "stepped_pil_image_tag"
-    pytorch_tensor_video_tag = "pytorch_tensor_video_tag"
+    # pytorch_tensor_video_tag = "pytorch_tensor_video_tag"
 
     @dataset(ds_name)
     @pip_requirements(packages=["moviepy==0.2.3.5"])
