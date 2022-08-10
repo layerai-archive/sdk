@@ -731,6 +731,7 @@ def log(
             float,
             bool,
             int,
+            List[Any],
             Dict[str, Any],
             "pandas.DataFrame",
             "PIL.Image.Image",
@@ -763,7 +764,8 @@ def log(
     ``str``,
     ``float``,
     ``bool``,
-    ``int``
+    ``int``,
+    ``list`` (converted into a string)
 
     **Markdown**
 

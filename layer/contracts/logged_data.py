@@ -286,12 +286,13 @@ class Image:
                 from torchvision import transforms  # type: ignore
 
                 assert isinstance(self.img, torch.Tensor)
+                img_tensors = self.img.clone()
 
                 # Torchvision expects torch tensor image in CHW format, here we transpose the HWC array to match it
                 if self.format == "HWC":
-                    self.img = torch.transpose(self.img, 2, 0)
+                    img_tensors = img_tensors.permute(2, 0, 1)
 
-                return transforms.ToPILImage()(self.img)
+                return transforms.ToPILImage()(img_tensors)
             except ImportError:
                 raise Exception(
                     "You need torch & torchvision installed to log torch.Tensor images. Install with: `pip install torch torchvision`"
