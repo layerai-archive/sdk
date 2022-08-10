@@ -1,34 +1,209 @@
+import asyncio
+import configparser
 import logging
 import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, Optional, Tuple
 
 import ddtrace
 import pytest
+import xdist
+from filelock import FileLock
 
 import layer
 from layer.clients.layer import LayerClient
-from layer.config import ClientConfig, Config, ConfigManager
+from layer.config import DEFAULT_LAYER_PATH, ClientConfig, Config, ConfigManager
+from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
-from layer.projects.project_runner import ProjectRunner
+from layer.exceptions.exceptions import LayerClientResourceNotFoundException
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
 logger = logging.getLogger(__name__)
 
-TEST_ASSETS_PATH = Path(__file__).parent / "assets"
-TEST_TEMPLATES_PATH = TEST_ASSETS_PATH / "templates"
-
-REFERENCE_E2E_PROJECT_NAME = "e2e-reference-project-titanic"
-REFERENCE_E2E_PROJECT_PYTEST_CACHE_KEY = "e2e_reference_project_id"
+TEST_SESSION_CONFIG_TMP_PATH = DEFAULT_LAYER_PATH / "e2e_test_session.ini"
 
 
 def pytest_sessionstart(session):
+    """
+    We use this hook to create a single new organization account to be used in all
+    organization e2e tests.
+
+    We clean it up (teardown) using `_track_session_counts_and_cleanup` fixture.
+    """
     if os.getenv("CI"):
         ddtrace.patch_all()
+
+    if xdist.is_xdist_worker(session):
+        return
+
+    org_account = _read_organization_account_from_test_session_config()
+    if org_account:
+        # This is unexpected, so we cleanup and raise an exception in order to address the underlying issue
+        _cleanup_organization_account()
+        raise Exception(
+            f"pytest_sessionstart test session config already setup with account {org_account.name} {org_account.id}"
+        )
+    loop = asyncio.get_event_loop()
+    org_account: Account = loop.run_until_complete(create_organization_account())
+
+    _write_organization_account_to_test_session_config(org_account)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _track_session_counts_and_cleanup() -> Iterator:
+    """
+    This will run for every pytest session.
+    Since we optionally use xdist to parallelize test runs,
+    we need extra logic to track parallel pytest sessions and do teardown once there are no more.
+    """
+    _increment_session_count()
+    yield
+    open_sessions = _decrement_session_count()
+    if open_sessions < 1:
+        _cleanup_organization_account()
+        _cleanup_test_session_config()
+        if open_sessions < 0:
+            raise Exception(
+                f"unexpected negative number of open sessions {open_sessions}"
+            )
+
+
+def _cleanup_test_session_config() -> None:
+    config_path = TEST_SESSION_CONFIG_TMP_PATH
+    if os.path.exists(config_path):
+        os.remove(config_path)
+
+
+def _increment_session_count() -> int:
+    with FileLock(str(TEST_SESSION_CONFIG_TMP_PATH) + ".lock"):
+        config = configparser.ConfigParser()
+        config.read(TEST_SESSION_CONFIG_TMP_PATH)
+        current_counter = 0
+        if "PYTEST_SESSIONS" in config.sections():
+            current_counter = int(config.get("PYTEST_SESSIONS", "count", fallback=0))
+        else:
+            config["PYTEST_SESSIONS"] = {}
+        current_counter += 1
+        config["PYTEST_SESSIONS"]["count"] = str(current_counter)
+
+        with open(TEST_SESSION_CONFIG_TMP_PATH, "w") as configfile:
+            config.write(configfile)
+
+        return current_counter
+
+
+def _decrement_session_count() -> int:
+    """
+    Expects to be called after at least one increment
+    """
+    with FileLock(str(TEST_SESSION_CONFIG_TMP_PATH) + ".lock"):
+        config = configparser.ConfigParser()
+        config.read(TEST_SESSION_CONFIG_TMP_PATH)
+        current_counter = int(config.get("PYTEST_SESSIONS", "count"))
+        current_counter -= 1
+        config["PYTEST_SESSIONS"]["count"] = str(current_counter)
+
+        with open(TEST_SESSION_CONFIG_TMP_PATH, "w") as configfile:
+            config.write(configfile)
+
+    return current_counter
+
+
+def _write_organization_account_to_test_session_config(org_account):
+    with FileLock(str(TEST_SESSION_CONFIG_TMP_PATH) + ".lock"):
+        with open(TEST_SESSION_CONFIG_TMP_PATH, "a") as f:
+            f.write(
+                f"""
+    [ORGANIZATION_ACCOUNT]
+    id={str(org_account.id)}
+    name={org_account.name}
+    """
+            )
+
+    account_to_verify = _read_organization_account_from_test_session_config()
+    assert account_to_verify
+    assert account_to_verify.id == org_account.id
+    assert account_to_verify.name == org_account.name
+
+
+def _read_organization_account_from_test_session_config() -> Optional[Account]:
+    """
+    Returns None if there is no organization account for this session.
+    One reason being that it got deleted already by a fixture teardown.
+    """
+    with FileLock(str(TEST_SESSION_CONFIG_TMP_PATH) + ".lock"):
+        config = configparser.ConfigParser()
+        if (
+            not config.read(TEST_SESSION_CONFIG_TMP_PATH)
+            or "ORGANIZATION_ACCOUNT" not in config.sections()
+        ):
+            return None
+
+        return Account(
+            id=uuid.UUID(config.get("ORGANIZATION_ACCOUNT", "id")),
+            name=config.get("ORGANIZATION_ACCOUNT", "name"),
+        )
+
+
+async def create_organization_account() -> Account:
+    config = await ConfigManager().refresh()
+    client = LayerClient(config.client, logger)
+    org_account_name, display_name = pseudo_random_account_name()
+    account = client.account.create_organization_account(org_account_name, display_name)
+
+    # We need a new token with permissions for the new org account
+    # TODO LAY-3583 LAY-3652
+    await ConfigManager().refresh(force=True)
+
+    return account
+
+
+def _cleanup_organization_account() -> None:
+    async def refresh() -> Config:
+        return await ConfigManager().refresh()
+
+    account = _read_organization_account_from_test_session_config()
+    if not account:
+        # we assume there is no more account to cleanup
+        return
+
+    loop = asyncio.get_event_loop()
+    config = loop.run_until_complete(refresh())
+    client = LayerClient(config.client, logger)
+    try:
+        client.account.delete_account(account_id=account.id)
+    except LayerClientResourceNotFoundException as e:
+        print(f"account already deleted: {e}")
+
+
+@pytest.fixture()
+def initialized_organization_account(client: LayerClient) -> Account:
+    """
+    This fixture injects the account created by the test session set up.
+    Cleanup is handled by the session teardown.
+    """
+    account = _read_organization_account_from_test_session_config()
+    assert account
+
+    return account
+
+
+@pytest.fixture()
+def initialized_organization_project(
+    client: LayerClient,
+    initialized_organization_account: Account,
+    request: Any,
+) -> Iterator[Project]:
+    account_name = initialized_organization_account.name
+    project_name = pseudo_random_project_name(request)
+    project = layer.init(f"{account_name}/{project_name}", fabric=Fabric.F_XSMALL.value)
+
+    yield project
+    _cleanup_project(client, project)
 
 
 @pytest.fixture(autouse=True)
@@ -37,17 +212,46 @@ def _default_function_path(tmp_path, monkeypatch) -> None:
 
 
 def pseudo_random_project_name(fixture_request: Any) -> str:
-    test_name_parametrized: str
-    if fixture_request.cls is not None:
-        test_name_parametrized = f"{fixture_request.cls.__module__}-{fixture_request.cls.__name__}-{fixture_request.node.name}"
-    else:
-        test_name_parametrized = (
-            f"{fixture_request.module.__name__}-{fixture_request.node.name}"
-        )
-    test_name_parametrized = test_name_parametrized.replace("[", "-").replace("]", "")
-    test_name_parametrized = _cut_off_prefixing_dirs(test_name_parametrized)
+    module, test_name = _extract_module_and_test_name(fixture_request)
+    module, test_name = _slugify_name(module), _slugify_name(test_name)
+    test_name_parametrized = f"{module}-{test_name}"
 
-    return f"sdk-e2e-{test_name_parametrized}-{str(uuid.uuid4())[:8]}"
+    random_suffix = str(uuid.uuid4())[:8]
+
+    return f"sdk-e2e-{test_name_parametrized}-{random_suffix}"
+
+
+def pseudo_random_account_name() -> Tuple[str, str]:
+    name_max_length = 50
+    name_prefix = "sdk-e2e-org-"
+    random_suffix = str(uuid.uuid4()).replace("-", "")[
+        : name_max_length - len(name_prefix)
+    ]
+    name = f"{name_prefix}{random_suffix}"
+    display_name = f"SDK E2E Test Organization Account - {random_suffix}"
+
+    return name, display_name
+
+
+def truncate(src: str, max_length: int) -> str:
+    if max_length > len(src):
+        return src
+
+    return src[:max_length]
+
+
+def _extract_module_and_test_name(fixture_request: Any) -> Tuple[str, str]:
+    if fixture_request.cls is not None:
+        return (
+            f"{fixture_request.cls.__module__}-{fixture_request.cls.__name__}",
+            fixture_request.node.name,
+        )
+    else:
+        return fixture_request.module.__name__, fixture_request.node.name
+
+
+def _slugify_name(src: str) -> str:
+    return _cut_off_prefixing_dirs(src).replace("[", "-").replace("]", "").lower()
 
 
 def _cut_off_prefixing_dirs(module_name: str) -> str:
@@ -56,7 +260,7 @@ def _cut_off_prefixing_dirs(module_name: str) -> str:
     return module_name.split(".")[-1]
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def _write_stdout_stderr_to_file(capsys, request) -> Iterator[Any]:
     """
     Since we parallelize pytest tests via xdist, stdout and stderr are swallowed.
@@ -103,7 +307,7 @@ def _write_stdout_stderr_to_file(capsys, request) -> Iterator[Any]:
 
 
 @pytest.fixture()
-async def config(_write_stdout_stderr_to_file: Any) -> Config:
+async def config() -> Config:
     return await ConfigManager().refresh()
 
 
@@ -114,8 +318,7 @@ async def client_config(config: Config) -> ClientConfig:
 
 @pytest.fixture()
 def client(client_config: ClientConfig) -> Iterator[LayerClient]:
-    with LayerClient(client_config, logger).init() as client:
-        yield client
+    yield LayerClient(client_config, logger)
 
 
 @pytest.fixture()
@@ -132,11 +335,6 @@ def _cleanup_project(client: LayerClient, project: Project):
     if project:
         print(f"project {project.name} exists, will remove")
         client.project_service_client.remove_project(project.id)
-
-
-@pytest.fixture()
-def project_runner(config: Config) -> ProjectRunner:
-    return ProjectRunner(config)
 
 
 @pytest.fixture()
