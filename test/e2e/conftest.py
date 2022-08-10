@@ -42,6 +42,8 @@ def pytest_sessionstart(session):
 
     org_account = _read_organization_account_from_test_session_config()
     if org_account:
+        # This is unexpected, so we cleanup and raise an exception in order to address the underlying issue
+        _cleanup_organization_account()
         raise Exception(
             f"pytest_sessionstart test session config already setup with account {org_account.name} {org_account.id}"
         )
@@ -64,6 +66,10 @@ def _track_session_counts_and_cleanup() -> Iterator:
     if open_sessions < 1:
         _cleanup_organization_account()
         _cleanup_test_session_config()
+        if open_sessions < 0:
+            raise Exception(
+                f"unexpected negative number of open sessions {open_sessions}"
+            )
 
 
 def _cleanup_test_session_config() -> None:
