@@ -22,12 +22,6 @@ from test.e2e.assertion_utils import E2ETestAsserter
 
 logger = logging.getLogger(__name__)
 
-TEST_ASSETS_PATH = Path(__file__).parent / "assets"
-TEST_TEMPLATES_PATH = TEST_ASSETS_PATH / "templates"
-
-REFERENCE_E2E_PROJECT_NAME = "e2e-reference-project-titanic"
-REFERENCE_E2E_PROJECT_PYTEST_CACHE_KEY = "e2e_reference_project_id"
-
 TEST_SESSION_CONFIG_TMP_PATH = DEFAULT_LAYER_PATH / "e2e_test_session.ini"
 
 
