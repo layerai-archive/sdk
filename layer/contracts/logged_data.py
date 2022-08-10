@@ -161,16 +161,16 @@ class Video:
 
         try:  # older versions of moviepy do not support logger argument
             kwargs = {"logger": None}
-            clip.write_videofile(filename, **kwargs)  # type: ignore
+            clip.write_videofile(filename, **kwargs)  # type: ignore # noqa pylint: disable=unexpected-keyword-arg
         except TypeError:
             try:  # even older versions of moviepy do not support progress_bar argument
                 kwargs = {"verbose": False, "progress_bar": False}
-                clip.write_videofile(filename, **kwargs)  # type: ignore
+                clip.write_videofile(filename, **kwargs)  # type: ignore # noqa pylint: disable=unexpected-keyword-arg
             except TypeError:
                 kwargs = {
                     "verbose": False,
                 }
-                clip.write_videofile(filename, **kwargs)  # type: ignore
+                clip.write_videofile(filename, **kwargs)  # type: ignore # noqa pylint: disable=unexpected-keyword-arg
 
         return Path(filename)
 
