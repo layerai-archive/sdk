@@ -11,6 +11,43 @@ from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
+def test_logging_in_remote_execution(
+    initialized_project: Project, asserter: E2ETestAsserter, client: LayerClient
+):
+    # given
+    dataset_name = "scalar_ds"
+
+    str_tag = "str_tag"
+
+    @dataset(dataset_name)
+    def scalar():
+        data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
+        dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
+        layer.log(
+            {
+                str_tag: "bar",
+            }
+        )
+        return dataframe
+
+    # when
+    run = layer.run([scalar])
+
+    # then
+    asserter.assert_run_succeeded(run.id)
+
+    first_ds = client.data_catalog.get_dataset_by_name(
+        initialized_project.id, dataset_name
+    )
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=str_tag, dataset_build_id=first_ds.build.id
+    )
+    assert logged_data.data == "bar"
+    assert logged_data.logged_data_type == LoggedDataType.TEXT
+    assert logged_data.tag == str_tag
+
+
 def test_scalar_values_logged(
     initialized_project: Project, asserter: E2ETestAsserter, client: LayerClient
 ):
