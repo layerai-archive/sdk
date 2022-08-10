@@ -28,8 +28,18 @@ TEST_TEMPLATES_PATH = TEST_ASSETS_PATH / "templates"
 REFERENCE_E2E_PROJECT_NAME = "e2e-reference-project-titanic"
 REFERENCE_E2E_PROJECT_PYTEST_CACHE_KEY = "e2e_reference_project_id"
 
+TEST_SESSION_CONFIG_TMP_PATH = DEFAULT_LAYER_PATH / "e2e_test_session.ini"
+
 
 def pytest_sessionstart(session):
+    """
+    We use this hook to create a single new organization account to be used in all
+    organization e2e tests.
+
+    We clean it up (teardown) using the `pytest_sessionfinish` hook.
+    Since we use xdist to parallelize test runs, we only do the session setUp/teardown when
+    not in an xdist worker.
+    """
     if os.getenv("CI"):
         ddtrace.patch_all()
 
@@ -42,46 +52,30 @@ def pytest_sessionstart(session):
     _write_organization_account_to_test_session_config(org_account)
 
 
+@pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session):
     """
-    WARNING This hook runs BEFORE fixture teardown.
+    Important: This hook should run after all tests have finished, including all their
+    dependent fixtures' teardowns (yield).
 
-    We use it to set a flag across processes that the global session has finished,
-    so we can safely cleanup shared setup. Otherwise this shared setup can be deleted
-    while some tests have not started yet due to parallelism.
+    We use `@pytest.hookimpl(trylast=True)` as per recommendation
+    from https://github.com/pytest-dev/pytest/issues/7484
     """
     if xdist.is_xdist_worker(session):
         return
 
-    with open(_test_session_config_file_path(), "a") as f:
-        f.write(
-            """[STATE]
-is_finished=True
-"""
-        )
+    _cleanup_organization_account()
+    _cleanup_test_session_config()
 
 
 def _cleanup_test_session_config() -> None:
-    config_path = _test_session_config_file_path()
+    config_path = TEST_SESSION_CONFIG_TMP_PATH
     if os.path.exists(config_path):
         os.remove(config_path)
 
 
-def _is_test_session_finished() -> bool:
-    """
-    Since we parallelize tests via xdist and fixture tear downs run after
-    pytest_sessionfinish hook, we need this inter process communication via
-    file
-    """
-    config = configparser.ConfigParser()
-    if not config.read(_test_session_config_file_path()):
-        return False
-
-    return config.get("STATE", "is_finished", fallback="False") == "True"
-
-
 def _write_organization_account_to_test_session_config(org_account):
-    with open(_test_session_config_file_path(), "w") as f:
+    with open(TEST_SESSION_CONFIG_TMP_PATH, "w") as f:
         f.write(
             f"""
 [ORGANIZATION_ACCOUNT]
@@ -99,20 +93,16 @@ name={org_account.name}
 def _read_organization_account_from_test_session_config() -> Optional[Account]:
     """
     Returns None if there is no organization account for this session.
-    One reason being that it got deleted already by a fixture cleanup.
+    One reason being that it got deleted already by a fixture teardown.
     """
     config = configparser.ConfigParser()
-    if not config.read(_test_session_config_file_path()):
+    if not config.read(TEST_SESSION_CONFIG_TMP_PATH):
         return None
 
     return Account(
         id=uuid.UUID(config.get("ORGANIZATION_ACCOUNT", "id")),
         name=config.get("ORGANIZATION_ACCOUNT", "name"),
     )
-
-
-def _test_session_config_file_path() -> str:
-    return DEFAULT_LAYER_PATH / "e2e_test_session.ini"
 
 
 async def create_organization_account() -> Account:
@@ -128,25 +118,9 @@ async def create_organization_account() -> Account:
     return account
 
 
-@pytest.fixture(autouse=True)
-def _test_session_teardown(
-    initialized_organization_account: Account, client: LayerClient
-) -> Iterator:
-    """
-    Invoked on every test teardown.
-
-    Since we parallelize tests, and fixture teardowns happen after pytest_sessionfinish hook, we need
-    this autoUse fixture to clean up the global test session.
-    """
-    yield
-    session_finished = _is_test_session_finished()
-    if not session_finished:
-        return
-    _cleanup_organization_account(client)
-    _cleanup_test_session_config()
-
-
-def _cleanup_organization_account(client: LayerClient) -> None:
+async def _cleanup_organization_account() -> None:
+    config = await ConfigManager().refresh()
+    client = LayerClient(config.client, logger)
     account = _read_organization_account_from_test_session_config()
     if not account:
         # we assume there is no more account to cleanup
@@ -160,8 +134,8 @@ def _cleanup_organization_account(client: LayerClient) -> None:
 @pytest.fixture()
 def initialized_organization_account(client: LayerClient) -> Account:
     """
-    Cleanup is handled by an autoUse fixture which checks the session state.
-    Otherwise, we could cleanup the account too soon.
+    This fixture injects the account created by the test session set up.
+    Cleanup is handled by the session teardown.
     """
     account = _read_organization_account_from_test_session_config()
     assert account
