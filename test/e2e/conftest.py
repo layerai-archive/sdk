@@ -17,6 +17,7 @@ from layer.config import DEFAULT_LAYER_PATH, ClientConfig, Config, ConfigManager
 from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
+from layer.exceptions.exceptions import LayerClientResourceNotFoundException
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
@@ -41,6 +42,11 @@ def pytest_sessionstart(session):
         return
 
     loop = asyncio.get_event_loop()
+    org_account = _read_organization_account_from_test_session_config()
+    if org_account:
+        raise Exception(
+            f"pytest_sessionstart test session config already setup with account {org_account.name} {org_account.id}"
+        )
     org_account: Account = loop.run_until_complete(create_organization_account())
 
     _write_organization_account_to_test_session_config(org_account)
@@ -121,8 +127,8 @@ async def _cleanup_organization_account() -> None:
         return
     try:
         client.account.delete_account(account_id=account.id)
-    except Exception as e:
-        print(f"could not delete account: {e}")
+    except LayerClientResourceNotFoundException as e:
+        print(f"account already deleted: {e}")
 
 
 @pytest.fixture()
