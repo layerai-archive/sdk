@@ -100,7 +100,7 @@ class Video:
     ):
         """
         :param video: Supported video types are:
-        - torch.Tensor (tensor shape must be NTCHW)
+        - torch.Tensor (tensor shape must be NTCHW or BNTCHW)
         :param fps: Frames per second
         """
         self.video = video
@@ -181,6 +181,12 @@ class Video:
         A batch of images are spreaded to a grid, which forms a frame.
         e.g. Video with batchsize 16 will have a 4x4 grid.
         """
+
+        if video_tensor.ndim < 4:
+            raise ValueError("Video must be at least 4D: Time, Channels, Height, Width")
+        elif video_tensor.ndim == 4:
+            video_tensor = video_tensor.reshape(1, *video_tensor.shape)
+
         b, t, c, h, w = video_tensor.shape
 
         if video_tensor.dtype == np.uint8:

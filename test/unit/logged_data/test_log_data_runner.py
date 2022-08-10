@@ -317,6 +317,48 @@ def test_given_runner_when_log_dataframe_bigger_than_1000_rows_then_raises_error
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
 @patch.object(Session, "put")
+def test_given_runner_when_log_ntchw_torch_tensor_video_then_calls_log_binary(
+    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+) -> None:
+    # given
+    logged_data_client = MagicMock(spec=LoggedDataClient)
+    client = MagicMock(
+        set_spec=LayerClient,
+        logged_data_service_client=logged_data_client,
+    )
+    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
+    runner = LogDataRunner(
+        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+    )
+
+    import torch
+
+    video_width = 480
+    video_height = 640
+    video_tensor = torch.rand((10, 3, video_width, video_height))
+    tag = "tensor-video-tag"
+    video = layer.Video(video_tensor)
+    video_object = video.get_video()
+    assert video_object is not None
+
+    # when
+    runner.log({tag: video})
+
+    # then
+    logged_data_client.log_binary_data.assert_called_with(
+        train_id=train_id,
+        tag=tag,
+        dataset_build_id=dataset_build_id,
+        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_VIDEO,
+        epoch=None,
+    )
+    mock_put.assert_called_with("http://path/for/upload", data=ANY)
+
+
+@pytest.mark.parametrize(
+    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+)
+@patch.object(Session, "put")
 def test_given_runner_when_log_nparray_image_then_calls_log_binary(
     mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
 ) -> None:
