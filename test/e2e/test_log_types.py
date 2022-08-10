@@ -182,7 +182,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     # pytorch_tensor_video_tag = "pytorch_tensor_video_tag"
 
     @dataset(ds_name)
-    @pip_requirements(packages=["moviepy==0.2.3.5"])
+    # @pip_requirements(packages=["moviepy==0.2.3.5"])
     def multimedia():
         import os
         from pathlib import Path
