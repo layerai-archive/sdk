@@ -198,12 +198,11 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
         video_path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_video.mp4")
         layer.log({video_path_tag: video_path})
 
-        import torchvision
-
-        tensor_video = torchvision.io.read_video(str(video_path))
-        tensor_video = tensor_video[0].permute(0, 3, 1, 2)
-
-        layer.log({pytorch_tensor_video_tag: Video(tensor_video)})
+        # Disabled until backend updated
+        # import torchvision
+        # tensor_video = torchvision.io.read_video(str(video_path))
+        # tensor_video = tensor_video[0].permute(0, 3, 1, 2)
+        # layer.log({pytorch_tensor_video_tag: Video(tensor_video)})
 
         return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
 
