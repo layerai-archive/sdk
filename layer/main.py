@@ -785,7 +785,7 @@ def log(
 
     **Videos**
 
-    We support MP4, WebM, Ogg file formats or ``pytorch.Tensor`` (with NTCHW shape) through ``layer.Video``.
+    We support MP4, WebM, Ogg file formats or ``pytorch.Tensor`` (with BNTCHW+NTCHW shape) through ``layer.Video``.
 
     Accepted Types:
     ``path.Path``
