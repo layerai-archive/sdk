@@ -10,6 +10,7 @@ from typing import Any, Callable, Iterator, Optional, Tuple
 import ddtrace
 import pytest
 import xdist
+from filelock import FileLock
 
 import layer
 from layer.clients.layer import LayerClient
@@ -31,9 +32,7 @@ def pytest_sessionstart(session):
     We use this hook to create a single new organization account to be used in all
     organization e2e tests.
 
-    We clean it up (teardown) using the `pytest_sessionfinish` hook.
-    Since we use xdist to parallelize test runs, we only do the session setUp/teardown when
-    not in an xdist worker.
+    We clean it up (teardown) using `_track_session_counts_and_cleanup` fixture.
     """
     if os.getenv("CI"):
         ddtrace.patch_all()
@@ -41,31 +40,30 @@ def pytest_sessionstart(session):
     if xdist.is_xdist_worker(session):
         return
 
-    loop = asyncio.get_event_loop()
     org_account = _read_organization_account_from_test_session_config()
     if org_account:
         raise Exception(
             f"pytest_sessionstart test session config already setup with account {org_account.name} {org_account.id}"
         )
+    loop = asyncio.get_event_loop()
     org_account: Account = loop.run_until_complete(create_organization_account())
 
     _write_organization_account_to_test_session_config(org_account)
 
 
-@pytest.hookimpl(trylast=True)
-def pytest_sessionfinish(session):
+@pytest.fixture(scope="session", autouse=True)
+def _track_session_counts_and_cleanup() -> Iterator:
     """
-    Important: This hook should run after all tests have finished, including all their
-    dependent fixtures' teardowns (yield).
-
-    We use `@pytest.hookimpl(trylast=True)` as per recommendation
-    from https://github.com/pytest-dev/pytest/issues/7484
+    This will run for every pytest session.
+    Since we optionally use xdist to parallelize test runs,
+    we need extra logic tp do track parallel pytest sessions and do teardown once there are no more.
     """
-    if xdist.is_xdist_worker(session):
-        return
-
-    _cleanup_organization_account()
-    _cleanup_test_session_config()
+    _increment_session_count()
+    yield
+    open_sessions = _decrement_session_count()
+    if open_sessions < 1:
+        _cleanup_organization_account()
+        _cleanup_test_session_config()
 
 
 def _cleanup_test_session_config() -> None:
@@ -74,15 +72,51 @@ def _cleanup_test_session_config() -> None:
         os.remove(config_path)
 
 
+def _increment_session_count() -> int:
+    with FileLock(str(TEST_SESSION_CONFIG_TMP_PATH) + ".lock"):
+        config = configparser.ConfigParser()
+        config.read(TEST_SESSION_CONFIG_TMP_PATH)
+        current_counter = 0
+        if "PYTEST_SESSIONS" in config.sections():
+            current_counter = int(config.get("PYTEST_SESSIONS", "count", fallback=0))
+        else:
+            config["PYTEST_SESSIONS"] = {}
+        current_counter += 1
+        config["PYTEST_SESSIONS"]["count"] = str(current_counter)
+
+        with open(TEST_SESSION_CONFIG_TMP_PATH, "w") as configfile:
+            config.write(configfile)
+
+        return current_counter
+
+
+def _decrement_session_count() -> int:
+    """
+    Expects to be called after at least one increment
+    """
+    with FileLock(str(TEST_SESSION_CONFIG_TMP_PATH) + ".lock"):
+        config = configparser.ConfigParser()
+        config.read(TEST_SESSION_CONFIG_TMP_PATH)
+        current_counter = int(config.get("PYTEST_SESSIONS", "count"))
+        current_counter -= 1
+        config["PYTEST_SESSIONS"]["count"] = str(current_counter)
+
+        with open(TEST_SESSION_CONFIG_TMP_PATH, "w") as configfile:
+            config.write(configfile)
+
+    return current_counter
+
+
 def _write_organization_account_to_test_session_config(org_account):
-    with open(TEST_SESSION_CONFIG_TMP_PATH, "w") as f:
-        f.write(
-            f"""
-[ORGANIZATION_ACCOUNT]
-id={str(org_account.id)}
-name={org_account.name}
-"""
-        )
+    with FileLock(str(TEST_SESSION_CONFIG_TMP_PATH) + ".lock"):
+        with open(TEST_SESSION_CONFIG_TMP_PATH, "a") as f:
+            f.write(
+                f"""
+    [ORGANIZATION_ACCOUNT]
+    id={str(org_account.id)}
+    name={org_account.name}
+    """
+            )
 
     account_to_verify = _read_organization_account_from_test_session_config()
     assert account_to_verify
@@ -95,14 +129,18 @@ def _read_organization_account_from_test_session_config() -> Optional[Account]:
     Returns None if there is no organization account for this session.
     One reason being that it got deleted already by a fixture teardown.
     """
-    config = configparser.ConfigParser()
-    if not config.read(TEST_SESSION_CONFIG_TMP_PATH):
-        return None
+    with FileLock(str(TEST_SESSION_CONFIG_TMP_PATH) + ".lock"):
+        config = configparser.ConfigParser()
+        if (
+            not config.read(TEST_SESSION_CONFIG_TMP_PATH)
+            or "ORGANIZATION_ACCOUNT" not in config.sections()
+        ):
+            return None
 
-    return Account(
-        id=uuid.UUID(config.get("ORGANIZATION_ACCOUNT", "id")),
-        name=config.get("ORGANIZATION_ACCOUNT", "name"),
-    )
+        return Account(
+            id=uuid.UUID(config.get("ORGANIZATION_ACCOUNT", "id")),
+            name=config.get("ORGANIZATION_ACCOUNT", "name"),
+        )
 
 
 async def create_organization_account() -> Account:
@@ -118,8 +156,12 @@ async def create_organization_account() -> Account:
     return account
 
 
-async def _cleanup_organization_account() -> None:
-    config = await ConfigManager().refresh()
+def _cleanup_organization_account() -> None:
+    async def refresh() -> Config:
+        return await ConfigManager().refresh()
+
+    loop = asyncio.get_event_loop()
+    config = loop.run_until_complete(refresh())
     client = LayerClient(config.client, logger)
     account = _read_organization_account_from_test_session_config()
     if not account:
@@ -278,7 +320,7 @@ def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
     project = layer.init(project_name, fabric=Fabric.F_XSMALL.value)
 
     yield project
-    # _cleanup_project(client, project)
+    _cleanup_project(client, project)
 
 
 def _cleanup_project(client: LayerClient, project: Project):
