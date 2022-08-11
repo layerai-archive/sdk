@@ -19,10 +19,12 @@ from layer.config.config_manager import ConfigManager
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import TrainStorageConfiguration
+from layer.executables.function import Function
 from layer.executables.packager import FunctionPackageInfo
 from layer.executables.runtime import BaseFunctionRuntime
 from layer.flavors.utils import get_flavor_for_model
 from layer.global_context import current_project_full_name, set_has_shown_update_message
+from layer.projects.utils import get_current_project_full_name
 
 
 _ProjectId = uuid.UUID
@@ -64,13 +66,13 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
     def __call__(self, func: Callable[..., Any]) -> Any:
         function_output = _get_function_output(self._package_info.metadata)  # type: ignore
         if function_output.is_dataset:
-            self._create_dataset(function_output.name, func)
-        elif function_output.is_model:
-            self._create_model(function_output.name, func)
-        else:
-            raise LayerFunctionRuntimeError(
-                f"missing function output type: {function_output.type}"
-            )
+            return self._create_dataset(function_output.name, func)
+        if function_output.is_model:
+            return self._create_model(function_output.name, func)
+
+        raise LayerFunctionRuntimeError(
+            f"missing function output type: {function_output.type}"
+        )
 
     def _layer_init(self) -> None:
         set_has_shown_update_message(shown=True)
@@ -86,7 +88,7 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
             raise LayerFunctionRuntimeError(f"project {self._project} does not exist")
         return project.id
 
-    def _create_dataset(self, name: str, func: Callable[..., Any]) -> None:
+    def _create_dataset(self, name: str, func: Callable[..., Any]) -> Any:
         data_catalog = DataCatalogClient.create(self._client_config, self._logger)  # type: ignore
         display_fabric = Fabric.F_LOCAL.value  # the fabric to display in the UI
         asset_path = AssetPath(name, AssetType.DATASET)
@@ -102,9 +104,12 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
         build_response = data_catalog.initiate_build(
             ProjectId(value=str(self._project_id)), name, display_fabric
         )
-        data_catalog.store_dataset(func(), uuid.UUID(build_response.id.value))
+        dataset = func()
+        data_catalog.store_dataset(dataset, uuid.UUID(build_response.id.value))
 
-    def _create_model(self, name: str, func: Callable[..., Any]) -> None:
+        return dataset
+
+    def _create_model(self, name: str, func: Callable[..., Any]) -> Any:
         model = func()
         model_flavor = get_flavor_for_model(model)
         if model_flavor is None:
@@ -147,6 +152,8 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
                 version=model_version.model_version,
                 fabric=display_fabric,
             )
+
+        return model
 
 
 def _add_cli_args(parser: ArgumentParser) -> None:
@@ -222,6 +229,15 @@ def _upload_model_artifacts(model_dir: Path, config: TrainStorageConfiguration) 
 
 class LayerFunctionRuntimeError(Exception):
     pass
+
+
+def local_run(func: Callable[..., Any]) -> Any:
+    project = get_current_project_full_name()
+
+    function = Function.from_decorated(func)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        executable_path = function.package(output_dir=Path(temp_dir))
+        return LayerFunctionRuntime.execute(executable_path, project=project.path)
 
 
 if __name__ == "__main__":
