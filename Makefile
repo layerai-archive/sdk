@@ -93,10 +93,6 @@ else
 endif
 	$(POETRY) run python -c "import layer"
 
-.PHONY: check-colab-violations
-check-colab-violations: ## Check that colab pre-installed packages are not clashing with ours
-	$(MAKE) -C build_scripts/colab-tests check-colab-violations
-
 .PHONY: check
 check: test lint  ## Run test and lint
 
