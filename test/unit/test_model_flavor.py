@@ -1,6 +1,5 @@
 # type: ignore
 import logging
-from pathlib import Path
 
 import pytest
 
@@ -213,6 +212,8 @@ class TestModelFlavors:
         assert isinstance(loaded_model, torch.nn.Module)
 
     def test_yolo_save_load(self, tmp_path):
+        from pathlib import Path
+
         import torch
         from yolov5.models.yolo import AutoShape
 

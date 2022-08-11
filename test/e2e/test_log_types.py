@@ -5,7 +5,7 @@ from sklearn.svm import SVC
 
 import layer
 from layer.clients.layer import LayerClient
-from layer.contracts.logged_data import LoggedDataType
+from layer.contracts.logged_data import LoggedDataType, Video
 from layer.contracts.projects import Project
 from layer.decorators import dataset, model, pip_requirements
 from test.e2e.assertion_utils import E2ETestAsserter
@@ -179,6 +179,7 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     image_path_tag = "image_path_tag"
     video_path_tag = "video_path_tag"
     stepped_pil_image_tab = "stepped_pil_image_tag"
+    pytorch_tensor_video_tag = "pytorch_tensor_video_tag"
 
     @dataset(ds_name)
     def multimedia():
@@ -195,6 +196,11 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
 
         video_path = Path(f"{os.getcwd()}/test/e2e/assets/log_assets/layer_video.mp4")
         layer.log({video_path_tag: video_path})
+
+        import torch
+
+        tensor_video = torch.rand(10, 3, 100, 200)
+        layer.log({pytorch_tensor_video_tag: Video(tensor_video)})
 
         return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
 
@@ -221,6 +227,13 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     )
     assert logged_data.data.startswith("https://logged-data--layer")
     assert logged_data.data.endswith(video_path_tag)
+    assert logged_data.logged_data_type == LoggedDataType.VIDEO
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=pytorch_tensor_video_tag, dataset_build_id=ds.build.id
+    )
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(pytorch_tensor_video_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
 
     @pip_requirements(packages=["scikit-learn==0.23.2"])
