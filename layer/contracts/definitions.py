@@ -149,6 +149,7 @@ class FunctionDefinition:
         return package_function(
             self.func,
             resources=resource_paths,
+            assertions=self.assertions,
             pip_dependencies=self.pip_dependencies,
             output_dir=self.function_home_dir,
         )

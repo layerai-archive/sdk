@@ -121,7 +121,7 @@ def test_get_function_package_info_with_conda_dependencies(tmpdir: Path):
 
 
 def test_get_function_package_info_with_assertions(tmpdir: Path):
-    @assert_not_null(["UserName", "OperatingSystem"])
+    @assert_not_null(["column1", "column2"])
     def func_with_assertions():
         pass
 
@@ -136,7 +136,7 @@ def test_get_function_package_info_with_assertions(tmpdir: Path):
         assertions=[
             Assertion(
                 name="assert_not_null",
-                values=[["UserName", "OperatingSystem"]],
+                values=[["column1", "column2"]],
                 function=mock.ANY,
             )
         ],
