@@ -173,8 +173,6 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
                 failed_assertions.append(assertion)
         if len(failed_assertions) > 0:
             raise LayerFailedAssertionsException(failed_assertions)
-        else:
-            print(f"{len(assertions)} assertions run successfully.")
 
 
 def _add_cli_args(parser: ArgumentParser) -> None:
