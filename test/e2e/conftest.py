@@ -70,6 +70,7 @@ def _track_session_counts_and_cleanup() -> Iterator:
             raise Exception(
                 f"unexpected negative number of open sessions {open_sessions}"
             )
+        _cleanup_personal_projects()
 
 
 def _cleanup_test_session_config() -> None:
@@ -178,6 +179,19 @@ def _cleanup_organization_account() -> None:
         client.account.delete_account(account_id=account.id)
     except LayerClientResourceNotFoundException as e:
         print(f"account already deleted: {e}")
+
+
+def _cleanup_personal_projects() -> None:
+    async def refresh() -> Config:
+        return await ConfigManager().refresh()
+
+    loop = asyncio.get_event_loop()
+    config = loop.run_until_complete(refresh())
+    client = LayerClient(config.client, logger)
+    personal_account = client.account.get_my_account()
+    projects = client.project_service_client.get_project_list(personal_account.name)
+    for p in projects:
+        _cleanup_project(client, p)
 
 
 @pytest.fixture()

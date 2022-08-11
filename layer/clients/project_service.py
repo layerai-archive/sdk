@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from layerapi.api.entity.project_pb2 import Project as ProjectMessage
@@ -7,6 +7,8 @@ from layerapi.api.entity.project_view_pb2 import ProjectView
 from layerapi.api.ids_pb2 import ProjectId
 from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
+    GetAccountProjectsRequest,
+    GetAccountProjectsResponse,
     GetProjectByPathRequest,
     GetProjectByPathResponse,
     GetProjectViewByIdRequest,
@@ -40,15 +42,16 @@ class ProjectServiceClient:
 
     @staticmethod
     def _map_project_message_to_project_contract(
-        full_name: ProjectFullName, project_msg: ProjectMessage
+        account_name: str, project_msg: ProjectMessage
     ) -> Project:
+        project_name = project_msg.name
         project_id = UUID(project_msg.id.value)
         account_id = UUID(project_msg.account_id.value)
         return Project(
-            name=full_name.project_name,
+            name=project_name,
             id=project_id,
             account=Account(
-                name=full_name.account_name,
+                name=account_name,
                 id=account_id,
             ),
         )
@@ -88,13 +91,27 @@ class ProjectServiceClient:
             )
             if resp.project is not None:
                 return self._map_project_message_to_project_contract(
-                    full_name, resp.project
+                    full_name.account_name, resp.project
                 )
         except LayerClientResourceNotFoundException:
             pass
         except Exception as err:
             raise generate_client_error_from_grpc_error(err, "internal")
         return None
+
+    def get_project_list(self, account_name: str) -> List[Project]:
+        try:
+            resp: GetAccountProjectsResponse = self._service.GetAccountProjects(
+                GetAccountProjectsRequest(account_name=account_name)
+            )
+            if resp.project is None:
+                return []
+            return [
+                self._map_project_message_to_project_contract(account_name, p)
+                for p in resp.project
+            ]
+        except Exception as err:
+            raise generate_client_error_from_grpc_error(err, "internal")
 
     def remove_project(self, project_id: uuid.UUID) -> None:
         self._service.RemoveProjectById(
@@ -110,7 +127,7 @@ class ProjectServiceClient:
                 )
             )
             return self._map_project_message_to_project_contract(
-                full_name, resp.project
+                full_name.account_name, resp.project
             )
         except LayerClientResourceAlreadyExistsException as e:
             raise e
