@@ -63,6 +63,10 @@ class Function:
         )
 
     @property
+    def name(self) -> str:
+        return self._func.__name__
+
+    @property
     def func(self) -> Callable[..., Any]:
         return self._func
 

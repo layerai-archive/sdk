@@ -26,7 +26,12 @@ from layer import Image, Markdown
 from layer.cache.cache import Cache
 from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
-from layer.config import DEFAULT_PATH, DEFAULT_URL, ConfigManager
+from layer.config import (
+    DEFAULT_PATH,
+    DEFAULT_URL,
+    ConfigManager,
+    is_executables_feature_active,
+)
 from layer.config.config import Config
 from layer.context import Context
 from layer.contracts.assets import AssetPath, AssetType
@@ -549,7 +554,10 @@ def init(
 
 
 def run(
-    functions: List[Any], debug: bool = False, ray_address: Optional[str] = None
+    functions: List[Any],
+    debug: bool = False,
+    ray_address: Optional[str] = None,
+    **kwargs: Any,
 ) -> Run:
     """
     :param functions: List of decorated functions to run in the Layer backend.
@@ -582,6 +590,11 @@ def run(
         run = layer.run([create_my_dataset])
         # run = layer.run([create_my_dataset], debug=True)  # Stream logs to console
     """
+    if kwargs.get("executables_feature", False) or is_executables_feature_active():
+        from layer.executables.runner import remote_run
+
+        return remote_run(functions)
+
     _check_python_version()
     _ensure_all_functions_are_decorated(functions)
 

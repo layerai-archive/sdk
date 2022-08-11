@@ -38,7 +38,9 @@ class ConfigManager:
     def load(self) -> Config:
         return self._store.load()
 
-    async def refresh(self, *, allow_guest: bool = False) -> Config:
+    async def refresh(
+        self, *, allow_guest: bool = False, force: bool = False
+    ) -> Config:
         from aiohttp import ClientSession
 
         try:
@@ -54,7 +56,11 @@ class ConfigManager:
             await self._logout()
             raise UserConfigurationError(cex.path)
 
-        if not config.auth.is_enabled or not config.credentials.is_access_token_expired:
+        if (
+            not config.auth.is_enabled
+            or not force
+            and not config.credentials.is_access_token_expired
+        ):
             return config
 
         async with ClientSession() as client:
