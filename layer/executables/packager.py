@@ -210,7 +210,9 @@ def _loader_source() -> str:
                     _extract_function(exec, function_path)  # type: ignore
 
                 function = _load_function(function_path)  # type: ignore
-                runtime_exec(function)
+
+                # set the returned result to exchange with the local runtime
+                globals()["__function_return_result"] = runtime_exec(function)
 
         _execute()  # type: ignore
 

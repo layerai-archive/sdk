@@ -34,16 +34,14 @@ class BaseFunctionRuntime:
 
     def run_executable(self) -> Any:
         """Runs the packaged function."""
-        runpy.run_path(
+        return runpy.run_path(
             str(self.executable_path),
             run_name="__main__",
             init_globals={"__function_runtime": self},
-        )
+        ).get("__function_return_result", None)
 
     @classmethod
-    def execute(
-        cls, executable_path: ExecutablePath, *args: Any, **kwargs: Any
-    ) -> None:
+    def execute(cls, executable_path: ExecutablePath, *args: Any, **kwargs: Any) -> Any:
         """Initialises the environment, installs packages and runs the executable."""
         local_executable_path = _get_local_executable_path(executable_path)
         _validate_executable_path(local_executable_path)
@@ -51,7 +49,7 @@ class BaseFunctionRuntime:
         runtime = cls(local_executable_path, *args, **kwargs)
         runtime.initialise(package_info)
         runtime.install_packages(packages=package_info.pip_dependencies)
-        runtime.run_executable()
+        return runtime.run_executable()
 
     @classmethod
     def main(

@@ -97,7 +97,10 @@ class ProjectBaseException(Exception):
         return self.suggestion
 
     def _format_message(self) -> str:
-        return f"Error: {self._error_msg},\nSuggestion: {self._suggestion}"
+        message = f"Error: {self._error_msg}"
+        if self._suggestion:
+            message += f",\nSuggestion: {self._suggestion}"
+        return message
 
 
 class ProjectExecutionException(ProjectBaseException):

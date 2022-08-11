@@ -144,8 +144,10 @@ def _dataset_wrapper(
         # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             if is_executables_feature_active():
-                # execute the function, metadata capture will be done by the runtime
-                return self.__wrapped__(*args, **kwargs)
+                from layer.executables.layer_runtime import local_run
+
+                return local_run(self)
+
             self.layer.validate()
             dataset_definition = self.get_definition()
             dataset_definition.package()
