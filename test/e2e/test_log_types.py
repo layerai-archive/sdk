@@ -1,5 +1,6 @@
 from uuid import UUID
 
+import numpy as np
 import pandas as pd
 from sklearn.svm import SVC
 
@@ -58,7 +59,6 @@ def test_scalar_values_logged(
     int_tag = "int_tag"
     bool_tag = "bool_tag"
     float_tag = "float_tag"
-    list_tag = "list_tag"
 
     @dataset(dataset_name)
     def scalar():
@@ -70,7 +70,6 @@ def test_scalar_values_logged(
                 int_tag: 123,
                 bool_tag: True,
                 float_tag: 1.11,
-                list_tag: ["a", "b", "c"],
             }
         )
         return dataframe
@@ -111,12 +110,49 @@ def test_scalar_values_logged(
     assert logged_data.logged_data_type == LoggedDataType.NUMBER
     assert logged_data.tag == float_tag
 
+
+def test_list_values_logged(
+    initialized_project: Project, asserter: E2ETestAsserter, client: LayerClient
+):
+    # given
+    dataset_name = "list_ds"
+
+    list_tag = "list_tag"
+    numpy_tag = "numpy_tag"
+
+    @dataset(dataset_name)
+    def lists():
+        data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
+        dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
+        layer.log(
+            {
+                list_tag: ["a", "b", "c"],
+                numpy_tag: np.array([1, 2, 3]),
+            }
+        )
+        return dataframe
+
+    # when
+    lists()
+
+    # then
+    first_ds = client.data_catalog.get_dataset_by_name(
+        initialized_project.id, dataset_name
+    )
+
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=list_tag, dataset_build_id=first_ds.build.id
     )
     assert logged_data.data == str(["a", "b", "c"])
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == list_tag
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=numpy_tag, dataset_build_id=first_ds.build.id
+    )
+    assert logged_data.data == str([1, 2, 3])
+    assert logged_data.logged_data_type == LoggedDataType.TEXT
+    assert logged_data.tag == numpy_tag
 
 
 def test_pandas_dataframe_logged(initialized_project: Project, client: LayerClient):

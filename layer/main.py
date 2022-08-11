@@ -73,6 +73,7 @@ from layer.utils.async_utils import asyncio_run_in_thread
 if TYPE_CHECKING:
     import matplotlib.axes._subplots  # type: ignore
     import matplotlib.figure  # type: ignore
+    import numpy as np
     import pandas
     import PIL.Image
 
@@ -745,6 +746,7 @@ def log(
             bool,
             int,
             List[Any],
+            "np.ndarray[Any, Any]",
             Dict[str, Any],
             "pandas.DataFrame",
             "PIL.Image.Image",
@@ -777,8 +779,14 @@ def log(
     ``str``,
     ``float``,
     ``bool``,
-    ``int``,
-    ``list`` (converted into a string)
+    ``int``
+
+    **List Types**
+
+    These are converted into string and stored as text.
+
+    ``list``
+    ``np.ndarray`` (i.e. a normal NumPy array)
 
     **Markdown**
 

@@ -6,6 +6,7 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
+import numpy as np
 import pandas as pd
 import requests  # type: ignore
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
@@ -45,6 +46,7 @@ class LogDataRunner:
                 bool,
                 int,
                 List[Any],
+                "np.ndarray[Any, Any]",
                 Dict[str, Any],
                 pd.DataFrame,
                 "PIL.Image.Image",
@@ -65,6 +67,8 @@ class LogDataRunner:
                 self._log_text(tag=tag, text=value)
             elif isinstance(value, list):
                 self._log_text(tag=tag, text=str(value))
+            elif isinstance(value, np.ndarray):
+                self._log_text(tag=tag, text=str(value.tolist()))
             # boolean check must be done before numeric check as it also returns true for booleans.
             elif isinstance(value, bool):
                 self._log_boolean(tag=tag, bool_val=value)
