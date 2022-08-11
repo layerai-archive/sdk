@@ -212,23 +212,27 @@ class TestModelFlavors:
         assert isinstance(loaded_model, torch.nn.Module)
 
     def test_yolo_save_load(self, tmp_path):
+        from pathlib import Path
+
         import torch
-        from yolov5.models.yolo import AutoShape
 
         # Load a YOLO model with random weights from torch hub
-        model_def = "yolov5s.yaml"
-        model = AutoShape(torch.nn.Sequential())
+        model_def = "yolov5s"
+        model_file = model_def + ".pt"
+        model = torch.hub.load(
+            "ultralytics/yolov5",
+            "custom",
+            Path("test") / "unit" / "assets" / model_file,
+        )
 
         # Save model
         pt_flavor = PyTorchModelFlavor()
         pt_flavor.save_model_to_directory(model, tmp_path)
 
         # Check if we have the necessary files to load the model
-        from pathlib import Path
-
         p = Path(str(tmp_path)).rglob("*.*")
         files = [x.name for x in p if x.is_file()]
-        assert model_def in files
+        assert model_def + ".yaml" in files
 
         # Unload the `models` module (installed with torch.hub.load above) to make sure Layer can load the module
         # without YOLO installation
