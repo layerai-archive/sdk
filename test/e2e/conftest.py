@@ -40,13 +40,6 @@ def pytest_sessionstart(session):
     if xdist.is_xdist_worker(session):
         return
 
-    org_account = _read_organization_account_from_test_session_config()
-    if org_account:
-        # This is unexpected, so we cleanup and raise an exception in order to address the underlying issue
-        _cleanup_organization_account()
-        raise Exception(
-            f"pytest_sessionstart test session config already setup with account {org_account.name} {org_account.id}"
-        )
     loop = asyncio.get_event_loop()
     org_account: Account = loop.run_until_complete(create_organization_account())
 
