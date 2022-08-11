@@ -104,8 +104,6 @@ class ProjectServiceClient:
             resp: GetAccountProjectsResponse = self._service.GetAccountProjects(
                 GetAccountProjectsRequest(account_name=account_name)
             )
-            if resp.project is None:
-                return []
             return [
                 self._map_project_message_to_project_contract(account_name, p)
                 for p in resp.project

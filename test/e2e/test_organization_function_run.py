@@ -15,4 +15,4 @@ def test_remote_runs(
     """
     remote_run_with_dependent_datasets_succeeds_and_registers_metadata(asserter)
 
-    # remote_run_with_model_train_succeeds_and_registers_metadata(asserter)
+    remote_run_with_model_train_succeeds_and_registers_metadata(asserter)
