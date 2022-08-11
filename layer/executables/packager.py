@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Sequence, Tuple
 
+from layer.contracts.assertions import Assertion
 from layer.contracts.conda import CondaEnv
 
 from .. import cloudpickle
@@ -24,6 +25,7 @@ FUNCTION_SERIALIZER_VERSION = cloudpickle.__version__  # type: ignore
 def package_function(
     function: Callable[..., Any],
     resources: Optional[Sequence[Path]] = None,
+    assertions: Optional[Sequence[Assertion]] = None,
     pip_dependencies: Optional[Sequence[str]] = None,
     conda_env: Optional[CondaEnv] = None,
     metadata: Optional[Dict[str, Any]] = None,
@@ -61,6 +63,10 @@ def package_function(
             cloudpickle.register_pickle_by_value(sys.modules[function.__module__])  # type: ignore
             cloudpickle.dump(function, function_, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
 
+        assertions_path = source / "assertions"
+        with open(assertions_path, mode="wb") as assertions_:
+            cloudpickle.dump(assertions, assertions_, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
+
         metadata_path = source / "metadata.json"
         with open(metadata_path, mode="w", encoding="utf8") as metadata_:
             json.dump(metadata or {}, metadata_, separators=(",", ":"))
@@ -83,6 +89,7 @@ class FunctionPackageInfo:
     pip_dependencies: Tuple[str, ...] = ()
     metadata: Dict[str, Any] = field(default_factory=dict)
     conda_env: Optional[CondaEnv] = None
+    assertions: Sequence[Assertion] = ()
 
 
 def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
@@ -90,6 +97,7 @@ def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
     pip_dependencies: Tuple[str, ...] = ()
     metadata = {}
     conda_env = None
+    assertions: Sequence[Assertion] = ()
     with zipfile.ZipFile(package_path) as package:
         if "environment.yml" in package.namelist():
             with package.open("environment.yml", "r") as stream:
@@ -98,8 +106,15 @@ def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
             pip_dependencies = tuple(requirements.read().decode("utf8").splitlines())
         with package.open("metadata.json", "r") as metadata_:
             metadata = json.loads(metadata_.read().decode("utf8"))
+        with package.open("assertions", "r") as assertions_:
+            import cloudpickle
+
+            assertions = cloudpickle.load(assertions_) or ()
     return FunctionPackageInfo(
-        pip_dependencies=pip_dependencies, metadata=metadata, conda_env=conda_env
+        pip_dependencies=pip_dependencies,
+        metadata=metadata,
+        conda_env=conda_env,
+        assertions=assertions,
     )
 
 

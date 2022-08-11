@@ -6,7 +6,7 @@ import uuid
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Sequence
 
 from layerapi.api.ids_pb2 import ProjectId
 
@@ -16,15 +16,18 @@ from layer.clients.model_catalog import ModelCatalogClient
 from layer.clients.project_service import ProjectServiceClient
 from layer.config.config import ClientConfig
 from layer.config.config_manager import ConfigManager
+from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
 from layer.contracts.models import TrainStorageConfiguration
+from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.executables.function import Function
 from layer.executables.packager import FunctionPackageInfo
 from layer.executables.runtime import BaseFunctionRuntime
 from layer.flavors.utils import get_flavor_for_model
 from layer.global_context import current_project_full_name, set_has_shown_update_message
 from layer.projects.utils import get_current_project_full_name
+from layer.utils.runtime_utils import check_and_convert_to_df
 
 
 _ProjectId = uuid.UUID
@@ -105,13 +108,17 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
             ProjectId(value=str(self._project_id)), name, display_fabric
         )
         dataset = func()
+        dataset = check_and_convert_to_df(dataset)
+        if self._package_info and self._package_info.assertions:
+            self._run_assertions(dataset, self._package_info.assertions)
         data_catalog.store_dataset(dataset, uuid.UUID(build_response.id.value))
-
         return dataset
 
     def _create_model(self, name: str, func: Callable[..., Any]) -> Any:
         model = func()
         model_flavor = get_flavor_for_model(model)
+        if self._package_info and self._package_info.assertions:
+            self._run_assertions(model, self._package_info.assertions)
         if model_flavor is None:
             raise LayerFunctionRuntimeError("unsupported model flavor")
         with tempfile.TemporaryDirectory() as model_dir:
@@ -154,6 +161,18 @@ class LayerFunctionRuntime(BaseFunctionRuntime):
             )
 
         return model
+
+    def _run_assertions(
+        self, object_under_test: Any, assertions: Sequence[Assertion]
+    ) -> None:
+        failed_assertions = []
+        for assertion in reversed(assertions):
+            try:
+                assertion.function(object_under_test)
+            except Exception:
+                failed_assertions.append(assertion)
+        if len(failed_assertions) > 0:
+            raise LayerFailedAssertionsException(failed_assertions)
 
 
 def _add_cli_args(parser: ArgumentParser) -> None:

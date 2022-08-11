@@ -10,7 +10,7 @@ import pytest
 import layer
 from layer.contracts.asset import AssetType
 from layer.contracts.fabrics import Fabric
-from layer.decorators.assertions import assert_unique
+from layer.decorators.assertions import assert_not_null, assert_unique
 from layer.decorators.dataset_decorator import dataset
 from layer.decorators.fabric_decorator import fabric
 from layer.decorators.model_decorator import model
@@ -115,6 +115,7 @@ def test_package_function():
         @dataset("test_dataset")
         @resources("path/to/resource", "path/to/other/resource")
         @pip_requirements(packages=["package1", "package2==0.0.42"])
+        @assert_not_null(["column1", "column2"])
         def dataset_function():
             return [42]
 
@@ -127,6 +128,7 @@ def test_package_function():
             resources=(Path("path/to/resource"), Path("path/to/other/resource")),
             pip_dependencies=("package1", "package2==0.0.42"),
             conda_env=None,
+            assertions=function.assertions,
             metadata=_default_function_metadata(
                 output={"name": "test_dataset", "type": AssetType.DATASET.value}
             ),
