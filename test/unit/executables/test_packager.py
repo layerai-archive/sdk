@@ -3,10 +3,13 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path, PurePath
+from unittest import mock
 
 import pytest
 
+from layer.contracts.assertions import Assertion
 from layer.contracts.conda import CondaEnv
+from layer.decorators.assertions import assert_not_null
 from layer.executables.packager import (
     FunctionPackageInfo,
     get_function_package_info,
@@ -48,6 +51,7 @@ def test_package_contents(tmpdir: Path):
         assert exec_entries == {
             "requirements.txt",
             "function",
+            "assertions",
             "metadata.json",
             "__main__.py",
             "resources/",
@@ -113,6 +117,29 @@ def test_get_function_package_info_with_conda_dependencies(tmpdir: Path):
 
     assert package_info == FunctionPackageInfo(
         conda_env=conda_env,
+    )
+
+
+def test_get_function_package_info_with_assertions(tmpdir: Path):
+    @assert_not_null(["UserName", "OperatingSystem"])
+    def func_with_assertions():
+        pass
+
+    executable = package_function(
+        func_with_assertions,
+        output_dir=tmpdir,
+        assertions=func_with_assertions.layer.assertions,
+    )
+    package_info = get_function_package_info(executable)
+
+    assert package_info == FunctionPackageInfo(
+        assertions=[
+            Assertion(
+                name="assert_not_null",
+                values=[["UserName", "OperatingSystem"]],
+                function=mock.ANY,
+            )
+        ],
     )
 
 

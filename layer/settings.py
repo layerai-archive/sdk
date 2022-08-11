@@ -61,6 +61,10 @@ class LayerSettings:
         return self.get_resource_paths()
 
     @property
+    def assertions(self) -> List[Assertion]:
+        return self.get_assertions()
+
+    @property
     def fabric(self) -> Fabric:
         return self.get_fabric()
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 import layer
+from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetType
 from layer.contracts.conda import CondaEnv
 from layer.contracts.fabrics import Fabric
@@ -26,6 +27,7 @@ class Function:
         pip_dependencies: Sequence[str],
         conda_environment: Optional[CondaEnv],
         resources: Sequence[Path],
+        assertions: Sequence[Assertion],
         fabric: Fabric,
         source_code: str,
         source_code_digest: str,
@@ -35,6 +37,7 @@ class Function:
         self._pip_dependencies = pip_dependencies
         self._conda_environment = conda_environment
         self._resources = resources
+        self._assertions = assertions
         self._fabric = fabric
         self._source_code = source_code
         self._source_code_digest = source_code_digest
@@ -45,6 +48,7 @@ class Function:
         pip_dependencies = _get_function_pip_dependencies(func)
         conda_environment = _get_function_conda_environment(func)
         resources = _get_function_resources(func)
+        assertions = _get_function_assertions(func)
         fabric = _get_function_fabric(func)
         wrapped_func = _undecorate_function(func)
         source_code = inspect.getsource(func)
@@ -57,6 +61,7 @@ class Function:
             pip_dependencies=pip_dependencies,
             conda_environment=conda_environment,
             resources=resources,
+            assertions=assertions,
             fabric=fabric,
             source_code=source_code,
             source_code_digest=source_code_digest,
@@ -85,6 +90,10 @@ class Function:
     @property
     def resources(self) -> Sequence[Path]:
         return self._resources
+
+    @property
+    def assertions(self) -> Sequence[Assertion]:
+        return self._assertions
 
     @property
     def fabric(self) -> Fabric:
@@ -134,6 +143,7 @@ class Function:
             pip_dependencies=self._pip_dependencies,
             conda_env=self._conda_environment,
             resources=self._resources,
+            assertions=self._assertions,
             output_dir=output_dir,
             metadata=self.metadata,
         )
@@ -190,6 +200,11 @@ def _get_function_pip_dependencies(func: Callable[..., Any]) -> Sequence[str]:
 def _get_function_resources(func: Callable[..., Any]) -> Sequence[Path]:
     resource_paths = _get_decorator_attr(func, "resource_paths") or []
     return tuple(Path(resource_path.path) for resource_path in resource_paths)
+
+
+def _get_function_assertions(func: Callable[..., Any]) -> Sequence[Assertion]:
+    assertions = _get_decorator_attr(func, "assertions") or []
+    return tuple(assertions)
 
 
 def _get_function_fabric(func: Callable[..., Any]) -> Fabric:
