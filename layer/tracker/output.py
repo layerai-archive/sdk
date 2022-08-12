@@ -64,4 +64,7 @@ def get_progress_ui() -> Progress:
         SpinnerColumn(finished_text=":white_heavy_check_mark:"),
         AssetColumn(),
         console=Console(),
+        # Google Colab runtime crashes occasionally if below params are set to true
+        redirect_stderr=False,
+        redirect_stdout=False,
     )
