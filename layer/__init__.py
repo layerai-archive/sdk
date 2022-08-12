@@ -13,6 +13,13 @@ from .decorators import (  # noqa
     pip_requirements,
     resources,
 )
+from .decorators.assertions import (  # noqa
+    assert_not_null,
+    assert_skewness,
+    assert_true,
+    assert_unique,
+    assert_valid_values,
+)
 from .flavors.custom import CustomModel  # noqa
 from .global_context import current_project_full_name  # noqa
 from .logged_data.callbacks import KerasCallback, XGBoostCallback  # noqa
