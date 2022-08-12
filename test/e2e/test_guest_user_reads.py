@@ -104,3 +104,15 @@ def test_guest_user_public_model_read(
         from sklearn.svm import SVC
 
         assert isinstance(train, SVC)
+
+
+def test_guest_user_cannot_init_project(
+    guest_context,
+):
+    with guest_context():
+        with pytest.raises(LayerClientException) as error:
+            layer.init("foo-bar")
+
+        assert "UNAUTHENTICATED" in str(
+            error
+        ) and "does not have a Layer account" in str(error)
