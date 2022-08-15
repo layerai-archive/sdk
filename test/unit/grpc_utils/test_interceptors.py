@@ -19,6 +19,7 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
 )
 
 from layer.exceptions.exceptions import (
+    LayerClientAccessDeniedException,
     LayerClientResourceAlreadyExistsException,
     LayerClientResourceNotFoundException,
     LayerClientTimeoutException,
@@ -394,6 +395,10 @@ class TestGRPCErrorClientInterceptor:
             (
                 grpc.StatusCode.NOT_FOUND,
                 LayerClientResourceNotFoundException,
+            ),
+            (
+                grpc.StatusCode.PERMISSION_DENIED,
+                LayerClientAccessDeniedException,
             ),
         ],
     )

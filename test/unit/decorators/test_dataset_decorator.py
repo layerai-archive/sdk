@@ -80,7 +80,7 @@ class TestDatasetDecorator:
     ) -> None:
         mock_project_api = MagicMock()
         mock_project_api.GetProjectByPath.side_effect = (
-            LayerClientResourceNotFoundException()
+            LayerClientResourceNotFoundException("error")
         )
 
         with project_client_mock(project_api_stub=mock_project_api):

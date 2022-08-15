@@ -10,6 +10,7 @@ from google.protobuf.json_format import MessageToDict
 from grpc._cython.cygrpc import _Metadatum  # type: ignore
 
 from layer.exceptions.exceptions import (
+    LayerClientAccessDeniedException,
     LayerClientException,
     LayerClientResourceAlreadyExistsException,
     LayerClientResourceNotFoundException,
@@ -60,21 +61,26 @@ class GRPCErrorClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # type: ign
             if metadata.key == "x-request-id":
                 request_id = str(metadata.value)
                 break
-        client_error_message = f"code: {error.code().name}, details: {error_details}"
-        if len(request_id) > 0:
-            client_error_message = f"error id: {request_id}, {client_error_message}"
 
         if error.code() is grpc.StatusCode.DEADLINE_EXCEEDED:
-            return LayerClientTimeoutException(client_error_message)
+            return LayerClientTimeoutException(
+                error_details, error.code(), request_id=request_id
+            )
         elif error.code() is grpc.StatusCode.RESOURCE_EXHAUSTED:
-            return LayerResourceExhaustedException(client_error_message)
+            return LayerResourceExhaustedException(
+                error_details, error.code(), request_id=request_id
+            )
         elif error.code() is grpc.StatusCode.UNAVAILABLE:
-            return LayerClientServiceUnavailableException(error_details)
+            return LayerClientServiceUnavailableException(
+                error_details, error.code(), request_id=request_id
+            )
         elif error.code() is grpc.StatusCode.NOT_FOUND:
             return LayerClientResourceNotFoundException(error_details)
+        elif error.code() is grpc.StatusCode.PERMISSION_DENIED:
+            return LayerClientAccessDeniedException(error_details)
         elif error.code() is grpc.StatusCode.ALREADY_EXISTS:
             return LayerClientResourceAlreadyExistsException(error_details)
-        return LayerClientException(client_error_message)
+        return LayerClientException(error_details, error.code(), request_id=request_id)
 
 
 class LogRpcCallsInterceptor(grpc.UnaryUnaryClientInterceptor):  # type: ignore
