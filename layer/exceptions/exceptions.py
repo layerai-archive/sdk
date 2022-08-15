@@ -2,7 +2,7 @@ from pathlib import Path
 from traceback import FrameSummary
 from typing import Any, List, Optional, Type
 
-from grpc import RpcError, StatusCode
+from grpc import StatusCode
 from layerapi.api.ids_pb2 import RunId
 from yarl import URL
 
