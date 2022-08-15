@@ -116,11 +116,19 @@ class LayerClientTimeoutException(LayerClientException):
 
 
 class LayerClientResourceNotFoundException(LayerClientHumanFriendlyException):
-    pass
+    def __init__(self, error_message: str):
+        super().__init__(
+            error_message,
+            suggestion="You might need to log in again to access this resource.",
+        )
 
 
 class LayerClientAccessDeniedException(LayerClientHumanFriendlyException):
-    pass
+    def __init__(self, error_message: str):
+        super().__init__(
+            error_message,
+            suggestion="If you were recently granted access, please try logging in again.",
+        )
 
 
 class LayerClientResourceAlreadyExistsException(LayerClientHumanFriendlyException):
