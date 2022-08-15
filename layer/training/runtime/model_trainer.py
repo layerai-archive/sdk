@@ -191,21 +191,22 @@ class ModelTrainer:
                     self.train_context.model_name,
                 )
                 self.logger.info("Executed train_model_func successfully")
-                self._run_assertions(
-                    model,
-                    train_model_func.layer.get_assertions(),  # type: ignore
-                )
-                self.tracker.mark_model_saving(self.train_context.model_name)
-                self.logger.info(f"Saving model artifact {model} to model registry")
-                train.save_model(model, tracker=self.tracker)
+                if model:
+                    self._run_assertions(
+                        model,
+                        train_model_func.layer.get_assertions(),  # type: ignore
+                    )
+                    self.tracker.mark_model_saving(self.train_context.model_name)
+                    self.logger.info(f"Saving model artifact {model} to model registry")
+                    train.save_model(model, tracker=self.tracker)
+                    self.logger.info(
+                        f"Saved model artifact {model} to model registry successfully"
+                    )
                 update_train_status(
                     self.client.model_catalog,
                     self.train_context.train_id,
                     ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
                     self.logger,
-                )
-                self.logger.info(
-                    f"Saved model artifact {model} to model registry successfully"
                 )
                 self.tracker.mark_model_saved(self.train_context.model_name)
                 return model
