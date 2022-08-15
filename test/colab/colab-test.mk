@@ -11,7 +11,7 @@ colab-test-internal: $(TEST_TOKEN_FILE) $(COLAB_TEST_HOME)/test_import_login_ini
 	@$(DOCKER_RUN)
 
 .PHONY: colab-test-internal-local
-colab-test-internal-local: $(TEST_TOKEN_FILE) $(COLAB_TEST_HOME)/test_import_login_init.ipynb colab-test-build dist/layer-0.10.0-py3-none-any.whl
+colab-test-internal-local: $(TEST_TOKEN_FILE) $(COLAB_TEST_HOME)/test_import_login_init.ipynb dist/layer-0.10.0-py3-none-any.whl
 	@$(DOCKER_RUN)
 
 dist/layer-0.10.0-py3-none-any.whl:
@@ -21,18 +21,7 @@ dist/layer-0.10.0-py3-none-any.whl:
 colab-test-pull:
 	@docker pull $(DOCKER_IMAGE_NAME)
 
-.PHONY: colab-test-build
-colab-test-build: $(COLAB_IMAGE_BUILD_STAMP)
-$(COLAB_IMAGE_BUILD_STAMP): $(COLAB_TEST_HOME)/requirements-fixed.txt test/colab/Dockerfile
-	@DOCKER_BUILDKIT=1 docker build -t $(DOCKER_IMAGE_NAME) -f test/colab/Dockerfile .
-	@touch $(COLAB_IMAGE_BUILD_STAMP)
-
-.DELETE_ON_ERROR: $(COLAB_TEST_HOME)/requirements-fixed.txt $(COLAB_TEST_HOME)/test_import_login_init.ipynb
-
-$(COLAB_TEST_HOME)/requirements-fixed.txt: test/colab/requirements.txt test/colab/fix-requirements.sh
-	@mkdir -p $(COLAB_TEST_HOME)
-# Fix requirements.txt to make them compatible with running on M1 mac/linux, outside of colab itself.
-	@./test/colab/fix-requirements.sh
+.DELETE_ON_ERROR: $(COLAB_TEST_HOME)/test_import_login_init.ipynb
 
 $(COLAB_TEST_HOME)/test_import_login_init.ipynb: test/colab/test_import_login_init.ipynb
 	@mkdir -p $(COLAB_TEST_HOME)

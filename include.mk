@@ -11,7 +11,6 @@ UNAME_ARCH := $(shell uname -m)
 REQUIRED_POETRY_VERSION := 1.1.14
 PROJECT_NAME := sdk
 COLAB_TEST_HOME := $(ROOT_DIR)/build/colab-test
-COLAB_IMAGE_BUILD_STAMP := .image-built.stamp
 DOCKER_IMAGE_NAME = layerco/colab-lite
 OUTPUTS_DIR := $(ROOT_DIR)/build/outputs
 PYTHON_ENV_STAMP_DIR := $(OUTPUTS_DIR)/python-env-stamps
