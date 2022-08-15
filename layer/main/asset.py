@@ -279,3 +279,31 @@ def _ensure_asset_path_is_absolute(
         ProjectFullName(account_name=account_name, project_name=project_name)
     )
     return path
+
+
+@sdk_function
+def save_model(model: Any) -> None:
+    """
+    :param model: The model object to save.
+    :return: None.
+
+    Saves a model object to Layer under the currently decorated function.
+
+    .. code-block:: python
+
+        # Loads the default version of the model.
+        my_model = train()
+        layer.save_model(my_model)
+    """
+    active_context = get_active_context()
+    if not active_context:
+        raise RuntimeError(
+            "Saving model only allowed inside functions decorated with @model"
+        )
+    train = active_context.train()
+    tracker = active_context.tracker()
+    if not train or not tracker:
+        raise RuntimeError(
+            "Saving model only allowed inside functions decorated with @model"
+        )
+    train.save_model(model, tracker=tracker)
