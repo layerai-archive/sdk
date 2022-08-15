@@ -2,6 +2,7 @@ from pathlib import Path
 from traceback import FrameSummary
 from typing import Any, List, Optional, Type
 
+from grpc import StatusCode
 from layerapi.api.ids_pb2 import RunId
 from yarl import URL
 
@@ -47,18 +48,90 @@ class AuthException(Exception):
 
 
 class LayerClientException(Exception):
-    pass
+    def __init__(
+        self,
+        error_msg: str,
+        status_code: Optional[StatusCode] = None,
+        request_id: str = "",
+        suggestion: str = "",
+    ):
+        self._error_msg = error_msg
+        self._error_code = status_code
+        self._suggestion = suggestion
+        self._request_id = request_id
+        super().__init__(self._format_message())
+
+    @property
+    def error_msg(self) -> str:
+        return self._error_msg
+
+    @property
+    def error_msg_rich(self) -> str:
+        return self.error_msg
+
+    @property
+    def suggestion(self) -> str:
+        return self._suggestion
+
+    @property
+    def suggestion_rich(self) -> str:
+        return self.suggestion
+
+    def _format_debug_details(self) -> str:
+        debug_details = []
+        if len(self._request_id) > 0:
+            debug_details.append(f"error id: {self._request_id}")
+        if self._error_code:
+            debug_details.append(f"code: {self._error_code.name}")
+
+        return ", ".join(debug_details)
+
+    def _format_message(self) -> str:
+        debug_details = self._format_debug_details()
+        if len(debug_details) > 0:
+            # Developer friendly
+            message = f"{debug_details}, details: {self._error_msg}"
+            if len(self._suggestion) > 0:
+                message += f", suggestion: {self._suggestion}"
+        else:
+            # Human friendly
+            message = self._error_msg
+            if len(self._suggestion) > 0:
+                message += f",\nSuggestion: {self._suggestion}"
+
+        return message
+
+
+class LayerClientHumanFriendlyException(LayerClientException):
+    """
+    Debug details like error code and request id are not passed on purpose
+    """
+
+    def __init__(self, error_message: str, suggestion: str = ""):
+        super().__init__(error_msg=error_message, suggestion=suggestion)
 
 
 class LayerClientTimeoutException(LayerClientException):
     pass
 
 
-class LayerClientResourceNotFoundException(LayerClientException):
-    pass
+class LayerClientResourceNotFoundException(LayerClientHumanFriendlyException):
+    def __init__(self, error_message: str):
+        super().__init__(
+            error_message,
+            suggestion="You might need to log in again to access this resource.",
+        )
 
 
-class LayerClientResourceAlreadyExistsException(LayerClientException):
+class LayerClientAccessDeniedException(LayerClientHumanFriendlyException):
+    def __init__(self, error_message: str):
+        super().__init__(
+            error_message,
+            suggestion="If you were recently granted access, please try logging in again.",
+        )
+
+
+class LayerClientResourceAlreadyExistsException(LayerClientHumanFriendlyException):
     pass
 
 
