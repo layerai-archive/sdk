@@ -128,7 +128,7 @@ def _dataset_client_mock(dataset_client_mock=None):
     async def config_refresh(*, allow_guest: bool = False):
         return config
 
-    with patch("layer.main.LayerClient.init", return_value=client), patch(
+    with patch("layer.main.asset.LayerClient.init", return_value=client), patch(
         "layer.config.ConfigManager.refresh", side_effect=config_refresh
     ):
         yield

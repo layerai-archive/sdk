@@ -73,7 +73,7 @@ class LogDataRunner:
             elif isinstance(value, bool):
                 self._log_boolean(tag=tag, bool_val=value)
             elif isinstance(value, (int, float)):
-                if self._train_id and epoch is not None:
+                if epoch is not None:
                     self._log_metric(
                         tag=tag,
                         numeric_value=value,

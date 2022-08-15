@@ -7,7 +7,7 @@ import layer
 from layer.contracts.fabrics import Fabric
 from layer.decorators import fabric
 from layer.exceptions.exceptions import ConfigError
-from layer.main import init
+from layer.main.run import init
 
 
 def test_when_both_packages_and_requirements_file_provided_on_init_then_throws_error() -> None:
