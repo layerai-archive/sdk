@@ -291,7 +291,7 @@ def save_model(model: Any) -> None:
 
     .. code-block:: python
 
-        # Loads the default version of the model.
+        # Saves the model to the current train.
         my_model = train()
         layer.save_model(my_model)
     """
