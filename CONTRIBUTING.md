@@ -107,13 +107,18 @@ Then, run `pyenv install $(cat .python-version)` in the root of this repo to ens
 #### Makefile
 This repo uses `make` as the build system. The following targets can be used throughout your development lifecycle:
 
+- `create-environment` creates a virtual environment where `layer` will be installed into. It will be pyenv on Linux or conda on MacOS M1
 - `install` - prepares the `poetry` virtual environment. Most of the other tasks will do that automatically for you
 - `format` - formats the code
 - `test` - runs unit tests
+- `colab-test` - run colab tests with layerco/colab-lite image from dockerhub
 - `lint` - runs linters
 - `check` - runs `test` and `lint`
+- `check-package-loads` - check that package loads without dev dependencies
 - `publish` - publishes the project to PyPi. This is intended to be used in CI only.
-- `clean` - cleans the repo, including the `poetry` virtual environment
+- `jupyter` - start a jupyter notebook with editable layer package
+- `clean` - resets development environment
+- `deepclean` - cleans up the virtual environment
 - `help` - prints all targets
 
 ### Python setup
@@ -241,7 +246,20 @@ By default `e2e-tests` run with 16x parallelism. You can pass `E2E_TEST_PARALLEL
 make e2e-test E2E_TEST_PARALLELISM=1
 ```
 
-#### Testing your local SDK build within a Google Colab notebook
+#### Testing colab integration
+
+##### Automated testing
+We provide an image that includes same `requirements.txt` from Google Colab, you can test integration by running the command `make colab-test`. 
+This test uses local `sdk` package and runs a notebook that will login to layer.
+To run this test you will need to generate an API KEY and provide via the terminal. To generate API_KEY access https://app.layer.ai/$USERNAME/settings/developer
+
+##### Testing your local SDK code within a jupyter notebook
+
+1. Run `make jupyter`
+2. Browser window with the local jupyter notebook will popup
+3. Changes done to your local `SDK` will auto reflect on that jupyter notebook environment
+
+##### Testing your local SDK build within a Google Colab notebook
 
 1. Run `poetry build`
 2. Upload `dist/layer-0.10.0-py3-none-any.whl` to the Colab notebook after a runtime recreation (hint: you can do by `from google.colab import files` and `files.upload()` inside Colab)
