@@ -62,22 +62,25 @@ class TestProjectExecutionPlanner:
         ops = execution_plan.operations
 
         assert len(ops) == 5
-        assert ops[0].sequential.dataset_build.dataset_name == "ds1"
-        assert ops[1].sequential.dataset_build.dataset_name == "ds2"
-        assert ops[2].sequential.dataset_build.dataset_name == "ds3"
-        assert ops[3].sequential.model_train.model_version_id.value == str(
-            definitions[3].version_id
+        assert (
+            ops[0].sequential.function_execution.asset_name
+            == f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds1"
         )
-        assert ops[4].sequential.model_train.model_version_id.value == str(
-            definitions[4].version_id
+        assert (
+            ops[1].sequential.function_execution.asset_name
+            == f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds2"
         )
-        assert ops[1].sequential.dataset_build.dependency == [
+        assert (
+            ops[2].sequential.function_execution.asset_name
+            == f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds3"
+        )
+        assert ops[1].sequential.function_execution.dependency == [
             f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds1"
         ]
-        assert ops[3].sequential.model_train.dependency == [
+        assert ops[3].sequential.function_execution.dependency == [
             f"{TEST_PROJECT_FULL_NAME.path}/datasets/ds3"
         ]
-        assert ops[4].sequential.model_train.dependency == [
+        assert ops[4].sequential.function_execution.dependency == [
             f"{TEST_PROJECT_FULL_NAME.path}/models/m1"
         ]
 
@@ -89,8 +92,7 @@ class TestProjectExecutionPlanner:
         ops = execution_plan.operations
 
         assert len(ops) == 1
-        assert len(ops[0].parallel.dataset_build) == 3
-        assert len(ops[0].parallel.model_train) == 2
+        assert len(ops[0].parallel.function_execution) == 5
 
     def test_build_execution_plan_mixed(self) -> None:
         definitions = self._create_mock_run_mixed()
