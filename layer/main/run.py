@@ -16,6 +16,7 @@ from layer.global_context import (
 )
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
+from layer.projects.project_runner_old import ProjectRunner as OldProjectRunner
 from layer.projects.utils import get_current_project_full_name, validate_project_name
 from layer.settings import LayerSettings
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -85,7 +86,6 @@ def run(
     functions: List[Any],
     debug: bool = False,
     ray_address: Optional[str] = None,
-    **kwargs: Any,
 ) -> Run:
     """
     :param functions: List of decorated functions to run in the Layer backend.
@@ -133,13 +133,20 @@ def run(
             ray_address=ray_address,
         )
         run = ray_project_runner.run()
-    else:
+    elif is_executables_feature_active():
         project_runner = ProjectRunner(
             config=layer_config,
             project_full_name=project_full_name,
             functions=functions,
         )
         run = project_runner.run(debug=debug)
+    else:
+        old_project_runner = OldProjectRunner(
+            config=layer_config,
+            project_full_name=project_full_name,
+            functions=functions,
+        )
+        run = old_project_runner.run(debug=debug)
     _make_notebook_links_open_in_new_tab()
     return run
 
