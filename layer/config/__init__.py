@@ -14,9 +14,3 @@ from .config import (  # noqa
 )
 from .config_client import ConfigClient  # noqa
 from .config_manager import ConfigManager  # noqa
-
-
-def is_executables_feature_active() -> bool:
-    import os
-
-    return "LAYER_EXECUTABLES" in os.environ

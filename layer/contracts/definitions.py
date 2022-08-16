@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-from layer.config import DEFAULT_FUNC_PATH, is_executables_feature_active
+from layer.config import DEFAULT_FUNC_PATH
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.fabrics import Fabric
@@ -130,19 +130,8 @@ class FunctionDefinition:
         os.makedirs(function_home_dir)
 
     def package(self) -> Path:
-        self._clean_function_home_dir()
-        if is_executables_feature_active():
-            self._executable_path = self._package_executable()
-            return self._executable_path
-        else:
-            # Dump pickled function to asset_name.pkl
-            with open(self.pickle_path, mode="wb") as file:
-                cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
-
-            with open(self.environment_path, "w") as reqs_file:
-                reqs_file.write("\n".join(self.pip_dependencies))
-
-            return self.pickle_path
+        self._executable_path = self._package_executable()
+        return self._executable_path
 
     def _package_executable(self) -> Path:
         resource_paths = [Path(resource.path) for resource in self.resource_paths]

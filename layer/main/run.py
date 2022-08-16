@@ -1,23 +1,17 @@
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, List, Optional
 
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager, is_executables_feature_active
+from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.contracts.runs import Run
-from layer.exceptions.exceptions import ConfigError
-from layer.global_context import (
-    has_shown_python_version_message,
-    reset_to,
-    set_has_shown_python_version_message,
-)
+from layer.executables.runner import remote_run
+from layer.global_context import reset_to
 from layer.projects.init_project_runner import InitProjectRunner
-from layer.projects.project_runner import ProjectRunner
-from layer.projects.utils import get_current_project_full_name, validate_project_name
-from layer.settings import LayerSettings
+from layer.projects.utils import validate_project_name
 from layer.utils.async_utils import asyncio_run_in_thread
 
 from .utils import sdk_function
@@ -118,61 +112,9 @@ def run(
         run = layer.run([create_my_dataset])
         # run = layer.run([create_my_dataset], debug=True)  # Stream logs to console
     """
-    if kwargs.get("executables_feature", False) or is_executables_feature_active():
-        from layer.executables.runner import remote_run
-
-        return remote_run(functions)
-
-    _check_python_version()
-    _ensure_all_functions_are_decorated(functions)
-
-    layer_config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-    project_full_name = get_current_project_full_name()
-    if ray_address is not None:
-        from layer.projects.ray_project_runner import RayProjectRunner
-
-        ray_project_runner = RayProjectRunner(
-            config=layer_config,
-            project_full_name=project_full_name,
-            functions=functions,
-            ray_address=ray_address,
-        )
-        run = ray_project_runner.run()
-    else:
-        project_runner = ProjectRunner(
-            config=layer_config,
-            project_full_name=project_full_name,
-            functions=functions,
-        )
-        run = project_runner.run(debug=debug)
     _make_notebook_links_open_in_new_tab()
-    return run
 
-
-def _check_python_version() -> None:
-    if has_shown_python_version_message():
-        return
-
-    import platform
-
-    major, minor, _ = platform.python_version_tuple()
-
-    if major != "3" or minor not in ["7", "8"]:
-        print(
-            f"You are using the Python version {platform.python_version()} but layer requires Python 3.7.x or 3.8.x"
-        )
-    set_has_shown_python_version_message(True)
-
-
-def _ensure_all_functions_are_decorated(functions: List[Callable[..., Any]]) -> None:
-    for f in functions:
-        if not hasattr(f, "layer"):
-            raise ConfigError(
-                'Either @dataset(name="...") or @model(name="...") is required for each function. '
-                "Add @dataset or @model decorator to your functions to run them in Layer."
-            )
-        settings: LayerSettings = f.layer  # type: ignore
-        settings.validate()
+    return remote_run(functions)
 
 
 def _get_project_full_name(

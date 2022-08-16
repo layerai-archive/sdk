@@ -1,26 +1,11 @@
 import logging
 from typing import Any, Callable, Dict, List, Optional, Union
-from uuid import UUID
 
 import wrapt  # type: ignore
 
 from layer import Dataset, Model
-from layer.clients.layer import LayerClient
-from layer.config import ConfigManager, is_executables_feature_active
-from layer.config.config import Config
 from layer.contracts.assets import AssetType
-from layer.contracts.definitions import FunctionDefinition
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
-from layer.projects.utils import (
-    get_current_project_full_name,
-    verify_project_exists_and_retrieve_project_id,
-)
-from layer.tracker.progress_tracker import RunProgressTracker
-from layer.tracker.utils import get_progress_tracker
-from layer.training.runtime.model_train_failure_reporter import (
-    ModelTrainFailureReporter,
-)
-from layer.utils.async_utils import asyncio_run_in_thread
 
 
 logger = logging.getLogger(__name__)
@@ -107,85 +92,9 @@ def _model_wrapper(
                 dependencies,
             )
 
-        # This is not serialized with cloudpickle, so it will only be run locally.
-        # See https://layerco.slack.com/archives/C02R5B3R3GU/p1646144705414089 for detail.
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            if is_executables_feature_active():
-                from layer.executables.layer_runtime import local_run
+            from layer.executables.layer_runtime import local_run
 
-                return local_run(self)
-
-            model_definition = self.get_definition()
-            model_definition.package()
-            config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            current_project_full_name_ = get_current_project_full_name()
-            with LayerClient(config.client, logger).init() as client:
-                progress_tracker = get_progress_tracker(
-                    url=config.url,
-                    project_name=current_project_full_name_.project_name,
-                    account_name=current_project_full_name_.account_name,
-                )
-
-                with progress_tracker.track() as tracker:
-                    tracker.add_asset(AssetType.MODEL, self.layer.get_asset_name())
-                    return self._train_model_locally_and_store_remotely(
-                        model_definition, tracker, client, args, kwargs
-                    )
-
-        @staticmethod
-        def _train_model_locally_and_store_remotely(
-            model: FunctionDefinition,
-            tracker: RunProgressTracker,
-            client: LayerClient,
-            args: Any,
-            kwargs: Any,
-        ) -> Any:
-            from layer.training.runtime.model_trainer import (
-                LocalTrainContext,
-                ModelTrainer,
-            )
-
-            assert model.project_name is not None
-            verify_project_exists_and_retrieve_project_id(
-                client, model.project_full_name
-            )
-
-            model_version = client.model_catalog.create_model_version(
-                model.asset_path,
-                model.description,
-                model.source_code_digest.hexdigest(),
-                model.get_fabric(True),
-            ).model_version
-            train_id = client.model_catalog.create_model_train_from_version_id(
-                model_version.id
-            )
-            train = client.model_catalog.get_model_train(train_id)
-
-            context = LocalTrainContext(  # noqa: F841
-                logger=logger,
-                model_name=model.asset_name,
-                model_version=model_version.name,
-                train_id=UUID(train_id.value),
-                source_folder=model.function_home_dir,
-                source_entrypoint=model.entrypoint,
-                train_index=str(train.index),
-            )
-            failure_reporter = ModelTrainFailureReporter(
-                client.model_catalog,
-                logger,
-                context.train_id,
-                context.source_folder,
-            )
-            trainer = ModelTrainer(
-                client=client,
-                train_context=context,
-                logger=logger,
-                failure_reporter=failure_reporter,
-                tracker=tracker,
-                args=args,
-                kwargs=kwargs,
-            )
-            result = trainer.train()
-            return result
+            return local_run(self)
 
     return FunctionWrapper
