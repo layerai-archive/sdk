@@ -155,7 +155,6 @@ def test_guest_user_private_model_logged_data_read(
 
 
 def test_guest_user_public_model_read(
-    client: LayerClient,
     populated_public_project: Project,
     guest_context,
     guest_client: LayerClient,
@@ -171,7 +170,7 @@ def test_guest_user_public_model_read(
 
         assert isinstance(train, SVC)
 
-        logged_data = client.logged_data_service_client.get_logged_data(
+        logged_data = guest_client.logged_data_service_client.get_logged_data(
             tag=model_log_tag, train_id=UUID(mdl.storage_config.train_id.value)
         )
 
