@@ -68,12 +68,7 @@ class TestModelFlavors:
     def test_tensorflow_flavor(self):
         import tensorflow as tf
 
-        class Adder(tf.Module):
-            @tf.function(input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
-            def add(self, x):
-                return x + x + 1.0
-
-        model = Adder()
+        model = tf.keras.models.Sequential()
 
         flavor = get_flavor_for_model(model)
         assert type(flavor).__name__ == TensorFlowModelFlavor.__name__

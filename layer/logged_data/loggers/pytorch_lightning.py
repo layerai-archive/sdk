@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Mapping, MutableMapping, Optional, Union
 
 import pandas
-import torch
 
 import layer
 
@@ -15,9 +14,7 @@ if importlib.util.find_spec("pytorch_lightning") is None:
         pass
 
 else:
-    from pytorch_lightning.loggers.logger import (  # type: ignore  # pylint: disable=E0401
-        Logger,
-    )
+    from pytorch_lightning.loggers.logger import Logger  # type: ignore
 
 
 class PytorchLightningLogger(Logger):
@@ -266,7 +263,7 @@ class PytorchLightningLogger(Logger):
     def log_image(
         self,
         key: str,
-        image: Union[Any, Path, torch.Tensor],
+        image: Union[Any, Path],
         format: str = "CHW",
         step: Optional[int] = None,
     ) -> None:
@@ -282,7 +279,7 @@ class PytorchLightningLogger(Logger):
         self.log_metrics(metrics, step)
 
     def log_video(
-        self, key: str, video: Union[torch.Tensor, Path], fps: Union[float, int] = 4
+        self, key: str, video: Union[Any, Path], fps: Union[float, int] = 4
     ) -> None:
         """Log a video to your experiment.
 
@@ -291,6 +288,8 @@ class PytorchLightningLogger(Logger):
         :param fps: Frame per second, applicable to only torch tensor videos
         :return:
         """
+        import torch
+
         if isinstance(video, torch.Tensor):
             self.log_metrics({key: layer.Video(video=video, fps=fps)})
         else:
