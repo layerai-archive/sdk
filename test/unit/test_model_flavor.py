@@ -73,6 +73,12 @@ class TestModelFlavors:
             def add(self, x):
                 return x + x + 1.0
 
+            def _restore_from_tensors(self, restored_tensors) -> None:
+                pass
+
+            def _serialize_to_tensors(self) -> None:
+                pass
+
         model = Adder()
 
         flavor = get_flavor_for_model(model)
