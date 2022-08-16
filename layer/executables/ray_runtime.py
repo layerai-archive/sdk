@@ -6,17 +6,15 @@ from ray.client_builder import (  # type:ignore #  pylint: disable=import-error
     ClientContext,
 )
 
-from layer.config.config_manager import ConfigManager
 from layer.contracts.fabrics import Fabric
-from layer.executables.entrypoint_layer_runtime import EntrypointLayerFunctionRuntime
-from layer.executables.packager import FunctionPackageInfo
-from layer.executables.runtime import BaseFunctionRuntime
-from layer.global_context import current_project_full_name
+
+from .packager import FunctionPackageInfo
+from .runtime import BaseFunctionRuntime
 
 
 @ray.remote
 def ray_runtime(executable_path: Path) -> None:
-    EntrypointLayerFunctionRuntime.execute(executable_path=Path(executable_path.name))
+    BaseFunctionRuntime.execute(executable_path=Path(executable_path.name))
 
 
 class RayClientFunctionRuntime(BaseFunctionRuntime):
@@ -25,24 +23,16 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
     ) -> None:
         super().__init__(executable_path)
         self._address = kwargs["address"]
-        self._config = ConfigManager().load()
         self._client: Optional[ClientContext] = None
         self._fabric: Optional[Fabric] = None
 
     def initialise(self, package_info: FunctionPackageInfo) -> None:
         if not self._address:
             raise ValueError("Ray address is required!")
-        project = current_project_full_name()
-        if project is None:
-            raise ValueError("project not specified and could not be resolved")
 
         runtime_env = {
             "working_dir": f"{self.executable_path.parent}",
-            "env_vars": {
-                "LAYER_PROJECT_NAME": project.project_name,
-                "LAYER_CLIENT_AUTH_URL": str(self._config.url),
-                "LAYER_CLIENT_AUTH_TOKEN": self._config.client.access_token,
-            },
+            "env_vars": {},
         }
         if package_info.conda_env:
             environment = package_info.conda_env.environment

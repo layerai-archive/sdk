@@ -2,7 +2,7 @@ import logging
 from typing import Any, Callable, List, Optional
 
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager, is_executables_feature_active
+from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
@@ -118,11 +118,6 @@ def run(
         run = layer.run([create_my_dataset])
         # run = layer.run([create_my_dataset], debug=True)  # Stream logs to console
     """
-    if kwargs.get("executables_feature", False) or is_executables_feature_active():
-        from layer.executables.runner import remote_run
-
-        return remote_run(functions)
-
     _check_python_version()
     _ensure_all_functions_are_decorated(functions)
 
