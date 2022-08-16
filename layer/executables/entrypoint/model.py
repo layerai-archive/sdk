@@ -9,15 +9,15 @@ from layer.config.config import Config
 from layer.contracts.assets import AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
-from layer.executables.model.model_trainer import LocalTrainContext, ModelTrainer
-from layer.global_context import reset_to, set_has_shown_update_message
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
+from .common import initialize
+from .model_trainer import LocalTrainContext, ModelTrainer
+
 
 logger = logging.getLogger(__name__)
-set_has_shown_update_message(True)
 
 
 def runner(model_definition: FunctionDefinition) -> Any:
@@ -28,9 +28,8 @@ def runner(model_definition: FunctionDefinition) -> Any:
 
 
 def _run(model_definition: FunctionDefinition) -> Any:
+    initialize(model_definition)
     config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-
-    reset_to(model_definition.project_full_name.path)
 
     with LayerClient(config.client, logger).init() as client:
         progress_tracker = get_progress_tracker(
@@ -41,7 +40,7 @@ def _run(model_definition: FunctionDefinition) -> Any:
 
         with progress_tracker.track() as tracker:
             tracker.add_asset(AssetType.MODEL, model_definition.asset_name)
-            assert model_definition.project_name is not None
+
             verify_project_exists_and_retrieve_project_id(
                 client, model_definition.project_full_name
             )

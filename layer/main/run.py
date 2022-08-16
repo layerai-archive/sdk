@@ -2,7 +2,7 @@ import logging
 from typing import Any, Callable, List, Optional
 
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager
+from layer.config import ConfigManager, is_executables_feature_active
 from layer.config.config import Config
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
@@ -86,6 +86,7 @@ def run(
     functions: List[Any],
     debug: bool = False,
     ray_address: Optional[str] = None,
+    **kwargs: Any,
 ) -> Run:
     """
     :param functions: List of decorated functions to run in the Layer backend.
@@ -133,7 +134,7 @@ def run(
             ray_address=ray_address,
         )
         run = ray_project_runner.run()
-    elif is_executables_feature_active():
+    elif kwargs.get("executables_feature", False) or is_executables_feature_active():
         project_runner = ProjectRunner(
             config=layer_config,
             project_full_name=project_full_name,

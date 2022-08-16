@@ -31,6 +31,8 @@ from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 from layer.utils.runtime_utils import check_and_convert_to_df
 
+from .common import initialize
+
 
 logger = logging.getLogger(__name__)
 set_has_shown_update_message(True)
@@ -44,6 +46,8 @@ def runner(dataset_definition: FunctionDefinition) -> Any:
 
 
 def _run(dataset_definition: FunctionDefinition) -> None:
+    initialize(dataset_definition)
+
     config: Config = asyncio_run_in_thread(ConfigManager().refresh())
 
     reset_to(dataset_definition.project_full_name.path)

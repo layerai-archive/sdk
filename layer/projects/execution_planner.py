@@ -1,20 +1,19 @@
-import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, DefaultDict, List, Optional, Sequence
+from typing import TYPE_CHECKING, DefaultDict, List, Sequence
 
 from layerapi.api.entity.operations_pb2 import (
-    DatasetBuildOperation,
     ExecutionPlan,
-    ModelTrainOperation,
+    FunctionExecutionOperation,
     Operation,
     ParallelOperation,
     SequentialOperation,
 )
-from layerapi.api.ids_pb2 import ModelVersionId
+from layerapi.api.entity.task_pb2 import Task
 
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.definitions import FunctionDefinition
+from layer.contracts.fabrics import Fabric
 from layer.exceptions.exceptions import (
     LayerClientException,
     ProjectCircularDependenciesException,
@@ -29,9 +28,25 @@ if TYPE_CHECKING:
 @dataclass(frozen=True)
 class PlanNode:
     path: AssetPath
+    fabric: Fabric
+    package_download_url: str
     dependencies: List[AssetPath]
-    name: str
-    id: Optional[uuid.UUID]
+
+    def to_execution_operation(self) -> FunctionExecutionOperation:
+        task_type = Task.Type.TYPE_INVALID
+        if self.path.asset_type == AssetType.DATASET:
+            task_type = Task.Type.TYPE_DATASET_BUILD
+        elif self.path.asset_type == AssetType.MODEL:
+            task_type = Task.Type.TYPE_MODEL_TRAIN
+        dependencies = [d.path() for d in self.dependencies]
+
+        return FunctionExecutionOperation(
+            task_type=task_type,
+            asset_name=self.path.path(),
+            executable_package_url=self.package_download_url,
+            fabric=self.fabric.value,
+            dependency=dependencies,
+        )
 
 
 def build_execution_plan(definitions: Sequence[FunctionDefinition]) -> ExecutionPlan:
@@ -40,61 +55,22 @@ def build_execution_plan(definitions: Sequence[FunctionDefinition]) -> Execution
     operations = []
     for _level, ops in plan.items():
         if len(ops) > 1:
-            dataset_build_operations = []
-            model_train_operations = []
-            for operation in ops:
-                dependencies = [d.path() for d in operation.dependencies]
-                if operation.path.asset_type == AssetType.MODEL:
-                    model_train_operation = ModelTrainOperation(
-                        model_version_id=ModelVersionId(value=str(operation.id)),
-                        dependency=dependencies,
-                    )
-                    model_train_operations.append(model_train_operation)
-                elif operation.path.asset_type == AssetType.DATASET:
-                    dataset_build_operation = DatasetBuildOperation(
-                        dataset_name=operation.name,
-                        dependency=dependencies,
-                    )
-                    dataset_build_operations.append(dataset_build_operation)
-                else:
-                    raise LayerClientException(f"Unknown operation type. {operation}")
             operations.append(
                 Operation(
                     parallel=ParallelOperation(
-                        dataset_build=dataset_build_operations,
-                        model_train=model_train_operations,
+                        function_execution=[o.to_execution_operation() for o in ops]
                     )
                 )
             )
         else:
             (operation,) = ops
-            dependencies = [d.path() for d in operation.dependencies]
-            if operation.path.asset_type == AssetType.MODEL:
-                model_train_operation = ModelTrainOperation(
-                    model_version_id=ModelVersionId(value=str(operation.id)),
-                    dependency=dependencies,
-                )
-                operations.append(
-                    Operation(
-                        sequential=SequentialOperation(
-                            model_train=model_train_operation
-                        )
+            operations.append(
+                Operation(
+                    sequential=SequentialOperation(
+                        function_execution=operation.to_execution_operation(),
                     )
                 )
-            elif operation.path.asset_type == AssetType.DATASET:
-                dataset_build_operation = DatasetBuildOperation(
-                    dataset_name=operation.name,
-                    dependency=dependencies,
-                )
-                operations.append(
-                    Operation(
-                        sequential=SequentialOperation(
-                            dataset_build=dataset_build_operation
-                        )
-                    )
-                )
-            else:
-                raise LayerClientException(f"Unknown operation type. {operation}")
+            )
     execution_plan = ExecutionPlan(operations=operations)
     return execution_plan
 
@@ -142,8 +118,8 @@ def _add_function_to_graph(graph: "DiGraph", func: FunctionDefinition) -> None:
         _get_asset_id(func.asset_path),
         node=PlanNode(
             path=func.asset_path,
-            name=func.asset_name,
-            id=func.version_id,
+            fabric=func.fabric,
+            package_download_url=func.package_download_url or "",
             dependencies=func.asset_dependencies,
         ),
     )

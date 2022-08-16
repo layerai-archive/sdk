@@ -6,8 +6,10 @@ from ray.client_builder import (  # type:ignore #  pylint: disable=import-error
     ClientContext,
 )
 
+from layer.config.config_manager import ConfigManager
 from layer.contracts.fabrics import Fabric
 
+from .entrypoint.common import ENV_LAYER_API_TOKEN, ENV_LAYER_API_URL
 from .packager import FunctionPackageInfo
 from .runtime import BaseFunctionRuntime
 
@@ -30,9 +32,13 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
         if not self._address:
             raise ValueError("Ray address is required!")
 
+        config = ConfigManager().load()
         runtime_env = {
             "working_dir": f"{self.executable_path.parent}",
-            "env_vars": {},
+            "env_vars": {
+                ENV_LAYER_API_URL: str(config.url),
+                ENV_LAYER_API_TOKEN: config.credentials.access_token,
+            },
         }
         if package_info.conda_env:
             environment = package_info.conda_env.environment

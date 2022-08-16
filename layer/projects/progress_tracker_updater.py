@@ -10,7 +10,6 @@ from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId
 
 from layer.clients.layer import LayerClient
 from layer.contracts.definitions import FunctionDefinition
-from layer.contracts.projects import ApplyResult
 from layer.contracts.runs import Run
 from layer.exceptions.exceptions import (
     LayerClientTimeoutException,
@@ -40,7 +39,6 @@ _FormattedRunMetadata = Dict[Tuple["PBTask.Type.ValueType", str, str], str]
 class ProgressTrackerUpdater:
     tracker: RunProgressTracker
     client: LayerClient
-    apply_metadata: ApplyResult
     run: Run
     definitions: List[FunctionDefinition]
     run_metadata: _FormattedRunMetadata
@@ -48,13 +46,11 @@ class ProgressTrackerUpdater:
     def __init__(
         self,
         tracker: RunProgressTracker,
-        apply_metadata: ApplyResult,
         run: Run,
         definitions: List[FunctionDefinition],
         client: LayerClient,
     ):
         self.tracker = tracker
-        self.apply_metadata = apply_metadata
         self.run = run
         self.definitions = definitions
         self.client = client
@@ -147,7 +143,7 @@ class ProgressTrackerUpdater:
             )
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             train_id = uuid.UUID(self.run_metadata[(task_type, task_id, "train-id")])
-            model_name = self._find_model_name_by_version_id(task_id)
+            model_name = task_id
             train_index = self.client.model_catalog.get_model_train(
                 ModelTrainId(value=str(train_id))
             ).index
@@ -183,7 +179,7 @@ class ProgressTrackerUpdater:
                 ExecutionStatusReportFactory.from_json(task_info),
             )
             self.tracker.mark_model_train_failed(
-                name=self._find_model_name_by_version_id(task_id),
+                name=task_id,
                 reason=f"{exc_model.message}",
             )
             raise exc_model
@@ -197,18 +193,10 @@ class ProgressTrackerUpdater:
         if task_type == PBTask.TYPE_DATASET_BUILD:
             self.tracker.mark_dataset_building(name=task_id)
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
-            self.tracker.mark_model_training(
-                name=self._find_model_name_by_version_id(task_id)
-            )
+            self.tracker.mark_model_training(name=task_id)
         else:
             # TODO: alert for this
             _print_debug(f"Task type not handled {task_type}")
-
-    def _find_model_name_by_version_id(self, version_id: str) -> str:
-        for definition in self.definitions:
-            if str(definition.version_id) == version_id:
-                return definition.asset_name
-        raise KeyError(version_id)
 
 
 def _print_debug(msg: str) -> None:

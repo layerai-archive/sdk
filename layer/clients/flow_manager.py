@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Mapping, Tuple
 
 from layerapi.api.entity.history_event_pb2 import HistoryEvent
 from layerapi.api.entity.operations_pb2 import ExecutionPlan
@@ -38,6 +38,7 @@ class FlowManagerClient:
         execution_plan: ExecutionPlan,
         project_files_hash: str,
         user_command: str,
+        env_variables: Mapping[str, str],
     ) -> RunId:
         response = self._service.StartRunV2(
             request=StartRunV2Request(
@@ -45,6 +46,7 @@ class FlowManagerClient:
                 plan=execution_plan,
                 project_files_hash=Sha256(value=project_files_hash),
                 user_command=user_command,
+                env_variables=env_variables,
             )
         )
         return response.run_id
