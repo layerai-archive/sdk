@@ -1,21 +1,23 @@
-import importlib
+import importlib.util
 from argparse import Namespace
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Mapping, MutableMapping, Optional, Union
 
+import pandas
 import torch
 
 import layer
 
 
-if importlib.util.find_spec("lightning") is None:
+if importlib.util.find_spec("pytorch_lightning") is None:
 
     class Logger:
-        def __init__(self):
-            pass
+        pass
 
 else:
-    from lightning.pytorch.loggers.logger import Logger
+    from pytorch_lightning.loggers.logger import (  # type: ignore  # pylint: disable=E0401
+        Logger,
+    )
 
 
 class PytorchLightningLogger(Logger):
@@ -156,7 +158,7 @@ class PytorchLightningLogger(Logger):
 
     def __init__(
         self,
-        project_name: Optional[str] = None,
+        project_name: str,
         api_key: Optional[str] = None,
         prefix: str = "",
     ):
@@ -167,7 +169,7 @@ class PytorchLightningLogger(Logger):
         self._api_key = api_key
 
     @property
-    def experiment(self) -> "layer":
+    def experiment(self) -> Any:
         r"""
 
         Top class `layer` object. To use Layer related functions, do the following.
@@ -244,7 +246,11 @@ class PytorchLightningLogger(Logger):
         self.experiment.log({parameters_key: params})
 
     def log_metrics(
-        self, metrics: Mapping[str, float], step: Optional[int] = None
+        self,
+        metrics: Mapping[
+            str, Union[float, layer.Video, layer.Image, pandas.DataFrame, Path]
+        ],
+        step: Optional[int] = None,
     ) -> None:
         """Log metrics to your experiment.
 
@@ -308,15 +314,8 @@ class PytorchLightningLogger(Logger):
         if dataframe is not None:
             self.log_metrics({key: dataframe})
         elif data is not None and columns is not None:
-            try:
-                import pandas as pd
-
-                df = pd.DataFrame(columns=columns, data=data)
-                self.log_metrics({key: df})
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError(
-                    "You need pandas installed to log table with data+columns. Install it with `pip install pandas`"
-                )
+            df = pandas.DataFrame(columns=columns, data=data)
+            self.log_metrics({key: df})
         else:
             raise Exception(
                 "You should set either columns+data or dataframe parameter to log a table!"
@@ -341,16 +340,13 @@ class PytorchLightningLogger(Logger):
         if isinstance(params, Namespace):
             params = vars(params)
 
-        if params is None:
-            params = {}
-
         return params
 
-    def _flatten_dict(params: Dict[Any, Any], delimiter: str = "/") -> Dict[str, Any]:
+    def _flatten_dict(params: Dict[Any, Any], delimiter: str = "/") -> Dict[str, Any]:  # type: ignore
         """Flatten hierarchical dict, e.g. ``{'a': {'b': 'c'}} -> {'a/b': 'c'}``."""
 
-        def _dict_generator(
-            input_dict: Any, prefixes: List[Optional[str]] = None
+        def _dict_generator(  # type: ignore
+            input_dict: Any, prefixes: Any = None
         ) -> Generator[Any, Optional[List[str]], List[Any]]:
             prefixes = prefixes[:] if prefixes else []
             if isinstance(input_dict, MutableMapping):
