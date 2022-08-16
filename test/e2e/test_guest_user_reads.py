@@ -10,7 +10,10 @@ from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.logged_data import LoggedDataType
 from layer.contracts.projects import Project
 from layer.decorators import dataset, model
-from layer.exceptions.exceptions import LayerClientException
+from layer.exceptions.exceptions import (
+    LayerClientException,
+    LayerClientResourceNotFoundException,
+)
 
 
 dataset_log_tag = "dataset-log-tag"
@@ -86,11 +89,10 @@ def test_guest_user_private_dataset_read(
             populated_project.id, "dataset1"
         )
 
-        with pytest.raises(LayerClientException) as error:
+        with pytest.raises(LayerClientResourceNotFoundException):
             guest_client.logged_data_service_client.get_logged_data(
                 tag=dataset_log_tag, dataset_build_id=dataset.build.id
             )
-        assert "not found" in str(error)
 
 
 def test_guest_user_public_dataset_read(
@@ -129,10 +131,8 @@ def test_guest_user_private_model_read(
 ):
     with guest_context():
         project_path = f"{populated_project.account.name}/{populated_project.name}"
-        with pytest.raises(LayerClientException) as error:
+        with pytest.raises(LayerClientResourceNotFoundException):
             layer.get_model(f"{project_path}/models/model1")
-
-        assert "not found" in str(error)
 
 
 def test_guest_user_private_model_logged_data_read(
@@ -147,11 +147,10 @@ def test_guest_user_private_model_logged_data_read(
     mdl = client.model_catalog.load_model_by_path(path=asset_path.path())
 
     with guest_context():
-        with pytest.raises(LayerClientException) as error:
+        with pytest.raises(LayerClientResourceNotFoundException):
             guest_client.logged_data_service_client.get_logged_data(
                 tag=model_log_tag, train_id=UUID(mdl.storage_config.train_id.value)
             )
-        assert "not found" in str(error)
 
 
 def test_guest_user_public_model_read(
