@@ -22,6 +22,7 @@ from .decorators.assertions import (  # noqa
 from .flavors.custom import CustomModel  # noqa
 from .global_context import current_project_full_name  # noqa
 from .logged_data.callbacks import KerasCallback, XGBoostCallback  # noqa
+from .logged_data.loggers.pytorch_lightning import PytorchLightningLogger  # noqa
 from .main.asset import get_dataset, get_model, save_model  # noqa
 from .main.auth import (  # noqa
     login,
