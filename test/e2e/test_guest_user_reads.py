@@ -96,7 +96,6 @@ def test_guest_user_private_dataset_read(
 
 
 def test_guest_user_public_dataset_read(
-    client: LayerClient,
     populated_public_project: Project,
     guest_context,
     guest_client: LayerClient,
@@ -111,7 +110,7 @@ def test_guest_user_public_dataset_read(
         assert df.values[0][0] == "id1"
         assert df.values[0][1] == 10
 
-        dataset = client.data_catalog.get_dataset_by_name(
+        dataset = guest_client.data_catalog.get_dataset_by_name(
             populated_public_project.id, "dataset1"
         )
 
@@ -125,7 +124,6 @@ def test_guest_user_public_dataset_read(
 
 
 def test_guest_user_private_model_read(
-    client: LayerClient,
     populated_project: Project,
     guest_context,
 ):
