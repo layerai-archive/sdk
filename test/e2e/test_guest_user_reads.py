@@ -124,16 +124,6 @@ def test_guest_user_public_dataset_read(
 
 
 def test_guest_user_private_model_read(
-    populated_project: Project,
-    guest_context,
-):
-    with guest_context():
-        project_path = f"{populated_project.account.name}/{populated_project.name}"
-        with pytest.raises(LayerClientResourceNotFoundException):
-            layer.get_model(f"{project_path}/models/model1")
-
-
-def test_guest_user_private_model_logged_data_read(
     client: LayerClient,
     populated_project: Project,
     guest_context,
@@ -145,6 +135,9 @@ def test_guest_user_private_model_logged_data_read(
     mdl = client.model_catalog.load_model_by_path(path=asset_path.path())
 
     with guest_context():
+        with pytest.raises(LayerClientResourceNotFoundException):
+            layer.get_model(f"{project_path}/models/model1")
+
         with pytest.raises(LayerClientResourceNotFoundException):
             guest_client.logged_data_service_client.get_logged_data(
                 tag=model_log_tag, train_id=UUID(mdl.storage_config.train_id.value)
