@@ -95,7 +95,7 @@ class ProjectRunner:
         self._config = config
         self.project_full_name = project_full_name
         self.definitions: List[FunctionDefinition] = [
-            f.get_definition() for f in functions
+            f.get_definition_with_bound_arguments() for f in functions
         ]
         self.files_hash = calculate_hash_by_definitions(self.definitions)
 
@@ -292,7 +292,7 @@ def _register_model_function(
         response = client.model_catalog.create_model_version(
             model.asset_path,
             model.description,
-            model.source_code_digest.hexdigest(),
+            model.source_code_digest,
             model.get_fabric(is_local),
         )
         version = response.model_version

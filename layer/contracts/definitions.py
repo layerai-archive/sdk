@@ -5,7 +5,7 @@ import pickle  # nosec import_pickle
 import shutil
 import uuid
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Mapping, Optional, Sequence
 
 from layer.config import DEFAULT_FUNC_PATH, is_executables_feature_active
 from layer.contracts.assertions import Assertion
@@ -22,6 +22,8 @@ class FunctionDefinition:
     def __init__(
         self,
         func: Callable[..., Any],
+        args: Sequence[Any],
+        kwargs: Mapping[str, Any],
         project_name: str,
         account_name: str,
         asset_type: AssetType,
@@ -33,11 +35,14 @@ class FunctionDefinition:
         assertions: List[Assertion],
         version_id: Optional[uuid.UUID] = None,
         repository_id: Optional[uuid.UUID] = None,
+        package_download_url: Optional[str] = None,
         description: str = "",
         uri: str = "",
     ) -> None:
         self.func = func
         self.func_name: str = func.__name__
+        self.args = args
+        self.kwargs = kwargs
 
         self.project_name = project_name
         self.account_name = account_name
@@ -51,13 +56,15 @@ class FunctionDefinition:
 
         self.version_id = version_id
         self.repository_id = repository_id
+        self.package_download_url = package_download_url
         self.description = description
         self.uri = uri
 
         self.func_source = self._get_source()
 
-        self.source_code_digest = hashlib.sha256()
-        self.source_code_digest.update(self.func_source.encode("utf-8"))
+        source_code_digest = hashlib.sha256()
+        source_code_digest.update(self.func_source.encode("utf-8"))
+        self.source_code_digest = source_code_digest.hexdigest()
 
         self._executable_path: Optional[Path] = None
 
@@ -96,6 +103,57 @@ class FunctionDefinition:
     def set_repository_id(self, repository_id: uuid.UUID) -> None:
         self.repository_id = repository_id
 
+    def set_package_download_url(self, package_download_url: str) -> None:
+        self.package_download_url = package_download_url
+
+    def package(self, executables_feature_active: bool = False) -> Path:
+        self._clean_function_home_dir()
+        if executables_feature_active or is_executables_feature_active():
+            self._executable_path = self._package_executable()
+            return self._executable_path
+        else:
+            # Dump pickled function to asset_name.pkl
+            with open(self.pickle_path, mode="wb") as file:
+                cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
+
+            with open(self.environment_path, "w") as reqs_file:
+                reqs_file.write("\n".join(self.pip_dependencies))
+
+            return self.pickle_path
+
+    def _package_executable(self) -> Path:
+        resource_paths = [Path(resource.path) for resource in self.resource_paths]
+        return package_function(
+            self.runner_function(),
+            resources=resource_paths,
+            pip_dependencies=self.pip_dependencies,
+            output_dir=self.function_home_dir,
+        )
+
+    def runner_function(self) -> Any:
+        if self.asset_type == AssetType.DATASET:
+            from layer.executables.dataset.entrypoint import runner as dataset_runner
+
+            return dataset_runner(self)
+        elif self.asset_type == AssetType.MODEL:
+            from layer.executables.model.entrypoint import runner as model_runner
+
+            return model_runner(self)
+        raise Exception(f"Invalid asset type {self.asset_type}")
+
+    def _clean_function_home_dir(self) -> None:
+        # Remove directory to clean leftovers from previous runs
+        function_home_dir = self.function_home_dir
+        if function_home_dir.exists():
+            shutil.rmtree(function_home_dir)
+        os.makedirs(function_home_dir)
+
+    @property
+    def executable_path(self) -> Path:
+        if self._executable_path is None:
+            self._executable_path = self._package_executable()
+        return self._executable_path
+
     # DEPRECATED below, will remove once we build the simplified backend
     def get_pickled_function(self) -> bytes:
         return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
@@ -121,41 +179,3 @@ class FunctionDefinition:
             return Fabric.F_LOCAL.value
         else:
             return self.fabric.value
-
-    def _clean_function_home_dir(self) -> None:
-        # Remove directory to clean leftovers from previous runs
-        function_home_dir = self.function_home_dir
-        if function_home_dir.exists():
-            shutil.rmtree(function_home_dir)
-        os.makedirs(function_home_dir)
-
-    def package(self) -> Path:
-        self._clean_function_home_dir()
-        if is_executables_feature_active():
-            self._executable_path = self._package_executable()
-            return self._executable_path
-        else:
-            # Dump pickled function to asset_name.pkl
-            with open(self.pickle_path, mode="wb") as file:
-                cloudpickle.dump(self.func, file, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
-
-            with open(self.environment_path, "w") as reqs_file:
-                reqs_file.write("\n".join(self.pip_dependencies))
-
-            return self.pickle_path
-
-    def _package_executable(self) -> Path:
-        resource_paths = [Path(resource.path) for resource in self.resource_paths]
-        return package_function(
-            self.func,
-            resources=resource_paths,
-            assertions=self.assertions,
-            pip_dependencies=self.pip_dependencies,
-            output_dir=self.function_home_dir,
-        )
-
-    @property
-    def executable_path(self) -> Path:
-        if self._executable_path is None:
-            self._executable_path = self._package_executable()
-        return self._executable_path

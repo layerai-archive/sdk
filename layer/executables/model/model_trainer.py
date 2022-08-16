@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Mapping, Optional, Sequence
 from uuid import UUID
 
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
@@ -36,6 +36,8 @@ class TrainContextDataclassMixin:
     model_version: str
     train_id: UUID
     function: Callable[..., Any]
+    args: Sequence[Any]
+    kwargs: Mapping[str, Any]
     logger: Logger
     train_index: Optional[str] = None
 
@@ -168,27 +170,30 @@ class ModelTrainer:
                     train_model_func.__name__,
                     target_dir=str(work_dir),
                 )
-                model = train_model_func()
+                model = train_model_func(
+                    *self.train_context.args, **self.train_context.kwargs
+                )
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
                     version=train.get_version(),
                     train_index=train.get_train_index(),
                 )
                 self.logger.info("Executed train_model_func successfully")
-                self._run_assertions(
-                    model,
-                    train_model_func.layer.get_assertions(),  # type: ignore
-                )
-                self.tracker.mark_model_saving(self.train_context.model_name)
-                self.logger.info(f"Saving model artifact {model} to model registry")
-                train.save_model(model, tracker=self.tracker)
+                if model:
+                    self._run_assertions(
+                        model,
+                        train_model_func.layer.get_assertions(),  # type: ignore
+                    )
+                    self.tracker.mark_model_saving(self.train_context.model_name)
+                    self.logger.info(f"Saving model artifact {model} to model registry")
+                    train.save_model(model, tracker=self.tracker)
+                    self.logger.info(
+                        f"Saved model artifact {model} to model registry successfully"
+                    )
                 self._update_train_status(
                     self.train_context.train_id,
                     ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
                     self.logger,
-                )
-                self.logger.info(
-                    f"Saved model artifact {model} to model registry successfully"
                 )
                 self.tracker.mark_model_saved(self.train_context.model_name)
                 return model

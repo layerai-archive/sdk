@@ -22,7 +22,6 @@ from layerapi.api.service.datacatalog.data_catalog_api_pb2 import (
     GetResourcePathsRequest,
     GetVersionRequest,
     InitiateBuildRequest,
-    InitiateBuildResponse,
     RegisterDatasetRequest,
     UpdateResourcePathsIndexRequest,
 )
@@ -162,10 +161,10 @@ class DataCatalogClient:
 
     def initiate_build(
         self,
-        project_id: ProjectId,
+        project_id: uuid.UUID,
         asset_name: str,
         fabric: str,
-    ) -> InitiateBuildResponse:
+    ) -> uuid.UUID:
         self._logger.debug("Initiating build for the dataset %r", asset_name)
 
         resp = self._service.InitiateBuild(
@@ -173,16 +172,16 @@ class DataCatalogClient:
                 dataset_name=asset_name,
                 format="python",
                 build_entity_type=PBDatasetBuild.BUILD_ENTITY_TYPE_DATASET,
-                project_id=project_id,
+                project_id=ProjectId(value=str(project_id)),
                 fabric=fabric,
             )
         )
 
-        return resp
+        return uuid.UUID(resp.id.value)
 
     def complete_build(
         self,
-        dataset_build_id: DatasetBuildId,
+        dataset_build_id: uuid.UUID,
         asset_name: str,
         dataset_uri: str,
         error: Optional[Exception] = None,
@@ -209,7 +208,7 @@ class DataCatalogClient:
 
         resp = self._service.CompleteBuild(
             CompleteBuildRequest(
-                id=dataset_build_id,
+                id=DatasetBuildId(value=str(dataset_build_id)),
                 status=status,
                 success=success,
                 failure=failure,
