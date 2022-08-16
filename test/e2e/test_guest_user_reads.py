@@ -77,14 +77,19 @@ def test_guest_user_private_dataset_read(
     guest_context,
     guest_client: LayerClient,
 ):
+    project_path = f"{populated_project.account.name}/{populated_project.name}"
+    name = f"{project_path}/models/model1"
+    asset_path = AssetPath.parse(name, expected_asset_type=AssetType.MODEL)
+    mdl = client.model_catalog.load_model_by_path(path=asset_path.path())
+
     with guest_context():
+        # dataset
         project_path = f"{populated_project.account.name}/{populated_project.name}"
         with pytest.raises(LayerClientException) as error:
             layer.get_dataset(f"{project_path}/datasets/dataset1").to_pandas()
 
         assert "not found" in str(error)
 
-        # Logged data should also not be readable.
         dataset = client.data_catalog.get_dataset_by_name(
             populated_project.id, "dataset1"
         )
@@ -94,6 +99,15 @@ def test_guest_user_private_dataset_read(
                 tag=dataset_log_tag, dataset_build_id=dataset.build.id
             )
 
+        # model
+        with pytest.raises(LayerClientResourceNotFoundException):
+            layer.get_model(f"{project_path}/models/model1")
+
+        with pytest.raises(LayerClientResourceNotFoundException):
+            guest_client.logged_data_service_client.get_logged_data(
+                tag=model_log_tag, train_id=UUID(mdl.storage_config.train_id.value)
+            )
+
 
 def test_guest_user_public_dataset_read(
     populated_public_project: Project,
@@ -101,6 +115,7 @@ def test_guest_user_public_dataset_read(
     guest_client: LayerClient,
 ):
     with guest_context():
+        # dataset
         project_path = (
             f"{populated_public_project.account.name}/{populated_public_project.name}"
         )
@@ -122,34 +137,7 @@ def test_guest_user_public_dataset_read(
         assert logged_data.logged_data_type == LoggedDataType.NUMBER
         assert logged_data.tag == dataset_log_tag
 
-
-def test_guest_user_private_model_read(
-    client: LayerClient,
-    populated_project: Project,
-    guest_context,
-    guest_client: LayerClient,
-):
-    project_path = f"{populated_project.account.name}/{populated_project.name}"
-    name = f"{project_path}/models/model1"
-    asset_path = AssetPath.parse(name, expected_asset_type=AssetType.MODEL)
-    mdl = client.model_catalog.load_model_by_path(path=asset_path.path())
-
-    with guest_context():
-        with pytest.raises(LayerClientResourceNotFoundException):
-            layer.get_model(f"{project_path}/models/model1")
-
-        with pytest.raises(LayerClientResourceNotFoundException):
-            guest_client.logged_data_service_client.get_logged_data(
-                tag=model_log_tag, train_id=UUID(mdl.storage_config.train_id.value)
-            )
-
-
-def test_guest_user_public_model_read(
-    populated_public_project: Project,
-    guest_context,
-    guest_client: LayerClient,
-):
-    with guest_context():
+        # model
         project_path = (
             f"{populated_public_project.account.name}/{populated_public_project.name}"
         )
