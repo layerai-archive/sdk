@@ -179,6 +179,8 @@ class TestProjectExecutionPlanner:
 
         return FunctionDefinition(
             func=func,
+            args=tuple(),
+            kwargs={},
             project_name=project_name,
             account_name=account_name,
             asset_type=asset_type,

@@ -60,6 +60,8 @@ def _make_test_function_definition(
 ) -> FunctionDefinition:
     return FunctionDefinition(
         func=func,
+        args=tuple(),
+        kwargs={},
         project_name=project_name,
         account_name=account_name,
         asset_type=AssetType.MODEL,

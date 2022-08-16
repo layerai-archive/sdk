@@ -1,8 +1,6 @@
-import pickle
 import uuid
 from typing import Any, Callable
-from unittest.mock import MagicMock, patch
-from uuid import UUID
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
@@ -103,44 +101,27 @@ class TestDatasetDecorator:
 
         func = _make_test_dataset_function(name)
 
-        with project_client_mock(), patch(
-            "layer.decorators.dataset_decorator._build_locally_update_remotely",
-            return_value=("", UUID(int=0x12345678123456781234567812345678)),
-        ), patch(
-            "layer.decorators.dataset_decorator.register_function",
-        ) as mock_register_datasets:
+        dataset = func.get_definition_with_bound_arguments()
 
-            func()
-
-            _, kwargs = mock_register_datasets.call_args
-            dataset = kwargs["func"]
-
-            assert dataset
-            assert dataset.asset_name == name
-            assert dataset.project_name == test_project_name
-            assert [
-                (
-                    dep.asset_name,
-                    dep.asset_type,
-                )
-                for dep in dataset.asset_dependencies
-            ] == [
-                ("bar", AssetType.DATASET),
-                ("foo", AssetType.MODEL),
-                ("baz", AssetType.DATASET),
-                ("zoo", AssetType.MODEL),
-            ]
-
-            assert dataset.environment_path.exists()
-            assert dataset.environment_path.read_text() == "sklearn==0.0"
-            assert dataset.pickle_path.exists()
-            loaded = pickle.load(open(dataset.pickle_path, "rb"))
-            assert loaded.layer.get_asset_name() == name
-            assert loaded.layer.get_asset_type() == AssetType.DATASET
-            assert loaded.layer.get_pip_packages() == ["sklearn==0.0"]
+        assert dataset
+        assert dataset.asset_name == name
+        assert dataset.project_name == test_project_name
+        assert [
+            (
+                dep.asset_name,
+                dep.asset_type,
+            )
+            for dep in dataset.asset_dependencies
+        ] == [
+            ("bar", AssetType.DATASET),
+            ("foo", AssetType.MODEL),
+            ("baz", AssetType.DATASET),
+            ("zoo", AssetType.MODEL),
+        ]
 
     def test_should_complete_remote_build_when_failed(self) -> None:
         data_catalog_client = MagicMock(spec=DataCatalogClient)
+        data_catalog_client.add_dataset.return_value = str(uuid.uuid4())
         data_catalog_client.initiate_build.return_value = InitiateBuildResponse(
             id=DatasetBuildId(value=str(uuid.uuid4()))
         )
@@ -151,10 +132,7 @@ class TestDatasetDecorator:
             project_name="project-name",
         )
 
-        with patch(
-            "layer.decorators.dataset_decorator.register_function",
-            return_value=mock_dataset_function,
-        ), project_client_mock(data_catalog_client=data_catalog_client):
+        with project_client_mock(data_catalog_client=data_catalog_client):
 
             @dataset("foo")
             def create_my_dataset() -> None:
@@ -169,39 +147,17 @@ class TestDatasetDecorator:
     def test_given_fabric_override_uses_it_over_default(self) -> None:
         set_default_fabric(Fabric.F_SMALL)
 
-        with project_client_mock(), patch(
-            "layer.decorators.dataset_decorator._build_dataset_locally_and_store_remotely"
-        ) as mock_build_locally:
+        @dataset("test")
+        @fabric(Fabric.F_MEDIUM.value)
+        def create_my_dataset() -> pd.DataFrame:
+            return pd.DataFrame()
 
-            @dataset("test")
-            @fabric(Fabric.F_MEDIUM.value)
-            def create_my_dataset() -> pd.DataFrame:
-                return pd.DataFrame()
+        @dataset("test-2")
+        def create_another_dataset() -> pd.DataFrame:
+            return pd.DataFrame()
 
-            @dataset("test-2")
-            def create_another_dataset() -> pd.DataFrame:
-                return pd.DataFrame()
-
-            create_my_dataset()
-            create_another_dataset()
-
-            (
-                unused_func,
-                settings,
-                unused_ds,
-                unused_tracker,
-                unused_client,
-            ) = mock_build_locally.call_args_list[0][0]
-            assert settings.get_fabric() == Fabric.F_MEDIUM
-
-            (
-                unused_func,
-                settings,
-                unused_ds,
-                unused_tracker,
-                unused_client,
-            ) = mock_build_locally.call_args_list[1][0]
-            assert settings.get_fabric() == Fabric.F_SMALL
+        assert create_my_dataset.layer.get_fabric() == Fabric.F_MEDIUM
+        assert create_another_dataset.layer.get_fabric() == Fabric.F_SMALL
 
     def test_not_named_dataset_cannot_be_run_even_locally(self) -> None:
         @dataset("")

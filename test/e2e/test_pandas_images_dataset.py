@@ -1,8 +1,5 @@
 import pandas as pd
-import PIL
 from pandas.testing import assert_frame_equal
-from PIL import ImageDraw
-from PIL.Image import Image
 
 import layer
 from layer.contracts.projects import Project
@@ -16,6 +13,10 @@ def test_pandas_images_dataset_store_and_save(
     @dataset("images")
     @pip_requirements(packages=["Pillow==9.1.1"])
     def build_images() -> pd.DataFrame:
+        import PIL
+        from PIL import ImageDraw
+        from PIL.Image import Image
+
         def _generate_image(n: int) -> Image:
             image = PIL.Image.new("RGB", (160, 40), color=(73, 109, 137))
             draw = ImageDraw.Draw(image)
