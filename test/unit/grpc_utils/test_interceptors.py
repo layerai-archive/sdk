@@ -19,6 +19,7 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
 )
 
 from layer.exceptions.exceptions import (
+    LayerClientAccessDeniedException,
     LayerClientResourceAlreadyExistsException,
     LayerClientResourceNotFoundException,
     LayerClientTimeoutException,
@@ -395,6 +396,10 @@ class TestGRPCErrorClientInterceptor:
                 grpc.StatusCode.NOT_FOUND,
                 LayerClientResourceNotFoundException,
             ),
+            (
+                grpc.StatusCode.PERMISSION_DENIED,
+                LayerClientAccessDeniedException,
+            ),
         ],
     )
     def test_convert_already_exists_to_client_already_exists_exception(
@@ -406,13 +411,18 @@ class TestGRPCErrorClientInterceptor:
         error = rpc_error(
             (_Metadatum(key="x-request-id", value="xyz-123"),),
             status_code,
-            "resource lala",
+            "resource issue",
         )
         layer_client_exception = (
             GRPCErrorClientInterceptor._convert_rpc_error_to_client_exception(error)
         )
         assert isinstance(layer_client_exception, expected_client_exception_type)
-        assert str(layer_client_exception) == "resource lala"
+        assert "resource issue" in str(layer_client_exception)
+        if expected_client_exception_type in [
+            LayerClientResourceNotFoundException,
+            LayerClientAccessDeniedException,
+        ]:
+            assert "Suggestion: " in str(layer_client_exception)
 
     def test_convert_resource_exhausted_to_client_max_active_runs_exceeded_exception(
         self,

@@ -84,7 +84,7 @@ def test_given_project_not_exists_when_get_project_by_id_then_returns_none():
     # given
     mock_project_api = MagicMock()
     mock_project_api.GetProjectViewById.side_effect = (
-        LayerClientResourceNotFoundException
+        LayerClientResourceNotFoundException("project")
     )
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
@@ -137,7 +137,9 @@ def test_given_project_exists_when_get_project_by_path_then_project_returned():
 def test_given_no_project_when_get_project_by_path_then_returns_none():
     # given
     mock_project_api = MagicMock()
-    mock_project_api.GetProjectByPath.side_effect = LayerClientResourceNotFoundException
+    mock_project_api.GetProjectByPath.side_effect = (
+        LayerClientResourceNotFoundException("project")
+    )
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )
@@ -167,7 +169,9 @@ def test_given_unknown_error_when_get_project_by_path_raises_unhandled_grpc_erro
 def test_given_project_not_exists_when_update_project_raise_resource_not_found_error():  # noqa
     # given
     mock_project_api = MagicMock()
-    mock_project_api.UpdateProject.side_effect = LayerClientResourceNotFoundException
+    mock_project_api.UpdateProject.side_effect = LayerClientResourceNotFoundException(
+        "project"
+    )
     project_service_client = _get_project_service_client_with_mocks(
         project_api_stub=mock_project_api
     )

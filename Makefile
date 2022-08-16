@@ -58,10 +58,6 @@ colab-test-local: ## Run colab test against image built locally
 # Catching sigint/sigterm to forcefully interrupt run on ctrl+c
 	@/bin/bash -c "trap \"trap - SIGINT SIGTERM ERR; echo colab-test cancelled by user; exit 1\" SIGINT SIGTERM ERR; $(MAKE) colab-test-internal-local"
 
-.PHONY: colab-test-push
-colab-test-push: colab-test-build ## Push image built locally to dockerhub
-	@docker push $(DOCKER_IMAGE_NAME)
-
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters
 	$(POETRY) run isort .

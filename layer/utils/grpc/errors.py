@@ -21,6 +21,8 @@ def _try_parse_grpc_debug_context(message: str) -> Optional[Dict[str, Any]]:
 def generate_client_error_from_grpc_error(
     err: Exception, internal_message: str
 ) -> LayerClientException:
+    if isinstance(err, LayerClientException):
+        return err
     context = _try_parse_grpc_debug_context(str(err))
     if context:
         grpc_message = context.get("grpc_message")
