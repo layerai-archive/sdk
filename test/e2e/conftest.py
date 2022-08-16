@@ -320,6 +320,13 @@ def client(client_config: ClientConfig) -> Iterator[LayerClient]:
 
 
 @pytest.fixture()
+async def guest_client(guest_context) -> Iterator[LayerClient]:
+    with guest_context():
+        config = await ConfigManager().refresh()
+        yield LayerClient(config.client, logger)
+
+
+@pytest.fixture()
 def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
     project_name = pseudo_random_project_name(request)
     project = layer.init(project_name, fabric=Fabric.F_XSMALL.value)
