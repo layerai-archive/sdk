@@ -151,8 +151,6 @@ class PytorchLightningLogger(Logger):
     PARAMETERS_KEY = "hyperparams"
     PREFIX_JOIN_CHAR = "-"
 
-    _project = None
-
     def __init__(
         self,
         project_name: str,
@@ -164,6 +162,13 @@ class PytorchLightningLogger(Logger):
         self._project_name = project_name
         self._prefix = prefix
         self._api_key = api_key
+
+        # Log user in
+        if self._api_key is not None:
+            layer.login_with_api_key(self._api_key)
+
+        # Init project
+        self._project = layer.init(self._project_name)
 
     @property
     def experiment(self) -> Any:
@@ -178,15 +183,6 @@ class PytorchLightningLogger(Logger):
             self.logger.experiment.any_layer_function(...)
 
         """
-
-        # Initializes the Layer Project if not initialized yet
-        if self._project is None:
-            # Log user in
-            if self._api_key is not None:
-                layer.login_with_api_key(self._api_key)
-
-            # Init project
-            self._project = layer.init(self._project_name)
 
         return layer
 
