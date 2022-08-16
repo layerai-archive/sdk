@@ -1,3 +1,4 @@
+import importlib
 from argparse import Namespace
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Mapping, MutableMapping, Optional, Union
@@ -7,7 +8,17 @@ import torch
 import layer
 
 
-class LayerLogger("pytorch_lightning.loggers.logger.Logger"):
+if importlib.util.find_spec("lightning") is None:
+
+    class Logger:
+        def __init__(self):
+            pass
+
+else:
+    from lightning.pytorch.loggers.logger import Logger
+
+
+class PytorchLightningLogger(Logger):
     r"""
         Log using `Layer <https://docs.app.layer.ai>`_.
 
@@ -225,8 +236,8 @@ class LayerLogger("pytorch_lightning.loggers.logger.Logger"):
         :param params: Hyperparameters key/values
         :return:
         """
-        params = LayerLogger._convert_params(params)
-        params = LayerLogger._flatten_dict(params)
+        params = PytorchLightningLogger._convert_params(params)
+        params = PytorchLightningLogger._flatten_dict(params)
 
         parameters_key = self.PARAMETERS_KEY
 
@@ -241,7 +252,7 @@ class LayerLogger("pytorch_lightning.loggers.logger.Logger"):
         :param step: If provided, a chart will be generated from the logged float metrics
         :return:
         """
-        metrics = LayerLogger._add_prefix(
+        metrics = PytorchLightningLogger._add_prefix(
             metrics, self._prefix, separator=self.PREFIX_JOIN_CHAR
         )
         self.experiment.log(dict(metrics), step=step)
@@ -311,6 +322,8 @@ class LayerLogger("pytorch_lightning.loggers.logger.Logger"):
                 "You should set either columns+data or dataframe parameter to log a table!"
             )
 
+    # Taken from Pytorch Lightning Logger helpers
+    # https://github.com/Lightning-AI/lightning
     @staticmethod
     def _add_prefix(
         metrics: Mapping[str, Any], prefix: str, separator: str
