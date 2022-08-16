@@ -80,6 +80,7 @@ def test_guest_user_private_dataset_read(
     project_path = f"{populated_project.account.name}/{populated_project.name}"
     name = f"{project_path}/models/model1"
     asset_path = AssetPath.parse(name, expected_asset_type=AssetType.MODEL)
+    # We use the non-guest client because guests cannot access this model, but we do need it to find the model train ID, which is needed for get_logged_data below.
     mdl = client.model_catalog.load_model_by_path(path=asset_path.path())
 
     with guest_context():
