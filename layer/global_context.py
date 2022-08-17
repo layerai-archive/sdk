@@ -1,9 +1,14 @@
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
+from yarl import URL
+
+from .config import Config, ConfigManager
 from .context import Context
+from .contracts.asset import AssetPath
 from .contracts.fabrics import Fabric
 from .contracts.project_full_name import ProjectFullName
+from .utils.async_utils import asyncio_run_in_thread
 
 
 @dataclass
@@ -18,6 +23,29 @@ class GlobalContext:
     has_shown_update_message: bool
     # Similar to above, but for supported Python version.
     has_shown_python_version_message: bool
+
+    @property
+    def active_asset_url(self) -> URL:
+        config: Config = asyncio_run_in_thread(ConfigManager().refresh())
+        assert self.project_full_name is not None
+        assert self.active_context is not None
+        active_ctx = self.active_context
+        assert active_ctx.asset_name() is not None
+        asset_path = AssetPath(
+            org_name=self.project_full_name.account_name,
+            project_name=self.project_full_name.project_name,
+            asset_type=active_ctx.asset_type(),
+            asset_name=active_ctx.asset_name(),
+        )
+        if active_ctx.train() is not None:
+            train = active_ctx.train()
+            asset_path = asset_path.with_version_and_build(
+                train.get_version(), int(train.get_train_index())
+            )
+        elif active_ctx.dataset_build() is not None:
+            asset_path = asset_path.with_version(active_ctx.dataset_build().index)
+
+        return asset_path.url(config.url)
 
 
 # We store project name, fabric, active context and requirements
@@ -71,6 +99,14 @@ def _project_full_name_from(
         account_name=account_name,
         project_name=project_name,
     )
+
+
+def active_asset_url() -> URL:
+    """
+    Returns the current active asset URL.
+    In the context of training a model, the model train URL is returned.
+    """
+    return _GLOBAL_CONTEXT.active_asset_url
 
 
 def current_project_full_name() -> Optional[ProjectFullName]:
