@@ -20,7 +20,7 @@ def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserte
         return None
 
     project_full_name = initialized_project.full_name
-    functions = [func.get_definition()]
+    functions = [func.get_definition_with_bound_arguments()]
     resource_manager = ResourceManager(asserter.client)
 
     resource_manager.wait_resource_upload(

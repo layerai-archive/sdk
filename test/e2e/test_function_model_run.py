@@ -25,6 +25,7 @@ def test_local_run_succeeds_and_registers_metadata(
     @layer.pip_requirements(packages=["scikit-learn==0.23.2"])
     def train_model():
         from sklearn import datasets
+        from sklearn.svm import SVC
 
         iris = datasets.load_iris()
         clf = SVC()

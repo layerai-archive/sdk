@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import wrapt  # type: ignore
 
@@ -66,12 +66,29 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
                     )
         self.layer.set_dependencies(paths)
 
-    def get_definition(self) -> FunctionDefinition:
+        self.args: Sequence[Any] = tuple()
+        self.kwargs: Mapping[str, Any] = {}
+
+    def bind(self, *args: Any, **kwargs: Any) -> Any:
+        self.args = args
+        self.kwargs = kwargs
+        return self
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        definition = self.get_definition(args, kwargs)
+        runner = definition.runner_function()
+        return runner()
+
+    def get_definition(
+        self, args: Sequence[Any], kwargs: Mapping[str, Any]
+    ) -> FunctionDefinition:
         self.layer.validate()
         current_project_full_name = get_current_project_full_name()
 
         return FunctionDefinition(
             func=self.__wrapped__,
+            args=args,
+            kwargs=kwargs,
             project_name=current_project_full_name.project_name,
             account_name=current_project_full_name.account_name,
             asset_type=self.layer.get_asset_type(),
@@ -84,6 +101,9 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
             resource_paths=self.layer.get_resource_paths(),
             assertions=self.layer.get_assertions(),
         )
+
+    def get_definition_with_bound_arguments(self) -> FunctionDefinition:
+        return self.get_definition(self.args, self.kwargs)
 
 
 def _get_asset_dependencies(
