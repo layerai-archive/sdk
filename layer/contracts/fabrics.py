@@ -19,6 +19,13 @@ class Fabric(enum.Enum):
         entry._gpu = gpu  # type:ignore
         return entry
 
+    @classmethod
+    def find(cls, value: str) -> "Fabric":
+        for fabric in cls.__members__.values():
+            if fabric.value == value:
+                return fabric
+        raise ValueError(f"'{cls.__name__}' enum not found for '{value}'")
+
     @property
     def cpu(self) -> float:
         return self._cpu  # type:ignore

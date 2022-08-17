@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import grpc
 import pytest
-from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layerapi.api.entity.run_metadata_pb2 import RunMetadata
 from layerapi.api.ids_pb2 import RunId
 from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
@@ -203,28 +202,22 @@ class TestProjectRun:
         client = MagicMock()
         client.flow_manager.start_run.side_effect = layer_client_exception
         with pytest.raises(ProjectRunnerError, match=".*RESOURCE_EXHAUSTED.*"):
-            runner._run(  # pylint: disable=protected-access
-                client=client,
-                execution_plan=ExecutionPlan(),
-                user_command="",
-            )
+            runner._start_run(client=client)  # pylint: disable=protected-access
 
     def test_get_user_command_returns_the_command_correctly(self) -> None:
+
         runner = ProjectRunner(
             config=MagicMock(),
             project_full_name=TEST_PROJECT_FULL_NAME,
             functions=[],
         )
+        def1: FunctionDefinition = MagicMock()
+        def1.func_name = "create_my_dataset"
+        def2: FunctionDefinition = MagicMock()
+        def2.func_name = "create_my_model"
+        runner.definitions = [def1, def2]
 
-        func1: FunctionDefinition = MagicMock()
-        func1.func_name = "create_my_dataset"
-        func2: FunctionDefinition = MagicMock()
-        func2.func_name = "create_my_model"
-
-        functions = [func1, func2]
-        user_command = runner._get_user_command(  # pylint: disable=protected-access
-            runner.run, functions
-        )
+        user_command = runner._get_user_command()  # pylint: disable=protected-access
 
         assert user_command == "run([create_my_dataset, create_my_model])"
 
