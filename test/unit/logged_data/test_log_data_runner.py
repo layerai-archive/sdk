@@ -860,35 +860,6 @@ def test_given_runner_when_log_video_by_path_then_calls_log_binary(
 @pytest.mark.parametrize(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
-def test_given_runner_when_log_image_by_path_with_unsupported_extension_then_raise(
-    tmpdir, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
-    )
-    tag = "image-by-path"
-    image_data = np.random.rand(100, 100, 3) * 255
-    image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
-    path = tmpdir.join("image.webp")
-    image.save(str(path))
-
-    # when
-    with pytest.raises(ValueError, match=r".*Unsupported value type ->.*"):
-        runner.log({tag: Path(str(path))})
-
-    # then
-    logged_data_client.log_binary_data.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
 def test_given_runner_when_log_markdown_then_calls_log_markdown(
     train_id: Optional[UUID], dataset_build_id: Optional[UUID]
 ) -> None:
