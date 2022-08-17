@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, DefaultDict, List, Sequence
@@ -10,6 +11,7 @@ from layerapi.api.entity.operations_pb2 import (
     SequentialOperation,
 )
 from layerapi.api.entity.task_pb2 import Task
+from layerapi.api.value.language_version_pb2 import LanguageVersion
 
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.definitions import FunctionDefinition
@@ -31,6 +33,11 @@ class PlanNode:
     fabric: Fabric
     package_download_url: str
     dependencies: List[AssetPath]
+    language_version: "LanguageVersion" = LanguageVersion(
+        major=sys.version_info.major,
+        minor=sys.version_info.minor,
+        micro=sys.version_info.micro,
+    )
 
     def to_execution_operation(self) -> FunctionExecutionOperation:
         task_type = Task.Type.TYPE_INVALID
@@ -46,6 +53,7 @@ class PlanNode:
             executable_package_url=self.package_download_url,
             fabric=self.fabric.value,
             dependency=dependencies,
+            language_version=self.language_version,
         )
 
 
