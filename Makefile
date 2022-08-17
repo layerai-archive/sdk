@@ -53,11 +53,6 @@ colab-test: ## Run colab test against image pulled from dockerhub
 # Catching sigint/sigterm to forcefully interrupt run on ctrl+c
 	@/bin/bash -c "trap \"trap - SIGINT SIGTERM ERR; echo colab-test cancelled by user; exit 1\" SIGINT SIGTERM ERR; $(MAKE) colab-test-internal"
 
-.PHONY: colab-test-local
-colab-test-local: ## Run colab test against image built locally
-# Catching sigint/sigterm to forcefully interrupt run on ctrl+c
-	@/bin/bash -c "trap \"trap - SIGINT SIGTERM ERR; echo colab-test cancelled by user; exit 1\" SIGINT SIGTERM ERR; $(MAKE) colab-test-internal-local"
-
 .PHONY: format
 format: $(INSTALL_STAMP) ## Apply formatters
 	$(POETRY) run isort .
