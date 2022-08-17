@@ -1,6 +1,8 @@
+import sys
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, DefaultDict, List, Sequence
+from functools import cached_property
+from typing import TYPE_CHECKING, DefaultDict, List, Sequence, Tuple
 
 from layerapi.api.entity.operations_pb2 import (
     ExecutionPlan,
@@ -10,6 +12,7 @@ from layerapi.api.entity.operations_pb2 import (
     SequentialOperation,
 )
 from layerapi.api.entity.task_pb2 import Task
+from layerapi.api.value.language_version_pb2 import LanguageVersion
 
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.definitions import FunctionDefinition
@@ -32,6 +35,10 @@ class PlanNode:
     package_download_url: str
     dependencies: List[AssetPath]
 
+    @cached_property
+    def _language_version() -> Tuple[int, int, int]:
+        return sys.version_info.major, sys.version_info.minor, sys.version_info.micro
+
     def to_execution_operation(self) -> FunctionExecutionOperation:
         task_type = Task.Type.TYPE_INVALID
         if self.path.asset_type == AssetType.DATASET:
@@ -39,6 +46,7 @@ class PlanNode:
         elif self.path.asset_type == AssetType.MODEL:
             task_type = Task.Type.TYPE_MODEL_TRAIN
         dependencies = [d.path() for d in self.dependencies]
+        language_version = self._language_version()
 
         return FunctionExecutionOperation(
             task_type=task_type,
@@ -46,6 +54,11 @@ class PlanNode:
             executable_package_url=self.package_download_url,
             fabric=self.fabric.value,
             dependency=dependencies,
+            language_version=LanguageVersion(
+                major=language_version[0],
+                minor=language_version[1],
+                micro=language_version[2],
+            ),
         )
 
 
