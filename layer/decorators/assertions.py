@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy
 import wrapt  # type: ignore
@@ -15,6 +15,7 @@ class LayerAssertFunctionWrapper(LayerFunctionWrapper):
         enabled: Any,
         assert_func: Callable[..., Any],
         values: List[Any],
+        will_call: Optional[bool] = False,
     ) -> None:
         super().__init__(wrapped, wrapper, enabled)
         self.layer.append_assertion(
@@ -22,8 +23,80 @@ class LayerAssertFunctionWrapper(LayerFunctionWrapper):
                 name=assert_func.__name__.lstrip("_"),
                 values=values,
                 function=assert_func(*values),
+                will_call=will_call,
             )
         )
+
+
+def assert_metric(
+    metric_name, assert_function: Callable[..., bool]
+) -> Callable[..., Any]:
+    """
+    Asserts that a condition is true for a logged metric
+    This assertion can be used with Layer dataset and model entities.
+
+    :param assert_function: Test function with a boolean return type.
+    :return: Function object.
+
+    .. code-block:: python
+
+        import layer
+
+        def accuracy_is_higher_than_0_8(metric_key, metric_value):
+            return metric_value >= 0.8:
+
+        @layer.model("model")
+        @layer.assert_metric("accuracy", accuracy_is_higher_than_0_8)
+        def train():
+            model = ...
+            layer.log({"accuracy":0.7})
+            return model
+    """
+
+    @wrapt.decorator(proxy=_assert_metric_wrapper(metric_name, assert_function))
+    def wrapper(
+        wrapped: Any, instance: Any, args: List[Any], kwargs: Dict[str, Any]
+    ) -> None:
+        return wrapped(*args, **kwargs)
+
+    return wrapper
+
+
+def _assert_metric_wrapper(
+    metric_name: str, assert_function: Callable[..., bool]
+) -> Any:
+    class FunctionWrapper(LayerAssertFunctionWrapper):
+        def __init__(self, wrapped: Any, wrapper: Any, enabled: Any = None) -> None:
+            super().__init__(
+                wrapped,
+                wrapper,
+                enabled,
+                _assert_metric,
+                [metric_name, assert_function],
+            )
+
+    return FunctionWrapper
+
+
+def _assert_metric(
+    metric_name: str, assert_function: Callable[..., Any]
+) -> Callable[[Any], Any]:
+    def assert_func(value: Any, epoch: Any) -> Any:
+        assertion_result = assert_function(value, epoch)
+        if not isinstance(assertion_result, (bool, numpy.bool_)):
+            raise AssertionError(
+                "Test FAILED: assert_metric only accepts functions with boolean return type."
+            )
+
+        method_details = (
+            f"assert_metric: metric={metric_name}, value={value}, step={epoch}"
+        )
+        if assertion_result:
+            print(f"Test SUCCESS: {method_details}")
+        else:
+            raise AssertionError(f"Test Failed: {method_details}")
+
+    return assert_func
 
 
 def assert_true(assert_function: Callable[..., bool]) -> Callable[..., Any]:

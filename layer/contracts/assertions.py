@@ -7,6 +7,7 @@ class Assertion:
     name: str
     values: List[Any]
     function: Callable[..., Any]
+    will_call: bool = False
 
     def __str__(self) -> str:
         values_str = []

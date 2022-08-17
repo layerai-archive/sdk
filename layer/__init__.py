@@ -13,6 +13,7 @@ from .decorators import (  # noqa
     resources,
 )
 from .decorators.assertions import (  # noqa
+    assert_metric,
     assert_not_null,
     assert_skewness,
     assert_true,

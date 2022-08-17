@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild
@@ -21,12 +21,14 @@ class Context:
         tracker: Optional[RunProgressTracker] = None,
         asset_name: Optional[str] = None,
         asset_type: Optional[AssetType] = None,
+        train_function: Optional[Callable[..., Any]] = None,
     ) -> None:
         self._train: Optional[BaseTrain] = train
         self._dataset_build: Optional[DatasetBuild] = dataset_build
         self._tracker: Optional[RunProgressTracker] = tracker
         self._asset_name = asset_name
         self._asset_type = asset_type
+        self._train_function = train_function
 
     def train(self) -> Optional[BaseTrain]:
         """
@@ -61,6 +63,9 @@ class Context:
     def with_asset_name(self, asset_name: str) -> None:
         self._asset_name = asset_name
 
+    def with_train_function(self, train_function: Callable[..., Any]) -> None:
+        self._train_function = train_function
+
     def with_asset_type(self, asset_type: AssetType) -> None:
         self._asset_type = asset_type
 
@@ -79,6 +84,9 @@ class Context:
             return AssetType.DATASET
         else:
             raise Exception("Unsupported asset type")
+
+    def train_function(self) -> Optional[Callable[..., Any]]:
+        return self._train_function
 
     def close(self) -> None:
         pass

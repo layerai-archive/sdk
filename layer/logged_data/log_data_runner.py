@@ -14,6 +14,7 @@ from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 from layer.clients.layer import LayerClient
 from layer.contracts.logged_data import Image, Markdown, ModelMetricPoint, Video
 
+from .. import global_context
 from .utils import get_base_module_list, has_allowed_extension
 
 
@@ -35,6 +36,32 @@ class LogDataRunner:
         self._train_id = train_id
         self._dataset_build_id = dataset_build_id
         self._logger = logger
+
+    def run_metric_assertions(
+        self,
+        tag: str,
+        value: Union[
+            str,
+            float,
+            bool,
+            int,
+            List[Any],
+            "np.ndarray[Any, Any]",
+            Dict[str, Any],
+            pd.DataFrame,
+            "PIL.Image.Image",
+            "matplotlib.figure.Figure",
+            Image,
+            ModuleType,
+            Path,
+            Markdown,
+        ],
+        epoch: Optional[int] = None,
+    ) -> None:
+        func = global_context.get_active_context().train_function()
+        for assertion in func.layer.get_assertions():
+            if assertion.name == "assert_metric" and assertion.values[0] == tag:
+                assertion.function(value, epoch)
 
     def log(
         self,
@@ -63,6 +90,9 @@ class LogDataRunner:
 
         metric_group_uuid = uuid.uuid4()
         for tag, value in data.items():
+            # Call metric assertions
+            self.run_metric_assertions(tag, value, epoch)
+
             if isinstance(value, str):
                 self._log_text(tag=tag, text=value)
             elif isinstance(value, list):
