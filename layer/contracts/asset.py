@@ -6,6 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Sequence, TypeVar, Union
 
+from requests import PreparedRequest
 from yarl import URL
 
 from layer.cache.cache import Cache
@@ -117,12 +118,40 @@ class AssetPath:
             org_name=project_full_name.account_name,
         )
 
-    def url(self, base_url: URL) -> URL:
+    def with_version(self, version: str) -> "AssetPath":
+        return replace(self, asset_version=version)
+
+    def with_version_and_build(self, version: str, build_idx: int) -> "AssetPath":
+        return replace(
+            self,
+            asset_version=version,
+            asset_build=build_idx,
+        )
+
+    def url(self, host_url: URL) -> URL:
         if self.org_name is None:
             raise LayerClientException("Account name is required to get URL")
         if self.project_name is None:
             raise LayerClientException("Project name is required to get URL")
-        return base_url / self.path()
+
+        parts = [
+            self.org_name,
+            self.project_name,
+            self.asset_type.value,
+            self.asset_name,
+        ]
+        p = "/".join([part for part in parts if part is not None])
+
+        base_asset_url = host_url / p
+        if self.asset_version is None:
+            return base_asset_url
+
+        version_build_param = self.asset_version
+        if self.asset_build is not None:
+            version_build_param = f"{version_build_param}.{self.asset_build}"
+        req = PreparedRequest()
+        req.prepare_url(base_asset_url, {"v": version_build_param})
+        return URL(req.url)
 
     def must_org_name(self) -> str:
         if self.org_name is None:
