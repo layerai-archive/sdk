@@ -102,6 +102,15 @@ def log(
     ``path.Path``
     ``layer.Video``
 
+    **Files and Directories**
+
+    Directories and files (that do not have an image or video extension, as documented above) can also be logged.
+
+    If a directory is passed, it is compressed and logged as a single file.
+
+    Accepted Types:
+    ``path.Path``
+
     **Charts**
 
     You can track your metrics in detail with charts. Metrics logged with the same layer.log(...) call will be

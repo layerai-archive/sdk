@@ -1,4 +1,6 @@
 import io
+import shutil
+import tempfile
 import uuid
 from logging import Logger
 from pathlib import Path
@@ -36,7 +38,7 @@ class LogDataRunner:
         self._dataset_build_id = dataset_build_id
         self._logger = logger
 
-    def log(
+    def log(  # pylint: disable=too-many-statements
         self,
         data: Dict[
             str,
@@ -128,6 +130,10 @@ class LogDataRunner:
             elif self._is_pyplot(value):
                 assert isinstance(value, ModuleType)
                 self._log_current_plot_figure(tag=tag, plt=value, category=category)
+            elif isinstance(value, Path):  # This must be below image and video!
+                self._log_file_or_directory_from_path(
+                    tag=tag, path=value, category=category
+                )
             else:
                 raise ValueError(f"Unsupported value type -> {type(value)}")
 
@@ -248,6 +254,29 @@ class LogDataRunner:
             category=category,
         )
 
+    def _log_file_or_directory_from_path(
+        self, tag: str, path: Path, category: Optional[str] = None
+    ) -> None:
+        if path.is_file():
+            self._log_binary_from_path(
+                tag,
+                path,
+                LoggedDataType.LOGGED_DATA_TYPE_FILE,
+                max_file_size_mb=100,
+                category=category,
+            )
+        elif path.is_dir():
+            with tempfile.NamedTemporaryFile() as target_file:
+                shutil.make_archive(target_file.name, "zip", path)
+
+                self._log_binary_from_path(
+                    tag,
+                    Path(f"{target_file.name}.zip"),
+                    LoggedDataType.LOGGED_DATA_TYPE_DIRECTORY,
+                    max_file_size_mb=100,
+                    category=category,
+                )
+
     def _log_video_from_path(
         self, tag: str, path: Path, category: Optional[str] = None
     ) -> None:
@@ -287,7 +316,7 @@ class LogDataRunner:
     ) -> None:
         file_size_in_bytes = path.stat().st_size
         self._check_size_less_than_mb(file_size_in_bytes, max_file_size_mb)
-        with requests.Session() as s, open(path, "rb") as image_file:
+        with requests.Session() as s, open(path, "rb") as binary_file:
             presigned_url = self._client.logged_data_service_client.log_binary_data(
                 train_id=self._train_id,
                 dataset_build_id=self._dataset_build_id,
@@ -296,7 +325,7 @@ class LogDataRunner:
                 epoch=epoch,
                 category=category,
             )
-            resp = s.put(presigned_url, data=image_file)
+            resp = s.put(presigned_url, data=binary_file)
             resp.raise_for_status()
 
     def _log_pil_image(

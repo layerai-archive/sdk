@@ -365,6 +365,8 @@ class LoggedDataType(Enum):
     IMAGE = 6
     VIDEO = 7
     MARKDOWN = 8
+    FILE = 9
+    DIRECTORY = 10
 
 
 @dataclass(frozen=True)
