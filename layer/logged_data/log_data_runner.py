@@ -58,20 +58,21 @@ class LogDataRunner:
             ],
         ],
         epoch: Optional[int] = None,
+        category: Optional[str] = None,
     ) -> None:
         LogDataRunner._check_epoch(epoch)
 
         metric_group_uuid = uuid.uuid4()
         for tag, value in data.items():
             if isinstance(value, str):
-                self._log_text(tag=tag, text=value)
+                self._log_text(tag=tag, text=value, category=category)
             elif isinstance(value, list):
-                self._log_text(tag=tag, text=str(value))
+                self._log_text(tag=tag, text=str(value), category=category)
             elif isinstance(value, np.ndarray):
-                self._log_text(tag=tag, text=str(value.tolist()))
+                self._log_text(tag=tag, text=str(value.tolist()), category=category)
             # boolean check must be done before numeric check as it also returns true for booleans.
             elif isinstance(value, bool):
-                self._log_boolean(tag=tag, bool_val=value)
+                self._log_boolean(tag=tag, bool_val=value, category=category)
             elif isinstance(value, (int, float)):
                 if self._train_id and epoch is not None:
                     self._log_metric(
@@ -79,37 +80,40 @@ class LogDataRunner:
                         numeric_value=value,
                         epoch=epoch,
                         metric_group_id=metric_group_uuid,
+                        category=category,
                     )
                 else:
-                    self._log_number(tag=tag, number=value)
+                    self._log_number(tag=tag, number=value, category=category)
             elif isinstance(value, Markdown):
-                self._log_markdown(tag=tag, text=value.data)
+                self._log_markdown(tag=tag, text=value.data, category=category)
             elif isinstance(value, pd.DataFrame):
-                self._log_dataframe(tag=tag, df=value)
+                self._log_dataframe(tag=tag, df=value, category=category)
             elif LogDataRunner._is_tabular_dict(value):
                 if TYPE_CHECKING:
                     assert isinstance(value, dict)
                 dataframe = LogDataRunner._convert_dict_to_dataframe(value)
-                self._log_dataframe(tag=tag, df=dataframe)
+                self._log_dataframe(tag=tag, df=dataframe, category=category)
             elif LogDataRunner._is_video_from_path(value):
                 if TYPE_CHECKING:
                     assert isinstance(value, Path)
-                self._log_video_from_path(tag=tag, path=value)
+                self._log_video_from_path(tag=tag, path=value, category=category)
             elif isinstance(value, Video):
                 video_path = value.get_video()
-                self._log_video_from_path(tag=tag, path=video_path)
+                self._log_video_from_path(tag=tag, path=video_path, category=category)
             elif Image.is_image(value):
                 if TYPE_CHECKING:
                     import PIL
 
                     assert isinstance(value, (Path, PIL.Image.Image, Image))
-                self._log_image(tag=tag, img_value=value, epoch=epoch)
+                self._log_image(
+                    tag=tag, img_value=value, epoch=epoch, category=category
+                )
             elif self._is_plot_figure(value):
                 if TYPE_CHECKING:
                     import matplotlib.figure
 
                     assert isinstance(value, matplotlib.figure.Figure)
-                self._log_plot_figure(tag=tag, figure=value)
+                self._log_plot_figure(tag=tag, figure=value, category=category)
             elif self._is_axes_subplot(value):
                 if TYPE_CHECKING:
                     import matplotlib.axes._subplots  # type: ignore
@@ -118,10 +122,12 @@ class LogDataRunner:
                         value,
                         matplotlib.axes._subplots.AxesSubplot,  # pylint: disable=protected-access
                     )
-                self._log_plot_figure(tag=tag, figure=value.get_figure())
+                self._log_plot_figure(
+                    tag=tag, figure=value.get_figure(), category=category
+                )
             elif self._is_pyplot(value):
                 assert isinstance(value, ModuleType)
-                self._log_current_plot_figure(tag=tag, plt=value)
+                self._log_current_plot_figure(tag=tag, plt=value, category=category)
             else:
                 raise ValueError(f"Unsupported value type -> {type(value)}")
 
@@ -130,6 +136,7 @@ class LogDataRunner:
         tag: str,
         img_value: Union["PIL.Image.Image", Path, Image],
         epoch: Optional[int],
+        category: Optional[str] = None,
     ) -> None:
         # Users can log images directly with `layer.log({'img':img})` for simple images or with
         # `layer.log({'img':layer.Image(img)})` for advanced image formats like Tensors
@@ -148,18 +155,20 @@ class LogDataRunner:
             if TYPE_CHECKING:
                 assert isinstance(img, Path)
             if self._train_id and epoch is not None:
-                self._log_image_from_path(tag=tag, path=img, epoch=epoch)
+                self._log_image_from_path(
+                    tag=tag, path=img, epoch=epoch, category=category
+                )
             else:
-                self._log_image_from_path(tag=tag, path=img)
+                self._log_image_from_path(tag=tag, path=img, category=category)
         elif Image.is_pil_image(img):
             if TYPE_CHECKING:
                 import PIL
 
                 assert isinstance(img, PIL.Image.Image)
             if self._train_id and epoch is not None:
-                self._log_pil_image(tag=tag, image=img, epoch=epoch)
+                self._log_pil_image(tag=tag, image=img, epoch=epoch, category=category)
             else:
-                self._log_pil_image(tag=tag, image=img)
+                self._log_pil_image(tag=tag, image=img, category=category)
 
     def _log_metric(
         self,
@@ -167,6 +176,7 @@ class LogDataRunner:
         numeric_value: Union[float, int],
         epoch: Optional[int],
         metric_group_id: UUID,
+        category: Optional[str] = None,
     ) -> None:
         assert self._train_id
         # store numeric values w/o an explicit epoch as metric with the special epoch:-1
@@ -176,41 +186,54 @@ class LogDataRunner:
             tag=tag,
             points=[ModelMetricPoint(epoch=epoch, value=float(numeric_value))],
             metric_group_id=metric_group_id,
+            category=category,
         )
 
-    def _log_text(self, tag: str, text: str) -> None:
+    def _log_text(self, tag: str, text: str, category: Optional[str] = None) -> None:
         self._client.logged_data_service_client.log_text_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
             data=text,
+            category=category,
         )
 
-    def _log_markdown(self, tag: str, text: str) -> None:
+    def _log_markdown(
+        self, tag: str, text: str, category: Optional[str] = None
+    ) -> None:
         self._client.logged_data_service_client.log_markdown_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
             data=text,
+            category=category,
         )
 
-    def _log_number(self, tag: str, number: Union[float, int]) -> None:
+    def _log_number(
+        self, tag: str, number: Union[float, int], category: Optional[str] = None
+    ) -> None:
         self._client.logged_data_service_client.log_numeric_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
             data=str(number),
+            category=category,
         )
 
-    def _log_boolean(self, tag: str, bool_val: bool) -> None:
+    def _log_boolean(
+        self, tag: str, bool_val: bool, category: Optional[str] = None
+    ) -> None:
         self._client.logged_data_service_client.log_boolean_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
             data=str(bool_val),
+            category=category,
         )
 
-    def _log_dataframe(self, tag: str, df: pd.DataFrame) -> None:
+    def _log_dataframe(
+        self, tag: str, df: pd.DataFrame, category: Optional[str] = None
+    ) -> None:
         rows = len(df.index)
         if rows > 1000:
             raise ValueError(
@@ -222,15 +245,26 @@ class LogDataRunner:
             dataset_build_id=self._dataset_build_id,
             tag=tag,
             data=df_json,
+            category=category,
         )
 
-    def _log_video_from_path(self, tag: str, path: Path) -> None:
+    def _log_video_from_path(
+        self, tag: str, path: Path, category: Optional[str] = None
+    ) -> None:
         self._log_binary_from_path(
-            tag, path, LoggedDataType.LOGGED_DATA_TYPE_VIDEO, max_file_size_mb=100
+            tag,
+            path,
+            LoggedDataType.LOGGED_DATA_TYPE_VIDEO,
+            max_file_size_mb=100,
+            category=category,
         )
 
     def _log_image_from_path(
-        self, tag: str, path: Path, epoch: Optional[int] = None
+        self,
+        tag: str,
+        path: Path,
+        epoch: Optional[int] = None,
+        category: Optional[str] = None,
     ) -> None:
         self._log_binary_from_path(
             tag,
@@ -238,6 +272,7 @@ class LogDataRunner:
             LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
             max_file_size_mb=1,
             epoch=epoch,
+            category=category,
         )
 
     def _log_binary_from_path(
@@ -248,6 +283,7 @@ class LogDataRunner:
         *,
         max_file_size_mb: int,
         epoch: Optional[int] = None,
+        category: Optional[str] = None,
     ) -> None:
         file_size_in_bytes = path.stat().st_size
         self._check_size_less_than_mb(file_size_in_bytes, max_file_size_mb)
@@ -258,12 +294,18 @@ class LogDataRunner:
                 tag=tag,
                 logged_data_type=logged_data_type,
                 epoch=epoch,
+                category=category,
             )
             resp = s.put(presigned_url, data=image_file)
             resp.raise_for_status()
 
     def _log_pil_image(
-        self, tag: str, image: "PIL.Image.Image", *, epoch: Optional[int] = None
+        self,
+        tag: str,
+        image: "PIL.Image.Image",
+        *,
+        epoch: Optional[int] = None,
+        category: Optional[str] = None,
     ) -> None:
         with requests.Session() as s, io.BytesIO() as buffer:
             if image.mode in ["RGBA", "P"]:
@@ -277,11 +319,17 @@ class LogDataRunner:
                 tag=tag,
                 logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
                 epoch=epoch,
+                category=category,
             )
             resp = s.put(presigned_url, data=buffer.getvalue())
             resp.raise_for_status()
 
-    def _log_plot_figure(self, tag: str, figure: "matplotlib.figure.Figure") -> None:
+    def _log_plot_figure(
+        self,
+        tag: str,
+        figure: "matplotlib.figure.Figure",
+        category: Optional[str] = None,
+    ) -> None:
         with requests.Session() as s, io.BytesIO() as buffer:
             figure.savefig(buffer, format="jpg")
             self._check_buffer_size(buffer=buffer)
@@ -290,13 +338,16 @@ class LogDataRunner:
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,
                 logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+                category=category,
             )
             resp = s.put(presigned_url, data=buffer.getvalue())
             resp.raise_for_status()
 
-    def _log_current_plot_figure(self, tag: str, plt: ModuleType) -> None:
+    def _log_current_plot_figure(
+        self, tag: str, plt: ModuleType, category: Optional[str] = None
+    ) -> None:
         if len(plt.get_fignums()) > 0:
-            self._log_plot_figure(tag, plt.gcf())
+            self._log_plot_figure(tag, plt.gcf(), category=category)
         else:
             raise ValueError("No figures in the current pyplot state!")
 
