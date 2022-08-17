@@ -1,35 +1,23 @@
 import logging
-import os
 from typing import Any
 from uuid import UUID
 
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.utils import get_progress_tracker
-from layer.utils.async_utils import asyncio_run_in_thread
 
-from .common import initialize
+from .common import make_runner
 from .model_trainer import LocalTrainContext, ModelTrainer
 
 
 logger = logging.getLogger(__name__)
 
 
-def runner(model_definition: FunctionDefinition) -> Any:
-    def inner() -> Any:
-        return _run(model_definition)
-
-    return inner
-
-
-def _run(model_definition: FunctionDefinition) -> Any:
-    initialize(model_definition)
-    config: Config = asyncio_run_in_thread(ConfigManager().refresh())
+def _run(model_definition: FunctionDefinition, config: Config, fabric: Fabric) -> Any:
 
     with LayerClient(config.client, logger).init() as client:
         progress_tracker = get_progress_tracker(
@@ -49,7 +37,7 @@ def _run(model_definition: FunctionDefinition) -> Any:
                 model_definition.asset_path,
                 model_definition.description,
                 model_definition.source_code_digest,
-                _get_display_fabric(),
+                fabric.value,
             ).model_version
             train_id = client.model_catalog.create_model_train_from_version_id(
                 model_version.id
@@ -83,5 +71,4 @@ def _run(model_definition: FunctionDefinition) -> Any:
             return result
 
 
-def _get_display_fabric() -> str:
-    return os.getenv("LAYER_FABRIC", Fabric.F_LOCAL.value)
+RUNNER = make_runner(_run)

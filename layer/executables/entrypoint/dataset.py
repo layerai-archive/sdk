@@ -1,10 +1,8 @@
 import logging
-import os
 import uuid
 from typing import Any, List
 
 from layer.clients.layer import LayerClient
-from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.context import Context
 from layer.contracts.assertions import Assertion
@@ -21,36 +19,24 @@ from layer.exceptions.exceptions import (
 )
 from layer.global_context import (
     reset_active_context,
-    reset_to,
     set_active_context,
     set_has_shown_update_message,
 )
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
-from layer.utils.async_utils import asyncio_run_in_thread
 from layer.utils.runtime_utils import check_and_convert_to_df
 
-from .common import initialize
+from .common import make_runner
 
 
 logger = logging.getLogger(__name__)
 set_has_shown_update_message(True)
 
 
-def runner(dataset_definition: FunctionDefinition) -> Any:
-    def inner() -> Any:
-        return _run(dataset_definition)
-
-    return inner
-
-
-def _run(dataset_definition: FunctionDefinition) -> None:
-    initialize(dataset_definition)
-
-    config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-
-    reset_to(dataset_definition.project_full_name.path)
+def _run(
+    dataset_definition: FunctionDefinition, config: Config, fabric: Fabric
+) -> None:
 
     with LayerClient(config.client, logger).init() as client:
 
@@ -63,7 +49,9 @@ def _run(dataset_definition: FunctionDefinition) -> None:
         with progress_tracker.track() as tracker:
             tracker.add_asset(AssetType.DATASET, dataset_definition.asset_name)
 
-            _register_function(client, dataset=dataset_definition, tracker=tracker)
+            _register_function(
+                client, dataset=dataset_definition, tracker=tracker, fabric=fabric
+            )
             tracker.mark_dataset_building(dataset_definition.asset_name)
 
             try:
@@ -78,7 +66,7 @@ def _run(dataset_definition: FunctionDefinition) -> None:
                     dataset_build_id = client.data_catalog.initiate_build(
                         current_project_uuid,
                         dataset_definition.asset_name,
-                        _get_display_fabric(),
+                        fabric.value,
                     )
                     context.with_dataset_build(
                         DatasetBuild(
@@ -141,6 +129,7 @@ def _register_function(
     client: LayerClient,
     dataset: FunctionDefinition,
     tracker: RunProgressTracker,
+    fabric: Fabric,
 ) -> None:
     try:
         project_id = verify_project_exists_and_retrieve_project_id(
@@ -150,7 +139,7 @@ def _register_function(
             dataset.asset_path,
             project_id,
             dataset.description,
-            _get_display_fabric(),
+            fabric.value,
             dataset.func_source,
             dataset.entrypoint,
             dataset.environment,
@@ -190,5 +179,4 @@ def _run_assertions(
         tracker.mark_dataset_completed_assertions(asset_name)
 
 
-def _get_display_fabric() -> str:
-    return os.getenv("LAYER_FABRIC", Fabric.F_LOCAL.value)
+RUNNER = make_runner(_run)
