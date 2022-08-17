@@ -61,16 +61,11 @@ def package_function(
             cloudpickle.register_pickle_by_value(sys.modules[function.__module__])  # type: ignore
             cloudpickle.dump(function, function_, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
 
-        # TODO delete this once backend is updated, it's unused
-        assertions_path = source / "assertions"
-        with open(assertions_path, mode="wb") as assertions_:
-            cloudpickle.dump([], assertions_, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
-
         metadata_path = source / "metadata.json"
         with open(metadata_path, mode="w", encoding="utf8") as metadata_:
             json.dump(metadata or {}, metadata_, separators=(",", ":"))
 
-        target = (output_dir or Path(".")) / function.__name__
+        target = (output_dir or Path(".")) / "package.zip"
 
         # create the executable
         zipapp.create_archive(

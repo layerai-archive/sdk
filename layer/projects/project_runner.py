@@ -21,11 +21,7 @@ from layer.exceptions.exceptions import (
     ProjectBaseException,
     ProjectRunnerError,
 )
-from layer.executables.entrypoint.common import (
-    ENV_LAYER_API_KEY,
-    ENV_LAYER_API_TOKEN,
-    ENV_LAYER_API_URL,
-)
+from layer.executables.entrypoint.common import ENV_LAYER_API_TOKEN, ENV_LAYER_API_URL
 from layer.projects.execution_planner import (
     build_execution_plan,
     check_asset_dependencies,
@@ -146,7 +142,6 @@ class ProjectRunner:
                 env_variables={
                     ENV_LAYER_API_URL: str(self._config.url),
                     ENV_LAYER_API_TOKEN: self._config.credentials.access_token,
-                    ENV_LAYER_API_KEY: self._config.credentials.refresh_token,
                 },
             )
         except LayerResourceExhaustedException as e:
