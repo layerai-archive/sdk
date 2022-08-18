@@ -61,10 +61,11 @@ class LogDataRunner:
         ],
         epoch: Optional[int] = None,
         category: Optional[str] = None,
+        grouped: Optional[bool] = False,
     ) -> None:
         LogDataRunner._check_epoch(epoch)
 
-        metric_group_uuid = uuid.uuid4()
+        common_metric_group_uuid = uuid.uuid4()
         for tag, value in data.items():
             if isinstance(value, str):
                 self._log_text(tag=tag, text=value, category=category)
@@ -81,7 +82,9 @@ class LogDataRunner:
                         tag=tag,
                         numeric_value=value,
                         epoch=epoch,
-                        metric_group_id=metric_group_uuid,
+                        metric_group_id=common_metric_group_uuid
+                        if grouped
+                        else uuid.uuid4(),
                         category=category,
                     )
                 else:

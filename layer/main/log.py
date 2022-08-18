@@ -48,11 +48,13 @@ def log(
     ],
     step: Optional[int] = None,
     category: Optional[str] = None,
+    grouped: Optional[bool] = False,
 ) -> None:
     """
     :param data: A dictionary in which each key is a string tag (i.e. name/id). The value can have different types. See examples below for more details.
     :param step: An optional non-negative integer that associates data with a particular step (epoch). This only takes effect if the logged data is to be associated with a model train (and *not* with a dataset build), and the data is either a number or an image.
     :param category: An optional string that associates data with a particular category. This category is used for grouping in the web UI.
+    :param grouped: An optional boolean. If True, all the metrics logged with the same call to this function will be displayed on the same chart in the web UI.
     :return: None
 
     Logs arbitrary data associated with a model train or a dataset build into Layer backend.
@@ -194,4 +196,4 @@ def log(
             dataset_build_id=dataset_build_id,
             logger=logger,
         )
-        log_data_runner.log(data=data, epoch=step, category=category)
+        log_data_runner.log(data=data, epoch=step, category=category, grouped=grouped)
