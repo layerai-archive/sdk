@@ -48,7 +48,6 @@ def test_package_contents(tmpdir: Path):
         assert exec_entries == {
             "requirements.txt",
             "function",
-            "assertions",
             "metadata.json",
             "__main__.py",
             "resources/",
@@ -186,7 +185,7 @@ class CallableMethod:
     "callable",
     [(lambda: 42), (CallableClass(),), (CallableMethod().x,), ("e",), (42,)],
 )
-def test_only_funcions_could_be_packaged(callable):
+def test_only_functions_could_be_packaged(callable):
     with pytest.raises(ValueError, match=r"function must be a function"):
         package_function(callable)
 
@@ -196,4 +195,4 @@ def test_package_same_function_to_the_same_output_dir(tmpdir: Path):
     exec2 = package_function(func_simple, output_dir=tmpdir)
 
     assert exec1 == exec2
-    assert PurePath(exec1).name == "func_simple"
+    assert PurePath(exec1).name == "package.zip"

@@ -116,7 +116,6 @@ def _run_pip_install(packages: Sequence[str]) -> None:
         "--disable-pip-version-check",
         "--no-color",
         "install",
-        "--user",
     ] + list(packages)
 
     result = subprocess.run(  # nosec
@@ -129,6 +128,8 @@ def _run_pip_install(packages: Sequence[str]) -> None:
     if result.returncode != 0:
         raise FunctionRuntimeError(f"package instalation failed:\n{result.stderr}")
 
+    # if site packages is not writeable, user site is used by pip to install dependencies
+    # add it to the path if it's not there already
     user_site = site.getusersitepackages()
     if user_site not in sys.path:
         sys.path.append(user_site)
