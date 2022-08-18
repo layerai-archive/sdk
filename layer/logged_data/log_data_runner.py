@@ -19,6 +19,7 @@ from layer.contracts.logged_data import Image, Markdown, ModelMetricPoint, Video
 from .. import global_context
 from .utils import get_base_module_list, has_allowed_extension
 
+
 if TYPE_CHECKING:
     import matplotlib.figure  # type: ignore
     import PIL
@@ -477,7 +478,7 @@ class LogDataRunner:
     def _check_size_less_than_mb(
         self, size_in_bytes: float, max_mb_size: float
     ) -> None:
-        size_in_mb = size_in_bytes / 1000 ** 2
+        size_in_mb = size_in_bytes / 1000**2
         if size_in_mb > max_mb_size:
             raise ValueError(
                 f"Image size cannot exceed {max_mb_size}MB. Current size: {size_in_mb}"

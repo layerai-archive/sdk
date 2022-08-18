@@ -7,7 +7,8 @@ class Assertion:
     name: str
     values: List[Any]
     function: Callable[..., Any]
-    will_call: bool = False
+    # Flag to call this function once build is complete.
+    will_call_post_build: bool
 
     def __str__(self) -> str:
         values_str = []

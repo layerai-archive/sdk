@@ -15,7 +15,7 @@ class LayerAssertFunctionWrapper(LayerFunctionWrapper):
         enabled: Any,
         assert_func: Callable[..., Any],
         values: List[Any],
-        will_call: Optional[bool] = False,
+        will_call_post_build: Optional[bool] = True,
     ) -> None:
         super().__init__(wrapped, wrapper, enabled)
         self.layer.append_assertion(
@@ -23,7 +23,7 @@ class LayerAssertFunctionWrapper(LayerFunctionWrapper):
                 name=assert_func.__name__.lstrip("_"),
                 values=values,
                 function=assert_func(*values),
-                will_call=will_call,
+                will_call_post_build=will_call_post_build,
             )
         )
 

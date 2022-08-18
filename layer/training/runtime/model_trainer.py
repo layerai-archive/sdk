@@ -119,13 +119,14 @@ class ModelTrainer:
         failed_assertions = []
         self.tracker.mark_model_running_assertions(self.train_context.model_name)
         for assertion in reversed(assertions):
-            try:
-                self.tracker.mark_model_running_assertion(
-                    self.train_context.model_name, assertion
-                )
-                assertion.function(model)
-            except Exception:
-                failed_assertions.append(assertion)
+            if assertion.will_call_post_build:
+                try:
+                    self.tracker.mark_model_running_assertion(
+                        self.train_context.model_name, assertion
+                    )
+                    assertion.function(model)
+                except Exception:
+                    failed_assertions.append(assertion)
         if len(failed_assertions) > 0:
             self.tracker.mark_model_failed_assertions(
                 self.train_context.model_name, failed_assertions

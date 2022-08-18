@@ -120,7 +120,7 @@ class ModelTrainer:
         failed_assertions = []
         self.tracker.mark_model_running_assertions(self.train_context.model_name)
         for assertion in reversed(assertions):
-            if assertion.will_call:
+            if assertion.will_call_post_build:
                 try:
                     self.tracker.mark_model_running_assertion(
                         self.train_context.model_name, assertion
