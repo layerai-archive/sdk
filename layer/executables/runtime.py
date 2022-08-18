@@ -1,5 +1,7 @@
 import os
 import runpy
+import site
+import subprocess  # nosec
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
@@ -116,11 +118,8 @@ def _run_pip_install(packages: Sequence[str]) -> None:
         "install",
     ] + list(packages)
 
-    import subprocess  # nosec
-
-    result = subprocess.run(
+    result = subprocess.run(  # nosec
         pip_install,
-        shell=False,  # nosec
         text=True,
         check=False,
         capture_output=True,
@@ -128,6 +127,12 @@ def _run_pip_install(packages: Sequence[str]) -> None:
 
     if result.returncode != 0:
         raise FunctionRuntimeError(f"package instalation failed:\n{result.stderr}")
+
+    # if site packages is not writeable, user site is used by pip to install dependencies
+    # add it to the path if it's not there already
+    user_site = site.getusersitepackages()
+    if user_site not in sys.path:
+        sys.path.append(user_site)
 
 
 if __name__ == "__main__":
