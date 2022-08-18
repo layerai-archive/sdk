@@ -2,6 +2,9 @@ import logging
 import uuid
 from typing import Any, List
 
+from layerapi.api.entity.task_pb2 import Task
+from layerapi.api.ids_pb2 import RunId
+
 from layer.clients.layer import LayerClient
 from layer.config.config import Config
 from layer.context import Context
@@ -67,6 +70,14 @@ def _run(
                         current_project_uuid,
                         dataset_definition.asset_name,
                         fabric.value,
+                    )
+                    runId = RunId(value=str(uuid.uuid4()))  # TODO use runId from API
+                    client.flow_manager.update_run_metadata(
+                        run_id=runId,
+                        task_id=dataset_definition.asset_name,
+                        task_type=Task.Type.TYPE_DATASET_BUILD,
+                        key="build-id",
+                        value=str(dataset_build_id),
                     )
                     context.with_dataset_build(
                         DatasetBuild(
