@@ -19,9 +19,10 @@ from layer.exceptions.exceptions import (
     ProjectRunTerminatedError,
 )
 from layer.exceptions.status_report import ExecutionStatusReportFactory
-from layer.projects.utils import get_current_project_full_name
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.session import is_layer_debug_on
+
+from ..contracts.asset import AssetPath
 
 
 class PollingStepFunction:
@@ -114,44 +115,29 @@ class ProgressTrackerUpdater:
 
     def _handle_task_succeeded(self, task: PBTask) -> None:
         task_id = task.id
+        task_name = self._get_name_from_task_id(task.id)
         task_type = task.type
-        project_full_name = get_current_project_full_name()
         if task_type == PBTask.TYPE_DATASET_BUILD:
-            dataset_name = task_id
-            # Dataset path is evolving, and SDK needs to handle both relative and absolute
-            # Ideally we'd use a proper dataset_id name here
-            # new
-            dataset_abs_path = f"{project_full_name.path}/datasets/{dataset_name}"
-            # legacy
-            dataset_rel_path = (
-                f"{project_full_name.project_name}/datasets/{dataset_name}"
+            dataset_build_id = uuid.UUID(
+                self.run_metadata[(task_type, task_id, "build-id")]
             )
-            if (task_type, dataset_rel_path, "build-id") in self.run_metadata:
-                dataset_build_id = uuid.UUID(
-                    self.run_metadata[(task_type, dataset_rel_path, "build-id")]
-                )
-            else:
-                dataset_build_id = uuid.UUID(
-                    self.run_metadata[(task_type, dataset_abs_path, "build-id")]
-                )
 
             dataset = self.client.data_catalog.get_dataset_by_build_id(dataset_build_id)
             self.tracker.mark_dataset_built(
-                name=dataset_name,
+                name=task_name,
                 version=dataset.version,
                 build_index=dataset.build.index,
             )
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             train_id = uuid.UUID(self.run_metadata[(task_type, task_id, "train-id")])
-            model_name = task_id
             train_index = self.client.model_catalog.get_model_train(
                 ModelTrainId(value=str(train_id))
             ).index
             version_name = self.client.model_catalog.get_model_version(
-                ModelVersionId(value=str(task_id))
+                ModelVersionId(value=str(task_name))
             ).name
             self.tracker.mark_model_saved(
-                name=model_name,
+                name=task_name,
                 train_index=str(train_index),
                 version=version_name,
             )
@@ -161,25 +147,25 @@ class ProgressTrackerUpdater:
 
     def _handle_task_failed(self, task: PBTask) -> None:
         assert self.run.id
-        task_id = task.id
+        task_name = self._get_name_from_task_id(task.id)
         task_type = task.type
         task_info = task.info
         if task_type == PBTask.TYPE_DATASET_BUILD:
             exc_ds = ProjectDatasetBuildExecutionException(
                 self.run.id,
-                task_id,
+                task_name,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
-            self.tracker.mark_dataset_failed(name=task_id, reason=exc_ds.message)
+            self.tracker.mark_dataset_failed(name=task_name, reason=exc_ds.message)
             raise exc_ds
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             exc_model = ProjectModelExecutionException(
                 self.run.id,
-                task_id,
+                task_name,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
             self.tracker.mark_model_train_failed(
-                name=task_id,
+                name=task_name,
                 reason=f"{exc_model.message}",
             )
             raise exc_model
@@ -188,15 +174,19 @@ class ProgressTrackerUpdater:
             _print_debug(f"Task type not handled {task_type}")
 
     def _handle_task_scheduled(self, task: PBTask) -> None:
-        task_id = task.id
+        task_name = self._get_name_from_task_id(task.id)
         task_type = task.type
         if task_type == PBTask.TYPE_DATASET_BUILD:
-            self.tracker.mark_dataset_building(name=task_id)
+            self.tracker.mark_dataset_building(name=task_name)
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
-            self.tracker.mark_model_training(name=task_id)
+            self.tracker.mark_model_training(name=task_name)
         else:
             # TODO: alert for this
             _print_debug(f"Task type not handled {task_type}")
+
+    @staticmethod
+    def _get_name_from_task_id(task_id: str) -> str:
+        return AssetPath.parse(task_id).asset_name
 
 
 def _print_debug(msg: str) -> None:

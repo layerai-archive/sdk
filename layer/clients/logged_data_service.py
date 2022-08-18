@@ -63,6 +63,7 @@ class LoggedDataClient:
         tag: str,
         points: List[ModelMetricPoint],
         metric_group_id: UUID,
+        category: Optional[str] = None,
     ) -> ModelMetricId:
         metric = LoggedModelMetric(
             unique_tag=tag,
@@ -71,6 +72,7 @@ class LoggedDataClient:
                 for p in points
             ],
             group_id=LoggedMetricGroupId(value=str(metric_group_id)),
+            category=category if category is not None else "",
         )
         request = LogModelMetricRequest(
             model_train_id=ModelTrainId(value=str(train_id)), metric=metric
@@ -86,6 +88,7 @@ class LoggedDataClient:
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
         epoch: Optional[int] = None,
+        category: Optional[str] = None,
     ) -> str:
         return self._log_data(
             tag,
@@ -93,6 +96,7 @@ class LoggedDataClient:
             train_id=train_id,
             dataset_build_id=dataset_build_id,
             epoch=epoch,
+            category=category,
         ).s3_path
 
     def log_text_data(
@@ -101,6 +105,7 @@ class LoggedDataClient:
         data: str,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
+        category: Optional[str] = None,
     ) -> None:
         self._log_data(
             tag,
@@ -108,6 +113,7 @@ class LoggedDataClient:
             data=data,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
+            category=category,
         )
 
     def log_markdown_data(
@@ -116,6 +122,7 @@ class LoggedDataClient:
         data: str,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
+        category: Optional[str] = None,
     ) -> None:
         self._log_data(
             tag,
@@ -123,6 +130,7 @@ class LoggedDataClient:
             data=data,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
+            category=category,
         )
 
     def log_numeric_data(
@@ -131,6 +139,7 @@ class LoggedDataClient:
         data: str,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
+        category: Optional[str] = None,
     ) -> None:
         self._log_data(
             tag,
@@ -138,6 +147,7 @@ class LoggedDataClient:
             data=data,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
+            category=category,
         )
 
     def log_boolean_data(
@@ -146,6 +156,7 @@ class LoggedDataClient:
         data: str,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
+        category: Optional[str] = None,
     ) -> None:
         self._log_data(
             tag,
@@ -153,6 +164,7 @@ class LoggedDataClient:
             data=data,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
+            category=category,
         )
 
     def log_table_data(
@@ -161,6 +173,7 @@ class LoggedDataClient:
         data: str,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
+        category: Optional[str] = None,
     ) -> None:
         self._log_data(
             tag,
@@ -168,6 +181,7 @@ class LoggedDataClient:
             data=data,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
+            category=category,
         )
 
     def _log_data(
@@ -178,6 +192,7 @@ class LoggedDataClient:
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
         epoch: Optional[int] = None,
+        category: Optional[str] = None,
     ) -> LogDataResponse:
         text = cast(str, data)
         request = LogDataRequest(
@@ -194,5 +209,6 @@ class LoggedDataClient:
             dataset_build_id=DatasetBuildId(value=str(dataset_build_id))
             if dataset_build_id is not None
             else None,
+            category=category if category is not None else "",
         )
         return self._service.LogData(request=request)

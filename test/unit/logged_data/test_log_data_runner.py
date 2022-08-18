@@ -40,7 +40,7 @@ def test_given_runner_when_log_data_with_string_value_then_calls_log_text_data(
     string_value2 = "string-value"
 
     # when
-    runner.log({tag1: string_value1, tag2: string_value2})
+    runner.log({tag1: string_value1, tag2: string_value2}, category="category")
 
     # then
     logged_data_client.log_text_data.assert_any_call(
@@ -48,12 +48,14 @@ def test_given_runner_when_log_data_with_string_value_then_calls_log_text_data(
         tag=tag1,
         data=string_value1,
         dataset_build_id=dataset_build_id,
+        category="category",
     )
     logged_data_client.log_text_data.assert_any_call(
         train_id=train_id,
         tag=tag2,
         data=string_value2,
         dataset_build_id=dataset_build_id,
+        category="category",
     )
 
 
@@ -79,7 +81,7 @@ def test_given_runner_when_log_data_with_list_value_then_calls_log_text_data(
     value2 = ["x", 5.6, ["a", "b"]]
 
     # when
-    runner.log({tag1: value1, tag2: value2})
+    runner.log({tag1: value1, tag2: value2}, category="category")
 
     # then
     logged_data_client.log_text_data.assert_any_call(
@@ -87,12 +89,14 @@ def test_given_runner_when_log_data_with_list_value_then_calls_log_text_data(
         tag=tag1,
         data=str(value1),
         dataset_build_id=dataset_build_id,
+        category="category",
     )
     logged_data_client.log_text_data.assert_any_call(
         train_id=train_id,
         tag=tag2,
         data=str(value2),
         dataset_build_id=dataset_build_id,
+        category="category",
     )
 
 
@@ -118,7 +122,7 @@ def test_given_runner_when_log_data_with_numpy_array_value_then_calls_log_text_d
     value2 = np.array([[1, 2], [3, 4]])
 
     # when
-    runner.log({tag1: value1, tag2: value2})
+    runner.log({tag1: value1, tag2: value2}, category="category")
 
     # then
     logged_data_client.log_text_data.assert_any_call(
@@ -126,12 +130,14 @@ def test_given_runner_when_log_data_with_numpy_array_value_then_calls_log_text_d
         tag=tag1,
         data=str([1, 2]),
         dataset_build_id=dataset_build_id,
+        category="category",
     )
     logged_data_client.log_text_data.assert_any_call(
         train_id=train_id,
         tag=tag2,
         data=str([[1, 2], [3, 4]]),
         dataset_build_id=dataset_build_id,
+        category="category",
     )
 
 
@@ -155,7 +161,7 @@ def test_given_runner_when_log_data_with_bool_value_then_calls_log_boolean_data(
     boolean_value = False
 
     # when
-    runner.log({tag: boolean_value})
+    runner.log({tag: boolean_value}, category="category")
 
     # then
     logged_data_client.log_boolean_data.assert_called_with(
@@ -163,6 +169,7 @@ def test_given_runner_when_log_data_with_bool_value_then_calls_log_boolean_data(
         tag=tag,
         data=str(boolean_value),
         dataset_build_id=dataset_build_id,
+        category="category",
     )
 
 
@@ -180,7 +187,7 @@ def test_given_runner_when_log_numeric_value_without_epoch_then_calls_log_number
     numeric_value1 = 2.3
 
     # when
-    runner.log({tag1: numeric_value1})
+    runner.log({tag1: numeric_value1}, category="category")
 
     # then
     logged_data_client.log_numeric_data.assert_any_call(
@@ -188,6 +195,7 @@ def test_given_runner_when_log_numeric_value_without_epoch_then_calls_log_number
         tag=tag1,
         data=str(numeric_value1),
         dataset_build_id=None,
+        category="category",
     )
 
 
@@ -208,7 +216,9 @@ def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() 
     epoch = 123
 
     # when
-    runner.log({tag1: numeric_value1, tag2: numeric_value2}, epoch=epoch)
+    runner.log(
+        {tag1: numeric_value1, tag2: numeric_value2}, epoch=epoch, category="category"
+    )
 
     # then
     logged_data_client.log_model_metric.assert_any_call(
@@ -216,6 +226,7 @@ def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() 
         tag=tag1,
         points=[ModelMetricPoint(epoch=epoch, value=numeric_value1)],
         metric_group_id=ANY,
+        category="category",
     )
 
     logged_data_client.log_model_metric.assert_any_call(
@@ -223,6 +234,7 @@ def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() 
         tag=tag2,
         points=[ModelMetricPoint(epoch=epoch, value=numeric_value2)],
         metric_group_id=ANY,
+        category="category",
     )
 
 
@@ -251,7 +263,7 @@ def test_given_runner_when_log_dict_then_calls_log_table(
     }
 
     # when
-    runner.log({tag: parameters})
+    runner.log({tag: parameters}, category="category")
 
     # then
     expected_dataframe = pd.DataFrame(
@@ -265,6 +277,7 @@ def test_given_runner_when_log_dict_then_calls_log_table(
         tag=tag,
         data=expected_dataframe_in_json,
         dataset_build_id=dataset_build_id,
+        category="category",
     )
 
 
@@ -314,7 +327,7 @@ def test_given_runner_when_log_pandas_dataframe_then_calls_log_table(
     )
     dataframe_in_json = dataframe.to_json(orient="table")
     # when
-    runner.log({tag: dataframe})
+    runner.log({tag: dataframe}, category="category")
 
     # then
     logged_data_client.log_table_data.assert_called_with(
@@ -322,6 +335,7 @@ def test_given_runner_when_log_pandas_dataframe_then_calls_log_table(
         tag=tag,
         data=dataframe_in_json,
         dataset_build_id=dataset_build_id,
+        category="category",
     )
 
 
@@ -381,7 +395,7 @@ def test_given_runner_when_log_ntchw_torch_tensor_video_then_calls_log_binary(
     assert video_object is not None
 
     # when
-    runner.log({tag: video})
+    runner.log({tag: video}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -390,6 +404,7 @@ def test_given_runner_when_log_ntchw_torch_tensor_video_then_calls_log_binary(
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_VIDEO,
         epoch=None,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -419,7 +434,7 @@ def test_given_runner_when_log_nparray_image_then_calls_log_binary(
     image = layer.Image(img, format="HWC")
 
     # when
-    runner.log({tag: image})
+    runner.log({tag: image}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -428,6 +443,7 @@ def test_given_runner_when_log_nparray_image_then_calls_log_binary(
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
         epoch=None,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -463,7 +479,7 @@ def test_given_runner_when_log_hwc_torch_tensor_image_then_calls_log_binary(
     assert image_object.height == img_height
 
     # when
-    runner.log({tag: image})
+    runner.log({tag: image}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -472,6 +488,7 @@ def test_given_runner_when_log_hwc_torch_tensor_image_then_calls_log_binary(
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
         epoch=None,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -502,7 +519,7 @@ def test_given_runner_when_log_hw_nparray_image_then_calls_log_binary(
     image = layer.Image(img, format="HW")
 
     # when
-    runner.log({tag: image})
+    runner.log({tag: image}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -511,6 +528,7 @@ def test_given_runner_when_log_hw_nparray_image_then_calls_log_binary(
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
         epoch=None,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -543,7 +561,7 @@ def test_given_runner_when_log_hw_torch_tensor_image_then_calls_log_binary(
     image = layer.Image(tensor_image, format="HW")
 
     # when
-    runner.log({tag: image})
+    runner.log({tag: image}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -552,6 +570,7 @@ def test_given_runner_when_log_hw_torch_tensor_image_then_calls_log_binary(
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
         epoch=None,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -578,7 +597,7 @@ def test_given_runner_when_log_image_then_calls_log_binary(
     image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
 
     # when
-    runner.log({tag: image})
+    runner.log({tag: image}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -587,6 +606,7 @@ def test_given_runner_when_log_image_then_calls_log_binary(
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
         epoch=None,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -613,7 +633,7 @@ def test_given_runner_when_log_image_with_step_for_model_train_then_calls_log_bi
     image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
 
     # when
-    runner.log({tag: image}, epoch=123)
+    runner.log({tag: image}, epoch=123, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -622,6 +642,7 @@ def test_given_runner_when_log_image_with_step_for_model_train_then_calls_log_bi
         tag=tag,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
         epoch=123,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -689,7 +710,7 @@ def test_given_runner_when_log_matplotlib_figure_then_calls_log_binary(
     ax.grid()
 
     # when
-    runner.log({tag: fig})
+    runner.log({tag: fig}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -697,6 +718,7 @@ def test_given_runner_when_log_matplotlib_figure_then_calls_log_binary(
         tag=tag,
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -748,7 +770,7 @@ def test_given_runner_when_log_matplotlib_module_then_calls_log_binary(
     ax.grid()
 
     # when
-    runner.log({tag: plt})
+    runner.log({tag: plt}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -756,6 +778,7 @@ def test_given_runner_when_log_matplotlib_module_then_calls_log_binary(
         tag=tag,
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -784,7 +807,7 @@ def test_given_runner_when_log_image_by_path_then_calls_log_binary(
     image.save(str(path))
 
     # when
-    runner.log({tag: Path(str(path))})
+    runner.log({tag: Path(str(path))}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -793,6 +816,7 @@ def test_given_runner_when_log_image_by_path_then_calls_log_binary(
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
         epoch=None,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
@@ -819,7 +843,7 @@ def test_given_runner_when_log_video_by_path_then_calls_log_binary(
     Path(str(path)).touch()
 
     # when
-    runner.log({tag: Path(str(path))})
+    runner.log({tag: Path(str(path))}, category="category")
 
     # then
     logged_data_client.log_binary_data.assert_called_with(
@@ -828,37 +852,9 @@ def test_given_runner_when_log_video_by_path_then_calls_log_binary(
         dataset_build_id=dataset_build_id,
         logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_VIDEO,
         epoch=None,
+        category="category",
     )
     mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-def test_given_runner_when_log_image_by_path_with_unsupported_extension_then_raise(
-    tmpdir, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
-    )
-    tag = "image-by-path"
-    image_data = np.random.rand(100, 100, 3) * 255
-    image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
-    path = tmpdir.join("image.webp")
-    image.save(str(path))
-
-    # when
-    with pytest.raises(ValueError, match=r".*Unsupported value type ->.*"):
-        runner.log({tag: Path(str(path))})
-
-    # then
-    logged_data_client.log_binary_data.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -880,7 +876,7 @@ def test_given_runner_when_log_markdown_then_calls_log_markdown(
     tag = "markdown-tag"
     md = layer.Markdown("# Foo bar")
     # when
-    runner.log({tag: md})
+    runner.log({tag: md}, category="category")
 
     # then
     logged_data_client.log_markdown_data.assert_called_with(
@@ -888,6 +884,7 @@ def test_given_runner_when_log_markdown_then_calls_log_markdown(
         tag=tag,
         data=md.data,
         dataset_build_id=dataset_build_id,
+        category="category",
     )
 
 

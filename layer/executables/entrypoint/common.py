@@ -42,7 +42,7 @@ def _initialize(definition: FunctionDefinition) -> None:
         if api_key:
             layer.login_with_api_key(api_key, url=api_url)
         elif api_token:
-            layer.login_with_access_token(api_key, url=api_token)
+            layer.login_with_access_token(api_token, url=api_url)
 
 
 def _get_display_fabric() -> Fabric:

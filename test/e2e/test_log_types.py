@@ -305,6 +305,45 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     assert logged_data.epoched_data[5].endswith(f"{stepped_pil_image_tab}/epoch/5")
 
 
+def test_file_and_directory_logged(initialized_project: Project, client: LayerClient):
+    # given
+    ds_name = "file_and_directory"
+    file_tag = "file_tag"
+    directory_tag = "directory_tag"
+
+    @dataset(ds_name)
+    def file_and_directory():
+        import os
+        from pathlib import Path
+
+        layer.log(
+            {file_tag: Path(f"{os.getcwd()}/test/e2e/assets/log_assets/somefile.txt")}
+        )
+        layer.log(
+            {directory_tag: Path(f"{os.getcwd()}/test/e2e/assets/log_assets/somedir")}
+        )
+
+        return pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
+
+    file_and_directory()
+
+    ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=file_tag, dataset_build_id=ds.build.id
+    )
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(file_tag)
+    assert logged_data.logged_data_type == LoggedDataType.FILE
+
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag=directory_tag, dataset_build_id=ds.build.id
+    )
+    assert logged_data.data.startswith("https://logged-data--layer")
+    assert logged_data.data.endswith(directory_tag)
+    assert logged_data.logged_data_type == LoggedDataType.DIRECTORY
+
+
 def test_matplotlib_objects_logged(initialized_project: Project, client: LayerClient):
     # given
     figure_tag = "matplotlib_figure_tag"
