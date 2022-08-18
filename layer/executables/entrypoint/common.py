@@ -13,9 +13,10 @@ from layer.utils.async_utils import asyncio_run_in_thread
 ENV_LAYER_API_URL = "LAYER_API_URL"
 ENV_LAYER_API_KEY = "LAYER_API_KEY"
 ENV_LAYER_API_TOKEN = "LAYER_API_TOKEN"
+ENV_LAYER_RUN_ID = "LAYER_RUN_ID"
 
 RunnerFunction = Callable[[FunctionDefinition], Any]
-RunFunction = Callable[[FunctionDefinition, Config, Fabric], Any]
+RunFunction = Callable[[FunctionDefinition, Config, Fabric, str], Any]
 
 
 def make_runner(run_function: RunFunction) -> RunnerFunction:
@@ -23,7 +24,9 @@ def make_runner(run_function: RunFunction) -> RunnerFunction:
         def inner() -> Any:
             _initialize(definition)
             config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            return run_function(definition, config, _get_display_fabric())
+            return run_function(
+                definition, config, _get_display_fabric(), _get_run_id()
+            )
 
         return inner
 
@@ -47,3 +50,7 @@ def _initialize(definition: FunctionDefinition) -> None:
 
 def _get_display_fabric() -> Fabric:
     return Fabric.find(os.getenv("LAYER_FABRIC", "f-local"))
+
+
+def _get_run_id() -> str:
+    return os.getenv(ENV_LAYER_RUN_ID, "")

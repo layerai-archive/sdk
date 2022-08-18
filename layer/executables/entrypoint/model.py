@@ -2,6 +2,9 @@ import logging
 from typing import Any
 from uuid import UUID
 
+from layerapi.api.entity.task_pb2 import Task
+from layerapi.api.ids_pb2 import RunId
+
 from layer.clients.layer import LayerClient
 from layer.config.config import Config
 from layer.contracts.assets import AssetType
@@ -17,7 +20,9 @@ from .model_trainer import LocalTrainContext, ModelTrainer
 logger = logging.getLogger(__name__)
 
 
-def _run(model_definition: FunctionDefinition, config: Config, fabric: Fabric) -> Any:
+def _run(
+    model_definition: FunctionDefinition, config: Config, fabric: Fabric, run_id: str
+) -> Any:
 
     with LayerClient(config.client, logger).init() as client:
         progress_tracker = get_progress_tracker(
@@ -42,6 +47,14 @@ def _run(model_definition: FunctionDefinition, config: Config, fabric: Fabric) -
             train_id = client.model_catalog.create_model_train_from_version_id(
                 model_version.id
             )
+            client.flow_manager.update_run_metadata(
+                run_id=RunId(value=run_id),
+                task_id=model_definition.asset_name,
+                task_type=Task.Type.TYPE_DATASET_BUILD,
+                key="train-id",
+                value=str(train_id),
+            )
+
             train = client.model_catalog.get_model_train(train_id)
 
             context = LocalTrainContext(  # noqa: F841

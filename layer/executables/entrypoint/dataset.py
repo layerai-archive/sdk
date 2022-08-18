@@ -38,7 +38,7 @@ set_has_shown_update_message(True)
 
 
 def _run(
-    dataset_definition: FunctionDefinition, config: Config, fabric: Fabric
+    dataset_definition: FunctionDefinition, config: Config, fabric: Fabric, run_id: str
 ) -> None:
 
     with LayerClient(config.client, logger).init() as client:
@@ -71,9 +71,8 @@ def _run(
                         dataset_definition.asset_name,
                         fabric.value,
                     )
-                    runId = RunId(value=str(uuid.uuid4()))  # TODO use runId from API
                     client.flow_manager.update_run_metadata(
-                        run_id=runId,
+                        run_id=RunId(value=run_id),
                         task_id=dataset_definition.asset_name,
                         task_type=Task.Type.TYPE_DATASET_BUILD,
                         key="build-id",
