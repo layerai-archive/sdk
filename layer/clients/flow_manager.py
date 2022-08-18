@@ -1,4 +1,3 @@
-from cProfile import run
 from typing import List, Mapping, Tuple
 
 from layerapi.api.entity.history_event_pb2 import HistoryEvent
@@ -68,7 +67,7 @@ class FlowManagerClient:
         return list(response.events), response.run_metadata
 
     def update_run_metadata(
-        self, run_id: RunId, task_id: str, task_type: Task.Type, key: str, value: str
+        self, run_id: RunId, task_id: str, task_type: "Task.Type.ValueType", key: str, value: str
     ) -> RunId:
         run_metadata_entry = RunMetadataEntry(
             task_id=task_id, task_type=task_type, key=key, value=value
