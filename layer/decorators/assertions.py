@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 import numpy
 import wrapt  # type: ignore
@@ -15,7 +15,7 @@ class LayerAssertFunctionWrapper(LayerFunctionWrapper):
         enabled: Any,
         assert_func: Callable[..., Any],
         values: List[Any],
-        will_call_post_build: Optional[bool] = True,
+        will_call_post_build: bool = True,
     ) -> None:
         super().__init__(wrapped, wrapper, enabled)
         self.layer.append_assertion(
@@ -29,7 +29,7 @@ class LayerAssertFunctionWrapper(LayerFunctionWrapper):
 
 
 def assert_metric(
-    metric_name, assert_function: Callable[..., bool]
+    metric_name: str, assert_function: Callable[..., bool]
 ) -> Callable[..., Any]:
     """
     Asserts that a condition is true for a logged metric
@@ -73,6 +73,7 @@ def _assert_metric_wrapper(
                 enabled,
                 _assert_metric,
                 [metric_name, assert_function],
+                will_call_post_build=False
             )
 
     return FunctionWrapper
@@ -80,7 +81,7 @@ def _assert_metric_wrapper(
 
 def _assert_metric(
     metric_name: str, assert_function: Callable[..., Any]
-) -> Callable[[Any], Any]:
+) -> Callable[[Any, Any], Any]:
     def assert_func(value: Any, epoch: Any) -> Any:
         assertion_result = assert_function(value, epoch)
         if not isinstance(assertion_result, (bool, numpy.bool_)):

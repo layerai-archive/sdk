@@ -70,8 +70,13 @@ class LogDataRunner:
         ],
         epoch: Optional[int] = None,
     ) -> None:
-        func = global_context.get_active_context().train_function()
-        for assertion in func.layer.get_assertions():
+        active_context = global_context.get_active_context()
+        if not active_context or not active_context.train_function():
+            raise RuntimeError(
+                "Metric assertion can be applied to functions decorated with @model or @dataset"
+            )
+        func = active_context.train_function()
+        for assertion in func.layer.get_assertions():  # type:ignore
             if assertion.name == "assert_metric" and assertion.values[0] == tag:
                 assertion.function(value, epoch)
 
