@@ -38,6 +38,16 @@ class LogDataRunner:
         self._dataset_build_id = dataset_build_id
         self._logger = logger
 
+        retry_strategy = requests.packages.urllib3.util.retry.Retry(
+            total=5,
+            backoff_factor=1,
+            status_forcelist=[408, 429],  # timeout  # too many requests
+        )
+        adapter = requests.adapters.HTTPAdapter(max_retries=retry_strategy)
+
+        self._session = requests.Session()
+        self._session.mount("https://", adapter=adapter)
+
     def log(  # pylint: disable=too-many-statements
         self,
         data: Dict[
@@ -316,7 +326,7 @@ class LogDataRunner:
     ) -> None:
         file_size_in_bytes = path.stat().st_size
         self._check_size_less_than_mb(file_size_in_bytes, max_file_size_mb)
-        with requests.Session() as s, open(path, "rb") as binary_file:
+        with open(path, "rb") as binary_file:
             presigned_url = self._client.logged_data_service_client.log_binary_data(
                 train_id=self._train_id,
                 dataset_build_id=self._dataset_build_id,
@@ -325,7 +335,7 @@ class LogDataRunner:
                 epoch=epoch,
                 category=category,
             )
-            resp = s.put(presigned_url, data=binary_file)
+            resp = self._session.put(presigned_url, data=binary_file)
             resp.raise_for_status()
 
     def _log_pil_image(
@@ -336,7 +346,7 @@ class LogDataRunner:
         epoch: Optional[int] = None,
         category: Optional[str] = None,
     ) -> None:
-        with requests.Session() as s, io.BytesIO() as buffer:
+        with io.BytesIO() as buffer:
             if image.mode in ["RGBA", "P"]:
                 image.save(buffer, format="PNG")
             else:
@@ -350,7 +360,7 @@ class LogDataRunner:
                 epoch=epoch,
                 category=category,
             )
-            resp = s.put(presigned_url, data=buffer.getvalue())
+            resp = self._session.put(presigned_url, data=buffer.getvalue())
             resp.raise_for_status()
 
     def _log_plot_figure(
@@ -359,7 +369,7 @@ class LogDataRunner:
         figure: "matplotlib.figure.Figure",
         category: Optional[str] = None,
     ) -> None:
-        with requests.Session() as s, io.BytesIO() as buffer:
+        with io.BytesIO() as buffer:
             figure.savefig(buffer, format="jpg")
             self._check_buffer_size(buffer=buffer)
             presigned_url = self._client.logged_data_service_client.log_binary_data(
@@ -369,7 +379,7 @@ class LogDataRunner:
                 logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
                 category=category,
             )
-            resp = s.put(presigned_url, data=buffer.getvalue())
+            resp = self._session.put(presigned_url, data=buffer.getvalue())
             resp.raise_for_status()
 
     def _log_current_plot_figure(
