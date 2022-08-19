@@ -50,8 +50,8 @@ def _run(
             if run_id:
                 client.flow_manager.update_run_metadata(
                     run_id=RunId(value=run_id),
-                    task_id=model_definition.asset_path,
-                    task_type=Task.Type.MODEL_TRAIN,
+                    task_id=model_definition.asset_path.path(),
+                    task_type=Task.Type.TYPE_MODEL_TRAIN,
                     key="train-id",
                     value=str(train_id.value),
                 )
