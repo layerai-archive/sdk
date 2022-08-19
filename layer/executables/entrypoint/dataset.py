@@ -2,6 +2,9 @@ import logging
 import uuid
 from typing import Any, List
 
+from layerapi.api.entity.task_pb2 import Task
+from layerapi.api.ids_pb2 import RunId
+
 from layer.clients.layer import LayerClient
 from layer.config.config import Config
 from layer.context import Context
@@ -35,7 +38,7 @@ set_has_shown_update_message(True)
 
 
 def _run(
-    dataset_definition: FunctionDefinition, config: Config, fabric: Fabric
+    dataset_definition: FunctionDefinition, config: Config, fabric: Fabric, run_id: str
 ) -> None:
 
     with LayerClient(config.client, logger).init() as client:
@@ -68,6 +71,14 @@ def _run(
                         dataset_definition.asset_name,
                         fabric.value,
                     )
+                    if run_id:
+                        client.flow_manager.update_run_metadata(
+                            run_id=RunId(value=run_id),
+                            task_id=dataset_definition.asset_name,
+                            task_type=Task.Type.TYPE_DATASET_BUILD,
+                            key="build-id",
+                            value=str(dataset_build_id),
+                        )
                     context.with_dataset_build(
                         DatasetBuild(
                             id=dataset_build_id, status=DatasetBuildStatus.STARTED
