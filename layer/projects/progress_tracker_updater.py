@@ -6,7 +6,7 @@ from layerapi.api.entity.history_event_pb2 import HistoryEvent
 from layerapi.api.entity.run_metadata_pb2 import RunMetadata
 from layerapi.api.entity.run_pb2 import Run as PBRun
 from layerapi.api.entity.task_pb2 import Task as PBTask
-from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId
+from layerapi.api.ids_pb2 import ModelTrainId
 
 from layer.clients.layer import LayerClient
 from layer.contracts.definitions import FunctionDefinition
@@ -130,11 +130,13 @@ class ProgressTrackerUpdater:
             )
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             train_id = uuid.UUID(self.run_metadata[(task_type, task_id, "train-id")])
-            train_index = self.client.model_catalog.get_model_train(
+            model_train = self.client.model_catalog.get_model_train(
                 ModelTrainId(value=str(train_id))
-            ).index
+            )
+            train_index = model_train.index
+            model_version_id = model_train.model_version_id
             version_name = self.client.model_catalog.get_model_version(
-                ModelVersionId(value=str(task_name))
+                model_version_id
             ).name
             self.tracker.mark_model_saved(
                 name=task_name,
