@@ -71,13 +71,14 @@ def _run(
                         dataset_definition.asset_name,
                         fabric.value,
                     )
-                    client.flow_manager.update_run_metadata(
-                        run_id=RunId(value=run_id),
-                        task_id=dataset_definition.asset_name,
-                        task_type=Task.Type.TYPE_DATASET_BUILD,
-                        key="build-id",
-                        value=str(dataset_build_id),
-                    )
+                    if run_id:
+                        client.flow_manager.update_run_metadata(
+                            run_id=RunId(value=run_id),
+                            task_id=dataset_definition.asset_name,
+                            task_type=Task.Type.TYPE_DATASET_BUILD,
+                            key="build-id",
+                            value=str(dataset_build_id),
+                        )
                     context.with_dataset_build(
                         DatasetBuild(
                             id=dataset_build_id, status=DatasetBuildStatus.STARTED

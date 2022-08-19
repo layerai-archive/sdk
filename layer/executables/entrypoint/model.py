@@ -47,14 +47,14 @@ def _run(
             train_id = client.model_catalog.create_model_train_from_version_id(
                 model_version.id
             )
-            client.flow_manager.update_run_metadata(
-                run_id=RunId(value=run_id),
-                task_id=model_definition.asset_name,
-                task_type=Task.Type.TYPE_DATASET_BUILD,
-                key="train-id",
-                value=str(train_id),
-            )
-
+            if run_id:
+                client.flow_manager.update_run_metadata(
+                    run_id=RunId(value=run_id),
+                    task_id=model_definition.asset_name,
+                    task_type=Task.Type.TYPE_DATASET_BUILD,
+                    key="train-id",
+                    value=str(train_id),
+                )
             train = client.model_catalog.get_model_train(train_id)
 
             context = LocalTrainContext(  # noqa: F841
