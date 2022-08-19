@@ -67,7 +67,7 @@ rich = ">=11"
 transformers = "*"
 yarl  = ">=1.6.3"
 wrapt  = ">=1.13.3"
-layer-api = "0.9.378960"
+layer-api = "0.9.379228"
 numpy = { version = "<1.22", python = "~3.7" } # 1.22 doesn't support python 3.7, this is a transitive dependency comming from various other packages
 requests = ">=2.23.0"
 nvsmi = "^0.4.2"
