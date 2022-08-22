@@ -141,6 +141,7 @@ class BaseAsset(metaclass=ABCMeta):
         path: Union[str, AssetPath],
         id: Optional[uuid.UUID] = None,
         dependencies: Optional[Sequence["BaseAsset"]] = None,
+        description: Optional[str] = None,
     ):
         if dependencies is None:
             dependencies = []
@@ -149,6 +150,7 @@ class BaseAsset(metaclass=ABCMeta):
         )
         self._id = id
         self._dependencies = dependencies
+        self._description = description
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, BaseAsset):
@@ -174,6 +176,10 @@ class BaseAsset(metaclass=ABCMeta):
     @property
     def path(self) -> str:
         return self._path.path()
+
+    @property
+    def description(self) -> str:
+        return self._description or ""
 
     @property
     def id(self) -> uuid.UUID:

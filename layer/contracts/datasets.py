@@ -62,9 +62,9 @@ class Dataset(BaseAsset):
             path=asset_path,
             id=id,
             dependencies=dependencies,
+            description=description,
         )
         self._version_id = version_id
-        self.description = description
         self.schema = schema
         self.metadata = metadata if metadata is not None else {}
         self.build = build or DatasetBuild()

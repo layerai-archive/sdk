@@ -48,10 +48,12 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
         asset_type: AssetType,
         name: str,
         dependencies: Optional[List[Union[str, Dataset, Model]]],
+        description: Optional[str],
     ) -> None:
         super().__init__(wrapped, wrapper, enabled)
         self.layer.set_asset_type(asset_type)
         self.layer.set_asset_name(name)
+        self.layer.set_description(description)
 
         paths: List[AssetPath] = []
         if dependencies is not None:
@@ -100,6 +102,7 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
             pip_dependencies=_get_pip_dependencies(self.layer),
             resource_paths=self.layer.get_resource_paths(),
             assertions=self.layer.get_assertions(),
+            description=self.layer.description,
         )
 
     def get_definition_with_bound_arguments(self) -> FunctionDefinition:

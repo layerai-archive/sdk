@@ -23,6 +23,7 @@ def _resolve_settings(
 class LayerSettings:
     _asset_type: Optional[AssetType] = None
     _name: Optional[str] = None
+    _description: Optional[str] = None
     _fabric: Optional[Fabric] = None
     _pip_requirements_file: Optional[str] = None
     _pip_packages: Optional[List[str]] = None
@@ -51,6 +52,10 @@ class LayerSettings:
     @property
     def pip_requirements_file(self) -> str:
         return self.get_pip_requirements_file()
+
+    @property
+    def description(self) -> str:
+        return self._description or ""
 
     @property
     def conda_environment(self) -> Optional[CondaEnv]:
@@ -98,6 +103,9 @@ class LayerSettings:
 
     def set_asset_name(self, name: str) -> None:
         self._name = name
+
+    def set_description(self, description: Optional[str]) -> None:
+        self._description = description
 
     def set_fabric(self, f: str) -> None:
         if Fabric.has_member_key(f):

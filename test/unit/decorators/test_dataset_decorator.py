@@ -25,7 +25,9 @@ from test.unit.decorators.util import project_client_mock
 
 def _make_test_dataset_function(name: str) -> Callable[..., Any]:
     @dataset(
-        name, dependencies=["datasets/bar", "models/foo", Dataset("baz"), Model("zoo")]
+        name,
+        dependencies=["datasets/bar", "models/foo", Dataset("baz"), Model("zoo")],
+        description="my description",
     )
     @pip_requirements(packages=["sklearn==0.0"])
     def func() -> pd.DataFrame:
@@ -105,6 +107,7 @@ class TestDatasetDecorator:
 
         assert dataset
         assert dataset.asset_name == name
+        assert dataset.description == "my description"
         assert dataset.project_name == test_project_name
         assert [
             (

@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 def model(
-    name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
+    name: str,
+    dependencies: Optional[List[Union[str, Dataset, Model]]] = None,
+    description: Optional[str] = None,
 ) -> Callable[..., Any]:
     """
     Decorator function used to wrap another function that trains a model. The function that decorator has been applied to needs to return a ML model object from a supported framework.
@@ -23,6 +25,7 @@ def model(
 
     :param name: Name with which the model are stored in Layer's backend.
     :param dependencies: List of datasets or models that will be built by Layer backend prior to building the current function. Layer understand what entities this function depends on so it optimizes the build process accordingly.
+    :param description: Optional description to be displayed in the UI.
     :return: Function object being decorated.
 
     .. code-block:: python
@@ -55,7 +58,7 @@ def model(
         from layer
         from layer.decorators import dataset, model
 
-        @model(name='survival_model', dependencies=[layer.Dataset('layer/titanic/datasets/features')])
+        @model(name='survival_model', dependencies=[layer.Dataset('layer/titanic/datasets/features')], description="Some description")
         @assert_true(test_survival_probability)
         def train():
             df = layer.get_dataset("layer/titanic/datasets/features").to_pandas()
@@ -68,7 +71,7 @@ def model(
             return random_forest
     """
 
-    @wrapt.decorator(proxy=_model_wrapper(name, dependencies))
+    @wrapt.decorator(proxy=_model_wrapper(name, dependencies, description))
     def wrapper(
         wrapped: Any, instance: Any, args: List[Any], kwargs: Dict[str, Any]
     ) -> None:
@@ -80,6 +83,7 @@ def model(
 def _model_wrapper(
     name: str,
     dependencies: Optional[List[Union[str, Dataset, Model]]] = None,
+    description: Optional[str] = None,
 ) -> Any:
     class FunctionWrapper(LayerAssetFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
@@ -90,6 +94,7 @@ def _model_wrapper(
                 AssetType.MODEL,
                 name,
                 dependencies,
+                description,
             )
 
     return FunctionWrapper
