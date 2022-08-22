@@ -416,6 +416,8 @@ class LoggedDataObject:
             return pd.read_json(self._logged_data.data, orient="table")
         elif self.is_number():
             return float(self._logged_data.data)
+        elif self.is_text():
+            return self._logged_data.data
         elif self.is_boolean():
             return bool(self._logged_data.data)
         elif self.is_image():
@@ -444,7 +446,7 @@ class LoggedDataObject:
         elif self.is_directory():
             with tempfile.NamedTemporaryFile() as temp_file:
                 self._download_object_to(self._logged_data.data, Path(temp_file.name))
-                shutil.unpack_archive(temp_file, extract_dir=path, format="zip")
+                shutil.unpack_archive(temp_file.name, extract_dir=path, format="zip")
         else:
             raise Exception(
                 f"Use value() method for {self._logged_data.logged_data_type} type."
@@ -458,6 +460,9 @@ class LoggedDataObject:
 
     def is_number(self) -> bool:
         return self._logged_data.logged_data_type == LoggedDataType.NUMBER
+
+    def is_text(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.TEXT
 
     def is_boolean(self) -> bool:
         return self._logged_data.logged_data_type == LoggedDataType.BOOLEAN
