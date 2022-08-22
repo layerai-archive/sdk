@@ -44,7 +44,11 @@ def remote_run_with_dependent_datasets_succeeds_and_registers_metadata(
         )
         return pandas_df
 
-    @dataset(transformed_dataset_name, dependencies=[Dataset(dataset_name)])
+    @dataset(
+        transformed_dataset_name,
+        dependencies=[Dataset(dataset_name)],
+        description="some description",
+    )
     def transform_data():
         df = layer.get_dataset(dataset_name).to_pandas()
         df = df.drop(["address"], axis=1)
@@ -65,6 +69,7 @@ def remote_run_with_dependent_datasets_succeeds_and_registers_metadata(
     pandas = ds.to_pandas()
     assert len(pandas.index) == 10
     assert len(pandas.values[0]) == 4  # only 4 columns in modified dataset
+    assert ds.description == "some description"
 
 
 # project set from execution context
@@ -92,3 +97,4 @@ def remote_run_with_model_train_succeeds_and_registers_metadata(
     asserter.assert_run_succeeded(run.id)
     mdl = layer.get_model(model_name)
     assert isinstance(mdl.get_train(), SVC)
+    assert mdl.description == "some description"

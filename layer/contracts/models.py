@@ -51,9 +51,9 @@ class Model(BaseAsset):
             path=asset_path,
             id=id,
             dependencies=dependencies,
+            description=description,
         )
         self._version_id = version_id
-        self._description = description
         self._flavor = flavor
         self._storage_config = storage_config
         self._model_runtime_objects = model_runtime_objects

@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 def dataset(
-    name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
+    name: str,
+    dependencies: Optional[List[Union[str, Dataset, Model]]] = None,
+    description: Optional[str] = None,
 ) -> Callable[..., Any]:
     """
     Decorator function that wraps a dataset function.
@@ -37,6 +39,7 @@ def dataset(
 
     :param name: Name with which the dataset will be stored in Layer backend.
     :param dependencies: List of ``Datasets`` or ``Models`` that will be built by Layer backend prior to building the current function. This hints Layer what entities this function depends on and optimizes the build process.
+    :param description: Optional description to be displayed in the UI.
     :return: Function object being decorated.
 
     .. code-block:: python
@@ -89,14 +92,14 @@ def dataset(
         from layer
         from layer.decorators import dataset
 
-        @dataset("raw_spam_dataset", dependencies=[layer.Dataset('layer/spam-detection/datasets/spam_messages')])
+        @dataset("raw_spam_dataset", dependencies=[layer.Dataset('layer/spam-detection/datasets/spam_messages')], description="Imporant dataset!")
         def raw_spam_dataset():
             # Get the spam_messages dataset and convert to Pandas dataframe.
             df = layer.get_dataset("spam-detection/datasets/spam_messages").to_pandas()
             return df
     """
 
-    @wrapt.decorator(proxy=_dataset_wrapper(name, dependencies))
+    @wrapt.decorator(proxy=_dataset_wrapper(name, dependencies, description))
     def wrapper(
         wrapped: Any, instance: Any, args: List[Any], kwargs: Dict[str, Any]
     ) -> None:
@@ -106,7 +109,9 @@ def dataset(
 
 
 def _dataset_wrapper(
-    name: str, dependencies: Optional[List[Union[str, Dataset, Model]]] = None
+    name: str,
+    dependencies: Optional[List[Union[str, Dataset, Model]]] = None,
+    description: Optional[str] = None,
 ) -> Any:
     class DatasetFunctionWrapper(LayerAssetFunctionWrapper):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
@@ -117,6 +122,7 @@ def _dataset_wrapper(
                 AssetType.DATASET,
                 name,
                 dependencies,
+                description,
             )
 
     return DatasetFunctionWrapper

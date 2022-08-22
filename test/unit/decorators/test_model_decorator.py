@@ -15,7 +15,9 @@ def _make_test_model_function(name: str) -> Callable[..., Any]:
     from sklearn.ensemble import RandomForestClassifier
 
     @model(
-        name, dependencies=["datasets/bar", "models/foo", Dataset("baz"), Model("zoo")]
+        name,
+        dependencies=["datasets/bar", "models/foo", Dataset("baz"), Model("zoo")],
+        description="my description",
     )
     @pip_requirements(packages=["scikit-learn==0.23.2"])
     def func() -> RandomForestClassifier:
@@ -53,6 +55,7 @@ class TestModelDecorator:
 
         assert model_definition.asset_name == name
         assert model_definition.project_name == "foo-test"
+        assert model_definition.description == "my description"
 
         assert len(model_definition.asset_dependencies) == 4
         assert model_definition.asset_dependencies[0].asset_name == "bar"
