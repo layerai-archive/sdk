@@ -1,6 +1,7 @@
 import time
 from pathlib import Path
 from typing import Any, Dict
+from unittest.mock import MagicMock, patch
 
 import jwt
 import pytest
@@ -14,6 +15,7 @@ from layer.config import (
     ConfigStore,
     Credentials,
     S3Config,
+    is_executables_feature_active,
 )
 from layer.exceptions.exceptions import (
     InvalidConfigurationError,
@@ -247,3 +249,35 @@ class TestConfigRecord:
     def test_to_credentials_empty(self) -> None:
         credentials = ConfigRecord.to_credentials({})
         assert credentials == Credentials.create_empty()
+
+
+class TestIsExecutablesFeatureActive:
+    @pytest.mark.parametrize(
+        "config_url,flag_enabled",
+        [
+            ("https://app.layer.ai", False),
+            ("https://dev1.layer.ai", True),
+            ("https://dev2.layer.ai", True),
+            ("https://app.layer.co", True),
+        ],
+    )
+    def test_active_by_config_url(self, config_url, flag_enabled):
+        with patch(
+            "layer.config.config_manager.ConfigManager.__new__"
+        ) as config_manager_new:
+            config_manager = MagicMock()
+            config_manager_new.return_value = config_manager
+
+            config = Config(
+                url=URL(config_url),
+                client=MagicMock(),
+                auth=MagicMock(),
+            )
+
+            config_manager.load.return_value = config
+
+            assert is_executables_feature_active() == flag_enabled
+
+    def test_active_by_env_var(self):
+        with patch.dict("os.environ", {"LAYER_EXECUTABLES": "1"}):
+            assert is_executables_feature_active()
