@@ -119,6 +119,10 @@ class Model(BaseAsset):
         self._logged_data_runner = log_data_runner
 
     def get_metadata(self, tag: str, step: Optional[int] = None) -> LoggedDataObject:
+        """
+        Get logged data associated with this model and having the given tag.
+        If the logged data is an image, then you can also pass a value for the step parameter.
+        """
         assert self._logged_data_runner
         logged_data = self._logged_data_runner.get_logged_data(tag)
         return LoggedDataObject(logged_data, epoch=step)

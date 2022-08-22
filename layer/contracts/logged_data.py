@@ -412,6 +412,9 @@ class LoggedDataObject:
             filer_handler.write(response.content)
 
     def value(self) -> Union[str, float, bool, pd.DataFrame, "PIL.Image.Image"]:
+        """
+        To be called for string, numeric, boolean, image, markdown and table values.
+        """
         if self.is_table():
             return pd.read_json(self._logged_data.data, orient="table")
         elif self.is_number():
@@ -441,6 +444,9 @@ class LoggedDataObject:
             )
 
     def download_to(self, path: Path) -> None:
+        """
+        To be called for file, video and directory logged data.
+        """
         if self.is_blob() or self.is_video() or self.is_file():
             self._download_object_to(self._logged_data.data, path)
         elif self.is_directory():
