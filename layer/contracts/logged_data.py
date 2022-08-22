@@ -76,12 +76,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import shutil
+import tempfile
 from dataclasses import dataclass
 from enum import Enum, unique
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
+import pandas as pd
+import requests  # type: ignore
 
 from ..logged_data.utils import get_base_module_list, has_allowed_extension
 
@@ -150,7 +154,6 @@ class Video:
                 "moviepy is installed, but can't import moviepy.editor.",
                 "Some packages could be missing [imageio, requests]",
             )
-        import tempfile
 
         # encode sequence of images into mp4 string
         clip = mpy.ImageSequenceClip(list(tensor), fps=fps)
@@ -395,3 +398,81 @@ class Markdown:
     """
 
     data: str
+
+
+class LoggedDataObject:
+    def __init__(self, logged_data: LoggedData, epoch: Optional[int] = None):
+        self._logged_data = logged_data
+        self._epoch = epoch
+
+    @staticmethod
+    def _download_object_to(url: str, file_path: Path) -> None:
+        response = requests.get(url)
+        with open(file_path, "wb") as filer_handler:
+            filer_handler.write(response.content)
+
+    def value(self) -> Union[str, float, bool, pd.DataFrame, "PIL.Image.Image"]:
+        if self.is_table():
+            return pd.read_json(self._logged_data.data, orient="table")
+        elif self.is_number():
+            return float(self._logged_data.data)
+        elif self.is_boolean():
+            return bool(self._logged_data.data)
+        elif self.is_image():
+            from PIL.Image import open as pil_open
+
+            url = (
+                self._logged_data.data
+                if self._epoch is None
+                else self._logged_data.epoched_data[self._epoch]
+            )
+            with tempfile.NamedTemporaryFile() as temp_file:
+                self._download_object_to(url, Path(temp_file.name))
+                image = pil_open(temp_file)
+                image.load()
+                return image
+        elif self.is_markdown():
+            return self._logged_data.data
+        else:
+            raise Exception(
+                f"Use download_to() method for {self._logged_data.logged_data_type} type."
+            )
+
+    def download_to(self, path: Path) -> None:
+        if self.is_blob() or self.is_video() or self.is_file():
+            self._download_object_to(self._logged_data.data, path)
+        elif self.is_directory():
+            with tempfile.NamedTemporaryFile() as temp_file:
+                self._download_object_to(self._logged_data.data, Path(temp_file.name))
+                shutil.unpack_archive(temp_file, extract_dir=path, format="zip")
+        else:
+            raise Exception(
+                f"Use value() method for {self._logged_data.logged_data_type} type."
+            )
+
+    def is_table(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.TABLE
+
+    def is_blob(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.BLOB
+
+    def is_number(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.NUMBER
+
+    def is_boolean(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.BOOLEAN
+
+    def is_image(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.IMAGE
+
+    def is_video(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.VIDEO
+
+    def is_markdown(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.MARKDOWN
+
+    def is_file(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.FILE
+
+    def is_directory(self) -> bool:
+        return self._logged_data.logged_data_type == LoggedDataType.DIRECTORY

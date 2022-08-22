@@ -13,8 +13,14 @@ import pandas as pd
 import requests  # type: ignore
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
-from layer.clients.layer import LayerClient
-from layer.contracts.logged_data import Image, Markdown, ModelMetricPoint, Video
+from layer.clients.logged_data_service import LoggedDataClient
+from layer.contracts.logged_data import (
+    Image,
+    LoggedData,
+    Markdown,
+    ModelMetricPoint,
+    Video,
+)
 
 from .utils import get_base_module_list, has_allowed_extension
 
@@ -27,7 +33,7 @@ if TYPE_CHECKING:
 class LogDataRunner:
     def __init__(
         self,
-        client: LayerClient,
+        client: LoggedDataClient,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
         logger: Optional[Logger] = None,
@@ -47,6 +53,11 @@ class LogDataRunner:
 
         self._session = requests.Session()
         self._session.mount("https://", adapter=adapter)
+
+    def get_logged_data(self, tag: str) -> LoggedData:
+        return self._client.get_logged_data(
+            tag=tag, train_id=self._train_id, dataset_build_id=self._dataset_build_id
+        )
 
     def log(  # pylint: disable=too-many-statements
         self,
@@ -197,7 +208,7 @@ class LogDataRunner:
         assert self._train_id
         # store numeric values w/o an explicit epoch as metric with the special epoch:-1
         epoch = epoch if epoch is not None else -1
-        self._client.logged_data_service_client.log_model_metric(
+        self._client.log_model_metric(
             train_id=self._train_id,
             tag=tag,
             points=[ModelMetricPoint(epoch=epoch, value=float(numeric_value))],
@@ -206,7 +217,7 @@ class LogDataRunner:
         )
 
     def _log_text(self, tag: str, text: str, category: Optional[str] = None) -> None:
-        self._client.logged_data_service_client.log_text_data(
+        self._client.log_text_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
@@ -217,7 +228,7 @@ class LogDataRunner:
     def _log_markdown(
         self, tag: str, text: str, category: Optional[str] = None
     ) -> None:
-        self._client.logged_data_service_client.log_markdown_data(
+        self._client.log_markdown_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
@@ -228,7 +239,7 @@ class LogDataRunner:
     def _log_number(
         self, tag: str, number: Union[float, int], category: Optional[str] = None
     ) -> None:
-        self._client.logged_data_service_client.log_numeric_data(
+        self._client.log_numeric_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
@@ -239,7 +250,7 @@ class LogDataRunner:
     def _log_boolean(
         self, tag: str, bool_val: bool, category: Optional[str] = None
     ) -> None:
-        self._client.logged_data_service_client.log_boolean_data(
+        self._client.log_boolean_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
@@ -256,7 +267,7 @@ class LogDataRunner:
                 f"DataFrame rows size cannot exceed 1000. Current size: {rows}"
             )
         df_json = df.to_json(orient="table")  # type: ignore
-        self._client.logged_data_service_client.log_table_data(
+        self._client.log_table_data(
             train_id=self._train_id,
             dataset_build_id=self._dataset_build_id,
             tag=tag,
@@ -327,7 +338,7 @@ class LogDataRunner:
         file_size_in_bytes = path.stat().st_size
         self._check_size_less_than_mb(file_size_in_bytes, max_file_size_mb)
         with open(path, "rb") as binary_file:
-            presigned_url = self._client.logged_data_service_client.log_binary_data(
+            presigned_url = self._client.log_binary_data(
                 train_id=self._train_id,
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,
@@ -352,7 +363,7 @@ class LogDataRunner:
             else:
                 image.save(buffer, format="JPEG")
             self._check_buffer_size(buffer=buffer)
-            presigned_url = self._client.logged_data_service_client.log_binary_data(
+            presigned_url = self._client.log_binary_data(
                 train_id=self._train_id,
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,
@@ -372,7 +383,7 @@ class LogDataRunner:
         with io.BytesIO() as buffer:
             figure.savefig(buffer, format="jpg")
             self._check_buffer_size(buffer=buffer)
-            presigned_url = self._client.logged_data_service_client.log_binary_data(
+            presigned_url = self._client.log_binary_data(
                 train_id=self._train_id,
                 dataset_build_id=self._dataset_build_id,
                 tag=tag,

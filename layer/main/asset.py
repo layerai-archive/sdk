@@ -18,6 +18,7 @@ from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import current_account_name
+from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.utils import get_current_project_full_name
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -150,6 +151,11 @@ def get_model(name: str, no_cache: bool = False) -> Model:
             True if context else False
         )  # if layer.get_model is called within a @model decorated func of not
         model = client.model_catalog.load_model_by_path(path=asset_path.path())
+        model.add_log_data_runner(
+            LogDataRunner(
+                client.logged_data_service_client, train_id=model.id, logger=logger
+            )
+        )
         from_cache = not no_cache and is_cached(model)
         state = ResourceTransferState(model.name)
 

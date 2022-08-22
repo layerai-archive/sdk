@@ -204,7 +204,7 @@ class SystemMetrics:
         self,
     ) -> None:
         log_data_runner = LogDataRunner(
-            client=self._client,
+            client=self._client.logged_data_service_client,
             train_id=self._train_id,
             logger=self._logger,
         )

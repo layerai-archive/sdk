@@ -189,7 +189,7 @@ def log(
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
     with LayerClient(layer_config.client, logger).init() as client:
         log_data_runner = LogDataRunner(
-            client=client,
+            client=client.logged_data_service_client,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
             logger=logger,
