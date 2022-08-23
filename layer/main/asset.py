@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from layer.cache.utils import is_cached
@@ -13,6 +14,7 @@ from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import ProjectInitializationException
 from layer.global_context import current_account_name
+from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.utils import get_current_project_full_name
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -98,10 +100,19 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
 
             return dataset
 
-    return Dataset(
-        asset_path=asset_path,
-        _pandas_df_factory=fetch_dataset,
-    )
+    with LayerClient(config.client, logger).init() as client:
+        pb_build = client.data_catalog.get_build_by_path(path=asset_path.path())
+        build_id: str = pb_build.id.value
+        log_data_runner = LogDataRunner(
+            client=client.logged_data_service_client,
+            dataset_build_id=uuid.UUID(build_id),
+        )
+        dataset = Dataset(
+            asset_path=asset_path,
+            _pandas_df_factory=fetch_dataset,
+        )
+        dataset.add_log_data_runner(log_data_runner)
+        return dataset
 
 
 @sdk_function
@@ -141,6 +152,11 @@ def get_model(name: str, no_cache: bool = False) -> Model:
             True if context else False
         )  # if layer.get_model is called within a @model decorated func of not
         model = client.model_catalog.load_model_by_path(path=asset_path.path())
+        model.add_log_data_runner(
+            LogDataRunner(
+                client.logged_data_service_client, train_id=model.id, logger=logger
+            )
+        )
         from_cache = not no_cache and is_cached(model)
         state = ResourceTransferState(model.name)
 

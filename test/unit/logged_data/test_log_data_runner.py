@@ -32,7 +32,10 @@ def test_given_runner_when_log_data_with_string_value_then_calls_log_text_data(
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag1 = "string-tag"
     string_value1 = "string-value"
@@ -73,7 +76,10 @@ def test_given_runner_when_log_data_with_list_value_then_calls_log_text_data(
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag1 = "list-tag-1"
     value1 = [1, 2, "a"]
@@ -114,7 +120,10 @@ def test_given_runner_when_log_data_with_numpy_array_value_then_calls_log_text_d
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag1 = "numpy-tag-1"
     value1 = np.array([1, 2])
@@ -155,7 +164,10 @@ def test_given_runner_when_log_data_with_bool_value_then_calls_log_boolean_data(
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "bool-tag"
     boolean_value = False
@@ -182,7 +194,9 @@ def test_given_runner_when_log_numeric_value_without_epoch_then_calls_log_number
     )
 
     train_id = uuid.uuid4()
-    runner = LogDataRunner(client=client, train_id=train_id, logger=None)
+    runner = LogDataRunner(
+        client=client.logged_data_service_client, train_id=train_id, logger=None
+    )
     tag1 = "numeric-value-tag-1"
     numeric_value1 = 2.3
 
@@ -208,7 +222,9 @@ def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() 
     )
 
     train_id = uuid.uuid4()
-    runner = LogDataRunner(client=client, train_id=train_id, logger=None)
+    runner = LogDataRunner(
+        client=client.logged_data_service_client, train_id=train_id, logger=None
+    )
     tag1 = "numeric-value-tag-1"
     numeric_value1 = 2.3
     tag2 = "numeric-value-tag-2"
@@ -252,7 +268,10 @@ def test_given_runner_when_log_dict_then_calls_log_table(
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "dict-tag"
     parameters = {
@@ -295,7 +314,10 @@ def test_given_runner_when_log_invalid_dict_then_raises(
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "dict-tag"
 
@@ -319,7 +341,10 @@ def test_given_runner_when_log_pandas_dataframe_then_calls_log_table(
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "pandas-dataframe-tag"
     dataframe = pd.DataFrame(
@@ -353,7 +378,10 @@ def test_given_runner_when_log_dataframe_bigger_than_1000_rows_then_raises_error
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "pandas-dataframe-tag"
     dataframe = pd.DataFrame(index=np.arange(1001), columns=np.arange(1))
@@ -381,7 +409,10 @@ def test_given_runner_when_log_ntchw_torch_tensor_video_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
 
     import torch
@@ -424,7 +455,10 @@ def test_given_runner_when_log_nparray_image_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
 
     img = np.zeros((100, 100, 3))
@@ -463,7 +497,10 @@ def test_given_runner_when_log_hwc_torch_tensor_image_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
 
     import torch
@@ -508,7 +545,10 @@ def test_given_runner_when_log_hw_nparray_image_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
 
     # gradient between 0 and 1 for 256*256
@@ -548,7 +588,10 @@ def test_given_runner_when_log_hw_torch_tensor_image_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
 
     from torchvision import transforms
@@ -590,7 +633,10 @@ def test_given_runner_when_log_image_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "pillow-image-tag"
     image_data = np.random.rand(400, 400, 3) * 255
@@ -624,7 +670,7 @@ def test_given_runner_when_log_image_with_step_for_model_train_then_calls_log_bi
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     train_id = uuid.uuid4()
     runner = LogDataRunner(
-        client=client,
+        client=client.logged_data_service_client,
         train_id=train_id,
         logger=None,
     )
@@ -662,7 +708,10 @@ def test_given_runner_when_log_image_bigger_than_1_mb_then_raises_error(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "pillow-big-image-tag"
     image_data = np.random.rand(1000, 1000, 3) * 255
@@ -692,7 +741,10 @@ def test_given_runner_when_log_matplotlib_figure_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "matplotlib-image-tag"
     # Data for plotting
@@ -743,7 +795,10 @@ def test_given_runner_when_log_matplotlib_module_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "matplotlib-image-tag"
     # when
@@ -798,7 +853,10 @@ def test_given_runner_when_log_image_by_path_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "image-by-path"
     image_data = np.random.rand(100, 100, 3) * 255
@@ -836,7 +894,10 @@ def test_given_runner_when_log_video_by_path_then_calls_log_binary(
     )
     logged_data_client.log_binary_data.return_value = "http://path/for/upload"
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "video-by-path"
     path = tmpdir.join("temp.mp4")
@@ -871,7 +932,10 @@ def test_given_runner_when_log_markdown_then_calls_log_markdown(
     )
 
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=dataset_build_id
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=dataset_build_id,
     )
     tag = "markdown-tag"
     md = layer.Markdown("# Foo bar")
@@ -896,7 +960,10 @@ def test_given_runner_with_invalid_epoch_then_raises() -> None:
     )
     train_id = uuid.uuid4()
     runner = LogDataRunner(
-        client=client, train_id=train_id, logger=None, dataset_build_id=None
+        client=client.logged_data_service_client,
+        train_id=train_id,
+        logger=None,
+        dataset_build_id=None,
     )
 
     with pytest.raises(

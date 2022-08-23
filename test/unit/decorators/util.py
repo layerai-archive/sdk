@@ -45,7 +45,7 @@ def project_client_mock(
     async def config_refresh():
         return config
 
-    with patch("layer.clients.LayerClient.init", return_value=client), patch(
+    with patch("layer.clients.layer.LayerClient.init", return_value=client), patch(
         "layer.config.ConfigManager.refresh", side_effect=config_refresh
     ):
         yield

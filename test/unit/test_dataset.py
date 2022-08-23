@@ -1,4 +1,6 @@
 import contextlib
+import uuid
+from typing import Iterator
 from unittest.mock import MagicMock, patch
 
 import pandas
@@ -19,7 +21,14 @@ def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(
     test_project_name,
 ):
     dataset_client = MagicMock(spec_set=DatasetClient)
-    with _dataset_client_mock(dataset_client_mock=dataset_client):
+    with _dataset_client_mock(dataset_client_mock=dataset_client) as data_catalog_mock:
+        get_build_path_response = MagicMock()
+        get_build_path_response.build.id.value = str(uuid.uuid4())
+        data_catalog_mock._service = MagicMock()  # pylint: disable=W0212
+        data_catalog_mock._service.GetBuildByPath = MagicMock(  # pylint: disable=W0212
+            return_value=get_build_path_response
+        )
+
         get_dataset("dataset_42").to_pandas()
 
     expected_ticket = DataTicket(
@@ -34,7 +43,14 @@ def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(
 def test_get_dataset_to_pandas_calls_dataset_api_with_account_name_from_context():
     dataset_client = MagicMock(spec_set=DatasetClient)
     dataset_relative_path = "another-project/datasets/dataset_42"
-    with _dataset_client_mock(dataset_client_mock=dataset_client):
+    with _dataset_client_mock(dataset_client_mock=dataset_client) as data_catalog_mock:
+        get_build_path_response = MagicMock()
+        get_build_path_response.build.id.value = str(uuid.uuid4())
+        data_catalog_mock._service = MagicMock()  # pylint: disable=W0212
+        data_catalog_mock._service.GetBuildByPath = MagicMock(  # pylint: disable=W0212
+            return_value=get_build_path_response
+        )
+
         get_dataset(dataset_relative_path).to_pandas()
 
     expected_ticket = DataTicket(
@@ -47,7 +63,14 @@ def test_get_dataset_to_pandas_calls_dataset_api_with_account_name_from_context(
 
 
 def test_get_dataset_to_pandas_returns_empty_data_frame_for_no_data():
-    with _dataset_client_mock():
+    with _dataset_client_mock() as data_catalog_mock:
+        get_build_path_response = MagicMock()
+        get_build_path_response.build.id.value = str(uuid.uuid4())
+        data_catalog_mock._service = MagicMock()  # pylint: disable=W0212
+        data_catalog_mock._service.GetBuildByPath = MagicMock(  # pylint: disable=W0212
+            return_value=get_build_path_response
+        )
+
         assert get_dataset("dataset_42").to_pandas().empty
 
 
@@ -57,7 +80,15 @@ def test_get_dataset_to_pytorch_returns_pytorch_dataloader():
 
     df = pandas.DataFrame({"x": [1, 2], "y": ["a", "b"]})
     with patch("layer.contracts.datasets.Dataset.to_pandas", return_value=df):
-        with _dataset_client_mock():
+        with _dataset_client_mock() as data_catalog_mock:
+            get_build_path_response = MagicMock()
+            get_build_path_response.build.id.value = str(uuid.uuid4())
+            service_mock = MagicMock()
+            data_catalog_mock._service = service_mock  # pylint: disable=W0212
+            service_mock.GetBuildByPath = MagicMock(
+                return_value=get_build_path_response
+            )
+
             ds = get_dataset("dummy").to_pytorch(transform)
             unused_item, (x, y) = next(enumerate(ds))
             assert x == torch.tensor([1])
@@ -100,13 +131,20 @@ def test_get_dataset_to_pandas_concatenates_the_result_from_multiple_partitions(
         return partitions[partition_metadata]
 
     dataset_client.fetch_partition.side_effect = fetch_partition
-    with _dataset_client_mock(dataset_client_mock=dataset_client):
+    with _dataset_client_mock(dataset_client_mock=dataset_client) as data_catalog_mock:
+        get_build_path_response = MagicMock()
+        get_build_path_response.build.id.value = str(uuid.uuid4())
+        data_catalog_mock._service = MagicMock()  # pylint: disable=W0212
+        data_catalog_mock._service.GetBuildByPath = MagicMock(  # pylint: disable=W0212
+            return_value=get_build_path_response
+        )
+
         dataset_data_frame = get_dataset("dataset_43").to_pandas()
         assert dataset_data_frame.equals(pandas.DataFrame({"x": [1, 2, 3, 4, 6, 6, 7]}))
 
 
 @contextlib.contextmanager
-def _dataset_client_mock(dataset_client_mock=None):
+def _dataset_client_mock(dataset_client_mock=None) -> Iterator[DataCatalogClient]:
     dataset_client = dataset_client_mock or MagicMock(spec_set=DatasetClient)
 
     data_catalog_client = DataCatalogClient(
@@ -131,4 +169,4 @@ def _dataset_client_mock(dataset_client_mock=None):
     with patch("layer.main.asset.LayerClient.init", return_value=client), patch(
         "layer.config.ConfigManager.refresh", side_effect=config_refresh
     ):
-        yield
+        yield data_catalog_client

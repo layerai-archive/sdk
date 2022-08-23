@@ -7,8 +7,10 @@ from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
 
+from layer.contracts.logged_data import LoggedDataObject
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelFlavor, ModelRuntimeObjects
+from layer.logged_data.log_data_runner import LogDataRunner
 from layer.types import ModelObject
 
 from .asset import AssetPath, AssetType, BaseAsset
@@ -53,6 +55,7 @@ class Model(BaseAsset):
             dependencies=dependencies,
             description=description,
         )
+        self._logged_data_runner: Optional[LogDataRunner] = None
         self._version_id = version_id
         self._flavor = flavor
         self._storage_config = storage_config
@@ -111,3 +114,15 @@ class Model(BaseAsset):
     ) -> "Model":
         self._model_runtime_objects = model_runtime_objects
         return self
+
+    def add_log_data_runner(self, log_data_runner: LogDataRunner) -> None:
+        self._logged_data_runner = log_data_runner
+
+    def get_metadata(self, tag: str, step: Optional[int] = None) -> LoggedDataObject:
+        """
+        Get logged data associated with this model and having the given tag.
+        If the logged data is an image, then you can also pass a value for the step parameter.
+        """
+        assert self._logged_data_runner
+        logged_data = self._logged_data_runner.get_logged_data(tag)
+        return LoggedDataObject(logged_data, epoch=step)

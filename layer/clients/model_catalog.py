@@ -58,7 +58,10 @@ class ModelCatalogClient:
     _service: ModelCatalogAPIStub
 
     def __init__(
-        self, config: ClientConfig, logger: Logger, cache_dir: Optional[Path] = None
+        self,
+        config: ClientConfig,
+        logger: Logger,
+        cache_dir: Optional[Path] = None,
     ):
         self._s3_endpoint_url = config.s3.endpoint_url
         self._logger = logger
