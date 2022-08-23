@@ -11,18 +11,16 @@ from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 
 from layer import Context
 from layer.clients.layer import LayerClient
+from layer.context import reset_active_context, set_active_context
 from layer.contracts.assertions import Assertion
 from layer.exceptions.exception_handler import exception_handler
 from layer.exceptions.exceptions import LayerFailedAssertionsException
-from layer.global_context import (
-    current_project_full_name,
-    reset_active_context,
-    set_active_context,
-)
+from layer.global_context import current_project_full_name
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
+from ...contracts.asset import AssetType
 from .common import import_function, update_train_status
 from .model_train_failure_reporter import ModelTrainFailureReporter
 
@@ -150,18 +148,20 @@ class ModelTrainer:
         project_full_name = current_project_full_name()
         if not project_full_name:
             raise Exception("Internal Error: missing current project full name")
-        with Context() as context:
-            with Train(
-                layer_client=self.client,
-                name=self.train_context.model_name,
-                project_full_name=project_full_name,
-                version=self.train_context.model_version,
-                train_id=self.train_context.train_id,
-                train_index=self.train_context.train_index,
-            ) as train:
-                context.with_train(train)
-                context.with_tracker(self.tracker)
-                context.with_asset_name(self.train_context.model_name)
+        with Train(
+            layer_client=self.client,
+            name=self.train_context.model_name,
+            project_full_name=project_full_name,
+            version=self.train_context.model_version,
+            train_id=self.train_context.train_id,
+            train_index=self.train_context.train_index,
+        ) as train:
+            with Context(
+                train=train,
+                tracker=self.tracker,
+                asset_name=self.train_context.model_name,
+                asset_type=AssetType.MODEL,
+            ) as context:
                 self.train_context.init_or_save_context(context)
                 update_train_status(
                     self.client.model_catalog,

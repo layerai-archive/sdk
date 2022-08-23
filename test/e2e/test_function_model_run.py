@@ -1,7 +1,7 @@
 from sklearn.svm import SVC
 
 import layer
-from layer import global_context
+from layer import context
 from layer.contracts.projects import Project
 from test.e2e.assertion_utils import E2ETestAsserter
 from test.e2e.common_scenarios import (
@@ -36,7 +36,7 @@ def test_local_run_succeeds_and_registers_metadata(
     # when
     train_model()
 
-    assert global_context.get_active_context() is None
+    assert context.get_active_context() is None
 
     # then
     mdl = layer.get_model(model_name)
@@ -66,7 +66,7 @@ def test_local_run_with_args_succeeds_and_registers_metadata(
     # when
     train_model("test_arg")
 
-    assert global_context.get_active_context() is None
+    assert context.get_active_context() is None
 
     # then
     mdl = layer.get_model(model_name)

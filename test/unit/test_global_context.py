@@ -1,14 +1,11 @@
-from layer import Context
 from layer.contracts.fabrics import Fabric
 from layer.global_context import (
     current_account_name,
     current_project_full_name,
     default_fabric,
-    get_active_context,
     get_pip_packages,
     get_pip_requirements_file,
     reset_to,
-    set_active_context,
     set_current_project_full_name,
     set_default_fabric,
     set_pip_packages,
@@ -17,12 +14,6 @@ from layer.global_context import (
 
 
 class TestGlobalContext:
-    def test_correct_context_returned(self) -> None:
-        assert get_active_context() is None
-        ctx = Context()
-        set_active_context(ctx)
-        assert get_active_context() == ctx
-
     def test_last_project_name_returned(self) -> None:
         set_current_project_full_name("acc/test")
         set_current_project_full_name("acc/anotherTest")

@@ -214,7 +214,7 @@ class PytorchLightningLogger(Logger):
 
     @property
     def _context(self) -> Any:
-        return layer.global_context.get_active_context()
+        return layer.context.get_active_context()
 
     def log_text(self, key: str, text: str) -> None:
         """Log text.

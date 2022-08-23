@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 import layer
-from layer import global_context
+from layer import context
 from layer.clients.layer import LayerClient
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.logged_data import LoggedDataType
@@ -55,7 +55,7 @@ def populated_project(initialized_project: Project) -> Project:
     prepare_data()
     train_model()
 
-    assert global_context.get_active_context() is None
+    assert context.get_active_context() is None
 
     return initialized_project
 

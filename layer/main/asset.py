@@ -5,19 +5,19 @@ from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
-from layer.context import Context
+from layer.context import (
+    Context,
+    get_active_context,
+    reset_active_context,
+    set_active_context,
+)
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import ProjectInitializationException
-from layer.global_context import (
-    current_account_name,
-    get_active_context,
-    reset_active_context,
-    set_active_context,
-)
+from layer.global_context import current_account_name
 from layer.projects.utils import get_current_project_full_name
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -72,16 +72,17 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
             )
             if not within_run:
                 try:
-                    with Context() as context:
+                    tracker = get_progress_tracker(
+                        url=config.url,
+                        account_name=asset_path.must_org_name(),
+                        project_name=asset_path.must_project_name(),
+                    )
+                    with Context(
+                        asset_type=AssetType.DATASET,
+                        asset_name=asset_path.asset_name,
+                        tracker=tracker,
+                    ) as context:
                         set_active_context(context)
-                        context.with_asset_name(asset_path.asset_name)
-                        context.with_asset_type(AssetType.DATASET)
-                        tracker = get_progress_tracker(
-                            url=config.url,
-                            account_name=asset_path.must_org_name(),
-                            project_name=asset_path.must_project_name(),
-                        )
-                        context.with_tracker(tracker)
                         with tracker.track():
                             dataset = _ui_progress_with_tracker(
                                 callback,
@@ -157,16 +158,17 @@ def get_model(name: str, no_cache: bool = False) -> Model:
 
         if not within_run:
             try:
-                with Context() as context:
+                tracker = get_progress_tracker(
+                    url=config.url,
+                    account_name=asset_path.must_org_name(),
+                    project_name=asset_path.must_project_name(),
+                )
+                with Context(
+                    asset_type=AssetType.MODEL,
+                    asset_name=asset_path.asset_name,
+                    tracker=tracker,
+                ) as context:
                     set_active_context(context)
-                    context.with_asset_name(asset_path.asset_name)
-                    context.with_asset_type(AssetType.MODEL)
-                    tracker = get_progress_tracker(
-                        url=config.url,
-                        account_name=asset_path.must_org_name(),
-                        project_name=asset_path.must_project_name(),
-                    )
-                    context.with_tracker(tracker)
                     with tracker.track():
                         model = _ui_progress_with_tracker(
                             callback,
