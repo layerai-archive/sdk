@@ -56,21 +56,26 @@ def _run(
                 client, dataset=dataset_definition, tracker=tracker, fabric=fabric
             )
             tracker.mark_dataset_building(dataset_definition.asset_name)
+            # TODO pass path to API instead
+            current_project_uuid = verify_project_exists_and_retrieve_project_id(
+                client, dataset_definition.project_full_name
+            )
+            dataset_build_id = client.data_catalog.initiate_build(
+                current_project_uuid,
+                dataset_definition.asset_name,
+                fabric.value,
+            )
 
             try:
-                with Context() as context:
+                with Context(
+                    asset_type=AssetType.DATASET,
+                    asset_name=dataset_definition.asset_name,
+                    dataset_build=DatasetBuild(
+                        id=dataset_build_id, status=DatasetBuildStatus.STARTED
+                    ),
+                    tracker=tracker,
+                ) as context:
                     set_active_context(context)
-                    # TODO pass path to API instead
-                    current_project_uuid = (
-                        verify_project_exists_and_retrieve_project_id(
-                            client, dataset_definition.project_full_name
-                        )
-                    )
-                    dataset_build_id = client.data_catalog.initiate_build(
-                        current_project_uuid,
-                        dataset_definition.asset_name,
-                        fabric.value,
-                    )
                     if run_id:
                         client.flow_manager.update_run_metadata(
                             run_id=RunId(value=run_id),
@@ -79,13 +84,6 @@ def _run(
                             key="build-id",
                             value=str(dataset_build_id),
                         )
-                    context.with_dataset_build(
-                        DatasetBuild(
-                            id=dataset_build_id, status=DatasetBuildStatus.STARTED
-                        )
-                    )
-                    context.with_tracker(tracker)
-                    context.with_asset_name(dataset_definition.asset_name)
                     try:
                         result = dataset_definition.func(
                             *dataset_definition.args, **dataset_definition.kwargs
@@ -104,19 +102,8 @@ def _run(
                             dataset_definition.uri,
                             e,
                         )
-                        context.with_dataset_build(
-                            DatasetBuild(
-                                id=dataset_build_id, status=DatasetBuildStatus.FAILED
-                            )
-                        )
                         raise e
                     reset_active_context()
-
-                    context.with_dataset_build(
-                        DatasetBuild(
-                            id=dataset_build_id, status=DatasetBuildStatus.COMPLETED
-                        )
-                    )
             finally:
                 reset_active_context()
 

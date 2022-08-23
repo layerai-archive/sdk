@@ -72,16 +72,17 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
             )
             if not within_run:
                 try:
-                    with Context() as context:
+                    tracker = get_progress_tracker(
+                        url=config.url,
+                        account_name=asset_path.must_org_name(),
+                        project_name=asset_path.must_project_name(),
+                    )
+                    with Context(
+                        asset_type=AssetType.DATASET,
+                        asset_name=asset_path.asset_name,
+                        tracker=tracker,
+                    ) as context:
                         set_active_context(context)
-                        context.with_asset_name(asset_path.asset_name)
-                        context.with_asset_type(AssetType.DATASET)
-                        tracker = get_progress_tracker(
-                            url=config.url,
-                            account_name=asset_path.must_org_name(),
-                            project_name=asset_path.must_project_name(),
-                        )
-                        context.with_tracker(tracker)
                         with tracker.track():
                             dataset = _ui_progress_with_tracker(
                                 callback,
@@ -157,16 +158,17 @@ def get_model(name: str, no_cache: bool = False) -> Model:
 
         if not within_run:
             try:
-                with Context() as context:
+                tracker = get_progress_tracker(
+                    url=config.url,
+                    account_name=asset_path.must_org_name(),
+                    project_name=asset_path.must_project_name(),
+                )
+                with Context(
+                    asset_type=AssetType.MODEL,
+                    asset_name=asset_path.asset_name,
+                    tracker=tracker,
+                ) as context:
                     set_active_context(context)
-                    context.with_asset_name(asset_path.asset_name)
-                    context.with_asset_type(AssetType.MODEL)
-                    tracker = get_progress_tracker(
-                        url=config.url,
-                        account_name=asset_path.must_org_name(),
-                        project_name=asset_path.must_project_name(),
-                    )
-                    context.with_tracker(tracker)
                     with tracker.track():
                         model = _ui_progress_with_tracker(
                             callback,
