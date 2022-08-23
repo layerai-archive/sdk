@@ -408,8 +408,8 @@ class LoggedDataObject:
     @staticmethod
     def _download_object_to(url: str, file_path: Path) -> None:
         response = requests.get(url)
-        with open(file_path, "wb") as filer_handler:
-            filer_handler.write(response.content)
+        with open(file_path, "wb") as file_handler:
+            file_handler.write(response.content)
 
     def value(self) -> Union[str, float, bool, pd.DataFrame, "PIL.Image.Image"]:
         """
