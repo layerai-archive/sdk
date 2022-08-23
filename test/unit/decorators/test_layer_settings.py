@@ -1,6 +1,6 @@
 import pytest
 
-from layer.contracts.assets import AssetType
+from layer.contracts.asset import AssetType
 from layer.contracts.fabrics import Fabric
 from layer.decorators import dataset, fabric, pip_requirements
 from layer.decorators.settings import LayerSettings

@@ -7,7 +7,7 @@ from typing import Any, Callable, List, Tuple
 from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
 
 from layer.clients.layer import LayerClient
-from layer.contracts.assets import AssetType
+from layer.contracts.asset import AssetType
 
 
 POLLING_INTERVAL_SEC = 3

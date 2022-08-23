@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import wrapt  # type: ignore
 
-from layer.contracts.assets import AssetPath, AssetType, BaseAsset
+from layer.contracts.asset import AssetPath, AssetType, BaseAsset
 from layer.contracts.datasets import Dataset
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.models import Model

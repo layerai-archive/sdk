@@ -7,7 +7,7 @@ from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.context import Context, get_active_context
-from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName

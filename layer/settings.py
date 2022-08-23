@@ -1,7 +1,7 @@
 from typing import Any, List, Optional
 
 from layer.contracts.assertions import Assertion
-from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.conda import CondaEnv
 from layer.contracts.fabrics import Fabric
 from layer.contracts.runs import ResourcePath
