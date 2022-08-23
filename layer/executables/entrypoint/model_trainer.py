@@ -12,7 +12,6 @@ from layerapi.api.ids_pb2 import ModelTrainId
 
 from layer import Context
 from layer.clients.layer import LayerClient
-from layer.context import reset_active_context, set_active_context
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetType
 from layer.exceptions.exception_handler import exception_handler
@@ -41,9 +40,6 @@ class TrainContextDataclassMixin:
 
 
 class TrainContext(ABC, TrainContextDataclassMixin):
-    def init_or_save_context(self, context: Context) -> None:
-        set_active_context(context)
-
     @abstractmethod
     def __enter__(self) -> None:
         pass
@@ -58,7 +54,7 @@ class TrainContext(ABC, TrainContextDataclassMixin):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
-        reset_active_context()
+        pass
 
 
 @dataclass
@@ -154,8 +150,7 @@ class ModelTrainer:
                 tracker=self.tracker,
                 asset_name=self.train_context.model_name,
                 asset_type=AssetType.MODEL,
-            ) as context:
-                self.train_context.init_or_save_context(context)
+            ):
                 self._update_train_status(
                     self.train_context.train_id,
                     ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,

@@ -7,7 +7,7 @@ from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
 from layer.config.config import Config
-from layer.context import Context, reset_active_context, set_active_context
+from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
@@ -62,46 +62,41 @@ def _run(
                 fabric.value,
             )
 
-            try:
-                with Context(
-                    asset_type=AssetType.DATASET,
-                    asset_name=dataset_definition.asset_name,
-                    dataset_build=DatasetBuild(
-                        id=dataset_build_id, status=DatasetBuildStatus.STARTED
-                    ),
-                    tracker=tracker,
-                ) as context:
-                    set_active_context(context)
-                    if run_id:
-                        client.flow_manager.update_run_metadata(
-                            run_id=RunId(value=run_id),
-                            task_id=dataset_definition.asset_path.path(),
-                            task_type=Task.Type.TYPE_DATASET_BUILD,
-                            key="build-id",
-                            value=str(dataset_build_id),
-                        )
-                    try:
-                        result = dataset_definition.func(
-                            *dataset_definition.args, **dataset_definition.kwargs
-                        )
-                        result = check_and_convert_to_df(result)
-                        _run_assertions(
-                            dataset_definition.asset_name,
-                            result,
-                            dataset_definition.assertions,
-                            tracker,
-                        )
-                    except Exception as e:
-                        client.data_catalog.complete_build(
-                            dataset_build_id,
-                            dataset_definition.asset_name,
-                            dataset_definition.uri,
-                            e,
-                        )
-                        raise e
-                    reset_active_context()
-            finally:
-                reset_active_context()
+            with Context(
+                asset_type=AssetType.DATASET,
+                asset_name=dataset_definition.asset_name,
+                dataset_build=DatasetBuild(
+                    id=dataset_build_id, status=DatasetBuildStatus.STARTED
+                ),
+                tracker=tracker,
+            ):
+                if run_id:
+                    client.flow_manager.update_run_metadata(
+                        run_id=RunId(value=run_id),
+                        task_id=dataset_definition.asset_path.path(),
+                        task_type=Task.Type.TYPE_DATASET_BUILD,
+                        key="build-id",
+                        value=str(dataset_build_id),
+                    )
+                try:
+                    result = dataset_definition.func(
+                        *dataset_definition.args, **dataset_definition.kwargs
+                    )
+                    result = check_and_convert_to_df(result)
+                    _run_assertions(
+                        dataset_definition.asset_name,
+                        result,
+                        dataset_definition.assertions,
+                        tracker,
+                    )
+                except Exception as e:
+                    client.data_catalog.complete_build(
+                        dataset_build_id,
+                        dataset_definition.asset_name,
+                        dataset_definition.uri,
+                        e,
+                    )
+                    raise e
 
             transfer_state = DatasetTransferState(len(result))
             tracker.mark_dataset_saving_result(
