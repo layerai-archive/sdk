@@ -1,9 +1,16 @@
 import enum
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Mapping, Optional, Sequence, Union
-
-import pandas
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 from layer.contracts.logged_data import LoggedDataObject
 from layer.logged_data.log_data_runner import LogDataRunner
@@ -11,7 +18,13 @@ from layer.logged_data.log_data_runner import LogDataRunner
 from .asset import AssetPath, AssetType, BaseAsset
 
 
+if TYPE_CHECKING:
+    import pandas
+
+
 def _create_empty_data_frame() -> "pandas.DataFrame":
+    import pandas
+
     return pandas.DataFrame()
 
 
@@ -149,7 +162,9 @@ class Dataset(BaseAsset):
         class PytorchDataset(torch.utils.data.Dataset[Any]):
             # TODO: Streaming data fetching for faster data access
 
-            def __init__(self, df: pandas.DataFrame, transformer: Callable[[Any], Any]):
+            def __init__(
+                self, df: "pandas.DataFrame", transformer: Callable[[Any], Any]
+            ):
                 self.df = df
                 self.transformer = transformer
 

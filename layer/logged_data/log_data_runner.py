@@ -8,8 +8,6 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-import numpy as np
-import pandas as pd
 import requests  # type: ignore
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
@@ -27,6 +25,8 @@ from .utils import get_base_module_list, has_allowed_extension
 
 if TYPE_CHECKING:
     import matplotlib.figure  # type: ignore
+    import numpy as np
+    import pandas as pd
     import PIL
 
 
@@ -71,7 +71,7 @@ class LogDataRunner:
                 List[Any],
                 "np.ndarray[Any, Any]",
                 Dict[str, Any],
-                pd.DataFrame,
+                "pd.DataFrame",
                 "PIL.Image.Image",
                 "matplotlib.figure.Figure",
                 Image,
@@ -83,6 +83,9 @@ class LogDataRunner:
         epoch: Optional[int] = None,
         category: Optional[str] = None,
     ) -> None:
+        import numpy as np
+        import pandas as pd
+
         LogDataRunner._check_epoch(epoch)
 
         metric_group_uuid = uuid.uuid4()
@@ -259,7 +262,7 @@ class LogDataRunner:
         )
 
     def _log_dataframe(
-        self, tag: str, df: pd.DataFrame, category: Optional[str] = None
+        self, tag: str, df: "pd.DataFrame", category: Optional[str] = None
     ) -> None:
         rows = len(df.index)
         if rows > 1000:
@@ -410,7 +413,9 @@ class LogDataRunner:
                 )
 
     @staticmethod
-    def _convert_dict_to_dataframe(dictionary: Dict[str, Any]) -> pd.DataFrame:
+    def _convert_dict_to_dataframe(dictionary: Dict[str, Any]) -> "pd.DataFrame":
+        import pandas as pd
+
         new_values = []
         for value in dictionary.values():
             if isinstance(value, (float, int, str, bool)):

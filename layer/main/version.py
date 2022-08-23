@@ -3,8 +3,6 @@ import pathlib
 import re
 import urllib.request
 
-from layer.global_context import has_shown_update_message, set_has_shown_update_message
-
 
 def get_latest_version() -> str:
     pypi_url = "https://pypi.org/pypi/layer/json"
@@ -28,6 +26,11 @@ def get_version() -> str:
 
 
 def check_latest_version() -> None:
+    from layer.global_context import (
+        has_shown_update_message,
+        set_has_shown_update_message,
+    )
+
     if has_shown_update_message():
         return
 
