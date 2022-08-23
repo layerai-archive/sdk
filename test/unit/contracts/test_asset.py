@@ -1,12 +1,13 @@
 from typing import Optional
 
 import pytest
+from yarl import URL
 
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.project_full_name import ProjectFullName
 
 
-class TestCompositeAssetName:
+class TestAssetPath:
     @pytest.mark.parametrize(
         "bad_format",
         [
@@ -142,7 +143,7 @@ class TestCompositeAssetName:
             AssetPath.parse("the-model:1.21")
 
     @pytest.mark.parametrize(
-        ("composite", "expected"),
+        ("composite", "expected_path", "expected_url_path"),
         [
             (
                 AssetPath(
@@ -151,6 +152,7 @@ class TestCompositeAssetName:
                     project_name="The_Project",
                     org_name="The-org",
                 ),
+                "The-org/The_Project/datasets/test_asset",
                 "The-org/The_Project/datasets/test_asset",
             ),
             (
@@ -162,6 +164,7 @@ class TestCompositeAssetName:
                     asset_version="12",
                 ),
                 "The-org/The_Project/datasets/test_asset:12",
+                "The-org/The_Project/datasets/test_asset?v=12",
             ),
             (
                 AssetPath(
@@ -173,45 +176,53 @@ class TestCompositeAssetName:
                     asset_build=8,
                 ),
                 "The-org/The_Project/datasets/test_asset:12.8",
+                "The-org/The_Project/datasets/test_asset?v=12.8",
             ),
             (
                 AssetPath(
-                    asset_name="test_asset#feature",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
+                    asset_selector="feature",
                 ),
+                "The-org/The_Project/datasets/test_asset#feature",
                 "The-org/The_Project/datasets/test_asset#feature",
             ),
             (
                 AssetPath(
-                    asset_name="test_asset#feature",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
                     asset_version="12",
+                    asset_selector="feature",
                 ),
-                "The-org/The_Project/datasets/test_asset#feature:12",
+                "The-org/The_Project/datasets/test_asset:12#feature",
+                "The-org/The_Project/datasets/test_asset?v=12#feature",
             ),
             (
                 AssetPath(
-                    asset_name="test_asset#feature",
+                    asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
                     org_name="The-org",
                     asset_version="12",
                     asset_build=8,
+                    asset_selector="feature",
                 ),
-                "The-org/The_Project/datasets/test_asset#feature:12.8",
+                "The-org/The_Project/datasets/test_asset:12.8#feature",
+                "The-org/The_Project/datasets/test_asset?v=12.8#feature",
             ),
         ],
     )
-    def test_composite_asset_name_to_path(
-        self, composite: AssetPath, expected: str
+    def test_composite_asset_name_to_path_and_url(
+        self, composite: AssetPath, expected_path: str, expected_url_path: str
     ) -> None:
-        result = composite.path()
+        base_url = URL("https://layer.ai")
 
-        assert result == expected
+        assert composite.path() == expected_path
+        assert str(composite.url(base_url)) == str(base_url) + "/" + expected_url_path
 
     def test_composite_with_project_full_name(self) -> None:
         src = AssetPath(

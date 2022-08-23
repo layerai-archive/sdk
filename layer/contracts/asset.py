@@ -117,12 +117,42 @@ class AssetPath:
             org_name=project_full_name.account_name,
         )
 
-    def url(self, base_url: URL) -> URL:
+    def with_version(self, version: str) -> "AssetPath":
+        return replace(self, asset_version=version)
+
+    def with_version_and_build(self, version: str, build_idx: int) -> "AssetPath":
+        return replace(
+            self,
+            asset_version=version,
+            asset_build=build_idx,
+        )
+
+    def url(self, host_url: URL) -> URL:
         if self.org_name is None:
             raise LayerClientException("Account name is required to get URL")
         if self.project_name is None:
             raise LayerClientException("Project name is required to get URL")
-        return base_url / self.path()
+
+        parts = [
+            self.org_name,
+            self.project_name,
+            self.asset_type.value,
+            self.asset_name,
+        ]
+        p = "/".join([part for part in parts if part is not None])
+
+        raw_url = str(host_url / p)
+
+        if self.asset_version is not None:
+            version_build_param = self.asset_version
+            if self.asset_build is not None:
+                version_build_param = f"{version_build_param}.{self.asset_build}"
+            raw_url += f"?v={version_build_param}"
+
+        if self.asset_selector:
+            raw_url += f"#{self.asset_selector}"
+
+        return URL(raw_url)
 
     def must_org_name(self) -> str:
         if self.org_name is None:
