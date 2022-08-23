@@ -1,4 +1,5 @@
 from layer import Context
+from layer.contracts.asset import AssetType
 from layer.contracts.fabrics import Fabric
 from layer.global_context import (
     current_account_name,
@@ -19,7 +20,10 @@ from layer.global_context import (
 class TestGlobalContext:
     def test_correct_context_returned(self) -> None:
         assert get_active_context() is None
-        ctx = Context()
+        ctx = Context(
+            asset_name="the-model",
+            asset_type=AssetType.MODEL,
+        )
         set_active_context(ctx)
         assert get_active_context() == ctx
 

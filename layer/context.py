@@ -16,11 +16,11 @@ class Context:
 
     def __init__(
         self,
+        asset_name: str,
+        asset_type: AssetType,
+        tracker: Optional[RunProgressTracker] = None,
         train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
-        tracker: Optional[RunProgressTracker] = None,
-        asset_name: Optional[str] = None,
-        asset_type: Optional[AssetType] = None,
     ) -> None:
         self._train: Optional[BaseTrain] = train
         self._dataset_build: Optional[DatasetBuild] = dataset_build
