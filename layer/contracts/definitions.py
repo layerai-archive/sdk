@@ -90,7 +90,7 @@ class FunctionDefinition:
             asset_type=self.asset_type,
             asset_name=self.asset_name,
             project_name=self.project_name,
-            org_name=self.account_name,
+            account_name=self.account_name,
         )
 
     @property

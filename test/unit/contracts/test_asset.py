@@ -85,7 +85,7 @@ class TestAssetPath:
                     asset_version="1",
                     asset_build=2,
                     project_name="the-project",
-                    org_name="the-org",
+                    account_name="the-org",
                 ),
             ),
             (
@@ -95,7 +95,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                 ),
             ),
             (
@@ -105,7 +105,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                     asset_selector="the_selected",
                 ),
             ),
@@ -116,7 +116,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                     asset_version="the_tag",
                     asset_build=12,
                     asset_selector="the_selected",
@@ -150,7 +150,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                 ),
                 "The-org/The_Project/datasets/test_asset",
                 "The-org/The_Project/datasets/test_asset",
@@ -160,7 +160,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                     asset_version="12",
                 ),
                 "The-org/The_Project/datasets/test_asset:12",
@@ -171,7 +171,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                     asset_version="12",
                     asset_build=8,
                 ),
@@ -183,7 +183,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                     asset_selector="feature",
                 ),
                 "The-org/The_Project/datasets/test_asset#feature",
@@ -194,7 +194,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                     asset_version="12",
                     asset_selector="feature",
                 ),
@@ -206,7 +206,7 @@ class TestAssetPath:
                     asset_name="test_asset",
                     asset_type=AssetType.DATASET,
                     project_name="The_Project",
-                    org_name="The-org",
+                    account_name="The-org",
                     asset_version="12",
                     asset_build=8,
                     asset_selector="feature",
@@ -229,7 +229,7 @@ class TestAssetPath:
             asset_name="test_asset",
             asset_type=AssetType.DATASET,
             project_name="The_Project",
-            org_name="The-org",
+            account_name="The-org",
             asset_version="12",
             asset_build=8,
         )
@@ -240,7 +240,7 @@ class TestAssetPath:
             )
         )
 
-        assert result.org_name == "new-account-name"
+        assert result.account_name == "new-account-name"
         assert result.project_name == "new-project-name"
 
         src_back = result.with_project_full_name(
