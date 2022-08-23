@@ -14,6 +14,7 @@ from layerapi.api.ids_pb2 import DatasetBuildId, DatasetId, DatasetVersionId, Pr
 from layerapi.api.service.datacatalog.data_catalog_api_pb2 import (
     CompleteBuildRequest,
     CompleteBuildResponse,
+    GetBuildByPathRequest,
     GetBuildRequest,
     GetDatasetRequest,
     GetLatestBuildRequest,
@@ -327,6 +328,9 @@ class DataCatalogClient:
         version = self._get_version_by_id(build.dataset_version_id.value)
         dataset = self._get_dataset_by_id(version.dataset_id.value)
         return self._create_dataset(dataset, version, build)
+
+    def get_build_by_path(self, path: str) -> PBDatasetBuild:
+        return self._service.GetBuildByPath(GetBuildByPathRequest(path=path)).build
 
     def get_dataset_by_build_id(self, id_: uuid.UUID) -> Dataset:
         build = self._get_build_by_id(str(id_))

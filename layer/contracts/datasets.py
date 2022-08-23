@@ -5,6 +5,9 @@ from typing import Any, Callable, List, Mapping, Optional, Sequence, Union
 
 import pandas
 
+from layer.contracts.logged_data import LoggedDataObject
+from layer.logged_data.log_data_runner import LogDataRunner
+
 from .asset import AssetPath, AssetType, BaseAsset
 
 
@@ -64,6 +67,7 @@ class Dataset(BaseAsset):
             dependencies=dependencies,
             description=description,
         )
+        self._logged_data_runner: Optional[LogDataRunner] = None
         self._version_id = version_id
         self.schema = schema
         self.metadata = metadata if metadata is not None else {}
@@ -187,6 +191,18 @@ class Dataset(BaseAsset):
             prefetch_factor=prefetch_factor,
             persistent_workers=persistent_workers,
         )
+
+    def add_log_data_runner(self, log_data_runner: LogDataRunner) -> None:
+        self._logged_data_runner = log_data_runner
+
+    def get_metadata(self, tag: str, step: Optional[int] = None) -> LoggedDataObject:
+        """
+        Get logged data associated with this model and having the given tag.
+        If the logged data is an image, then you can also pass a value for the step parameter.
+        """
+        assert self._logged_data_runner
+        logged_data = self._logged_data_runner.get_logged_data(tag)
+        return LoggedDataObject(logged_data, epoch=step)
 
 
 @dataclass(frozen=True)

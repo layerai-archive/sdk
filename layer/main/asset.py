@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from layer.cache.utils import is_cached
@@ -108,10 +109,19 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
 
             return dataset
 
-    return Dataset(
-        asset_path=asset_path,
-        _pandas_df_factory=fetch_dataset,
-    )
+    with LayerClient(config.client, logger).init() as client:
+        pb_build = client.data_catalog.get_build_by_path(path=asset_path.path())
+        build_id: str = pb_build.id.value
+        log_data_runner = LogDataRunner(
+            client=client.logged_data_service_client,
+            dataset_build_id=uuid.UUID(build_id),
+        )
+        dataset = Dataset(
+            asset_path=asset_path,
+            _pandas_df_factory=fetch_dataset,
+        )
+        dataset.add_log_data_runner(log_data_runner)
+        return dataset
 
 
 @sdk_function
