@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import wrapt  # type: ignore
 
 from layer import Dataset, Model
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.decorators.layer_wrapper import LayerAssetFunctionWrapper
 
 

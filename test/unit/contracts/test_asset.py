@@ -3,7 +3,7 @@ from typing import Optional
 import pytest
 from yarl import URL
 
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.project_full_name import ProjectFullName
 
 

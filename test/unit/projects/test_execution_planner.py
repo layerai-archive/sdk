@@ -3,7 +3,8 @@ from typing import List, Optional, Sequence
 
 import pytest
 
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetPath
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName

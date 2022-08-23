@@ -10,7 +10,7 @@ from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
 from layer.config import Config
-from layer.contracts.asset import AssetType
+from layer.contracts.assets import AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName

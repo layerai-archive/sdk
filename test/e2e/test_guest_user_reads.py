@@ -6,7 +6,7 @@ import pytest
 import layer
 from layer import context
 from layer.clients.layer import LayerClient
-from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.logged_data import LoggedDataType
 from layer.contracts.projects import Project
 from layer.decorators import dataset, model

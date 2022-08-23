@@ -1,16 +1,12 @@
-import logging
 import os
 from typing import Any, Callable
 
 import layer
-from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.global_context import reset_to, set_has_shown_update_message
-from layer.tracker.progress_tracker import RunProgressTracker
-from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
 
@@ -20,11 +16,7 @@ ENV_LAYER_API_TOKEN = "LAYER_API_TOKEN"
 ENV_LAYER_RUN_ID = "LAYER_RUN_ID"
 
 RunnerFunction = Callable[[FunctionDefinition], Any]
-RunFunction = Callable[
-    [FunctionDefinition, LayerClient, RunProgressTracker, Fabric, str], Any
-]
-
-logger = logging.getLogger(__name__)
+RunFunction = Callable[[FunctionDefinition, Config, Fabric, str], Any]
 
 
 def make_runner(run_function: RunFunction) -> RunnerFunction:
@@ -32,22 +24,9 @@ def make_runner(run_function: RunFunction) -> RunnerFunction:
         def inner() -> Any:
             _initialize(definition)
             config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-            progress_tracker = get_progress_tracker(
-                url=config.url,
-                project_name=definition.project_name,
-                account_name=definition.account_name,
+            return run_function(
+                definition, config, _get_display_fabric(), _get_run_id()
             )
-            with LayerClient(
-                config.client, logger
-            ).init() as client, progress_tracker.track() as tracker:
-                tracker.add_asset(definition.asset_type, definition.asset_name)
-                return run_function(
-                    definition,
-                    client,
-                    tracker,
-                    _get_display_fabric(),
-                    _get_run_id(),
-                )
 
         return inner
 
