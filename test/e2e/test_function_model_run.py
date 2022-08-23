@@ -5,7 +5,7 @@ from sklearn.svm import SVC
 
 import layer
 from layer import Context, context
-from layer.clients import LayerClient
+from layer.clients.layer import LayerClient
 from layer.contracts.asset import AssetType
 from layer.contracts.projects import Project
 from test.e2e.assertion_utils import E2ETestAsserter

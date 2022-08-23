@@ -54,7 +54,7 @@ def test_multiple_inits_switch_context(
     layer.init(initialized_project.name)
 
     # then
-    with pytest.raises(LayerClientException, match=r"Dataset not found.*"):
+    with pytest.raises(LayerClientException, match=r"Build by Path not found.*"):
         layer.get_dataset(dataset_name).to_pandas()
     assert context.get_active_context() is None
 
