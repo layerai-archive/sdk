@@ -1,7 +1,12 @@
+from typing import Callable, Optional
+from uuid import UUID
+
 from sklearn.svm import SVC
 
 import layer
-from layer import context
+from layer import Context, context
+from layer.clients import LayerClient
+from layer.contracts.asset import AssetType
 from layer.contracts.projects import Project
 from test.e2e.assertion_utils import E2ETestAsserter
 from test.e2e.common_scenarios import (
@@ -31,6 +36,11 @@ def test_local_run_succeeds_and_registers_metadata(
         clf = SVC()
         result = clf.fit(iris.data, iris.target)
         print("model1 computed")
+
+        ctx = context.get_active_context()
+        assert ctx is not None
+        assert ctx.asset_type() == AssetType.MODEL
+        assert ctx.asset_name() == model_name
         return result
 
     # when
@@ -71,3 +81,50 @@ def test_local_run_with_args_succeeds_and_registers_metadata(
     # then
     mdl = layer.get_model(model_name)
     assert isinstance(mdl.get_train(), SVC)
+
+
+def test_local_run_without_decorator_succeeds_and_registers_metadata(
+    initialized_project: Project, client: LayerClient
+):
+    # given
+    model_name = "zoo-model"
+
+    def run_experiment(test_arg, cb: Callable[[Context], None]):
+        assert test_arg == "test_arg"
+
+        ctx = context.get_active_context()
+        assert ctx is not None
+        assert ctx.asset_type() == AssetType.MODEL
+        assert ctx.asset_name() == model_name
+        cb(ctx)
+
+        layer.log({"test_key": 1.5})
+
+    # and
+    class ContextHolder:
+        """
+        We need to have access to the context after it is gone so we can run assertions
+        """
+
+        context: Optional[Context]
+
+        def save(self, ctx: Context):
+            self.context = ctx
+
+        def train_id(self) -> UUID:
+            assert self.context is not None
+            assert self.context.train() is not None
+            return self.context.train().get_id()
+
+    ctx_holder = ContextHolder()
+
+    # when
+    layer.model(model_name)(run_experiment)("test_arg", ctx_holder.save)
+
+    # then
+    assert context.get_active_context() is None
+    # and
+    logged_data = client.logged_data_service_client.get_logged_data(
+        tag="test_key", train_id=ctx_holder.train_id()
+    )
+    assert logged_data.data == "1.5"
