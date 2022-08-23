@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import layer
-from layer import global_context
+from layer import context, global_context
 from layer.clients.layer import LayerClient
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
@@ -48,7 +48,7 @@ def test_multiple_inits_switch_context(
     )
     assert global_context.default_fabric() == Fabric.F_XSMALL
     assert global_context.get_pip_packages() == ["tensorflow==2.3.2"]
-    assert global_context.get_active_context() is None
+    assert context.get_active_context() is None
 
     # and when
     layer.init(initialized_project.name)
@@ -56,7 +56,7 @@ def test_multiple_inits_switch_context(
     # then
     with pytest.raises(LayerClientException, match=r"Dataset not found.*"):
         layer.get_dataset(dataset_name).to_pandas()
-    assert global_context.get_active_context() is None
+    assert context.get_active_context() is None
 
     assert (
         len(
@@ -72,6 +72,6 @@ def test_multiple_inits_switch_context(
     )
     assert global_context.default_fabric() is None
     assert global_context.get_pip_packages() is None
-    assert global_context.get_active_context() is None
+    assert context.get_active_context() is None
 
     _cleanup_project(client, project)

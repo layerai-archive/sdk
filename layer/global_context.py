@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
-from .context import Context
 from .contracts.fabrics import Fabric
 from .contracts.project_full_name import ProjectFullName
 
@@ -10,7 +9,6 @@ from .contracts.project_full_name import ProjectFullName
 class GlobalContext:
     project_full_name: Optional[ProjectFullName]
     fabric: Optional[Fabric]
-    active_context: Optional[Context]
     pip_requirements_file: Optional[str]
     pip_packages: Optional[List[str]]
     # We show a message to the user if their installed layer version is outdated.
@@ -20,12 +18,11 @@ class GlobalContext:
     has_shown_python_version_message: bool
 
 
-# We store project name, fabric, active context and requirements
+# We store full project name, fabric and requirements
 # at the process level for use in subsequent calls in the same Python process.
 _GLOBAL_CONTEXT = GlobalContext(
     project_full_name=None,
     fabric=None,
-    active_context=None,
     pip_requirements_file=None,
     pip_packages=None,
     has_shown_update_message=False,
@@ -40,7 +37,6 @@ def reset_to(project_full_name: Optional[Union[str, ProjectFullName]]) -> None:
         _GLOBAL_CONTEXT = GlobalContext(
             project_full_name=project_full_name,
             fabric=None,
-            active_context=None,
             pip_requirements_file=None,
             pip_packages=None,
             has_shown_update_message=False,
@@ -83,24 +79,6 @@ def current_account_name() -> Optional[str]:
         if _GLOBAL_CONTEXT.project_full_name
         else None
     )
-
-
-def set_active_context(context: Context) -> None:
-    _GLOBAL_CONTEXT.active_context = context
-
-
-def reset_active_context() -> None:
-    _GLOBAL_CONTEXT.active_context = None
-
-
-def get_active_context() -> Optional[Context]:
-    """
-    Returns the active context object set from the active computation. Used in local mode to identify which
-    context to log resources to.
-
-    @return:  active context object
-    """
-    return _GLOBAL_CONTEXT.active_context
 
 
 def set_default_fabric(fabric: Fabric) -> None:

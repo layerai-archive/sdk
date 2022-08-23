@@ -7,7 +7,7 @@ from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
 from layer.config.config import Config
-from layer.context import Context
+from layer.context import Context, reset_active_context, set_active_context
 from layer.contracts.assertions import Assertion
 from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
@@ -20,11 +20,7 @@ from layer.exceptions.exceptions import (
     LayerServiceUnavailableExceptionDuringInitialization,
     ProjectInitializationException,
 )
-from layer.global_context import (
-    reset_active_context,
-    set_active_context,
-    set_has_shown_update_message,
-)
+from layer.global_context import set_has_shown_update_message
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker

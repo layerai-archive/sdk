@@ -11,14 +11,11 @@ from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 
 from layer import Context
 from layer.clients.layer import LayerClient
+from layer.context import reset_active_context, set_active_context
 from layer.contracts.assertions import Assertion
 from layer.exceptions.exception_handler import exception_handler
 from layer.exceptions.exceptions import LayerFailedAssertionsException
-from layer.global_context import (
-    current_project_full_name,
-    reset_active_context,
-    set_active_context,
-)
+from layer.global_context import current_project_full_name
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train

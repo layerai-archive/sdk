@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
+from layer.context import get_active_context
 from layer.contracts.logged_data import Image, Markdown
-from layer.global_context import get_active_context
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.utils.async_utils import asyncio_run_in_thread
 
