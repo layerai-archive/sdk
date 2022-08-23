@@ -9,7 +9,6 @@ from layer.config.config import Config
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.global_context import reset_to, set_has_shown_update_message
-from layer.logged_data.system_metrics import SystemMetrics
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread

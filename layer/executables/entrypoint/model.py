@@ -75,6 +75,7 @@ def _run(
         function=model_definition.func,
         args=model_definition.args,
         kwargs=model_definition.kwargs,
+        assertions=model_definition.assertions,
         train_index=str(train.index),
     )
     trainer = ModelTrainer(
@@ -101,6 +102,7 @@ class TrainContextDataclassMixin:
     function: Callable[..., Any]
     args: Sequence[Any]
     kwargs: Mapping[str, Any]
+    assertions: List[Assertion]
     train_index: Optional[str] = None
 
 
@@ -177,10 +179,10 @@ class ModelTrainer:
             traceback.print_exc(file=sys.stdout)
             sys.exit(1)
 
-    def _run_assertions(self, model: Any, assertions: List[Assertion]) -> None:
+    def _run_assertions(self, model: Any) -> None:
         failed_assertions = []
         self.tracker.mark_model_running_assertions(self.train_context.model_name)
-        for assertion in reversed(assertions):
+        for assertion in reversed(self.train_context.assertions):
             try:
                 self.tracker.mark_model_running_assertion(
                     self.train_context.model_name, assertion
