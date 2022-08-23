@@ -64,8 +64,7 @@ def _run(
         )
     train = client.model_catalog.get_model_train(train_id)
 
-    context = LocalTrainContext(  # noqa: F841
-        logger=logger,
+    context = TrainContext(
         model_name=model_definition.asset_name,
         model_version=model_version.name,
         train_id=UUID(train_id.value),
@@ -78,7 +77,6 @@ def _run(
     trainer = ModelTrainer(
         client=client,
         train_context=context,
-        logger=logger,
         tracker=tracker,
     )
     result = trainer.train()
