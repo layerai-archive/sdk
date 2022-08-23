@@ -6,10 +6,8 @@ from layerapi.api.entity.task_pb2 import Task
 from layerapi.api.ids_pb2 import RunId
 
 from layer.clients.layer import LayerClient
-from layer.config.config import Config
 from layer.context import Context
 from layer.contracts.assertions import Assertion
-from layer.contracts.assets import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
@@ -27,7 +25,6 @@ from layer.global_context import (
 )
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.progress_tracker import RunProgressTracker
-from layer.tracker.utils import get_progress_tracker
 from layer.utils.runtime_utils import check_and_convert_to_df
 
 from .common import make_runner
@@ -38,102 +35,85 @@ set_has_shown_update_message(True)
 
 
 def _run(
-    dataset_definition: FunctionDefinition, config: Config, fabric: Fabric, run_id: str
+    dataset_definition: FunctionDefinition,
+    client: LayerClient,
+    tracker: RunProgressTracker,
+    fabric: Fabric,
+    run_id: str,
 ) -> None:
 
-    with LayerClient(config.client, logger).init() as client:
+    _register_function(
+        client, dataset=dataset_definition, tracker=tracker, fabric=fabric
+    )
+    tracker.mark_dataset_building(dataset_definition.asset_name)
 
-        progress_tracker = get_progress_tracker(
-            url=config.url,
-            project_name=dataset_definition.project_name,
-            account_name=dataset_definition.account_name,
-        )
-
-        with progress_tracker.track() as tracker:
-            tracker.add_asset(AssetType.DATASET, dataset_definition.asset_name)
-
-            _register_function(
-                client, dataset=dataset_definition, tracker=tracker, fabric=fabric
+    try:
+        with Context() as context:
+            set_active_context(context)
+            # TODO pass path to API instead
+            current_project_uuid = verify_project_exists_and_retrieve_project_id(
+                client, dataset_definition.project_full_name
             )
-            tracker.mark_dataset_building(dataset_definition.asset_name)
-
+            dataset_build_id = client.data_catalog.initiate_build(
+                current_project_uuid,
+                dataset_definition.asset_name,
+                fabric.value,
+            )
+            if run_id:
+                client.flow_manager.update_run_metadata(
+                    run_id=RunId(value=run_id),
+                    task_id=dataset_definition.asset_path.path(),
+                    task_type=Task.Type.TYPE_DATASET_BUILD,
+                    key="build-id",
+                    value=str(dataset_build_id),
+                )
+            context.with_dataset_build(
+                DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.STARTED)
+            )
+            context.with_tracker(tracker)
+            context.with_asset_name(dataset_definition.asset_name)
             try:
-                with Context() as context:
-                    set_active_context(context)
-                    # TODO pass path to API instead
-                    current_project_uuid = (
-                        verify_project_exists_and_retrieve_project_id(
-                            client, dataset_definition.project_full_name
-                        )
-                    )
-                    dataset_build_id = client.data_catalog.initiate_build(
-                        current_project_uuid,
-                        dataset_definition.asset_name,
-                        fabric.value,
-                    )
-                    if run_id:
-                        client.flow_manager.update_run_metadata(
-                            run_id=RunId(value=run_id),
-                            task_id=dataset_definition.asset_path.path(),
-                            task_type=Task.Type.TYPE_DATASET_BUILD,
-                            key="build-id",
-                            value=str(dataset_build_id),
-                        )
-                    context.with_dataset_build(
-                        DatasetBuild(
-                            id=dataset_build_id, status=DatasetBuildStatus.STARTED
-                        )
-                    )
-                    context.with_tracker(tracker)
-                    context.with_asset_name(dataset_definition.asset_name)
-                    try:
-                        result = dataset_definition.func(
-                            *dataset_definition.args, **dataset_definition.kwargs
-                        )
-                        result = check_and_convert_to_df(result)
-                        _run_assertions(
-                            dataset_definition.asset_name,
-                            result,
-                            dataset_definition.assertions,
-                            tracker,
-                        )
-                    except Exception as e:
-                        client.data_catalog.complete_build(
-                            dataset_build_id,
-                            dataset_definition.asset_name,
-                            dataset_definition.uri,
-                            e,
-                        )
-                        context.with_dataset_build(
-                            DatasetBuild(
-                                id=dataset_build_id, status=DatasetBuildStatus.FAILED
-                            )
-                        )
-                        raise e
-                    reset_active_context()
+                result = dataset_definition.func(
+                    *dataset_definition.args, **dataset_definition.kwargs
+                )
+                result = check_and_convert_to_df(result)
+                _run_assertions(
+                    dataset_definition.asset_name,
+                    result,
+                    dataset_definition.assertions,
+                    tracker,
+                )
+            except Exception as e:
+                client.data_catalog.complete_build(
+                    dataset_build_id,
+                    dataset_definition.asset_name,
+                    dataset_definition.uri,
+                    e,
+                )
+                context.with_dataset_build(
+                    DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.FAILED)
+                )
+                raise e
+            reset_active_context()
 
-                    context.with_dataset_build(
-                        DatasetBuild(
-                            id=dataset_build_id, status=DatasetBuildStatus.COMPLETED
-                        )
-                    )
-            finally:
-                reset_active_context()
-
-            transfer_state = DatasetTransferState(len(result))
-            tracker.mark_dataset_saving_result(
-                dataset_definition.asset_name, transfer_state
+            context.with_dataset_build(
+                DatasetBuild(id=dataset_build_id, status=DatasetBuildStatus.COMPLETED)
             )
+    finally:
+        reset_active_context()
 
-            # this call would store the resulting dataset, extract the schema and complete the build from remote
-            client.data_catalog.store_dataset(
-                data=result,
-                build_id=dataset_build_id,
-                progress_callback=transfer_state.increment_num_transferred_rows,
-            )
-            tracker.mark_dataset_built(dataset_definition.asset_name)
+    transfer_state = DatasetTransferState(len(result))
+    tracker.mark_dataset_saving_result(dataset_definition.asset_name, transfer_state)
 
-            return result
+    # this call would store the resulting dataset, extract the schema and complete the build from remote
+    client.data_catalog.store_dataset(
+        data=result,
+        build_id=dataset_build_id,
+        progress_callback=transfer_state.increment_num_transferred_rows,
+    )
+    tracker.mark_dataset_built(dataset_definition.asset_name)
+
+    return result
 
 
 def _register_function(
