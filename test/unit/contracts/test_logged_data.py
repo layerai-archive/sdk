@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from layer.contracts.logged_data import LoggedData, LoggedDataObject, LoggedDataType
 
@@ -54,6 +55,21 @@ def test_logged_data_object_get_boolean_successfully() -> None:
     logged_data_object = LoggedDataObject(logged_data, epoch=None)
     assert logged_data_object.is_boolean()
     assert logged_data_object.value() is True
+
+
+@pytest.mark.parametrize(
+    ("type",),
+    [(LoggedDataType.FILE,), (LoggedDataType.VIDEO,), (LoggedDataType.DIRECTORY,)],
+)
+def test_logged_data_object_value_raises_exception_for_unsupported_types(
+    type: LoggedDataType,
+) -> None:
+    data = "True"
+    logged_data = LoggedData(type, "tag", data=data, epoched_data={})
+    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+
+    with pytest.raises(Exception, match=r"Use download_to.*"):
+        logged_data_object.value()
 
 
 def test_logged_data_object_get_file_successfully() -> None:
@@ -170,3 +186,27 @@ def test_logged_data_object_get_image_with_epoch_successfully() -> None:
 
             requests_get.assert_called_with("url://epoch")
             assert np.array_equal(np.array(expected_image), np.array(actual_image))
+
+
+@pytest.mark.parametrize(
+    ("type",),
+    [
+        (LoggedDataType.TEXT,),
+        (LoggedDataType.NUMBER,),
+        (LoggedDataType.BOOLEAN,),
+        (LoggedDataType.MARKDOWN,),
+        (LoggedDataType.TABLE,),
+        (LoggedDataType.IMAGE,),
+    ],
+)
+def test_logged_data_object_download_to_raises_exception_for_unsupported_types(
+    type: LoggedDataType,
+) -> None:
+    data = "True"
+    logged_data = LoggedData(type, "tag", data=data, epoched_data={})
+    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+
+    with pytest.raises(
+        Exception, match=r"Use value.*"
+    ), tempfile.NamedTemporaryFile() as tmp_file:
+        logged_data_object.download_to(Path(tmp_file.name))
