@@ -3,7 +3,7 @@ from datetime import datetime
 from google.protobuf.timestamp_pb2 import Timestamp
 from layerapi.api.entity.user_log_line_pb2 import UserLogLine as PBUserLogLine
 
-from layer.contracts.assets import AssetType
+from layer.contracts.asset import AssetType
 from layer.user_logs import __convert_log_line
 
 

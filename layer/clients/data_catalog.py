@@ -42,7 +42,7 @@ from layerapi.api.value.storage_location_pb2 import StorageLocation
 from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket
 
 from layer.config import ClientConfig
-from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import Dataset, DatasetBuild, DatasetBuildStatus
 from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import LayerClientException

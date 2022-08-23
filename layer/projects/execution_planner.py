@@ -13,7 +13,7 @@ from layerapi.api.entity.operations_pb2 import (
 from layerapi.api.entity.task_pb2 import Task
 from layerapi.api.value.language_version_pb2 import LanguageVersion
 
-from layer.contracts.assets import AssetPath, AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.exceptions.exceptions import (
