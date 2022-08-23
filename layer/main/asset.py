@@ -5,12 +5,7 @@ from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
-from layer.context import (
-    Context,
-    get_active_context,
-    reset_active_context,
-    set_active_context,
-)
+from layer.context import Context, get_active_context
 from layer.contracts.assets import AssetPath, AssetType
 from layer.contracts.datasets import Dataset
 from layer.contracts.models import Model
@@ -71,29 +66,25 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                 asset_path, no_cache=no_cache
             )
             if not within_run:
-                try:
-                    tracker = get_progress_tracker(
-                        url=config.url,
-                        account_name=asset_path.must_org_name(),
-                        project_name=asset_path.must_project_name(),
-                    )
-                    with Context(
-                        asset_type=AssetType.DATASET,
-                        asset_name=asset_path.asset_name,
-                        tracker=tracker,
-                    ) as context:
-                        set_active_context(context)
-                        with tracker.track():
-                            dataset = _ui_progress_with_tracker(
-                                callback,
-                                asset_path.asset_name,
-                                False,  # Datasets are fetched per partition, no good way to show caching per partition
-                                within_run,
-                                context,
-                                AssetType.DATASET,
-                            )
-                finally:
-                    reset_active_context()  # Reset only if outside layer func, as the layer func logic will reset it
+                tracker = get_progress_tracker(
+                    url=config.url,
+                    account_name=asset_path.must_org_name(),
+                    project_name=asset_path.must_project_name(),
+                )
+                with Context(
+                    asset_type=AssetType.DATASET,
+                    asset_name=asset_path.asset_name,
+                    tracker=tracker,
+                ) as context:
+                    with tracker.track():
+                        dataset = _ui_progress_with_tracker(
+                            callback,
+                            asset_path.asset_name,
+                            False,  # Datasets are fetched per partition, no good way to show caching per partition
+                            within_run,
+                            context,
+                            AssetType.DATASET,
+                        )
             else:
                 assert context
                 dataset = _ui_progress_with_tracker(
@@ -157,30 +148,26 @@ def get_model(name: str, no_cache: bool = False) -> Model:
             return _load_model_runtime_objects(client, model, state, no_cache)
 
         if not within_run:
-            try:
-                tracker = get_progress_tracker(
-                    url=config.url,
-                    account_name=asset_path.must_org_name(),
-                    project_name=asset_path.must_project_name(),
-                )
-                with Context(
-                    asset_type=AssetType.MODEL,
-                    asset_name=asset_path.asset_name,
-                    tracker=tracker,
-                ) as context:
-                    set_active_context(context)
-                    with tracker.track():
-                        model = _ui_progress_with_tracker(
-                            callback,
-                            asset_path.asset_name,
-                            from_cache,
-                            within_run,
-                            context,
-                            AssetType.MODEL,
-                            state,
-                        )
-            finally:
-                reset_active_context()  # Reset only if outside layer func, as the layer func logic will reset it
+            tracker = get_progress_tracker(
+                url=config.url,
+                account_name=asset_path.must_org_name(),
+                project_name=asset_path.must_project_name(),
+            )
+            with Context(
+                asset_type=AssetType.MODEL,
+                asset_name=asset_path.asset_name,
+                tracker=tracker,
+            ) as context:
+                with tracker.track():
+                    model = _ui_progress_with_tracker(
+                        callback,
+                        asset_path.asset_name,
+                        from_cache,
+                        within_run,
+                        context,
+                        AssetType.MODEL,
+                        state,
+                    )
         else:
             assert context
             model = _ui_progress_with_tracker(

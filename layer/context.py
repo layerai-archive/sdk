@@ -12,12 +12,12 @@ from layer.training.base_train import BaseTrain
 _ACTIVE_CONTEXT: Optional["Context"] = None
 
 
-def set_active_context(context: "Context") -> None:
+def _set_active_context(context: "Context") -> None:
     global _ACTIVE_CONTEXT
     _ACTIVE_CONTEXT = context
 
 
-def reset_active_context() -> None:
+def _reset_active_context() -> None:
     global _ACTIVE_CONTEXT
     _ACTIVE_CONTEXT = None
 
@@ -91,9 +91,10 @@ class Context:
             raise Exception("Unsupported asset type")
 
     def close(self) -> None:
-        pass
+        _reset_active_context()
 
     def __enter__(self) -> "Context":
+        _set_active_context(self)
         return self
 
     def __exit__(
