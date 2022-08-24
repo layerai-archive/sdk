@@ -5,7 +5,7 @@ import uuid
 from logging import Logger
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
 import numpy as np
@@ -16,6 +16,7 @@ from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 from layer.clients.logged_data_service import LoggedDataClient
 from layer.contracts.logged_data import (
     Image,
+    LogDataType,
     LoggedData,
     Markdown,
     ModelMetricPoint,
@@ -61,25 +62,7 @@ class LogDataRunner:
 
     def log(  # pylint: disable=too-many-statements
         self,
-        data: Dict[
-            str,
-            Union[
-                str,
-                float,
-                bool,
-                int,
-                List[Any],
-                "np.ndarray[Any, Any]",
-                Dict[str, Any],
-                pd.DataFrame,
-                "PIL.Image.Image",
-                "matplotlib.figure.Figure",
-                Image,
-                ModuleType,
-                Path,
-                Markdown,
-            ],
-        ],
+        data: LogDataType,
         epoch: Optional[int] = None,
         category: Optional[str] = None,
     ) -> None:

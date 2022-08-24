@@ -1,24 +1,14 @@
 import logging
-from pathlib import Path
-from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Optional
 
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.context import get_active_context
-from layer.contracts.logged_data import Image, Markdown
+from layer.contracts.logged_data import LogDataType
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.utils.async_utils import asyncio_run_in_thread
 
 from .utils import sdk_function
-
-
-if TYPE_CHECKING:
-    import matplotlib.axes._subplots  # type: ignore
-    import matplotlib.figure  # type: ignore
-    import numpy as np
-    import pandas
-    import PIL.Image
 
 
 logger = logging.getLogger(__name__)
@@ -26,26 +16,7 @@ logger = logging.getLogger(__name__)
 
 @sdk_function
 def log(
-    data: Dict[
-        str,
-        Union[
-            str,
-            float,
-            bool,
-            int,
-            List[Any],
-            "np.ndarray[Any, Any]",
-            Dict[str, Any],
-            "pandas.DataFrame",
-            "PIL.Image.Image",
-            "matplotlib.figure.Figure",
-            "matplotlib.axes._subplots.AxesSubplot",
-            Image,
-            ModuleType,
-            Path,
-            Markdown,
-        ],
-    ],
+    data: LogDataType,
     step: Optional[int] = None,
     category: Optional[str] = None,
 ) -> None:
