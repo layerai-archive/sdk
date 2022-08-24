@@ -5,7 +5,7 @@ from yarl import URL
 
 from layer import Context
 from layer.context import get_active_context
-from layer.contracts.asset import AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import DatasetBuild
 from layer.contracts.project_full_name import ProjectFullName
 from layer.training.base_train import BaseTrain
@@ -31,11 +31,15 @@ class ExampleContextHolder:
 class TestContext:
     def test_correct_context_returned(self) -> None:
         assert get_active_context() is None
-        with Context(
-            url=EXAMPLE_LAYER_URL,
-            project_full_name=EXAMPLE_PROJECT,
+        asset_path = AssetPath(
+            account_name=EXAMPLE_PROJECT.account_name,
+            project_name=EXAMPLE_PROJECT.project_name,
             asset_name="the-model",
             asset_type=AssetType.MODEL,
+        )
+        with Context(
+            url=EXAMPLE_LAYER_URL,
+            asset_path=asset_path,
         ) as ctx:
             assert get_active_context() == ctx
 
@@ -43,11 +47,15 @@ class TestContext:
 
     def test_context_reference_works_after_context_exits(self) -> None:
         assert get_active_context() is None
-        with Context(
-            url=EXAMPLE_LAYER_URL,
-            project_full_name=EXAMPLE_PROJECT,
+        asset_path = AssetPath(
+            account_name=EXAMPLE_PROJECT.account_name,
+            project_name=EXAMPLE_PROJECT.project_name,
             asset_name="the-model",
             asset_type=AssetType.MODEL,
+        )
+        with Context(
+            url=EXAMPLE_LAYER_URL,
+            asset_path=asset_path,
         ) as ctx:
             holder = ExampleContextHolder(context=ctx)
             assert get_active_context() == ctx
@@ -98,14 +106,18 @@ class TestContext:
         build_or_train: Union[DatasetBuild, BaseTrain],
         expected_url: URL,
     ) -> None:
+        asset_path = AssetPath(
+            account_name=EXAMPLE_PROJECT.account_name,
+            project_name=EXAMPLE_PROJECT.project_name,
+            asset_name=asset_name,
+            asset_type=asset_type,
+        )
         with Context(
             url=EXAMPLE_LAYER_URL,
-            project_full_name=EXAMPLE_PROJECT,
+            asset_path=asset_path,
             dataset_build=build_or_train
             if isinstance(build_or_train, DatasetBuild)
             else None,
             train=build_or_train if isinstance(build_or_train, BaseTrain) else None,
-            asset_name=asset_name,
-            asset_type=asset_type,
         ) as ctx:
             assert ctx.url() == expected_url

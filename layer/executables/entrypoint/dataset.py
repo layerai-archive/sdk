@@ -9,7 +9,6 @@ from yarl import URL
 from layer.clients.layer import LayerClient
 from layer.context import Context
 from layer.contracts.assertions import Assertion
-from layer.contracts.asset import AssetType
 from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
@@ -56,9 +55,7 @@ def _run(
 
     with Context(
         url=url,
-        project_full_name=dataset_definition.project_full_name,
-        asset_type=AssetType.DATASET,
-        asset_name=dataset_definition.asset_name,
+        asset_path=dataset_definition.asset_path,
         dataset_build=DatasetBuild(
             id=dataset_build_id, status=DatasetBuildStatus.STARTED
         ),

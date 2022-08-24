@@ -75,9 +75,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                 )
                 with Context(
                     url=config.url,
-                    project_full_name=asset_path.project_full_name(),
-                    asset_type=AssetType.DATASET,
-                    asset_name=asset_path.asset_name,
+                    asset_path=asset_path,
                     tracker=tracker,
                 ) as context:
                     with tracker.track():
@@ -173,9 +171,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
             )
             with Context(
                 url=config.url,
-                project_full_name=asset_path.project_full_name(),
-                asset_type=AssetType.MODEL,
-                asset_name=asset_path.asset_name,
+                asset_path=asset_path,
                 tracker=tracker,
             ) as context:
                 with tracker.track():

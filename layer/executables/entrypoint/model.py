@@ -14,7 +14,7 @@ from yarl import URL
 from layer import Context
 from layer.clients.layer import LayerClient
 from layer.contracts.assertions import Assertion
-from layer.contracts.asset import AssetType
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.exceptions.exception_handler import exception_handler
@@ -190,13 +190,17 @@ class ModelTrainer:
             train_id=self.train_context.train_id,
             train_index=self.train_context.train_index,
         ) as train:
+            asset_path = AssetPath(
+                account_name=project_full_name.account_name,
+                project_name=project_full_name.project_name,
+                asset_type=AssetType.MODEL,
+                asset_name=self.train_context.model_name,
+            )
             with Context(
                 url=self.url,
-                project_full_name=project_full_name,
+                asset_path=asset_path,
                 train=train,
                 tracker=self.tracker,
-                asset_name=self.train_context.model_name,
-                asset_type=AssetType.MODEL,
             ):
                 self._update_train_status(
                     self.train_context.train_id,
