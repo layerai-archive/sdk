@@ -180,7 +180,8 @@ def log(
     active_context = get_active_context()
     if not active_context:
         raise RuntimeError(
-            "Data logging only allowed inside functions decorated with @model or @dataset"
+            "Data logging only allowed inside functions either decorated with @layer.model or @layer.dataset or"
+            "invoked programmatically via layer.model('model-name')(my_function)(*my_function_arguments)"
         )
     train = active_context.train()
     train_id = train.get_id() if train is not None else None

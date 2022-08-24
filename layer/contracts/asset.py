@@ -31,8 +31,7 @@ class AssetType(Enum):
 class AssetPath:
     asset_name: str
     asset_type: AssetType
-    # TODO rename to 'account_name'
-    org_name: Optional[str] = None
+    account_name: Optional[str] = None
     project_name: Optional[str] = None
     asset_version: Optional[str] = None
     asset_build: Optional[int] = None
@@ -83,18 +82,18 @@ class AssetPath:
             asset_build=int(optional_build) if optional_build else None,
             asset_selector=optional_selector,
             project_name=optional_project,
-            org_name=optional_org,
+            account_name=optional_org,
         )
 
     def is_relative(self) -> bool:
-        return self.org_name is None or self.project_name is None
+        return self.account_name is None or self.project_name is None
 
     def has_project(self) -> bool:
         return self.project_name is not None and self.project_name != ""
 
     def path(self) -> str:
         parts = [
-            self.org_name,
+            self.account_name,
             self.project_name,
             self.asset_type.value,
             self.asset_name,
@@ -114,7 +113,7 @@ class AssetPath:
         return replace(
             self,
             project_name=project_full_name.project_name,
-            org_name=project_full_name.account_name,
+            account_name=project_full_name.account_name,
         )
 
     def with_version(self, version: str) -> "AssetPath":
@@ -128,13 +127,13 @@ class AssetPath:
         )
 
     def url(self, host_url: URL) -> URL:
-        if self.org_name is None:
+        if self.account_name is None:
             raise LayerClientException("Account name is required to get URL")
         if self.project_name is None:
             raise LayerClientException("Project name is required to get URL")
 
         parts = [
-            self.org_name,
+            self.account_name,
             self.project_name,
             self.asset_type.value,
             self.asset_name,
@@ -154,15 +153,21 @@ class AssetPath:
 
         return URL(raw_url)
 
-    def must_org_name(self) -> str:
-        if self.org_name is None:
+    def must_account_name(self) -> str:
+        if self.account_name is None:
             raise LayerClientException("Account name is required")
-        return self.org_name
+        return self.account_name
 
     def must_project_name(self) -> str:
         if self.project_name is None:
             raise LayerClientException("Project name is required")
         return self.project_name
+
+    def project_full_name(self) -> ProjectFullName:
+        return ProjectFullName(
+            account_name=self.must_account_name(),
+            project_name=self.must_project_name(),
+        )
 
 
 class BaseAsset(metaclass=ABCMeta):

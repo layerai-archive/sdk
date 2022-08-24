@@ -1,7 +1,9 @@
 from types import TracebackType
 from typing import Optional
 
-from layer.contracts.asset import AssetType
+from yarl import URL
+
+from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import DatasetBuild
 from layer.tracker.ui_progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
@@ -41,17 +43,49 @@ class Context:
 
     def __init__(
         self,
-        asset_name: str,
-        asset_type: AssetType,
+        url: URL,
+        asset_path: AssetPath,
         tracker: Optional[RunProgressTracker] = None,
         train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
     ) -> None:
+        if train is not None and dataset_build is not None:
+            raise Exception(
+                "Context cannot hold model train and dataset build at the same time"
+            )
+        if train is not None and asset_path.asset_type is not AssetType.MODEL:
+            raise Exception("Wrong asset type for model train context")
+        if dataset_build is not None and asset_path.asset_type is not AssetType.DATASET:
+            raise Exception("Wrong asset type for dataset build context")
+        self._url = url
+        self._project_full_name = asset_path.project_full_name()
+        self._asset_name = asset_path.asset_name
+        self._asset_type = asset_path.asset_type
         self._train: Optional[BaseTrain] = train
         self._dataset_build: Optional[DatasetBuild] = dataset_build
         self._tracker: Optional[RunProgressTracker] = tracker
-        self._asset_name = asset_name
-        self._asset_type = asset_type
+
+    def url(self) -> URL:
+        """
+        Returns the URL of the current active context.
+
+        For example, during model training, it returns the current
+        model train URL.
+        """
+        p = AssetPath(
+            account_name=self._project_full_name.account_name,
+            project_name=self._project_full_name.project_name,
+            asset_type=self.asset_type(),
+            asset_name=self.asset_name(),
+        )
+        if self.train() is not None:
+            train = self.train()
+            assert train is not None
+            p = p.with_version_and_build(
+                train.get_version(), int(train.get_train_index())
+            )
+
+        return p.url(self._url)
 
     def train(self) -> Optional[BaseTrain]:
         """
@@ -77,18 +111,11 @@ class Context:
     def tracker(self) -> Optional[RunProgressTracker]:
         return self._tracker
 
-    def asset_name(self) -> Optional[str]:
+    def asset_name(self) -> str:
         return self._asset_name
 
     def asset_type(self) -> AssetType:
-        if self._asset_type:
-            return self._asset_type
-        elif self.train():
-            return AssetType.MODEL
-        elif self.dataset_build():
-            return AssetType.DATASET
-        else:
-            raise Exception("Unsupported asset type")
+        return self._asset_type
 
     def close(self) -> None:
         _reset_active_context()

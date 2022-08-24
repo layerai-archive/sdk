@@ -67,7 +67,7 @@ class UIRunProgressTracker(RunProgressTracker):
         return AssetPath(
             asset_name=name,
             asset_type=asset_type,
-            org_name=self._account_name,
+            account_name=self._account_name,
             project_name=self._project_name,
         ).url(self._url)
 

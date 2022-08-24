@@ -8,6 +8,7 @@ from typing import Any, Callable, List, Optional
 from uuid import UUID
 
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
+from yarl import URL
 
 from layer import Context
 from layer.clients.layer import LayerClient
@@ -19,7 +20,7 @@ from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
-from ...contracts.asset import AssetType
+from ...contracts.asset import AssetPath, AssetType
 from .common import import_function, update_train_status
 from .model_train_failure_reporter import ModelTrainFailureReporter
 
@@ -81,6 +82,7 @@ class LocalTrainContext(TrainContext):
 
 @dataclass(frozen=True)
 class ModelTrainer:
+    url: URL
     client: LayerClient
     train_context: TrainContext
     logger: Logger
@@ -152,11 +154,17 @@ class ModelTrainer:
             train_id=self.train_context.train_id,
             train_index=self.train_context.train_index,
         ) as train:
+            asset_path = AssetPath(
+                account_name=project_full_name.account_name,
+                project_name=project_full_name.project_name,
+                asset_type=AssetType.MODEL,
+                asset_name=self.train_context.model_name,
+            )
             with Context(
+                url=self.url,
+                asset_path=asset_path,
                 train=train,
                 tracker=self.tracker,
-                asset_name=self.train_context.model_name,
-                asset_type=AssetType.MODEL,
             ):
                 update_train_status(
                     self.client.model_catalog,

@@ -70,12 +70,12 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
             if not within_run:
                 tracker = get_progress_tracker(
                     url=config.url,
-                    account_name=asset_path.must_org_name(),
+                    account_name=asset_path.must_account_name(),
                     project_name=asset_path.must_project_name(),
                 )
                 with Context(
-                    asset_type=AssetType.DATASET,
-                    asset_name=asset_path.asset_name,
+                    url=config.url,
+                    asset_path=asset_path,
                     tracker=tracker,
                 ) as context:
                     with tracker.track():
@@ -166,12 +166,12 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         if not within_run:
             tracker = get_progress_tracker(
                 url=config.url,
-                account_name=asset_path.must_org_name(),
+                account_name=asset_path.must_account_name(),
                 project_name=asset_path.must_project_name(),
             )
             with Context(
-                asset_type=AssetType.MODEL,
-                asset_name=asset_path.asset_name,
+                url=config.url,
+                asset_path=asset_path,
                 tracker=tracker,
             ) as context:
                 with tracker.track():
@@ -271,7 +271,7 @@ def _ensure_asset_path_is_absolute(
         else get_current_project_full_name().project_name
     )
     account_name = (
-        path.org_name if path.org_name is not None else current_account_name()
+        path.account_name if path.account_name is not None else current_account_name()
     )
 
     if not project_name or not account_name:
