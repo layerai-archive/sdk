@@ -81,16 +81,19 @@ import tempfile
 from dataclasses import dataclass
 from enum import Enum, unique
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
-import pandas as pd
+import pandas
 import requests  # type: ignore
 
 from ..logged_data.utils import get_base_module_list, has_allowed_extension
 
 
 if TYPE_CHECKING:
+    import matplotlib.axes._subplots  # type: ignore
+    import matplotlib.figure  # type: ignore
     import numpy.typing as npt
     import PIL
     import torch
@@ -411,12 +414,12 @@ class LoggedDataObject:
         with open(file_path, "wb") as file_handler:
             file_handler.write(response.content)
 
-    def value(self) -> Union[str, float, bool, pd.DataFrame, "PIL.Image.Image"]:
+    def value(self) -> Union[str, float, bool, pandas.DataFrame, "PIL.Image.Image"]:
         """
         To be called for string, numeric, boolean, image, markdown and table values.
         """
         if self.is_table():
-            return pd.read_json(self._logged_data.data, orient="table")
+            return pandas.read_json(self._logged_data.data, orient="table")
         elif self.is_number():
             return float(self._logged_data.data)
         elif self.is_text():
@@ -487,3 +490,27 @@ class LoggedDataObject:
 
     def is_directory(self) -> bool:
         return self._logged_data.logged_data_type == LoggedDataType.DIRECTORY
+
+
+LogValueType = Union[
+    str,
+    float,
+    bool,
+    int,
+    List[Any],
+    "np.ndarray[Any, Any]",
+    Dict[str, Any],
+    "pandas.DataFrame",
+    "PIL.Image.Image",
+    "matplotlib.figure.Figure",
+    "matplotlib.axes._subplots.AxesSubplot",
+    Image,
+    ModuleType,
+    Path,
+    Markdown,
+]
+
+LogDataType = Dict[
+    str,
+    LogValueType,
+]

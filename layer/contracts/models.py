@@ -6,7 +6,7 @@ from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
 
-from layer.contracts.logged_data import LoggedDataObject
+from layer.contracts.logged_data import LogDataType, LoggedDataObject
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelFlavor, ModelRuntimeObjects
 from layer.logged_data.log_data_runner import LogDataRunner
@@ -129,3 +129,17 @@ class Model(BaseAsset):
         assert self._logged_data_runner
         logged_data = self._logged_data_runner.get_logged_data(tag)
         return LoggedDataObject(logged_data, epoch=step)
+
+    def log(
+        self,
+        data: LogDataType,
+        step: Optional[int] = None,
+        category: Optional[str] = None,
+    ) -> None:
+        """
+        Log data for a particular (i.e. non-latest) model train.
+
+        For more details about logging in general, please look at `layer.log()` documentation.
+        """
+        assert self._logged_data_runner
+        self._logged_data_runner.log(data=data, epoch=step, category=category)

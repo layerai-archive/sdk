@@ -12,7 +12,7 @@ from typing import (
     Union,
 )
 
-from layer.contracts.logged_data import LoggedDataObject
+from layer.contracts.logged_data import LogDataType, LoggedDataObject
 from layer.logged_data.log_data_runner import LogDataRunner
 
 from .asset import AssetPath, AssetType, BaseAsset
@@ -218,6 +218,20 @@ class Dataset(BaseAsset):
         assert self._logged_data_runner
         logged_data = self._logged_data_runner.get_logged_data(tag)
         return LoggedDataObject(logged_data, epoch=step)
+
+    def log(
+        self,
+        data: LogDataType,
+        step: Optional[int] = None,
+        category: Optional[str] = None,
+    ) -> None:
+        """
+        Log data for a particular (i.e. non-latest) dataset build.
+
+        For more details about logging in general, please look at `layer.log()` documentation.
+        """
+        assert self._logged_data_runner
+        self._logged_data_runner.log(data=data, epoch=step, category=category)
 
 
 @dataclass(frozen=True)
