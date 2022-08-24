@@ -2,8 +2,10 @@ import urllib.request
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
+import pandas
+import pyarrow
 from layerapi.api.service.dataset.dataset_api_pb2 import Command
 from layerapi.api.value.ticket_pb2 import PartitionTicket
 from pyarrow import flight as fl
@@ -11,10 +13,6 @@ from pyarrow.lib import ArrowKeyError
 
 from layer.cache.cache import Cache
 from layer.utils.grpc import create_grpc_ssl_config
-
-
-if TYPE_CHECKING:
-    import pandas
 
 
 class DatasetClientError(Exception):
@@ -49,15 +47,13 @@ class PartitionMetadata:
 class Partition:
     def __init__(
         self,
-        reader: Union[fl.FlightStreamReader, "pandas.DataFrame"],
+        reader: Union[fl.FlightStreamReader, pandas.DataFrame],
         from_cache: bool = False,
     ):
         self._reader = reader
         self._from_cache = from_cache
 
-    def to_pandas(self) -> "pandas.DataFrame":
-        import pandas
-
+    def to_pandas(self) -> pandas.DataFrame:
         if isinstance(self._reader, pandas.DataFrame):
             return self._reader
         return self._reader.read_pandas()
@@ -108,8 +104,6 @@ class DatasetClient:
         )
 
     def health_check(self) -> str:
-        import pyarrow
-
         buf = pyarrow.allocate_buffer(0)
         action = fl.Action("HealthCheck", buf)
         result = next(self._flight.do_action(action))
@@ -168,7 +162,5 @@ class DatasetClient:
         return self._flight.do_put(descriptor, schema)
 
 
-def _read_parquet(path: Union[str, Path]) -> "pandas.DataFrame":
-    import pandas
-
+def _read_parquet(path: Union[str, Path]) -> pandas.DataFrame:
     return pandas.read_parquet(path, engine="pyarrow")

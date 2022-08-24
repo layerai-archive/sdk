@@ -1,7 +1,3 @@
-from typing import TYPE_CHECKING
-
-import lazy_loader  # noqa
-
 from .context import Context  # noqa
 from .contracts.datasets import Dataset  # noqa
 from .contracts.logged_data import Image, Markdown, Video  # noqa
@@ -25,6 +21,8 @@ from .decorators.assertions import (  # noqa
 )
 from .flavors.custom import CustomModel  # noqa
 from .global_context import current_project_full_name  # noqa
+from .logged_data.callbacks import KerasCallback, XGBoostCallback  # noqa
+from .logged_data.loggers.pytorch_lightning import PytorchLightningLogger  # noqa
 from .main.asset import get_dataset, get_model, save_model  # noqa
 from .main.auth import (  # noqa
     login,
@@ -40,20 +38,6 @@ from .main.run import init, run  # noqa
 from .main.version import get_version  # noqa
 from .pandas_extensions import Arrays, Images, _register_type_extensions  # noqa
 
-
-# keep the existing type definitions only for autocompletions in the editors and type checks
-if TYPE_CHECKING:
-    from .logged_data.callbacks import KerasCallback, XGBoostCallback  # noqa
-    from .logged_data.loggers.pytorch_lightning import PytorchLightningLogger  # noqa
-
-# patch __getattr__, __dir__ and __all__ to lazy load the symbols only when they're required
-__getattr__, __dir__, __all__ = lazy_loader.attach(
-    __name__,
-    submod_attrs={
-        "logged_data.callbacks": ["KerasCallback", "XGBoostCallback"],
-        "logged_data.loggers.pytorch_lightning": ["PytorchLightningLogger"],
-    },
-)
 
 _register_type_extensions()
 

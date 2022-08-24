@@ -1,17 +1,14 @@
 import pickle  # nosec
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+import pandas
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 
 from layer.types import ModelObject
 
 from .base import ModelFlavor, ModelRuntimeObjects
-
-
-if TYPE_CHECKING:
-    import pandas
 
 
 class CustomModel:
@@ -25,7 +22,7 @@ class CustomModel:
         """
 
     @abstractmethod
-    def predict(self, model_input: "pandas.DataFrame") -> "pandas.DataFrame":
+    def predict(self, model_input: pandas.DataFrame) -> pandas.DataFrame:
         """
         Evaluates an input for this model and produces an output.
 
@@ -127,7 +124,5 @@ class CustomModelFlavor(ModelFlavor):
             )
 
     @staticmethod
-    def __predict(
-        model: ModelObject, input_df: "pandas.DataFrame"
-    ) -> "pandas.DataFrame":
+    def __predict(model: ModelObject, input_df: pandas.DataFrame) -> pandas.DataFrame:
         return model.predict(input_df)  # type: ignore

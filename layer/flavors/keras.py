@@ -1,15 +1,11 @@
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+import pandas as pd
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 
 from layer.types import ModelObject
 
 from .base import ModelFlavor, ModelRuntimeObjects
-
-
-if TYPE_CHECKING:
-    import pandas as pd
 
 
 class KerasModelFlavor(ModelFlavor):
@@ -85,9 +81,7 @@ class KerasModelFlavor(ModelFlavor):
             )
 
     @staticmethod
-    def __predict(model: ModelObject, input_df: "pd.DataFrame") -> "pd.DataFrame":
-        import pandas as pd
-
+    def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
         #  https://www.tensorflow.org/api_docs/python/tf/keras/Model#predict
         predictions = model.predict(input_df)  # type: ignore
         return pd.DataFrame(predictions)
