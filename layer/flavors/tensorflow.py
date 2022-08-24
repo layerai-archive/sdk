@@ -1,15 +1,11 @@
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+import pandas as pd
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 
 from layer.types import ModelObject
 
 from .base import ModelFlavor, ModelRuntimeObjects
-
-
-if TYPE_CHECKING:
-    import pandas as pd
 
 
 LAYER_CACHED_TF_MODELS = {}
@@ -46,7 +42,7 @@ class TensorFlowModelFlavor(ModelFlavor):
         )
 
     @staticmethod
-    def __predict(directory: Path, input_df: "pd.DataFrame") -> "pd.DataFrame":
+    def __predict(directory: Path, input_df: pd.DataFrame) -> pd.DataFrame:
         cache_key = str(directory)
         if cache_key not in LAYER_CACHED_TF_MODELS:
             import mlflow.pyfunc

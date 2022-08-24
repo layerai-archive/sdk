@@ -1,16 +1,13 @@
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+import numpy as np
+import pandas as pd
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 from scipy.sparse import spmatrix  # type: ignore
 
 from layer.types import ModelObject
 
 from .base import ModelFlavor, ModelRuntimeObjects
-
-
-if TYPE_CHECKING:
-    import pandas as pd
 
 
 class LightGBMModelFlavor(ModelFlavor):
@@ -40,10 +37,7 @@ class LightGBMModelFlavor(ModelFlavor):
         )
 
     @staticmethod
-    def __predict(model: ModelObject, input_df: "pd.DataFrame") -> "pd.DataFrame":
-        import numpy as np
-        import pandas as pd
-
+    def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
         prediction = model.predict(input_df)  # type: ignore
         if isinstance(prediction, np.ndarray):
             return pd.DataFrame(prediction)
