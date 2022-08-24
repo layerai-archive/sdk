@@ -1,7 +1,8 @@
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
+import pandas as pd
 from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
 from layerapi.api.value.s3_path_pb2 import S3Path
@@ -13,10 +14,6 @@ from layer.logged_data.log_data_runner import LogDataRunner
 from layer.types import ModelObject
 
 from .asset import AssetPath, AssetType, BaseAsset
-
-
-if TYPE_CHECKING:
-    import pandas as pd
 
 
 @dataclass(frozen=True)
@@ -100,7 +97,7 @@ class Model(BaseAsset):
         """
         return self.model_object
 
-    def predict(self, input_df: "pd.DataFrame") -> "pd.DataFrame":
+    def predict(self, input_df: pd.DataFrame) -> pd.DataFrame:
         """
         Performs prediction on the input dataframe data.
         :return: the predictions as a pd.DataFrame

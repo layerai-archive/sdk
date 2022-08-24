@@ -4,18 +4,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
+import pandas as pd
+
 from layer.types import ModelObject
 
 
 if TYPE_CHECKING:
-    import pandas as pd
     from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PBModelFlavor
 
 
 @dataclass(frozen=True)
 class ModelRuntimeObjects:
     model_object: ModelObject
-    prediction_function: Optional[Callable[["pd.DataFrame"], "pd.DataFrame"]] = None
+    prediction_function: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None
 
 
 class ModelFlavor(metaclass=ABCMeta):

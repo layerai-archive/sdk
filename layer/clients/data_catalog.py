@@ -3,8 +3,10 @@ import tempfile
 import uuid
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Generator, List, Optional, Tuple
+from typing import Any, Callable, Generator, List, Optional, Tuple
 
+import pandas
+import pyarrow
 from layerapi.api.entity.dataset_build_pb2 import DatasetBuild as PBDatasetBuild
 from layerapi.api.entity.dataset_pb2 import Dataset as PBDataset
 from layerapi.api.entity.dataset_version_pb2 import DatasetVersion as PBDatasetVersion
@@ -44,17 +46,13 @@ from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import Dataset, DatasetBuild, DatasetBuildStatus
 from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import LayerClientException
+from layer.pandas_extensions import _infer_custom_types
 from layer.utils.file_utils import tar_directory
 from layer.utils.grpc import generate_client_error_from_grpc_error
 from layer.utils.grpc.channel import get_grpc_channel
 from layer.utils.s3 import S3Util
 
 from .dataset_service import DatasetClient, DatasetClientError
-
-
-if TYPE_CHECKING:
-    import pandas
-    import pyarrow
 
 
 class DataCatalogClient:
@@ -97,8 +95,6 @@ class DataCatalogClient:
     def fetch_dataset(
         self, asset_path: AssetPath, no_cache: bool = False
     ) -> "pandas.DataFrame":
-        import pandas
-
         data_ticket = DataTicket(
             dataset_path_ticket=DatasetPathTicket(path=asset_path.path()),
         )
@@ -143,9 +139,6 @@ class DataCatalogClient:
         :param build_id: dataset build id
         :param progress_callback: progress callback
         """
-        import pyarrow
-
-        from layer.pandas_extensions import _infer_custom_types
 
         # Creates a Record batch from the pandas dataframe
         batch = pyarrow.RecordBatch.from_pandas(
@@ -406,8 +399,8 @@ def _language_version() -> Tuple[int, int, int]:
 
 
 def _get_batch_chunks(
-    batch: "pyarrow.RecordBatch", max_chunk_size_bytes: int = 4_000_000
-) -> Generator["pyarrow.RecordBatch", None, None]:
+    batch: pyarrow.RecordBatch, max_chunk_size_bytes: int = 4_000_000
+) -> Generator[pyarrow.RecordBatch, None, None]:
     """
     Slice the batch into chunks, based on average row size,
     but not exceeding the maximum chunk size.
