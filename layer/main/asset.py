@@ -70,10 +70,12 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
             if not within_run:
                 tracker = get_progress_tracker(
                     url=config.url,
-                    account_name=asset_path.must_org_name(),
+                    account_name=asset_path.must_account_name(),
                     project_name=asset_path.must_project_name(),
                 )
                 with Context(
+                    url=config.url,
+                    project_full_name=asset_path.project_full_name(),
                     asset_type=AssetType.DATASET,
                     asset_name=asset_path.asset_name,
                     tracker=tracker,
@@ -166,10 +168,12 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         if not within_run:
             tracker = get_progress_tracker(
                 url=config.url,
-                account_name=asset_path.must_org_name(),
+                account_name=asset_path.must_account_name(),
                 project_name=asset_path.must_project_name(),
             )
             with Context(
+                url=config.url,
+                project_full_name=asset_path.project_full_name(),
                 asset_type=AssetType.MODEL,
                 asset_name=asset_path.asset_name,
                 tracker=tracker,

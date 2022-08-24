@@ -9,6 +9,7 @@ from uuid import UUID
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
 from layerapi.api.entity.task_pb2 import Task
 from layerapi.api.ids_pb2 import ModelTrainId, RunId
+from yarl import URL
 
 from layer import Context
 from layer.clients.layer import LayerClient
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 def _run(
+    url: URL,
     model_definition: FunctionDefinition,
     client: LayerClient,
     tracker: RunProgressTracker,
@@ -75,6 +77,7 @@ def _run(
         train_index=str(train.index),
     )
     trainer = ModelTrainer(
+        url=url,
         client=client,
         train_context=context,
         tracker=tracker,
@@ -127,6 +130,7 @@ class TrainContext:
 
 @dataclass(frozen=True)
 class ModelTrainer:
+    url: URL
     client: LayerClient
     train_context: TrainContext
     tracker: RunProgressTracker
@@ -187,6 +191,8 @@ class ModelTrainer:
             train_index=self.train_context.train_index,
         ) as train:
             with Context(
+                url=self.url,
+                project_full_name=project_full_name,
                 train=train,
                 tracker=self.tracker,
                 asset_name=self.train_context.model_name,

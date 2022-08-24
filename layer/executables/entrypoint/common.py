@@ -2,6 +2,8 @@ import logging
 import os
 from typing import Any, Callable
 
+from yarl import URL
+
 import layer
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
@@ -21,7 +23,7 @@ ENV_LAYER_RUN_ID = "LAYER_RUN_ID"
 
 RunnerFunction = Callable[[FunctionDefinition], Any]
 RunFunction = Callable[
-    [FunctionDefinition, LayerClient, RunProgressTracker, Fabric, str], Any
+    [URL, FunctionDefinition, LayerClient, RunProgressTracker, Fabric, str], Any
 ]
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,7 @@ def make_runner(run_function: RunFunction) -> RunnerFunction:
             ).init() as client, progress_tracker.track() as tracker:
                 tracker.add_asset(definition.asset_type, definition.asset_name)
                 return run_function(
+                    config.url,
                     definition,
                     client,
                     tracker,

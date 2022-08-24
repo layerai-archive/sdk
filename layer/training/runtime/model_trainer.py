@@ -8,6 +8,7 @@ from typing import Any, Callable, List, Optional
 from uuid import UUID
 
 from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
+from yarl import URL
 
 from layer import Context
 from layer.clients.layer import LayerClient
@@ -81,6 +82,7 @@ class LocalTrainContext(TrainContext):
 
 @dataclass(frozen=True)
 class ModelTrainer:
+    url: URL
     client: LayerClient
     train_context: TrainContext
     logger: Logger
@@ -153,6 +155,8 @@ class ModelTrainer:
             train_index=self.train_context.train_index,
         ) as train:
             with Context(
+                url=self.url,
+                project_full_name=project_full_name,
                 train=train,
                 tracker=self.tracker,
                 asset_name=self.train_context.model_name,

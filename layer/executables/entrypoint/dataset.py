@@ -4,6 +4,7 @@ from typing import Any, List
 
 from layerapi.api.entity.task_pb2 import Task
 from layerapi.api.ids_pb2 import RunId
+from yarl import URL
 
 from layer.clients.layer import LayerClient
 from layer.context import Context
@@ -32,6 +33,7 @@ set_has_shown_update_message(True)
 
 
 def _run(
+    url: URL,
     dataset_definition: FunctionDefinition,
     client: LayerClient,
     tracker: RunProgressTracker,
@@ -53,6 +55,8 @@ def _run(
     )
 
     with Context(
+        url=url,
+        project_full_name=dataset_definition.project_full_name,
         asset_type=AssetType.DATASET,
         asset_name=dataset_definition.asset_name,
         dataset_build=DatasetBuild(

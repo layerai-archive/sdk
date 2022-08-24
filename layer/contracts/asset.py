@@ -153,7 +153,7 @@ class AssetPath:
 
         return URL(raw_url)
 
-    def must_org_name(self) -> str:
+    def must_account_name(self) -> str:
         if self.account_name is None:
             raise LayerClientException("Account name is required")
         return self.account_name
@@ -162,6 +162,12 @@ class AssetPath:
         if self.project_name is None:
             raise LayerClientException("Project name is required")
         return self.project_name
+
+    def project_full_name(self) -> ProjectFullName:
+        return ProjectFullName(
+            account_name=self.must_account_name(),
+            project_name=self.must_project_name(),
+        )
 
 
 class BaseAsset(metaclass=ABCMeta):
