@@ -19,12 +19,6 @@ def _check_os() -> None:
     def is_windows_os() -> bool:
         return platform.system() == "Windows"
 
-    def is_windows_wsl() -> bool:
-        return (
-            "microsoft" in platform.uname().version
-            or "microsoft" in platform.uname().release
-        )
-
     if is_windows_os():
         print(
             "Windows is not supported. Please, have a look at https://docs.app.layer.ai/docs/installation"
