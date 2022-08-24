@@ -72,6 +72,7 @@ numpy = { version = "<1.22", python = "~3.7" } # 1.22 doesn't support python 3.7
 requests = ">=2.23.0"
 nvsmi = "^0.4.2"
 psutil = ">=5.4.8" # Google Colab comes with 5.4.8 by default. If it gets upgraded an error message is shown saying the runtime needs to be restarted.
+lazy-loader = {git = "https://github.com/layerai/lazy_loader.git", rev = "26aa52ab057afb0c3f85ffc64f220eae0e9a222c"}
 
 [tool.poetry.dev-dependencies]
 # h5py is a tensorflow transitive dependency and we limit it because of conda-miniforge

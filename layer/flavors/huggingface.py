@@ -1,11 +1,15 @@
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import pandas as pd
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
 
 from layer.types import ModelObject
 
 from .base import ModelFlavor, ModelRuntimeObjects
+
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class HuggingFaceModelFlavor(ModelFlavor):
@@ -40,5 +44,5 @@ class HuggingFaceModelFlavor(ModelFlavor):
             )
 
     @staticmethod
-    def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
+    def __predict(model: ModelObject, input_df: "pd.DataFrame") -> "pd.DataFrame":
         raise Exception("Not implemented")
