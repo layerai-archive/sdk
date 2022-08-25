@@ -43,11 +43,16 @@ class AccountServiceClient:
         return self._account_from_view(account_view)
 
     def create_organization_account(
-        self, name: str, display_name: Optional[str] = None
+        self,
+        name: str,
+        display_name: Optional[str] = None,
+        deletion_allowed: bool = False,
     ) -> Account:
         account_view: AccountView = self._account_api.CreateOrganizationAccount(
             CreateOrganizationAccountRequest(
-                name=name, display_name=display_name if display_name else name
+                name=name,
+                display_name=display_name if display_name else name,
+                deletion_allowed=deletion_allowed,
             )
         ).account_view
         return self._account_from_view(account_view)
