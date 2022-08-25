@@ -17,7 +17,7 @@ ipython.magic("autoreload 2")
 endef
 export autoreloadpy
 
-install: $(INSTALL_STAMP) check-poetry ## Install dependencies
+install: $(INSTALL_STAMP) ## Install dependencies
 $(INSTALL_STAMP): pyproject.toml poetry.lock $(PREREQ_STAMP)
 ifdef IN_VENV
 	$(POETRY) install
