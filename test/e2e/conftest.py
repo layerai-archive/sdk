@@ -151,7 +151,9 @@ async def create_organization_account() -> Account:
     config = await ConfigManager().refresh()
     client = LayerClient(config.client, logger)
     org_account_name, display_name = pseudo_random_account_name()
-    account = client.account.create_organization_account(org_account_name, display_name)
+    account = client.account.create_organization_account(
+        org_account_name, display_name, deletion_allowed=True
+    )
 
     # We need a new token with permissions for the new org account
     # TODO LAY-3583 LAY-3652
