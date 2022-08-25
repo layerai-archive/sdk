@@ -166,4 +166,4 @@ def log(
             dataset_build_id=dataset_build_id,
             logger=logger,
         )
-        log_data_runner.log(data=data, epoch=step, category=category)
+        log_data_runner.log(data=data, x_coordinate=step, category=category)

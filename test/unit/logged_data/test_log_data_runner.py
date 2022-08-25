@@ -1,6 +1,6 @@
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 from unittest.mock import ANY, MagicMock, patch
 from uuid import UUID
 
@@ -9,969 +9,610 @@ import numpy as np
 import pandas as pd
 import PIL.Image
 import pytest
+from layerapi.api.service.logged_data.logged_data_api_pb2 import LogDataResponse
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
-from requests import Session
+from requests import Session  # type: ignore
 
 import layer
-from layer.clients.layer import LayerClient
-from layer.clients.logged_data_service import LoggedDataClient, ModelMetricPoint
+from layer.clients.logged_data_service import LoggedDataClient
+from layer.contracts.logged_data import XCoordinateType
 from layer.logged_data.log_data_runner import LogDataRunner
 
 
+# pylint: disable=too-many-statements
+def generate_test_data() -> List[
+    Tuple[
+        Callable[[Path], Dict[str, Any]],
+        Optional[XCoordinateType],
+        Callable[[Any], Dict[str, Any]],
+    ]
+]:
+    test_data: List[
+        Tuple[
+            Callable[[Path], Dict[str, Any]],
+            Optional[XCoordinateType],
+            Callable[[Any], Dict[str, Any]],
+        ]
+    ] = []
+
+    # string
+    def string_data(tmpdir: Path) -> Dict[str, Any]:
+        return {"tag1": "val1", "tag2": "val2"}
+
+    test_data.append(
+        (
+            # data
+            string_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            lambda val: {
+                "value": val,
+                "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
+            },
+        )
+    )
+
+    # number
+    def number_data(tmpdir: Path) -> Dict[str, Any]:
+        return {"tag1": 1, "tag2": 2.3}
+
+    for x_coordinate_type in list(XCoordinateType):
+        test_data.append(
+            (
+                # data
+                number_data,
+                # x_coordinate_type
+                x_coordinate_type,
+                # expected kwargs
+                lambda val: {
+                    "value": str(val),
+                    "type": LoggedDataType.LOGGED_DATA_TYPE_NUMBER,
+                },
+            )
+        )
+
+    # boolean
+    def boolean_data(tmpdir: Path) -> Dict[str, Any]:
+        return {"tag1": True, "tag2": False}
+
+    test_data.append(
+        (
+            # data
+            boolean_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            lambda val: {
+                "value": str(val),
+                "type": LoggedDataType.LOGGED_DATA_TYPE_BOOLEAN,
+            },
+        )
+    )
+
+    # list
+    def list_data(tmpdir: Path) -> Dict[str, Any]:
+        return {"tag1": [1, 2, "a"], "tag2": ["x", 5.6, ["a", "b"]]}
+
+    test_data.append(
+        (
+            # data
+            list_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            lambda val: {
+                "value": str(val),
+                "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
+            },
+        )
+    )
+
+    # numpy array
+    def numpy_data(tmpdir: Path) -> Dict[str, Any]:
+        return {"tag1": np.array([1, 2]), "tag2": np.array([[1, 2], [3, 4]])}
+
+    test_data.append(
+        (
+            # data
+            numpy_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            lambda val: {
+                "value": str(val.tolist()),
+                "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
+            },
+        )
+    )
+
+    # dict as table
+    def dict_data(tmpdir: Path) -> Dict[str, Any]:
+        return {
+            "tag1": {
+                "tom": 10,
+                "nick": 15,
+                "juli": 14,
+                "jack": [1, 2, 3],
+            }
+        }
+
+    def dict_get_expected(val) -> Any:
+        expected_dataframe = pd.DataFrame(
+            [
+                [k, v if isinstance(v, (float, int, str, bool)) else str(v)]
+                for k, v in val.items()
+            ],
+            columns=["name", "value"],
+        )
+        expected_dataframe = expected_dataframe.set_index("name")
+        expected_dataframe_in_json = expected_dataframe.to_json(orient="table")
+        return {
+            "value": expected_dataframe_in_json,
+            "type": LoggedDataType.LOGGED_DATA_TYPE_TABLE,
+        }
+
+    test_data.append(
+        (
+            # data
+            dict_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            dict_get_expected,
+        )
+    )
+
+    # pandas dataframe
+    def pandas_data(tmpdir: Path) -> Dict[str, Any]:
+        dataframe = pd.DataFrame(
+            [["tom", 10], ["nick", 15], ["juli", 14]], columns=["Name", "Age"]
+        )
+        return {"tag1": dataframe}
+
+    test_data.append(
+        (
+            # data
+            pandas_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            lambda val: {
+                "value": val.to_json(orient="table"),
+                "type": LoggedDataType.LOGGED_DATA_TYPE_TABLE,
+            },
+        )
+    )
+
+    #####################
+    # images
+    #####################
+    def expected_image(val: Any) -> Dict[str, Any]:
+        return {"type": LoggedDataType.LOGGED_DATA_TYPE_IMAGE}
+
+    # PIL image
+    def pil_image_data(tmpdir: Path) -> Dict[str, Any]:
+        image_data = np.random.rand(400, 400, 3) * 255
+        image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
+        return {"tag1": image}
+
+    for x_coordinate_type in list(XCoordinateType):
+        test_data.append(
+            (
+                # data
+                pil_image_data,
+                # x_coordinate_type
+                x_coordinate_type,
+                # expected kwargs
+                expected_image,
+            )
+        )
+
+    # nparray image
+    def nparray_image_data(tmpdir: Path) -> Dict[str, Any]:
+        img = np.zeros((100, 100, 3))
+        img[:, :, 0] = np.arange(0, 10000).reshape(100, 100) / 10000
+        img[:, :, 1] = 1 - np.arange(0, 10000).reshape(100, 100) / 10000
+        image = layer.Image(img, format="HWC")
+        return {"tag1": image}
+
+    test_data.append(
+        (
+            # data
+            nparray_image_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            expected_image,
+        )
+    )
+
+    # hw nparray image
+    def hw_nparray_image_data(tmpdir: Path) -> Dict[str, Any]:
+        # gradient between 0 and 1 for 256*256
+        nparray = np.linspace(0, 1, 256 * 256)
+        # reshape to 2d
+        img = np.reshape(nparray, (256, 256))
+        image = layer.Image(img, format="HW")
+        return {"tag1": image}
+
+    test_data.append(
+        (
+            # data
+            hw_nparray_image_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            expected_image,
+        )
+    )
+
+    # torch tensor image
+    def torch_image_data(tmpdir: Path) -> Dict[str, Any]:
+        import torch
+
+        img_width = 480
+        img_height = 640
+        image_tensor = torch.rand((img_height, img_width, 3))
+        image = layer.Image(image_tensor, format="HWC")
+        image_object = image.get_image()
+        assert isinstance(image_object, PIL.Image.Image)
+        assert image_object.width == img_width
+        assert image_object.height == img_height
+        return {"tag1": image}
+
+    test_data.append(
+        (
+            # data
+            torch_image_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            expected_image,
+        )
+    )
+
+    # hw torch tensor image
+    def hw_torch_image_data(tmpdir: Path) -> Dict[str, Any]:
+        from torchvision import transforms
+
+        image_data = np.random.rand(400, 400, 3) * 255
+        pil_img = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
+        tensor_image = transforms.ToTensor()(pil_img)
+        image = layer.Image(tensor_image, format="HW")
+        return {"tag1": image}
+
+    test_data.append(
+        (
+            # data
+            hw_torch_image_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            expected_image,
+        )
+    )
+
+    # matplotlib figure
+    def matplotlib_figure_data(tmpdir: Path) -> Dict[str, Any]:
+        # Clean up state for parametrized test
+        plt.clf()
+        plt.cla()
+        plt.close("all")
+        # Data for plotting
+        t = np.arange(0.0, 2.0, 0.01)
+        s = 1 + np.sin(2 * np.pi * t)
+
+        fig, ax = plt.subplots()
+        ax.plot(t, s)
+
+        ax.set(
+            xlabel="time (s)",
+            ylabel="voltage (mV)",
+            title="About as simple as it gets, folks",
+        )
+        ax.grid()
+        return {"tag1": fig}
+
+    test_data.append(
+        (
+            # data
+            matplotlib_figure_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            expected_image,
+        )
+    )
+
+    # image by path
+    def image_path_data(tmpdir: Path) -> Dict[str, Any]:
+        image_data = np.random.rand(100, 100, 3) * 255
+        image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
+        path = tmpdir / "image.png"
+        image.save(path)
+        return {"tag1": path}
+
+    test_data.append(
+        (
+            # data
+            image_path_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            expected_image,
+        )
+    )
+
+    #####################
+    # videos
+    #####################
+    def expected_video(val: Any) -> Dict[str, Any]:
+        return {"type": LoggedDataType.LOGGED_DATA_TYPE_VIDEO}
+
+    # torch tensor video
+    def torch_tensor_video_data(tmpdir: Path) -> Dict[str, Any]:
+        import torch
+
+        video_width = 480
+        video_height = 640
+        video_tensor = torch.rand((10, 3, video_width, video_height))
+        video = layer.Video(video_tensor)
+        video_object = video.get_video()
+        assert video_object is not None
+
+        return {"tag1": video}
+
+    test_data.append(
+        (
+            # data
+            torch_tensor_video_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            expected_video,
+        )
+    )
+
+    # video by path
+    def video_path_data(tmpdir: Path) -> Dict[str, Any]:
+        path = tmpdir / "video.mp4"
+        path.touch()
+        return {"tag1": path}
+
+    test_data.append(
+        (
+            # data
+            video_path_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            expected_video,
+        )
+    )
+
+    # markdown
+    def markdown_data(tmpdir: Path) -> Dict[str, Any]:
+        md = layer.Markdown("# Foo bar")
+        return {"tag1": md}
+
+    test_data.append(
+        (
+            # data
+            markdown_data,
+            # x_coordinate_type
+            None,
+            # expected kwargs
+            lambda val: {
+                "value": val.data,
+                "type": LoggedDataType.LOGGED_DATA_TYPE_MARKDOWN,
+            },
+        )
+    )
+
+    return test_data
+
+
 @pytest.mark.parametrize(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
-def test_given_runner_when_log_data_with_string_value_then_calls_log_text_data(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag1 = "string-tag"
-    string_value1 = "string-value"
-    tag2 = "string-tag"
-    string_value2 = "string-value"
-
-    # when
-    runner.log({tag1: string_value1, tag2: string_value2}, category="category")
-
-    # then
-    logged_data_client.log_text_data.assert_any_call(
-        train_id=train_id,
-        tag=tag1,
-        data=string_value1,
-        dataset_build_id=dataset_build_id,
-        category="category",
-    )
-    logged_data_client.log_text_data.assert_any_call(
-        train_id=train_id,
-        tag=tag2,
-        data=string_value2,
-        dataset_build_id=dataset_build_id,
-        category="category",
-    )
-
-
+@pytest.mark.parametrize(("group_tag",), [(None,), ("group",)])
+@pytest.mark.parametrize(("category",), [(None,), ("category",)])
 @pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+    ("get_data", "x_coordinate_type", "get_expected_kwargs"),
+    generate_test_data(),
 )
-def test_given_runner_when_log_data_with_list_value_then_calls_log_text_data(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+@patch.object(Session, "put")
+def test_log_data(
+    mock_put: MagicMock,
+    tmp_path: Path,
+    train_id: Optional[UUID],
+    dataset_build_id: Optional[UUID],
+    group_tag: Optional[str],
+    category: Optional[str],
+    get_data: Callable[[Path], Mapping[str, Any]],
+    x_coordinate_type: Optional[XCoordinateType],
+    get_expected_kwargs: Callable[[Any], Mapping[str, Any]],
 ) -> None:
-    # given
     logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
+    logged_data_client.log_data.return_value = MagicMock(
+        spec=LogDataResponse,
+        s3_path="http://path/for/upload",
     )
 
     runner = LogDataRunner(
-        client=client.logged_data_service_client,
+        client=logged_data_client,
+        dataset_build_id=dataset_build_id,
         train_id=train_id,
         logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag1 = "list-tag-1"
-    value1 = [1, 2, "a"]
-    tag2 = "list-tag-2"
-    value2 = ["x", 5.6, ["a", "b"]]
-
-    # when
-    runner.log({tag1: value1, tag2: value2}, category="category")
-
-    # then
-    logged_data_client.log_text_data.assert_any_call(
-        train_id=train_id,
-        tag=tag1,
-        data=str(value1),
-        dataset_build_id=dataset_build_id,
-        category="category",
-    )
-    logged_data_client.log_text_data.assert_any_call(
-        train_id=train_id,
-        tag=tag2,
-        data=str(value2),
-        dataset_build_id=dataset_build_id,
-        category="category",
     )
 
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-def test_given_runner_when_log_data_with_numpy_array_value_then_calls_log_text_data(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
     # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag1 = "numpy-tag-1"
-    value1 = np.array([1, 2])
-    tag2 = "numpy-tag-2"
-    value2 = np.array([[1, 2], [3, 4]])
-
-    # when
-    runner.log({tag1: value1, tag2: value2}, category="category")
-
-    # then
-    logged_data_client.log_text_data.assert_any_call(
-        train_id=train_id,
-        tag=tag1,
-        data=str([1, 2]),
-        dataset_build_id=dataset_build_id,
-        category="category",
-    )
-    logged_data_client.log_text_data.assert_any_call(
-        train_id=train_id,
-        tag=tag2,
-        data=str([[1, 2], [3, 4]]),
-        dataset_build_id=dataset_build_id,
-        category="category",
-    )
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-def test_given_runner_when_log_data_with_bool_value_then_calls_log_boolean_data(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "bool-tag"
-    boolean_value = False
-
-    # when
-    runner.log({tag: boolean_value}, category="category")
-
-    # then
-    logged_data_client.log_boolean_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        data=str(boolean_value),
-        dataset_build_id=dataset_build_id,
-        category="category",
-    )
-
-
-def test_given_runner_when_log_numeric_value_without_epoch_then_calls_log_number() -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    train_id = uuid.uuid4()
-    runner = LogDataRunner(
-        client=client.logged_data_service_client, train_id=train_id, logger=None
-    )
-    tag1 = "numeric-value-tag-1"
-    numeric_value1 = 2.3
-
-    # when
-    runner.log({tag1: numeric_value1}, category="category")
-
-    # then
-    logged_data_client.log_numeric_data.assert_any_call(
-        train_id=train_id,
-        tag=tag1,
-        data=str(numeric_value1),
-        dataset_build_id=None,
-        category="category",
-    )
-
-
-def test_given_runner_when_log_numeric_value_with_epoch_then_calls_log_metric() -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    train_id = uuid.uuid4()
-    runner = LogDataRunner(
-        client=client.logged_data_service_client, train_id=train_id, logger=None
-    )
-    tag1 = "numeric-value-tag-1"
-    numeric_value1 = 2.3
-    tag2 = "numeric-value-tag-2"
-    numeric_value2 = 2.5
-    epoch = 123
-
-    # when
-    runner.log(
-        {tag1: numeric_value1, tag2: numeric_value2}, epoch=epoch, category="category"
-    )
-
-    # then
-    logged_data_client.log_model_metric.assert_any_call(
-        train_id=train_id,
-        tag=tag1,
-        points=[ModelMetricPoint(epoch=epoch, value=numeric_value1)],
-        metric_group_id=ANY,
-        category="category",
-    )
-
-    logged_data_client.log_model_metric.assert_any_call(
-        train_id=train_id,
-        tag=tag2,
-        points=[ModelMetricPoint(epoch=epoch, value=numeric_value2)],
-        metric_group_id=ANY,
-        category="category",
-    )
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-def test_given_runner_when_log_dict_then_calls_log_table(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "dict-tag"
-    parameters = {
-        "tom": 10,
-        "nick": 15,
-        "juli": 14,
-        "jack": [1, 2, 3],
+    data = get_data(tmp_path)
+    log_kwargs: Dict[str, Any] = {
+        "group_tag": group_tag,
+        "category": category,
     }
+    if x_coordinate_type and x_coordinate_type != XCoordinateType.INVALID:
+        log_kwargs.update(
+            {
+                "x_coordinate": 123,
+                "x_coordinate_type": x_coordinate_type,
+            }
+        )
 
     # when
-    runner.log({tag: parameters}, category="category")
+    runner.log(data, **log_kwargs)
 
     # then
-    expected_dataframe = pd.DataFrame(
-        [["tom", 10], ["nick", 15], ["juli", 14], ["jack", "[1, 2, 3]"]],
-        columns=["name", "value"],
+    for tag, value in data.items():
+        expected_kwargs = {
+            "tag": tag,
+            **get_expected_kwargs(value),
+        }
+        logged_data_client.log_data.assert_any_call(
+            dataset_build_id=dataset_build_id,
+            train_id=train_id,
+            **log_kwargs,
+            **expected_kwargs,
+        )
+        # calls either need to set value directly or upload the value
+        if "value" not in expected_kwargs:
+            mock_put.assert_called_with("http://path/for/upload", data=ANY)
+
+
+def generate_test_error_data() -> List[
+    Tuple[
+        Callable[[Path], Dict[str, Any]],
+        Any,
+        str,
+    ]
+]:
+    test_data: List[
+        Tuple[
+            Callable[[Path], Dict[str, Any]],
+            Any,
+            str,
+        ]
+    ] = []
+
+    # invalid dict
+    def invalid_dict(tmpdir: Path) -> Dict[str, Any]:
+        return {"data": {"tag1": {10: 20}}}
+
+    test_data.append(
+        (
+            # kwargs
+            invalid_dict,
+            # expected error
+            ValueError,
+            # expected error pattern
+            r".*Unsupported value type -> <class 'dict'>.*",
+        )
     )
-    expected_dataframe = expected_dataframe.set_index("name")
-    expected_dataframe_in_json = expected_dataframe.to_json(orient="table")
-    logged_data_client.log_table_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        data=expected_dataframe_in_json,
-        dataset_build_id=dataset_build_id,
-        category="category",
+
+    # more than 1000 rows
+    def large_dataframe(tmpdir: Path) -> Dict[str, Any]:
+        dataframe = pd.DataFrame(index=np.arange(1001), columns=np.arange(1))
+        return {"data": {"tag1": dataframe}}
+
+    test_data.append(
+        (
+            # kwargs
+            large_dataframe,
+            # expected error
+            ValueError,
+            # expected error pattern
+            r".*DataFrame rows size cannot exceed 1000.*",
+        )
     )
+
+    # larger than 1 mb
+    def large_image(tmpdir: Path) -> Dict[str, Any]:
+        image_data = np.random.rand(1000, 1000, 3) * 255
+        image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
+        return {"data": {"tag1": image}}
+
+    test_data.append(
+        (
+            # kwargs
+            large_image,
+            # expected error
+            ValueError,
+            # expected error pattern
+            r".*Image size cannot exceed 1MB.*",
+        )
+    )
+
+    # invalid x coordinate
+    def invalid_x_coordinate_negative(tmpdir: Path) -> Dict[str, Any]:
+        return {"data": {"tag1": 1}, "x_coordinate": -1}
+
+    test_data.append(
+        (
+            # kwargs
+            invalid_x_coordinate_negative,
+            # expected error
+            ValueError,
+            # expected error pattern
+            r".*can only be a non-negative integer, given value: -1.*",
+        )
+    )
+
+    def invalid_x_coordinate_non_integer(tmpdir: Path) -> Dict[str, Any]:
+        return {"data": {"tag1": 1}, "x_coordinate": "xyz"}
+
+    test_data.append(
+        (
+            # kwargs
+            invalid_x_coordinate_non_integer,
+            # expected error
+            ValueError,
+            # expected error pattern
+            r".*can only be a non-negative integer, given value: xyz.*",
+        )
+    )
+
+    return test_data
 
 
 @pytest.mark.parametrize(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
-def test_given_runner_when_log_invalid_dict_then_raises(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "dict-tag"
-
-    with pytest.raises(
-        ValueError, match=r".*Unsupported value type -> <class 'dict'>.*"
-    ):
-        runner.log({tag: {10: 20}})
-
-
 @pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-def test_given_runner_when_log_pandas_dataframe_then_calls_log_table(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "pandas-dataframe-tag"
-    dataframe = pd.DataFrame(
-        [["tom", 10], ["nick", 15], ["juli", 14]], columns=["Name", "Age"]
-    )
-    dataframe_in_json = dataframe.to_json(orient="table")
-    # when
-    runner.log({tag: dataframe}, category="category")
-
-    # then
-    logged_data_client.log_table_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        data=dataframe_in_json,
-        dataset_build_id=dataset_build_id,
-        category="category",
-    )
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-def test_given_runner_when_log_dataframe_bigger_than_1000_rows_then_raises_error(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "pandas-dataframe-tag"
-    dataframe = pd.DataFrame(index=np.arange(1001), columns=np.arange(1))
-
-    # when
-    with pytest.raises(ValueError, match=r".*DataFrame rows size cannot exceed 1000.*"):
-        runner.log({tag: dataframe})
-
-    # then
-    logged_data_client.log_table_data.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_ntchw_torch_tensor_video_then_calls_log_binary(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-
-    import torch
-
-    video_width = 480
-    video_height = 640
-    video_tensor = torch.rand((10, 3, video_width, video_height))
-    tag = "tensor-video-tag"
-    video = layer.Video(video_tensor)
-    video_object = video.get_video()
-    assert video_object is not None
-
-    # when
-    runner.log({tag: video}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_VIDEO,
-        epoch=None,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
+    ("get_kwargs", "expected_error", "expected_error_pattern"),
+    generate_test_error_data(),
 )
 @patch.object(Session, "put")
-def test_given_runner_when_log_nparray_image_then_calls_log_binary(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
+def test_log_data_raises_error(
+    mock_put: MagicMock,
+    tmp_path: Path,
+    train_id: Optional[UUID],
+    dataset_build_id: Optional[UUID],
+    get_kwargs: Callable[[Path], Mapping[str, Any]],
+    expected_error: Any,
+    expected_error_pattern: str,
 ) -> None:
-    # given
     logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
+    logged_data_client.log_data.return_value = MagicMock(
+        spec=LogDataResponse,
+        s3_path="http://path/for/upload",
     )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
+
     runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
+        client=logged_data_client,
         dataset_build_id=dataset_build_id,
-    )
-
-    img = np.zeros((100, 100, 3))
-    img[:, :, 0] = np.arange(0, 10000).reshape(100, 100) / 10000
-    img[:, :, 1] = 1 - np.arange(0, 10000).reshape(100, 100) / 10000
-    tag = "nparray-image-tag"
-    image = layer.Image(img, format="HWC")
-
-    # when
-    runner.log({tag: image}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        epoch=None,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_hwc_torch_tensor_image_then_calls_log_binary(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-
-    import torch
-
-    img_width = 480
-    img_height = 640
-    image_tensor = torch.rand((img_height, img_width, 3))
-    tag = "nparray-image-tag"
-    image = layer.Image(image_tensor, format="HWC")
-    image_object = image.get_image()
-    assert isinstance(image_object, PIL.Image.Image)
-    assert image_object.width == img_width
-    assert image_object.height == img_height
-
-    # when
-    runner.log({tag: image}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        epoch=None,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_hw_nparray_image_then_calls_log_binary(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-
-    # gradient between 0 and 1 for 256*256
-    array = np.linspace(0, 1, 256 * 256)
-    # reshape to 2d
-    img = np.reshape(array, (256, 256))
-    tag = "nparray-image-tag"
-    image = layer.Image(img, format="HW")
-
-    # when
-    runner.log({tag: image}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        epoch=None,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_hw_torch_tensor_image_then_calls_log_binary(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-
-    from torchvision import transforms
-
-    image_data = np.random.rand(400, 400, 3) * 255
-    pil_img = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
-    tensor_image = transforms.ToTensor()(pil_img)
-
-    tag = "torch-tensor-image-tag"
-    image = layer.Image(tensor_image, format="HW")
-
-    # when
-    runner.log({tag: image}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        epoch=None,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_image_then_calls_log_binary(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "pillow-image-tag"
-    image_data = np.random.rand(400, 400, 3) * 255
-    image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
-
-    # when
-    runner.log({tag: image}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        epoch=None,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@patch.object(Session, "put")
-def test_given_runner_when_log_image_with_step_for_model_train_then_calls_log_binary(
-    mock_put,
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    train_id = uuid.uuid4()
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
         train_id=train_id,
         logger=None,
     )
-    tag = "pillow-image-tag"
-    image_data = np.random.rand(400, 400, 3) * 255
-    image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
 
-    # when
-    runner.log({tag: image}, epoch=123, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        dataset_build_id=None,
-        tag=tag,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        epoch=123,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_image_bigger_than_1_mb_then_raises_error(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
     # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "pillow-big-image-tag"
-    image_data = np.random.rand(1000, 1000, 3) * 255
-    image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
+    kwargs = get_kwargs(tmp_path)
 
     # when
-    with pytest.raises(ValueError, match=r".*Image size cannot exceed 1MB.*"):
-        runner.log({tag: image})
+    with pytest.raises(expected_error, match=expected_error_pattern):
+        runner.log(**kwargs)
 
     # then
-    logged_data_client.log_binary_data.assert_not_called()
+    logged_data_client.log_data.assert_not_called()
     mock_put.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_matplotlib_figure_then_calls_log_binary(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "matplotlib-image-tag"
-    # Data for plotting
-    t = np.arange(0.0, 2.0, 0.01)
-    s = 1 + np.sin(2 * np.pi * t)
-
-    fig, ax = plt.subplots()
-    ax.plot(t, s)
-
-    ax.set(
-        xlabel="time (s)",
-        ylabel="voltage (mV)",
-        title="About as simple as it gets, folks",
-    )
-    ax.grid()
-
-    # when
-    runner.log({tag: fig}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_matplotlib_module_then_calls_log_binary(
-    mock_put, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # Clean up state for parametrized test
-    plt.clf()
-    plt.cla()
-    plt.close("all")
-
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "matplotlib-image-tag"
-    # when
-    with pytest.raises(
-        ValueError, match=r".*No figures in the current pyplot state!.*"
-    ):
-        runner.log({tag: plt})
-
-    # then
-    logged_data_client.log_binary_data.assert_not_called()
-
-    # Data for plotting
-    t = np.arange(0.0, 2.0, 0.01)
-    s = 1 + np.sin(2 * np.pi * t)
-
-    unused_fig, ax = plt.subplots()
-    ax.plot(t, s)
-
-    ax.set(
-        xlabel="time (s)",
-        ylabel="voltage (mV)",
-        title="About as simple as it gets, folks",
-    )
-    ax.grid()
-
-    # when
-    runner.log({tag: plt}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_image_by_path_then_calls_log_binary(
-    mock_put, tmpdir, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "image-by-path"
-    image_data = np.random.rand(100, 100, 3) * 255
-    image = PIL.Image.fromarray(image_data.astype("uint8")).convert("RGBA")
-    path = tmpdir.join("image.png")
-    image.save(str(path))
-
-    # when
-    runner.log({tag: Path(str(path))}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        epoch=None,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-@patch.object(Session, "put")
-def test_given_runner_when_log_video_by_path_then_calls_log_binary(
-    mock_put, tmpdir, train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    logged_data_client.log_binary_data.return_value = "http://path/for/upload"
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "video-by-path"
-    path = tmpdir.join("temp.mp4")
-    Path(str(path)).touch()
-
-    # when
-    runner.log({tag: Path(str(path))}, category="category")
-
-    # then
-    logged_data_client.log_binary_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        dataset_build_id=dataset_build_id,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_VIDEO,
-        epoch=None,
-        category="category",
-    )
-    mock_put.assert_called_with("http://path/for/upload", data=ANY)
-
-
-@pytest.mark.parametrize(
-    ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
-)
-def test_given_runner_when_log_markdown_then_calls_log_markdown(
-    train_id: Optional[UUID], dataset_build_id: Optional[UUID]
-) -> None:
-    # given
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=dataset_build_id,
-    )
-    tag = "markdown-tag"
-    md = layer.Markdown("# Foo bar")
-    # when
-    runner.log({tag: md}, category="category")
-
-    # then
-    logged_data_client.log_markdown_data.assert_called_with(
-        train_id=train_id,
-        tag=tag,
-        data=md.data,
-        dataset_build_id=dataset_build_id,
-        category="category",
-    )
-
-
-def test_given_runner_with_invalid_epoch_then_raises() -> None:
-    logged_data_client = MagicMock(spec=LoggedDataClient)
-    client = MagicMock(
-        set_spec=LayerClient,
-        logged_data_service_client=logged_data_client,
-    )
-    train_id = uuid.uuid4()
-    runner = LogDataRunner(
-        client=client.logged_data_service_client,
-        train_id=train_id,
-        logger=None,
-        dataset_build_id=None,
-    )
-
-    with pytest.raises(
-        ValueError, match=r".*can only be a non-negative integer, given value: -1.*"
-    ):
-        runner.log({"foo": {10: 20}}, epoch=-1)
-
-    with pytest.raises(
-        ValueError, match=r".*can only be a non-negative integer, given value: xyz.*"
-    ):
-        runner.log({"foo": {10: 20}}, epoch="xyz")

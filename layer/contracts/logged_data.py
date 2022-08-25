@@ -82,7 +82,7 @@ from dataclasses import dataclass
 from enum import Enum, unique
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Union
 
 import numpy as np
 import pandas
@@ -375,18 +375,19 @@ class LoggedDataType(Enum):
     DIRECTORY = 10
 
 
+@unique
+class XCoordinateType(Enum):
+    INVALID = 0
+    STEP = 1
+    TIMESTAMP = 2
+
+
 @dataclass(frozen=True)
 class LoggedData:
     logged_data_type: LoggedDataType
     tag: str
-    data: str
-    epoched_data: Dict[int, str]
-
-
-@dataclass(frozen=True)
-class ModelMetricPoint:
-    epoch: int
-    value: float
+    value: str
+    values_with_coordinates: Dict[int, str]
 
 
 @dataclass(frozen=True)
@@ -404,9 +405,9 @@ class Markdown:
 
 
 class LoggedDataObject:
-    def __init__(self, logged_data: LoggedData, epoch: Optional[int] = None):
+    def __init__(self, logged_data: LoggedData, x_coordinate: Optional[int] = None):
         self._logged_data = logged_data
-        self._epoch = epoch
+        self._x_coordinate = x_coordinate
 
     @staticmethod
     def _download_object_to(url: str, file_path: Path) -> None:
@@ -419,20 +420,20 @@ class LoggedDataObject:
         To be called for string, numeric, boolean, image, markdown and table values.
         """
         if self.is_table():
-            return pandas.read_json(self._logged_data.data, orient="table")
+            return pandas.read_json(self._logged_data.value, orient="table")
         elif self.is_number():
-            return float(self._logged_data.data)
+            return float(self._logged_data.value)
         elif self.is_text():
-            return self._logged_data.data
+            return self._logged_data.value
         elif self.is_boolean():
-            return bool(self._logged_data.data)
+            return bool(self._logged_data.value)
         elif self.is_image():
             from PIL.Image import open as pil_open
 
             url = (
-                self._logged_data.data
-                if self._epoch is None
-                else self._logged_data.epoched_data[self._epoch]
+                self._logged_data.value
+                if self._x_coordinate is None
+                else self._logged_data.values_with_coordinates[self._x_coordinate]
             )
             with tempfile.NamedTemporaryFile() as temp_file:
                 self._download_object_to(url, Path(temp_file.name))
@@ -440,7 +441,7 @@ class LoggedDataObject:
                 image.load()
                 return image
         elif self.is_markdown():
-            return self._logged_data.data
+            return self._logged_data.value
         else:
             raise Exception(
                 f"Use download_to() method for {self._logged_data.logged_data_type} type."
@@ -451,10 +452,10 @@ class LoggedDataObject:
         To be called for file, video and directory logged data.
         """
         if self.is_blob() or self.is_video() or self.is_file():
-            self._download_object_to(self._logged_data.data, path)
+            self._download_object_to(self._logged_data.value, path)
         elif self.is_directory():
             with tempfile.NamedTemporaryFile() as temp_file:
-                self._download_object_to(self._logged_data.data, Path(temp_file.name))
+                self._download_object_to(self._logged_data.value, Path(temp_file.name))
                 shutil.unpack_archive(temp_file.name, extract_dir=path, format="zip")
         else:
             raise Exception(
@@ -510,7 +511,7 @@ LogValueType = Union[
     Markdown,
 ]
 
-LogDataType = Dict[
+LogDataType = Mapping[
     str,
     LogValueType,
 ]
