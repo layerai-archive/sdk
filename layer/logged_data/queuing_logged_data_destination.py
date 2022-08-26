@@ -9,6 +9,7 @@ from layer.logged_data.data_logging_request import DataLoggingRequest
 from layer.logged_data.file_uploader import FileUploader
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 
+
 WAIT_INTERVAL_SECONDS = 1
 LOGGING_TIMEOUT = 300
 
@@ -48,7 +49,7 @@ class QueueingLoggedDataDestination(LoggedDataDestination):
             )
         )
 
-    def get_logging_errors(self) -> Optional[str]:
+    def close_and_get_errors(self) -> Optional[str]:
         self._exit()
         return (
             None

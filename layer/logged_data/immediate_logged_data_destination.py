@@ -32,5 +32,5 @@ class ImmediateLoggedDataDestination(LoggedDataDestination):
             self._files_storage, lambda: func(self.logged_data_client), data
         ).execute()
 
-    def get_logging_errors(self) -> Optional[str]:
+    def close_and_get_errors(self) -> Optional[str]:
         pass

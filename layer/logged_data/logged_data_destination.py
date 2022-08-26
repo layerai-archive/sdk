@@ -29,5 +29,5 @@ class LoggedDataDestination(ABC):
         pass
 
     @abstractmethod
-    def get_logging_errors(self) -> Optional[str]:
+    def close_and_get_errors(self) -> Optional[str]:
         pass
