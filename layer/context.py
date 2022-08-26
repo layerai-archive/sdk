@@ -5,6 +5,7 @@ from yarl import URL
 
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import DatasetBuild
+from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.tracker.ui_progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
 
@@ -45,6 +46,7 @@ class Context:
         self,
         url: URL,
         asset_path: AssetPath,
+        logged_data_destination: Optional[LoggedDataDestination] = None,
         tracker: Optional[RunProgressTracker] = None,
         train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
@@ -63,6 +65,9 @@ class Context:
         self._asset_type = asset_path.asset_type
         self._train: Optional[BaseTrain] = train
         self._dataset_build: Optional[DatasetBuild] = dataset_build
+        self._logged_data_destination: Optional[
+            LoggedDataDestination
+        ] = logged_data_destination
         self._tracker: Optional[RunProgressTracker] = tracker
 
     def url(self) -> URL:
@@ -113,6 +118,9 @@ class Context:
 
     def asset_name(self) -> str:
         return self._asset_name
+
+    def logged_data_destination(self) -> Optional[LoggedDataDestination]:
+        return self._logged_data_destination
 
     def asset_type(self) -> AssetType:
         return self._asset_type

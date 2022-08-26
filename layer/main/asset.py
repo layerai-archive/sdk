@@ -19,6 +19,12 @@ from layer.projects.utils import get_current_project_full_name
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
+from ..logged_data.immediate_logged_data_destination import (
+    ImmediateLoggedDataDestination,
+)
+from ..logged_data.read_only_logged_data_destination import (
+    ReadOnlyLoggedDataDestination,
+)
 from .utils import sdk_function
 
 
@@ -77,6 +83,9 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                     url=config.url,
                     asset_path=asset_path,
                     tracker=tracker,
+                    logged_data_destination=ReadOnlyLoggedDataDestination(
+                        client.logged_data_service_client
+                    ),
                 ) as context:
                     with tracker.track():
                         dataset = _ui_progress_with_tracker(
@@ -104,7 +113,9 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
         pb_build = client.data_catalog.get_build_by_path(path=asset_path.path())
         build_id: str = pb_build.id.value
         log_data_runner = LogDataRunner(
-            client=client.logged_data_service_client,
+            logged_data_destination=ReadOnlyLoggedDataDestination(
+                client.logged_data_service_client
+            ),
             dataset_build_id=uuid.UUID(build_id),
         )
         dataset = Dataset(
@@ -151,10 +162,27 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         within_run = (
             True if context else False
         )  # if layer.get_model is called within a @model decorated func of not
+        maybe_logged_data_destination = (
+            context.logged_data_destination() if context else None
+        )
+        logged_data_destination = (
+            maybe_logged_data_destination
+            if (maybe_logged_data_destination is not None)
+            # this is temporary fallback, in the future, if we're within run there will be logged_data_destination
+            # provided from context
+            else (
+                ReadOnlyLoggedDataDestination(client.logged_data_service_client)
+                if not within_run
+                else ImmediateLoggedDataDestination(client.logged_data_service_client)
+            )
+        )
         model = client.model_catalog.load_model_by_path(path=asset_path.path())
+
         model.add_log_data_runner(
             LogDataRunner(
-                client.logged_data_service_client, train_id=model.id, logger=logger
+                train_id=model.id,
+                logger=logger,
+                logged_data_destination=logged_data_destination,
             )
         )
         from_cache = not no_cache and is_cached(model)
@@ -173,6 +201,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
                 url=config.url,
                 asset_path=asset_path,
                 tracker=tracker,
+                logged_data_destination=logged_data_destination,
             ) as context:
                 with tracker.track():
                     model = _ui_progress_with_tracker(

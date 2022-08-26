@@ -9,10 +9,8 @@ from uuid import UUID
 
 import numpy as np
 import pandas as pd
-import requests  # type: ignore
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 
-from layer.clients.logged_data_service import LoggedDataClient
 from layer.contracts.logged_data import (
     Image,
     LogDataType,
@@ -22,6 +20,7 @@ from layer.contracts.logged_data import (
     XCoordinateType,
 )
 
+from .logged_data_destination import LoggedDataDestination
 from .utils import get_base_module_list, has_allowed_extension
 
 
@@ -33,29 +32,19 @@ if TYPE_CHECKING:
 class LogDataRunner:
     def __init__(
         self,
-        client: LoggedDataClient,
+        logged_data_destination: LoggedDataDestination,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
         logger: Optional[Logger] = None,
     ):
         assert bool(train_id) ^ bool(dataset_build_id)
-        self._client = client
         self._train_id = train_id
         self._dataset_build_id = dataset_build_id
         self._logger = logger
-
-        retry_strategy = requests.packages.urllib3.util.retry.Retry(
-            total=5,
-            backoff_factor=1,
-            status_forcelist=[408, 429],  # timeout  # too many requests
-        )
-        adapter = requests.adapters.HTTPAdapter(max_retries=retry_strategy)
-
-        self._session = requests.Session()
-        self._session.mount("https://", adapter=adapter)
+        self._logged_data_destination = logged_data_destination
 
     def get_logged_data(self, tag: str) -> LoggedData:
-        return self._client.get_logged_data(
+        return self._logged_data_destination.get_logged_data(
             tag=tag, train_id=self._train_id, dataset_build_id=self._dataset_build_id
         )
 
@@ -173,16 +162,18 @@ class LogDataRunner:
     def _log_simple_data(
         self, value: str, type: "LoggedDataType.V", **kwargs: Any
     ) -> None:
-        self._client.log_data(
-            value=value,
-            type=type,
-            **kwargs,
+        self._logged_data_destination.receive(
+            func=lambda client: client.log_data(
+                value=value,
+                type=type,
+                **kwargs,
+            )
         )
 
     def _log_binary(self, value: Any, type: "LoggedDataType.V", **kwargs: Any) -> None:
-        presigned_url = self._client.log_data(type=type, **kwargs).s3_path
-        resp = self._session.put(presigned_url, data=value)
-        resp.raise_for_status()
+        self._logged_data_destination.receive(
+            func=lambda client: client.log_data(type=type, **kwargs), data=value
+        )
 
     def _log_binary_from_path(
         self, path: Path, type: "LoggedDataType.V", max_file_size_mb: int, **kwargs: Any

@@ -50,6 +50,7 @@ class RunProgressTracker(ABC):
         self,
         name: str,
         *,
+        warnings: Optional[str] = None,
         version: Optional[str] = None,
         build_index: Optional[str] = None,
     ) -> None:
@@ -63,6 +64,7 @@ class RunProgressTracker(ABC):
     def mark_model_saved(
         self,
         name: str,
+        warnings: Optional[str] = None,
         version: Optional[str] = None,
         train_index: Optional[str] = None,
     ) -> None:

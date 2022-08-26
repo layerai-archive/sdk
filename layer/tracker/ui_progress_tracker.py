@@ -113,6 +113,7 @@ class UIRunProgressTracker(RunProgressTracker):
         version: Optional[str] = None,
         build_idx: Optional[str] = None,
         error_reason: str = "",
+        warnings: Optional[str] = None,
         description: Optional[str] = None,
         model_transfer_state: Optional[ResourceTransferState] = None,
         dataset_transfer_state: Optional[DatasetTransferState] = None,
@@ -134,6 +135,8 @@ class UIRunProgressTracker(RunProgressTracker):
             asset.build_idx = build_idx
         if error_reason:
             asset.error_reason = error_reason
+        if warnings:
+            asset.warnings = warnings
         if dataset_transfer_state:
             asset.dataset_transfer_state = dataset_transfer_state
         if model_transfer_state:
@@ -247,6 +250,7 @@ class UIRunProgressTracker(RunProgressTracker):
         self,
         name: str,
         *,
+        warnings: Optional[str] = None,
         version: Optional[str] = None,
         build_index: Optional[str] = None,
     ) -> None:
@@ -257,6 +261,7 @@ class UIRunProgressTracker(RunProgressTracker):
             url=self._get_url(AssetType.DATASET, name),
             version=version,
             build_idx=build_index,
+            warnings=warnings,
         )
 
     def mark_model_saving(self, name: str) -> None:
@@ -269,6 +274,7 @@ class UIRunProgressTracker(RunProgressTracker):
     def mark_model_saved(
         self,
         name: str,
+        warnings: Optional[str] = None,
         version: Optional[str] = None,
         train_index: Optional[str] = None,
     ) -> None:
@@ -279,6 +285,7 @@ class UIRunProgressTracker(RunProgressTracker):
             url=self._get_url(AssetType.MODEL, name),
             version=version,
             build_idx=train_index,
+            warnings=warnings,
         )
 
     def mark_model_training(
