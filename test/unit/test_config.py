@@ -255,7 +255,7 @@ class TestIsExecutablesFeatureActive:
     @pytest.mark.parametrize(
         "config_url,flag_enabled",
         [
-            ("https://app.layer.ai", False),
+            ("https://app.layer.ai", True),
             ("https://dev1.layer.ai", True),
             ("https://dev2.layer.ai", True),
             ("https://app.layer.co", True),
@@ -281,3 +281,7 @@ class TestIsExecutablesFeatureActive:
     def test_active_by_env_var(self):
         with patch.dict("os.environ", {"LAYER_EXECUTABLES": "1"}):
             assert is_executables_feature_active()
+
+    def test_disabled_by_env_var(self):
+        with patch.dict("os.environ", {"LAYER_EXECUTABLES": "false"}):
+            assert not is_executables_feature_active()
