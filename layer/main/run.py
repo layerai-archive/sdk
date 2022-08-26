@@ -16,7 +16,6 @@ from layer.global_context import (
 )
 from layer.projects.init_project_runner import InitProjectRunner
 from layer.projects.project_runner import ProjectRunner
-from layer.projects.project_runner_old import ProjectRunner as OldProjectRunner
 from layer.projects.utils import get_current_project_full_name, validate_project_name
 from layer.settings import LayerSettings
 from layer.utils.async_utils import asyncio_run_in_thread
