@@ -24,6 +24,7 @@ from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.runtime_utils import check_and_convert_to_df
 
+from ...logged_data.logged_data_destination import LoggedDataDestination
 from .common import make_runner
 
 
@@ -36,6 +37,7 @@ def _run(
     dataset_definition: FunctionDefinition,
     client: LayerClient,
     tracker: RunProgressTracker,
+    logged_data_destination: LoggedDataDestination,
     fabric: Fabric,
     run_id: str,
 ) -> None:
@@ -60,6 +62,7 @@ def _run(
             id=dataset_build_id, status=DatasetBuildStatus.STARTED
         ),
         tracker=tracker,
+        logged_data_destination=logged_data_destination,
     ):
         if run_id:
             client.flow_manager.update_run_metadata(
@@ -98,7 +101,10 @@ def _run(
         build_id=dataset_build_id,
         progress_callback=transfer_state.increment_num_transferred_rows,
     )
-    tracker.mark_dataset_built(dataset_definition.asset_name)
+    tracker.mark_dataset_built(
+        dataset_definition.asset_name,
+        warnings=logged_data_destination.get_logging_errors(),
+    )
 
     return result
 

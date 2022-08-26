@@ -30,6 +30,7 @@ from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
+from ...logged_data.logged_data_destination import LoggedDataDestination
 from .common import make_runner
 
 
@@ -41,6 +42,7 @@ def _run(
     model_definition: FunctionDefinition,
     client: LayerClient,
     tracker: RunProgressTracker,
+    logged_data_destination: LoggedDataDestination,
     fabric: Fabric,
     run_id: str,
 ) -> None:
@@ -81,6 +83,7 @@ def _run(
         client=client,
         train_context=context,
         tracker=tracker,
+        logged_data_destination=logged_data_destination,
     )
     result = trainer.train()
 
@@ -134,6 +137,7 @@ class ModelTrainer:
     client: LayerClient
     train_context: TrainContext
     tracker: RunProgressTracker
+    logged_data_destination: LoggedDataDestination
 
     def train(self) -> Any:
         self.tracker.mark_model_training(
@@ -182,6 +186,7 @@ class ModelTrainer:
         project_full_name = current_project_full_name()
         if not project_full_name:
             raise Exception("Internal Error: missing current project full name")
+
         with Train(
             layer_client=self.client,
             name=self.train_context.model_name,
@@ -201,6 +206,7 @@ class ModelTrainer:
                 asset_path=asset_path,
                 train=train,
                 tracker=self.tracker,
+                logged_data_destination=self.logged_data_destination,
             ):
                 self._update_train_status(
                     self.train_context.train_id,
@@ -218,6 +224,7 @@ class ModelTrainer:
                 model = train_model_func(
                     *self.train_context.args, **self.train_context.kwargs
                 )
+
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
                     version=train.get_version(),
@@ -236,7 +243,10 @@ class ModelTrainer:
                     self.train_context.train_id,
                     ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
                 )
-                self.tracker.mark_model_saved(self.train_context.model_name)
+                self.tracker.mark_model_saved(
+                    self.train_context.model_name,
+                    warnings=self.logged_data_destination.get_logging_errors(),
+                )
                 return model
 
     def _report_failure(self, stage: str, failure_exc: Exception) -> None:
