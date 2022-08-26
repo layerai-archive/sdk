@@ -14,18 +14,3 @@ from .config import (  # noqa
 )
 from .config_client import ConfigClient  # noqa
 from .config_manager import ConfigManager  # noqa
-
-
-def is_executables_feature_active() -> bool:
-    import os
-
-    if "LAYER_EXECUTABLES" in os.environ:
-        return True
-
-    try:
-        config = ConfigManager().load()
-    except:  # noqa
-        return False
-
-    # enable by default for non production environments
-    return config.url != DEFAULT_URL
