@@ -127,4 +127,4 @@ def test_local_run_without_decorator_succeeds_and_registers_metadata(
     logged_data = client.logged_data_service_client.get_logged_data(
         tag="test_key", train_id=ctx_holder.train_id()
     )
-    assert logged_data.data == "1.5"
+    assert logged_data.value == "1.5"

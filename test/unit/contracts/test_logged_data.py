@@ -19,40 +19,50 @@ def test_logged_data_object_get_dataframe_successfully() -> None:
 
     df = pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]})
     as_json = df.to_json(orient="table")
-    logged_data = LoggedData(LoggedDataType.TABLE, "tag", data=as_json, epoched_data={})
-    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+    logged_data = LoggedData(
+        LoggedDataType.TABLE, "tag", value=as_json, values_with_coordinates={}
+    )
+    logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
     assert logged_data_object.is_table()
     assert df.equals(logged_data_object.value())
 
 
 def test_logged_data_object_get_number_successfully() -> None:
     data = "3.14"
-    logged_data = LoggedData(LoggedDataType.NUMBER, "tag", data=data, epoched_data={})
-    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+    logged_data = LoggedData(
+        LoggedDataType.NUMBER, "tag", value=data, values_with_coordinates={}
+    )
+    logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
     assert logged_data_object.is_number()
     assert logged_data_object.value() == float(data)
 
 
 def test_logged_data_object_get_text_successfully() -> None:
     data = "Some text"
-    logged_data = LoggedData(LoggedDataType.TEXT, "tag", data=data, epoched_data={})
-    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+    logged_data = LoggedData(
+        LoggedDataType.TEXT, "tag", value=data, values_with_coordinates={}
+    )
+    logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
     assert logged_data_object.is_text()
     assert logged_data_object.value() == data
 
 
 def test_logged_data_object_get_markdown_successfully() -> None:
     data = "Some text"
-    logged_data = LoggedData(LoggedDataType.MARKDOWN, "tag", data=data, epoched_data={})
-    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+    logged_data = LoggedData(
+        LoggedDataType.MARKDOWN, "tag", value=data, values_with_coordinates={}
+    )
+    logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
     assert logged_data_object.is_markdown()
     assert logged_data_object.value() == data
 
 
 def test_logged_data_object_get_boolean_successfully() -> None:
     data = "True"
-    logged_data = LoggedData(LoggedDataType.BOOLEAN, "tag", data=data, epoched_data={})
-    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+    logged_data = LoggedData(
+        LoggedDataType.BOOLEAN, "tag", value=data, values_with_coordinates={}
+    )
+    logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
     assert logged_data_object.is_boolean()
     assert logged_data_object.value() is True
 
@@ -65,8 +75,8 @@ def test_logged_data_object_value_raises_exception_for_unsupported_types(
     type: LoggedDataType,
 ) -> None:
     data = "True"
-    logged_data = LoggedData(type, "tag", data=data, epoched_data={})
-    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+    logged_data = LoggedData(type, "tag", value=data, values_with_coordinates={})
+    logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
 
     with pytest.raises(Exception, match=r"Use download_to.*"):
         logged_data_object.value()
@@ -81,9 +91,9 @@ def test_logged_data_object_get_file_successfully() -> None:
         mock_response.content = file_data.encode("utf-8")
         requests_get.return_value = mock_response
         logged_data = LoggedData(
-            LoggedDataType.FILE, "tag", data="url://some", epoched_data={}
+            LoggedDataType.FILE, "tag", value="url://some", values_with_coordinates={}
         )
-        logged_data_object = LoggedDataObject(logged_data, epoch=None)
+        logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
         logged_data_object.download_to(Path(temp_file1.name))
         assert logged_data_object.is_file()
         with open(temp_file1.name, "r") as f_handle:
@@ -110,9 +120,12 @@ def test_logged_data_object_get_directory_successfully() -> None:
             mock_response.content = f_handle.read()
             requests_get.return_value = mock_response
             logged_data = LoggedData(
-                LoggedDataType.DIRECTORY, "tag", data="url://some", epoched_data={}
+                LoggedDataType.DIRECTORY,
+                "tag",
+                value="url://some",
+                values_with_coordinates={},
             )
-            logged_data_object = LoggedDataObject(logged_data, epoch=None)
+            logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
             logged_data_object.download_to(Path(tmp_dir2))
             assert logged_data_object.is_directory()
 
@@ -131,9 +144,9 @@ def test_logged_data_object_get_video_successfully() -> None:
         mock_response.content = file_data.encode("utf-8")
         requests_get.return_value = mock_response
         logged_data = LoggedData(
-            LoggedDataType.VIDEO, "tag", data="url://some", epoched_data={}
+            LoggedDataType.VIDEO, "tag", value="url://some", values_with_coordinates={}
         )
-        logged_data_object = LoggedDataObject(logged_data, epoch=None)
+        logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
         logged_data_object.download_to(Path(temp_file1.name))
         assert logged_data_object.is_video()
         with open(temp_file1.name, "r") as f_handle:
@@ -154,9 +167,12 @@ def test_logged_data_object_get_image_no_epoch_successfully() -> None:
             mock_response.content = f_handle.read()
             requests_get.return_value = mock_response
             logged_data = LoggedData(
-                LoggedDataType.IMAGE, "tag", data="url://some", epoched_data={}
+                LoggedDataType.IMAGE,
+                "tag",
+                value="url://some",
+                values_with_coordinates={},
             )
-            logged_data_object = LoggedDataObject(logged_data, epoch=None)
+            logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
             actual_image = logged_data_object.value()
 
             assert np.array_equal(np.array(expected_image), np.array(actual_image))
@@ -178,10 +194,10 @@ def test_logged_data_object_get_image_with_epoch_successfully() -> None:
             logged_data = LoggedData(
                 LoggedDataType.IMAGE,
                 "tag",
-                data="url://some",
-                epoched_data={3: "url://epoch"},
+                value="url://some",
+                values_with_coordinates={3: "url://epoch"},
             )
-            logged_data_object = LoggedDataObject(logged_data, epoch=3)
+            logged_data_object = LoggedDataObject(logged_data, x_coordinate=3)
             actual_image = logged_data_object.value()
 
             requests_get.assert_called_with("url://epoch")
@@ -203,8 +219,8 @@ def test_logged_data_object_download_to_raises_exception_for_unsupported_types(
     type: LoggedDataType,
 ) -> None:
     data = "True"
-    logged_data = LoggedData(type, "tag", data=data, epoched_data={})
-    logged_data_object = LoggedDataObject(logged_data, epoch=None)
+    logged_data = LoggedData(type, "tag", value=data, values_with_coordinates={})
+    logged_data_object = LoggedDataObject(logged_data, x_coordinate=None)
 
     with pytest.raises(
         Exception, match=r"Use value.*"

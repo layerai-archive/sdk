@@ -44,7 +44,7 @@ def test_logging_in_remote_execution(
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=str_tag, dataset_build_id=first_ds.build.id
     )
-    assert logged_data.data == "bar"
+    assert logged_data.value == "bar"
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == str_tag
 
@@ -85,28 +85,28 @@ def test_scalar_values_logged(
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=str_tag, dataset_build_id=first_ds.build.id
     )
-    assert logged_data.data == "bar"
+    assert logged_data.value == "bar"
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == str_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=int_tag, dataset_build_id=first_ds.build.id
     )
-    assert logged_data.data == "123"
+    assert logged_data.value == "123"
     assert logged_data.logged_data_type == LoggedDataType.NUMBER
     assert logged_data.tag == int_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=bool_tag, dataset_build_id=first_ds.build.id
     )
-    assert logged_data.data == "True"
+    assert logged_data.value == "True"
     assert logged_data.logged_data_type == LoggedDataType.BOOLEAN
     assert logged_data.tag == bool_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=float_tag, dataset_build_id=first_ds.build.id
     )
-    assert logged_data.data == "1.11"
+    assert logged_data.value == "1.11"
     assert logged_data.logged_data_type == LoggedDataType.NUMBER
     assert logged_data.tag == float_tag
 
@@ -143,14 +143,14 @@ def test_list_values_logged(
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=list_tag, dataset_build_id=first_ds.build.id
     )
-    assert logged_data.data == str(["a", "b", "c"])
+    assert logged_data.value == str(["a", "b", "c"])
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == list_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=numpy_tag, dataset_build_id=first_ds.build.id
     )
-    assert logged_data.data == str([1, 2, 3])
+    assert logged_data.value == str([1, 2, 3])
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == numpy_tag
 
@@ -204,7 +204,7 @@ def test_markdown_logged(initialized_project: Project, client: LayerClient):
     )
 
     assert logged_data.logged_data_type == LoggedDataType.MARKDOWN
-    assert logged_data.data == markdown
+    assert logged_data.value == markdown
 
 
 def test_image_and_video_logged(initialized_project: Project, client: LayerClient):
@@ -247,29 +247,29 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=pil_image_tag, dataset_build_id=ds.build.id
     )
-    assert logged_data.data.startswith("https://logged-data--layer")
-    assert logged_data.data.endswith(pil_image_tag)
+    assert logged_data.value.startswith("https://logged-data--layer")
+    assert logged_data.value.endswith(pil_image_tag)
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=image_path_tag, dataset_build_id=ds.build.id
     )
-    assert logged_data.data.startswith("https://logged-data--layer")
-    assert logged_data.data.endswith(image_path_tag)
+    assert logged_data.value.startswith("https://logged-data--layer")
+    assert logged_data.value.endswith(image_path_tag)
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=video_path_tag, dataset_build_id=ds.build.id
     )
-    assert logged_data.data.startswith("https://logged-data--layer")
-    assert logged_data.data.endswith(video_path_tag)
+    assert logged_data.value.startswith("https://logged-data--layer")
+    assert logged_data.value.endswith(video_path_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=pytorch_tensor_video_tag, dataset_build_id=ds.build.id
     )
-    assert logged_data.data.startswith("https://logged-data--layer")
-    assert logged_data.data.endswith(pytorch_tensor_video_tag)
+    assert logged_data.value.startswith("https://logged-data--layer")
+    assert logged_data.value.endswith(pytorch_tensor_video_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
 
     @pip_requirements(packages=["scikit-learn==0.23.2"])
@@ -298,11 +298,19 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
         tag=stepped_pil_image_tab, train_id=UUID(mdl.storage_config.train_id.value)
     )
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
-    # assert len(logged_data.epoched_data) == 2
-    # assert logged_data.epoched_data[4].startswith("https://logged-data--layer")
-    # assert logged_data.epoched_data[4].endswith(f"{stepped_pil_image_tab}/epoch/4")
-    # assert logged_data.epoched_data[5].startswith("https://logged-data--layer")
-    # assert logged_data.epoched_data[5].endswith(f"{stepped_pil_image_tab}/epoch/5")
+    assert len(logged_data.values_with_coordinates) == 2
+    assert logged_data.values_with_coordinates[4].startswith(
+        "https://logged-data--layer"
+    )
+    assert logged_data.values_with_coordinates[4].endswith(
+        f"{stepped_pil_image_tab}/epoch/4"
+    )
+    assert logged_data.values_with_coordinates[5].startswith(
+        "https://logged-data--layer"
+    )
+    assert logged_data.values_with_coordinates[5].endswith(
+        f"{stepped_pil_image_tab}/epoch/5"
+    )
 
 
 def test_file_and_directory_logged(initialized_project: Project, client: LayerClient):
@@ -332,15 +340,15 @@ def test_file_and_directory_logged(initialized_project: Project, client: LayerCl
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=file_tag, dataset_build_id=ds.build.id
     )
-    assert logged_data.data.startswith("https://logged-data--layer")
-    assert logged_data.data.endswith(file_tag)
+    assert logged_data.value.startswith("https://logged-data--layer")
+    assert logged_data.value.endswith(file_tag)
     assert logged_data.logged_data_type == LoggedDataType.FILE
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=directory_tag, dataset_build_id=ds.build.id
     )
-    assert logged_data.data.startswith("https://logged-data--layer")
-    assert logged_data.data.endswith(directory_tag)
+    assert logged_data.value.startswith("https://logged-data--layer")
+    assert logged_data.value.endswith(directory_tag)
     assert logged_data.logged_data_type == LoggedDataType.DIRECTORY
 
 
@@ -375,16 +383,16 @@ def test_matplotlib_objects_logged(initialized_project: Project, client: LayerCl
         tag=figure_tag, dataset_build_id=ds.build.id
     )
 
-    assert logged_data.data.startswith("https://logged-data--layer")
-    assert logged_data.data.endswith(figure_tag)
+    assert logged_data.value.startswith("https://logged-data--layer")
+    assert logged_data.value.endswith(figure_tag)
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
 
     logged_data = client.logged_data_service_client.get_logged_data(
         tag=plot_tag, dataset_build_id=ds.build.id
     )
 
-    assert logged_data.data.startswith("https://logged-data--layer")
-    assert logged_data.data.endswith(plot_tag)
+    assert logged_data.value.startswith("https://logged-data--layer")
+    assert logged_data.value.endswith(plot_tag)
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
 
 
@@ -414,4 +422,4 @@ def test_metrics_logged(initialized_project: Project, client: LayerClient):
 
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     # value from the last step
-    assert logged_data.data == "value 4"
+    assert logged_data.value == "value 4"

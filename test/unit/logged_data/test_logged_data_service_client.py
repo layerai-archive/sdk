@@ -2,53 +2,46 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
-from layerapi.api.entity.logged_model_metric_pb2 import LoggedModelMetric
-from layerapi.api.ids_pb2 import (
-    LoggedDataId,
-    LoggedMetricGroupId,
-    ModelMetricId,
-    ModelTrainId,
-)
+from layerapi.api.ids_pb2 import LoggedDataId, ModelMetricId, ModelTrainId
 from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     LogDataRequest,
     LogDataResponse,
-    LogModelMetricRequest,
     LogModelMetricResponse,
 )
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
+from layerapi.api.value.logged_data_x_coordinate_type_pb2 import (
+    LoggedDataXCoordinateType,
+)
 
-from layer.clients.logged_data_service import ModelMetricPoint
+from layer.contracts.logged_data import XCoordinateType
 
 from .util import get_logged_data_service_client_with_mocks
 
 
 @pytest.mark.parametrize(
-    ("tag", "text", "fnc_name", "log_type"),
+    ("tag", "value", "log_type"),
     [
         (
             "table-test-tag",
             "{}",
-            "log_table_data",
             LoggedDataType.LOGGED_DATA_TYPE_TABLE,
         ),
-        ("text-test-tag", "abc", "log_text_data", LoggedDataType.LOGGED_DATA_TYPE_TEXT),
+        ("text-test-tag", "abc", LoggedDataType.LOGGED_DATA_TYPE_TEXT),
         (
             "num-test-tag",
             "123",
-            "log_numeric_data",
             LoggedDataType.LOGGED_DATA_TYPE_NUMBER,
         ),
         (
             "bool-test-tag",
             "True",
-            "log_boolean_data",
             LoggedDataType.LOGGED_DATA_TYPE_BOOLEAN,
         ),
     ],
 )
 def test_given_tag_not_exists_when_log_x_then_calls_log_data_with_x_type(
-    tag, text, fnc_name, log_type
-):  # noqa
+    tag: str, value: str, log_type: "LoggedDataType.V"
+) -> None:
     # given
     mock_logged_data_api = MagicMock()
     mock_logged_data_api.LogData.return_value = LogDataResponse(
@@ -62,8 +55,7 @@ def test_given_tag_not_exists_when_log_x_then_calls_log_data_with_x_type(
     # data = "{}"
 
     # when
-    fnc = getattr(logged_data_client, fnc_name)
-    fnc(train_id=train_id, tag=tag, data=text)
+    logged_data_client.log_data(train_id=train_id, type=log_type, tag=tag, value=value)
 
     # then
     mock_logged_data_api.LogData.assert_called_with(
@@ -71,13 +63,13 @@ def test_given_tag_not_exists_when_log_x_then_calls_log_data_with_x_type(
             model_train_id=ModelTrainId(value=str(train_id)),
             unique_tag=tag,
             type=log_type,
-            text=text,
-            epoch=-1,
+            value=value,
+            x_coordinate=-1,
         )
     )
 
 
-def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_type():  # noqa
+def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_type() -> None:
     # given
     mock_logged_data_api = MagicMock()
     mock_logged_data_api.LogData.return_value = LogDataResponse(
@@ -89,15 +81,16 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_typ
     )
     train_id = uuid.uuid4()
     tag = "image-test-tag"
-    epoch = 123
+    x_coord = 123
 
     # when
-    s3_path = logged_data_client.log_binary_data(
+    s3_path = logged_data_client.log_data(
         train_id=train_id,
         tag=tag,
-        logged_data_type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-        epoch=epoch,
-    )
+        type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
+        x_coordinate=x_coord,
+        x_coordinate_type=XCoordinateType.TIMESTAMP,
+    ).s3_path
 
     # then
     mock_logged_data_api.LogData.assert_called_with(
@@ -105,14 +98,14 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_typ
             model_train_id=ModelTrainId(value=str(train_id)),
             unique_tag=tag,
             type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
-            text=None,
-            epoch=epoch,
+            x_coordinate=x_coord,
+            x_coordinate_type=LoggedDataXCoordinateType.LOGGED_DATA_X_COORDINATE_TYPE_TIMESTAMP,
         )
     )
     assert s3_path == "path/to/upload"
 
 
-def test_given_tag_not_exists_when_log_model_metric_then_calls_log_metric():  # noqa
+def test_given_tag_not_exists_when_log_number_then_calls_log_numeric_data() -> None:
     # given
     mock_logged_data_api = MagicMock()
     mock_logged_data_api.LogModelMetric.return_value = LogModelMetricResponse(
@@ -123,25 +116,25 @@ def test_given_tag_not_exists_when_log_model_metric_then_calls_log_metric():  # 
     )
     train_id = uuid.uuid4()
     tag = "foo-test-tag"
-    points = [ModelMetricPoint(epoch=1, value=1), ModelMetricPoint(epoch=2, value=2)]
-    metric_group_uuid = uuid.uuid4()
 
     # when
-    logged_data_client.log_model_metric(
-        train_id=train_id, tag=tag, points=points, metric_group_id=metric_group_uuid
+    logged_data_client.log_data(
+        train_id=train_id,
+        tag=tag,
+        type=LoggedDataType.LOGGED_DATA_TYPE_NUMBER,
+        x_coordinate=1,
+        x_coordinate_type=XCoordinateType.STEP,
+        value="123",
     )
 
     # then
-    mock_logged_data_api.LogModelMetric.assert_called_with(
-        request=LogModelMetricRequest(
+    mock_logged_data_api.LogData.assert_called_with(
+        request=LogDataRequest(
             model_train_id=ModelTrainId(value=str(train_id)),
-            metric=LoggedModelMetric(
-                unique_tag=tag,
-                points=[
-                    LoggedModelMetric.ModelMetricPoint(epoch=1, value=1),
-                    LoggedModelMetric.ModelMetricPoint(epoch=2, value=2),
-                ],
-                group_id=LoggedMetricGroupId(value=str(metric_group_uuid)),
-            ),
+            unique_tag=tag,
+            type=LoggedDataType.LOGGED_DATA_TYPE_NUMBER,
+            x_coordinate=1,
+            x_coordinate_type=LoggedDataXCoordinateType.LOGGED_DATA_X_COORDINATE_TYPE_STEP,
+            value="123",
         )
     )

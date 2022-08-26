@@ -125,7 +125,7 @@ class Model(BaseAsset):
         """
         assert self._logged_data_runner
         logged_data = self._logged_data_runner.get_logged_data(tag)
-        return LoggedDataObject(logged_data, epoch=step)
+        return LoggedDataObject(logged_data, x_coordinate=step)
 
     def log(
         self,
@@ -139,4 +139,4 @@ class Model(BaseAsset):
         For more details about logging in general, please look at `layer.log()` documentation.
         """
         assert self._logged_data_runner
-        self._logged_data_runner.log(data=data, epoch=step, category=category)
+        self._logged_data_runner.log(data=data, x_coordinate=step, category=category)

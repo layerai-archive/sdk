@@ -134,7 +134,7 @@ def test_guest_user_public_dataset_read(
             tag=dataset_log_tag, dataset_build_id=dataset.build.id
         )
 
-        assert logged_data.data == str(dataset_log_value)
+        assert logged_data.value == str(dataset_log_value)
         assert logged_data.logged_data_type == LoggedDataType.NUMBER
         assert logged_data.tag == dataset_log_tag
 
@@ -153,7 +153,7 @@ def test_guest_user_public_dataset_read(
             tag=model_log_tag, train_id=UUID(mdl.storage_config.train_id.value)
         )
 
-        assert logged_data.data == str(model_log_value)
+        assert logged_data.value == str(model_log_value)
         assert logged_data.logged_data_type == LoggedDataType.NUMBER
         assert logged_data.tag == model_log_tag
 

@@ -198,7 +198,7 @@ class SystemMetrics:
             if self._local
             else self._generate_remote_system_metrics()
         )
-        log_data_runner.log(metrics, step)  # type: ignore
+        log_data_runner.log(metrics, step)
 
     def monitor_system_metrics(
         self,
