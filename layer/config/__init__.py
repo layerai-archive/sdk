@@ -27,5 +27,5 @@ def is_executables_feature_active() -> bool:
     return True
 
 
-def _str2bool(v) -> bool:
+def _str2bool(v: str) -> bool:
     return v.lower() not in ("no", "false", "0")
