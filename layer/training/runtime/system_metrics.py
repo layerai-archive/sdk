@@ -11,6 +11,9 @@ import polling  # type: ignore
 import psutil  # type: ignore
 
 from layer.clients.layer import LayerClient
+from layer.logged_data.immediate_logged_data_destination import (
+    ImmediateLoggedDataDestination,
+)
 from layer.logged_data.log_data_runner import LogDataRunner
 
 
@@ -203,33 +206,36 @@ class SystemMetrics:
     def monitor_system_metrics(
         self,
     ) -> None:
-        log_data_runner = LogDataRunner(
-            client=self._client.logged_data_service_client,
-            train_id=self._train_id,
-            logger=self._logger,
-        )
+        with ImmediateLoggedDataDestination(
+            client=self._client.logged_data_service_client
+        ) as destination:
+            log_data_runner = LogDataRunner(
+                logged_data_destination=destination,
+                train_id=self._train_id,
+                logger=self._logger,
+            )
 
-        def _metrics_step_function(step: int) -> int:
-            step += 1
-            self._step_value += step
-            return min(step, 15)
+            def _metrics_step_function(step: int) -> int:
+                step += 1
+                self._step_value += step
+                return min(step, 15)
 
-        # For remote system metrics collection, we calculate metrics based off cgroup CPU usage data.
-        # For each iteration, we compare the current usage data with the previous iteration's data, allowing us to calculate the difference.
-        # We capture the data which allows the first loop to run successfully, keeping the logic executed within the loop lean.
-        # We also wait a second before going into the first loop to ensure the CPU usage data has changed.
-        if not self._local:
-            self._start_time = int(time.time())
-            with open("/sys/fs/cgroup/cpu/cpuacct.usage_user", "r") as f:
-                self._start_cpu_used = int(f.read())
-            sleep(1)
+            # For remote system metrics collection, we calculate metrics based off cgroup CPU usage data.
+            # For each iteration, we compare the current usage data with the previous iteration's data, allowing us to calculate the difference.
+            # We capture the data which allows the first loop to run successfully, keeping the logic executed within the loop lean.
+            # We also wait a second before going into the first loop to ensure the CPU usage data has changed.
+            if not self._local:
+                self._start_time = int(time.time())
+                with open("/sys/fs/cgroup/cpu/cpuacct.usage_user", "r") as f:
+                    self._start_cpu_used = int(f.read())
+                sleep(1)
 
-        polling.poll(
-            lambda: self._generate_system_metrics(log_data_runner),
-            check_success=lambda x: self._stop_system_metrics_thread,
-            poll_forever=True,
-            # get metrics every 1, then 2, then 3, then (...) until 15 seconds, then every 15 seconds
-            # This will ensure that short trains still get at least a couple of data points
-            step=1,
-            step_function=_metrics_step_function,
-        )
+            polling.poll(
+                lambda: self._generate_system_metrics(log_data_runner),
+                check_success=lambda x: self._stop_system_metrics_thread,
+                poll_forever=True,
+                # get metrics every 1, then 2, then 3, then (...) until 15 seconds, then every 15 seconds
+                # This will ensure that short trains still get at least a couple of data points
+                step=1,
+                step_function=_metrics_step_function,
+            )

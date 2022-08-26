@@ -8,6 +8,9 @@ from layer.contracts.logged_data import LogDataType
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.utils.async_utils import asyncio_run_in_thread
 
+from ..logged_data.immediate_logged_data_destination import (
+    ImmediateLoggedDataDestination,
+)
 from .utils import sdk_function
 
 
@@ -159,11 +162,20 @@ def log(
     dataset_build = active_context.dataset_build()
     dataset_build_id = dataset_build.id if dataset_build is not None else None
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
+
     with LayerClient(layer_config.client, logger).init() as client:
+        logged_data_destination = active_context.logged_data_destination()
+        if not logged_data_destination:
+            # temporary fallback: in the future, this will be new queuing destination,
+            # but if it's not yet passed to the context, use old logic
+            logged_data_destination = ImmediateLoggedDataDestination(
+                client.logged_data_service_client
+            )
+
         log_data_runner = LogDataRunner(
-            client=client.logged_data_service_client,
             train_id=train_id,
             dataset_build_id=dataset_build_id,
             logger=logger,
+            logged_data_destination=logged_data_destination,
         )
         log_data_runner.log(data=data, x_coordinate=step, category=category)

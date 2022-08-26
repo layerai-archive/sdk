@@ -21,6 +21,9 @@ from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
 from ...contracts.asset import AssetPath, AssetType
+from ...logged_data.immediate_logged_data_destination import (
+    ImmediateLoggedDataDestination,
+)
 from .common import import_function, update_train_status
 from .model_train_failure_reporter import ModelTrainFailureReporter
 
@@ -146,6 +149,7 @@ class ModelTrainer:
         project_full_name = current_project_full_name()
         if not project_full_name:
             raise Exception("Internal Error: missing current project full name")
+
         with Train(
             layer_client=self.client,
             name=self.train_context.model_name,
@@ -153,7 +157,9 @@ class ModelTrainer:
             version=self.train_context.model_version,
             train_id=self.train_context.train_id,
             train_index=self.train_context.train_index,
-        ) as train:
+        ) as train, ImmediateLoggedDataDestination(
+            self.client.logged_data_service_client
+        ) as logged_data_dest:
             asset_path = AssetPath(
                 account_name=project_full_name.account_name,
                 project_name=project_full_name.project_name,
@@ -165,6 +171,7 @@ class ModelTrainer:
                 asset_path=asset_path,
                 train=train,
                 tracker=self.tracker,
+                logged_data_destination=logged_data_dest,
             ):
                 update_train_status(
                     self.client.model_catalog,
@@ -190,9 +197,7 @@ class ModelTrainer:
                 args = self.args or []
                 kwargs = self.kwargs or {}
                 model = train_model_func(*args, **kwargs)
-                self.tracker.mark_model_trained(
-                    self.train_context.model_name,
-                )
+                self.tracker.mark_model_trained(self.train_context.model_name)
                 self.logger.info("Executed train_model_func successfully")
                 if model:
                     self._run_assertions(
@@ -211,5 +216,8 @@ class ModelTrainer:
                     ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
                     self.logger,
                 )
-                self.tracker.mark_model_saved(self.train_context.model_name)
+                self.tracker.mark_model_saved(
+                    self.train_context.model_name,
+                    warnings=logged_data_dest.get_logging_errors(),
+                )
                 return model

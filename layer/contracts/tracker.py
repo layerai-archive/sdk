@@ -192,6 +192,7 @@ class AssetTracker:
     status: AssetTrackerStatus = AssetTrackerStatus.PENDING
     base_url: Optional[URL] = None
     error_reason: str = ""
+    warnings: str = ""
     resource_transfer_state: Optional[ResourceTransferState] = None
     dataset_transfer_state: Optional[DatasetTransferState] = None
     model_transfer_state: Optional[ResourceTransferState] = None

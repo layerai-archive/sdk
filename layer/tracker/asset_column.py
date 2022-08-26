@@ -73,6 +73,13 @@ class AssetColumn(ProgressColumn):
             table.add_column()
             table.add_row(self._render_url(asset))
             renderables.append(table)
+        if asset.warnings:
+            table = Table.grid(padding=(0, 1, 0, 1), pad_edge=True)
+            table.add_column(overflow="fold")
+            table.add_row(
+                Text.from_markup(f"[orange]{escape(asset.warnings)}[/orange]")
+            )
+            renderables.append(table)
         if asset.error_reason:
             table = Table.grid(padding=(0, 1, 0, 1), pad_edge=True)
             table.add_column(overflow="fold")

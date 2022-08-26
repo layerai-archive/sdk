@@ -16,6 +16,9 @@ from requests import Session  # type: ignore
 import layer
 from layer.clients.logged_data_service import LoggedDataClient
 from layer.contracts.logged_data import XCoordinateType
+from layer.logged_data.immediate_logged_data_destination import (
+    ImmediateLoggedDataDestination,
+)
 from layer.logged_data.log_data_runner import LogDataRunner
 
 
@@ -441,7 +444,7 @@ def test_log_data(
     )
 
     runner = LogDataRunner(
-        client=logged_data_client,
+        logged_data_destination=ImmediateLoggedDataDestination(logged_data_client),
         dataset_build_id=dataset_build_id,
         train_id=train_id,
         logger=None,
@@ -593,17 +596,17 @@ def test_log_data_raises_error(
     expected_error: Any,
     expected_error_pattern: str,
 ) -> None:
-    logged_data_client = MagicMock(spec=LoggedDataClient)
+    logged_data_client = MagicMock()
     logged_data_client.log_data.return_value = MagicMock(
         spec=LogDataResponse,
         s3_path="http://path/for/upload",
     )
 
     runner = LogDataRunner(
-        client=logged_data_client,
         dataset_build_id=dataset_build_id,
         train_id=train_id,
         logger=None,
+        logged_data_destination=ImmediateLoggedDataDestination(logged_data_client),
     )
 
     # given
