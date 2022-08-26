@@ -7,14 +7,18 @@ from layer.contracts.logged_data import LoggedData
 
 
 class LoggedDataDestination(ABC):
-    @abstractmethod
+    def __init__(self, client: LoggedDataClient) -> None:
+        self.logged_data_client = client
+
     def get_logged_data(
         self,
         tag: str,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
     ) -> LoggedData:
-        pass
+        return self.logged_data_client.get_logged_data(
+            tag=tag, train_id=train_id, dataset_build_id=dataset_build_id
+        )
 
     @abstractmethod
     def receive(
