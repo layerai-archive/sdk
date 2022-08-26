@@ -21,6 +21,7 @@ from layer.exceptions.exceptions import (
 )
 from layer.global_context import set_has_shown_update_message
 from layer.logged_data.logged_data_destination import LoggedDataDestination
+from layer.logged_data.system_metrics import SystemMetrics
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.runtime_utils import check_and_convert_to_df
@@ -74,9 +75,10 @@ def _run(
                 value=str(dataset_build_id),
             )
         try:
-            result = dataset_definition.func(
-                *dataset_definition.args, **dataset_definition.kwargs
-            )
+            with SystemMetrics(logger):
+                result = dataset_definition.func(
+                    *dataset_definition.args, **dataset_definition.kwargs
+                )
             result = check_and_convert_to_df(result)
             _run_assertions(
                 dataset_definition.asset_name,

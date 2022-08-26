@@ -26,6 +26,7 @@ from layer.exceptions.status_report import (
 )
 from layer.global_context import current_project_full_name
 from layer.logged_data.logged_data_destination import LoggedDataDestination
+from layer.logged_data.system_metrics import SystemMetrics
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
@@ -218,9 +219,10 @@ class ModelTrainer:
                     train_model_func.__name__,
                     target_dir=str(work_dir),
                 )
-                model = train_model_func(
-                    *self.train_context.args, **self.train_context.kwargs
-                )
+                with SystemMetrics(logger):
+                    model = train_model_func(
+                        *self.train_context.args, **self.train_context.kwargs
+                    )
                 self.tracker.mark_model_trained(
                     self.train_context.model_name,
                     version=train.get_version(),
