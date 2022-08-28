@@ -43,6 +43,7 @@ def _run(
     tracker: RunProgressTracker,
     fabric: Fabric,
     run_id: str,
+    **kwargs: Any,
 ) -> None:
 
     verify_project_exists_and_retrieve_project_id(
