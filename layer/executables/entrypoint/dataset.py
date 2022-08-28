@@ -38,6 +38,7 @@ def _run(
     tracker: RunProgressTracker,
     fabric: Fabric,
     run_id: str,
+    **kwargs: Any,
 ) -> None:
     _register_function(
         client, dataset=dataset_definition, tracker=tracker, fabric=fabric
