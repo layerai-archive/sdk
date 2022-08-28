@@ -218,6 +218,6 @@ class ModelTrainer:
                 )
                 self.tracker.mark_model_saved(
                     self.train_context.model_name,
-                    warnings=logged_data_dest.get_logging_errors(),
+                    warnings=logged_data_dest.close_and_get_errors(),
                 )
                 return model
