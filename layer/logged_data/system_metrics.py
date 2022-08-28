@@ -3,7 +3,6 @@ import subprocess  # nosec: import_subprocess
 import threading
 import time
 from logging import Logger
-from time import sleep
 from typing import Any, Dict, Optional
 
 import nvsmi  # type: ignore
@@ -61,7 +60,6 @@ class MetricsCollector:
 
 
 class PsUtilMetricsCollector(MetricsCollector):
-    # cpu
     def get_cpu_metrics(self) -> Dict[str, Dict[str, float]]:
         cpu_count = psutil.cpu_count()
         cpu_percent = psutil.cpu_percent(interval=None)
@@ -73,7 +71,6 @@ class PsUtilMetricsCollector(MetricsCollector):
             }
         }
 
-    # memory
     def get_memory_metrics(self) -> Dict[str, Dict[str, float]]:
         mem = psutil.virtual_memory()
         mem_allocated = mem.total
@@ -98,17 +95,17 @@ class DockerMetricsCollector(MetricsCollector):
 
     def __init__(self, logger: Logger) -> None:
         super().__init__(logger)
-        self._cpu_usage_time = int(time.time())
+        self._cpu_usage_time = time.time()
         self._cpu_usage = self._get_cpu_usage()
-        sleep(1)
 
     def _read_docker_metric(self, metric_path: str) -> int:
         return _read_int_from_file(self.METRICS_ROOT / metric_path)
 
-    # cpu
     def get_cpu_metrics(self) -> Dict[str, Dict[str, float]]:
-        now_time = int(time.time())
+        now_time = time.time()
         diff_time = now_time - self._cpu_usage_time
+        if diff_time <= 0:
+            return {}
         self._cpu_usage_time = now_time
 
         now_cpu_usage = self._get_cpu_usage()
@@ -135,7 +132,6 @@ class DockerMetricsCollector(MetricsCollector):
         cpu_period = self._read_docker_metric("cpu/cpu.cfs_period_us")
         return float(cpu_quota / cpu_period)
 
-    # memory
     def get_memory_metrics(self) -> Dict[str, Dict[str, float]]:
         mem_used = self._get_mem_used()
         mem_available = self._get_mem_available()
