@@ -20,6 +20,7 @@ from layer.exceptions.exceptions import (
     ProjectInitializationException,
 )
 from layer.global_context import set_has_shown_update_message
+from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.runtime_utils import check_and_convert_to_df
@@ -38,6 +39,7 @@ def _run(
     tracker: RunProgressTracker,
     fabric: Fabric,
     run_id: str,
+    logged_data_destination: LoggedDataDestination,
     **kwargs: Any,
 ) -> None:
     _register_function(
@@ -61,6 +63,7 @@ def _run(
             id=dataset_build_id, status=DatasetBuildStatus.STARTED
         ),
         tracker=tracker,
+        logged_data_destination=logged_data_destination,
     ):
         if run_id:
             client.flow_manager.update_run_metadata(

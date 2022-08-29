@@ -2,8 +2,6 @@ import logging
 import os
 from typing import Any, Callable
 
-from yarl import URL
-
 import layer
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
@@ -11,7 +9,9 @@ from layer.config.config import Config
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.global_context import reset_to, set_has_shown_update_message
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.logged_data.queuing_logged_data_destination import (
+    QueueingLoggedDataDestination,
+)
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -22,9 +22,7 @@ ENV_LAYER_API_TOKEN = "LAYER_API_TOKEN"
 ENV_LAYER_RUN_ID = "LAYER_RUN_ID"
 
 RunnerFunction = Callable[[FunctionDefinition], Any]
-RunFunction = Callable[
-    [URL, FunctionDefinition, LayerClient, RunProgressTracker, Fabric, str], Any
-]
+RunFunction = Any  # TODO(volkan) build a better argument typing to pass in
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +40,19 @@ def make_runner(run_function: RunFunction) -> RunnerFunction:
             with LayerClient(
                 config.client, logger
             ).init() as client, progress_tracker.track() as tracker:
-                tracker.add_asset(definition.asset_type, definition.asset_name)
-                return run_function(
-                    config.url,
-                    definition,
-                    client,
-                    tracker,
-                    _get_display_fabric(),
-                    _get_run_id(),
-                )
+                with QueueingLoggedDataDestination(
+                    client=client.logged_data_service_client
+                ) as logged_data_destination:
+                    tracker.add_asset(definition.asset_type, definition.asset_name)
+                    return run_function(
+                        config.url,
+                        definition,
+                        client,
+                        tracker,
+                        _get_display_fabric(),
+                        _get_run_id(),
+                        logged_data_destination=logged_data_destination,
+                    )
 
         return inner
 
