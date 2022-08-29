@@ -79,6 +79,17 @@ def _run(
                 result = dataset_definition.func(
                     *dataset_definition.args, **dataset_definition.kwargs
                 )
+
+            # in case client does not return the dataset
+            if result is None:
+                tracker.mark_dataset_built(dataset_definition.asset_name)
+                client.data_catalog.complete_build(
+                    dataset_build_id,
+                    dataset_definition.asset_name,
+                    dataset_definition.uri,
+                )
+                return
+
             result = check_and_convert_to_df(result)
             _run_assertions(
                 dataset_definition.asset_name,
