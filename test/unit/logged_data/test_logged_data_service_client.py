@@ -99,7 +99,7 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_typ
             unique_tag=tag,
             type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
             x_coordinate=x_coord,
-            x_coordinate_type=LoggedDataXCoordinateType.LOGGED_DATA_X_COORDINATE_TYPE_TIMESTAMP,
+            x_coordinate_type=LoggedDataXCoordinateType.LOGGED_DATA_X_COORDINATE_TYPE_TIME,
         )
     )
     assert s3_path == "path/to/upload"
