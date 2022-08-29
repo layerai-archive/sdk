@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
-from scipy.sparse import spmatrix  # type: ignore
 
 from layer.types import ModelObject
 
@@ -38,6 +37,7 @@ class XGBoostModelFlavor(ModelFlavor):
     @staticmethod
     def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
         from mlflow.xgboost import _XGBModelWrapper
+        from scipy.sparse import spmatrix  # type: ignore
 
         model_prediction_obj = _XGBModelWrapper(model)
         predictions = model_prediction_obj.predict(input_df)
