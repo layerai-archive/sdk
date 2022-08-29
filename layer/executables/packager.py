@@ -58,10 +58,9 @@ def package_function(
         function_path = source / "function"
         with open(function_path, mode="wb") as function_:
             # register to pickle by value to ensure unpickling works anywhere, even if a module is not accessible for the runtime
+            cloudpickle.register_pickle_by_value(sys.modules["layer.executables.entrypoint"])  # type: ignore
             cloudpickle.register_pickle_by_value(sys.modules[function.__module__])  # type: ignore
             cloudpickle.dump(function, function_, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
-
-        cloudpickle.register_pickle_by_value(sys.modules["layer.executables.entrypoint"])  # type: ignore
 
         metadata_path = source / "metadata.json"
         with open(metadata_path, mode="w", encoding="utf8") as metadata_:
