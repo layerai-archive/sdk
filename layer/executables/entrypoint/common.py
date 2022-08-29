@@ -1,8 +1,6 @@
 import logging
 import os
-from typing import Any, Callable, Protocol
-
-from yarl import URL
+from typing import Any, Callable
 
 import layer
 from layer.clients.layer import LayerClient
@@ -11,11 +9,9 @@ from layer.config.config import Config
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
 from layer.global_context import reset_to, set_has_shown_update_message
-from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.logged_data.queuing_logged_data_destination import (
     QueueingLoggedDataDestination,
 )
-from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -26,22 +22,7 @@ ENV_LAYER_API_TOKEN = "LAYER_API_TOKEN"
 ENV_LAYER_RUN_ID = "LAYER_RUN_ID"
 
 RunnerFunction = Callable[[FunctionDefinition], Any]
-
-
-class RunFunction(Protocol):
-    def __call__(
-        self,
-        url: URL,
-        dataset_definition: FunctionDefinition,
-        client: LayerClient,
-        tracker: RunProgressTracker,
-        fabric: Fabric,
-        run_id: str,
-        logged_data_destination: LoggedDataDestination,
-        **kwargs: Any,
-    ) -> Any:
-        pass
-
+RunFunction = Any  # TODO(volkan) build a better argument typing to pass in
 
 logger = logging.getLogger(__name__)
 

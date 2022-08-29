@@ -97,9 +97,6 @@ def _run(
     return result
 
 
-RUNNER = make_runner(_run)
-
-
 @dataclass
 class TrainContext:
     model_name: str
@@ -283,3 +280,6 @@ class ModelTrainer:
             logger.error(
                 f"Failure while trying to update the status of train ID {str(train_id)}: {reason}"
             )
+
+
+RUNNER = make_runner(_run)
