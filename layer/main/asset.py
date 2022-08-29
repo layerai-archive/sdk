@@ -22,9 +22,6 @@ from layer.utils.async_utils import asyncio_run_in_thread
 from ..logged_data.immediate_logged_data_destination import (
     ImmediateLoggedDataDestination,
 )
-from ..logged_data.read_only_logged_data_destination import (
-    ReadOnlyLoggedDataDestination,
-)
 from .utils import sdk_function
 
 
@@ -83,7 +80,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                     url=config.url,
                     asset_path=asset_path,
                     tracker=tracker,
-                    logged_data_destination=ReadOnlyLoggedDataDestination(
+                    logged_data_destination=ImmediateLoggedDataDestination(
                         client.logged_data_service_client
                     ),
                 ) as context:
@@ -113,7 +110,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
         pb_build = client.data_catalog.get_build_by_path(path=asset_path.path())
         build_id: str = pb_build.id.value
         log_data_runner = LogDataRunner(
-            logged_data_destination=ReadOnlyLoggedDataDestination(
+            logged_data_destination=ImmediateLoggedDataDestination(
                 client.logged_data_service_client
             ),
             dataset_build_id=uuid.UUID(build_id),
@@ -168,13 +165,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         logged_data_destination = (
             maybe_logged_data_destination
             if (maybe_logged_data_destination is not None)
-            # this is temporary fallback, in the future, if we're within run there will be logged_data_destination
-            # provided from context
-            else (
-                ReadOnlyLoggedDataDestination(client.logged_data_service_client)
-                if not within_run
-                else ImmediateLoggedDataDestination(client.logged_data_service_client)
-            )
+            else ImmediateLoggedDataDestination(client.logged_data_service_client)
         )
         model = client.model_catalog.load_model_by_path(path=asset_path.path())
 

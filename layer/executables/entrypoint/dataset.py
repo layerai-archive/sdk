@@ -20,11 +20,11 @@ from layer.exceptions.exceptions import (
     ProjectInitializationException,
 )
 from layer.global_context import set_has_shown_update_message
+from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.runtime_utils import check_and_convert_to_df
 
-from ...logged_data.logged_data_destination import LoggedDataDestination
 from .common import make_runner
 
 
@@ -37,9 +37,10 @@ def _run(
     dataset_definition: FunctionDefinition,
     client: LayerClient,
     tracker: RunProgressTracker,
-    logged_data_destination: LoggedDataDestination,
     fabric: Fabric,
     run_id: str,
+    logged_data_destination: LoggedDataDestination,
+    **kwargs: Any,
 ) -> None:
     _register_function(
         client, dataset=dataset_definition, tracker=tracker, fabric=fabric
@@ -103,7 +104,7 @@ def _run(
     )
     tracker.mark_dataset_built(
         dataset_definition.asset_name,
-        warnings=logged_data_destination.get_logging_errors(),
+        warnings=logged_data_destination.close_and_get_errors(),
     )
 
     return result

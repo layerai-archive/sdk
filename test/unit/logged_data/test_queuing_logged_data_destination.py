@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Optional
 from unittest.mock import MagicMock, patch
 
@@ -35,7 +36,7 @@ def test_given_errors_on_upload_and_grpc_when_get_errors_then_returns_all_errors
         destination.receive(queued_successful_execution, data="12345")
 
         # when
-        errors = destination.get_logging_errors()
+        errors = destination.close_and_get_errors()
 
         # then
         assert (
@@ -52,5 +53,36 @@ def test_given_logging_successful_then_no_errors() -> None:
 
     with QueueingLoggedDataDestination(logged_data_client) as destination:
         destination.receive(queued_ok_execution)
-        assert destination.get_logging_errors() is None
-        assert destination.get_logging_errors() is None
+        assert destination.close_and_get_errors() is None
+        assert destination.close_and_get_errors() is None
+
+
+def test_even_when_reading_thread_terminated_then_queue_flushed() -> None:
+    execution_happened = False
+    mock_thread_used_as_reading_thread = False
+
+    # use a fake reading thread that terminates right after is starts and doesn't read any messages
+    def set_and_terminate() -> None:
+        nonlocal mock_thread_used_as_reading_thread
+        mock_thread_used_as_reading_thread = True
+        raise RuntimeError()
+
+    def queued_ok_execution(__: LoggedDataClient) -> None:
+        nonlocal execution_happened
+        execution_happened = True
+
+    idle_thread = threading.Thread(target=set_and_terminate)
+    with patch("threading.Thread", return_value=idle_thread):
+        logged_data_client = MagicMock()
+        with QueueingLoggedDataDestination(logged_data_client) as destination:
+            idle_thread.join(1.0)  # wait a moment for fake reading thread to terminate
+            assert idle_thread.is_alive() is False
+            destination.receive(queued_ok_execution)
+            assert execution_happened is False
+
+    assert (
+        mock_thread_used_as_reading_thread is True
+    )  # make sure we used fake thread and not having false positive
+    assert (
+        execution_happened is True
+    )  # make sure that request was executed anyway upon __exit__ of the destination

@@ -25,12 +25,12 @@ from layer.exceptions.status_report import (
     PythonExecutionStatusReport,
 )
 from layer.global_context import current_project_full_name
+from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
 from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
-from ...logged_data.logged_data_destination import LoggedDataDestination
 from .common import make_runner
 
 
@@ -42,9 +42,10 @@ def _run(
     model_definition: FunctionDefinition,
     client: LayerClient,
     tracker: RunProgressTracker,
-    logged_data_destination: LoggedDataDestination,
     fabric: Fabric,
     run_id: str,
+    logged_data_destination: LoggedDataDestination,
+    **kwargs: Any,
 ) -> None:
 
     verify_project_exists_and_retrieve_project_id(
@@ -94,9 +95,6 @@ def _run(
     )
 
     return result
-
-
-RUNNER = make_runner(_run)
 
 
 @dataclass
@@ -245,7 +243,7 @@ class ModelTrainer:
                 )
                 self.tracker.mark_model_saved(
                     self.train_context.model_name,
-                    warnings=self.logged_data_destination.get_logging_errors(),
+                    warnings=self.logged_data_destination.close_and_get_errors(),
                 )
                 return model
 
@@ -287,3 +285,6 @@ class ModelTrainer:
             logger.error(
                 f"Failure while trying to update the status of train ID {str(train_id)}: {reason}"
             )
+
+
+RUNNER = make_runner(_run)
