@@ -57,6 +57,15 @@ def _run(
         fabric.value,
     )
 
+    if run_id:
+        client.flow_manager.update_run_metadata(
+            run_id=RunId(value=run_id),
+            task_id=dataset_definition.asset_path.path(),
+            task_type=Task.Type.TYPE_DATASET_BUILD,
+            key="build-id",
+            value=str(dataset_build_id),
+        )
+
     with Context(
         url=url,
         asset_path=dataset_definition.asset_path,
@@ -66,14 +75,6 @@ def _run(
         tracker=tracker,
         logged_data_destination=logged_data_destination,
     ):
-        if run_id:
-            client.flow_manager.update_run_metadata(
-                run_id=RunId(value=run_id),
-                task_id=dataset_definition.asset_path.path(),
-                task_type=Task.Type.TYPE_DATASET_BUILD,
-                key="build-id",
-                value=str(dataset_build_id),
-            )
         try:
             with SystemMetrics(logger):
                 result = dataset_definition.func(

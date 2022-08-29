@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from types import TracebackType
 from typing import Optional
 
@@ -69,6 +71,7 @@ class Context:
             LoggedDataDestination
         ] = logged_data_destination
         self._tracker: Optional[RunProgressTracker] = tracker
+        self._initial_cwd: Optional[Path] = None
 
     def url(self) -> URL:
         """
@@ -126,9 +129,18 @@ class Context:
         return self._asset_type
 
     def close(self) -> None:
+        assert self._initial_cwd
+        os.chdir(
+            self._initial_cwd
+        )  # Important for local execution to have no such side effect
         _reset_active_context()
 
+    def get_working_directory(self) -> Path:
+        assert self._initial_cwd
+        return Path(self._initial_cwd)
+
     def __enter__(self) -> "Context":
+        self._initial_cwd = Path(os.getcwd())
         _set_active_context(self)
         return self
 
