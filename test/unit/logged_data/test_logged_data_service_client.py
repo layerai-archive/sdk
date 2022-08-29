@@ -89,7 +89,7 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_typ
         tag=tag,
         type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
         x_coordinate=x_coord,
-        x_coordinate_type=XCoordinateType.TIMESTAMP,
+        x_coordinate_type=XCoordinateType.TIME,
     ).s3_path
 
     # then

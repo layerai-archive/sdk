@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 X_COORDINATE_TYPE_PROTO_MAP = {
     XCoordinateType.STEP: LoggedDataXCoordinateType.LOGGED_DATA_X_COORDINATE_TYPE_STEP,
-    XCoordinateType.TIMESTAMP: LoggedDataXCoordinateType.LOGGED_DATA_X_COORDINATE_TYPE_TIMESTAMP,
+    XCoordinateType.TIME: LoggedDataXCoordinateType.LOGGED_DATA_X_COORDINATE_TYPE_TIMESTAMP,
 }
 
 
