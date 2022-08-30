@@ -9,10 +9,9 @@ from yarl import URL
 from layer.clients.layer import LayerClient
 from layer.context import Context
 from layer.contracts.assertions import Assertion
-from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
+from layer.contracts.datasets import DatasetBuild
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
-from layer.contracts.tracker import DatasetTransferState
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientServiceUnavailableException,
@@ -68,13 +67,12 @@ def _run(
 
     with Context(
         url=url,
+        client=client,
         asset_path=dataset_definition.asset_path,
-        dataset_build=DatasetBuild(
-            id=dataset_build_id, status=DatasetBuildStatus.STARTED
-        ),
+        dataset_build=DatasetBuild(id=dataset_build_id),
         tracker=tracker,
         logged_data_destination=logged_data_destination,
-    ):
+    ) as ctx:
         try:
             with SystemMetrics(logger):
                 result = dataset_definition.func(
@@ -107,15 +105,8 @@ def _run(
             )
             raise e
 
-    transfer_state = DatasetTransferState(len(result))
-    tracker.mark_dataset_saving_result(dataset_definition.asset_name, transfer_state)
+    ctx.save_dataset(result)
 
-    # this call would store the resulting dataset, extract the schema and complete the build from remote
-    client.data_catalog.store_dataset(
-        data=result,
-        build_id=dataset_build_id,
-        progress_callback=transfer_state.increment_num_transferred_rows,
-    )
     tracker.mark_dataset_built(dataset_definition.asset_name)
 
     return result

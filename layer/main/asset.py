@@ -2,6 +2,8 @@ import logging
 import uuid
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
+import pandas as pd
+
 from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
@@ -334,3 +336,30 @@ def save_model(model: Any) -> None:
     transfer_state = ResourceTransferState()
     train.save_model(model, transfer_state=transfer_state)
     tracker.mark_model_saving_result(active_context.asset_name(), transfer_state)
+
+
+@sdk_function
+def save_dataset(dataset: pd.DataFrame) -> None:
+    """
+    :param dataset: The dataset object to save.
+    :return: None.
+
+    Saves a dataset object to Layer under the currently decorated function.
+
+    .. code-block:: python
+
+        # Saves the model to the current train.
+        my_dataset = build()
+        layer.save_dataset(my_dataset)
+    """
+    active_context = get_active_context()
+    if not active_context:
+        raise RuntimeError(
+            "Saving dataset only allowed inside functions decorated with @dataset"
+        )
+    build = active_context.dataset_build()
+    if not build:
+        raise RuntimeError(
+            "Saving dataset only allowed inside functions decorated with @dataset"
+        )
+    active_context.save_dataset(dataset)

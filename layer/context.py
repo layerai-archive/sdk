@@ -3,10 +3,13 @@ from pathlib import Path
 from types import TracebackType
 from typing import Optional
 
+import pandas as pd
 from yarl import URL
 
+from layer.clients.layer import LayerClient
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import DatasetBuild
+from layer.contracts.tracker import DatasetTransferState
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.tracker.ui_progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
@@ -52,6 +55,7 @@ class Context:
         tracker: Optional[RunProgressTracker] = None,
         train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
+        client: Optional[LayerClient] = None,
     ) -> None:
         if train is not None and dataset_build is not None:
             raise Exception(
@@ -61,7 +65,10 @@ class Context:
             raise Exception("Wrong asset type for model train context")
         if dataset_build is not None and asset_path.asset_type is not AssetType.DATASET:
             raise Exception("Wrong asset type for dataset build context")
+        if dataset_build is not None and client is None:
+            raise Exception("Context with dataset build also needs a layer client")
         self._url = url
+        self._client = client
         self._project_full_name = asset_path.project_full_name()
         self._asset_name = asset_path.asset_name
         self._asset_type = asset_path.asset_type
@@ -115,6 +122,19 @@ class Context:
         :return: Represents the current build of the dataset, passed by Layer when building of the dataset starts.
         """
         return self._dataset_build
+
+    def save_dataset(self, ds: pd.DataFrame) -> None:
+        assert self._dataset_build is not None
+        assert self._client is not None
+        transfer_state = DatasetTransferState(len(ds))
+        if self._tracker:
+            self._tracker.mark_dataset_saving_result(self.asset_name(), transfer_state)
+        # this call would store the resulting dataset, extract the schema and complete the build from remote
+        self._client.data_catalog.store_dataset(
+            data=ds,
+            build_id=self._dataset_build.id,
+            progress_callback=transfer_state.increment_num_transferred_rows,
+        )
 
     def tracker(self) -> Optional[RunProgressTracker]:
         return self._tracker
