@@ -4,9 +4,6 @@ from typing import Any, Iterator
 
 import pytest
 
-from layer import global_context
-from layer.contracts.project_full_name import ProjectFullName
-
 
 @pytest.fixture()
 def tmp_dir(tmpdir: Any) -> Path:
@@ -15,6 +12,9 @@ def tmp_dir(tmpdir: Any) -> Path:
 
 @pytest.fixture(autouse=True)
 def test_project_name(request: pytest.FixtureRequest) -> Iterator[str]:
+    from layer import global_context
+    from layer.contracts.project_full_name import ProjectFullName
+
     project_full_name = ProjectFullName(
         account_name="test-acc-from-conftest",
         project_name=_pseudo_random_project_name(request),
