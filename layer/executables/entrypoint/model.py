@@ -15,6 +15,7 @@ from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
+from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exception_handler import exception_handler
 from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.exceptions.status_report import (
@@ -29,7 +30,6 @@ from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
-from ...contracts.project_full_name import ProjectFullName
 from .common import make_runner
 
 
@@ -66,27 +66,31 @@ def _run(
             key="train-id",
             value=str(train_id.value),
         )
-    train = client.model_catalog.get_model_train(train_id)
+    train_pb = client.model_catalog.get_model_train(train_id)
+    train = Train(
+        layer_client=client,
+        project_full_name=model_definition.project_full_name,
+        name=model_definition.asset_name,
+        version=model_version.name,
+        train_id=UUID(train_id.value),
+        train_index=str(train_pb.index),
+    )
     trainer = ModelTrainer(
         url=url,
         client=client,
-        project_full_name=model_definition.project_full_name,
-        model_name=model_definition.asset_name,
-        model_version=model_version.name,
-        train_id=UUID(train_id.value),
+        train=train,
         function=model_definition.func,
         args=model_definition.args,
         kwargs=model_definition.kwargs,
         assertions=model_definition.assertions,
-        train_index=str(train.index),
         tracker=tracker,
         logged_data_destination=logged_data_destination,
     )
-    result = trainer.train()
+    result = trainer.run_train()
 
     tracker.mark_model_trained(
         name=model_definition.asset_name,
-        train_index=str(train.index),
+        train_index=str(train.get_train_index()),
         version=model_version.name,
     )
 
@@ -97,29 +101,25 @@ def _run(
 class ModelTrainer:
     url: URL
     client: LayerClient
-    project_full_name: ProjectFullName
-    model_name: str
     tracker: RunProgressTracker
-    model_version: str
-    train_index: str
-    train_id: UUID
+    train: Train
     function: Callable[..., Any]
     args: Sequence[Any]
     kwargs: Mapping[str, Any]
     assertions: List[Assertion]
     logged_data_destination: LoggedDataDestination
 
-    def train(self) -> Any:
+    def run_train(self) -> Any:
         self.tracker.mark_model_training(
-            self.model_name,
-            version=self.model_version,
-            train_idx=self.train_index,
+            self.train.get_name(),
+            version=self.train.get_version(),
+            train_idx=self.train.get_train_index(),
         )
         try:
             return self._train(callback=self._report_failure)
         except Exception:
             logger.error(
-                f"Error performing model training with id: {self.train_id}",
+                f"Error performing model training with id: {self.train.get_id()}",
                 exc_info=True,
             )
             import sys
@@ -130,50 +130,45 @@ class ModelTrainer:
 
     def _run_assertions(self, model: Any) -> None:
         failed_assertions = []
-        self.tracker.mark_model_running_assertions(self.model_name)
+        self.tracker.mark_model_running_assertions(self.train.get_name())
         for assertion in reversed(self.assertions):
             try:
-                self.tracker.mark_model_running_assertion(self.model_name, assertion)
+                self.tracker.mark_model_running_assertion(
+                    self.train.get_name(), assertion
+                )
                 assertion.function(model)
             except Exception:
                 failed_assertions.append(assertion)
         if len(failed_assertions) > 0:
             self.tracker.mark_model_failed_assertions(
-                self.model_name, failed_assertions
+                self.train.get_name(), failed_assertions
             )
             raise LayerFailedAssertionsException(failed_assertions)
         else:
-            self.tracker.mark_model_completed_assertions(self.model_name)
+            self.tracker.mark_model_completed_assertions(self.train.get_name())
 
     @exception_handler(stage="Training run")
     def _train(
         self, callback: Optional[Callable[[str, Exception], None]] = None
     ) -> Any:
+        model_name = self.train.get_name()
         train_model_func = self.function
-        project_full_name = self.project_full_name
-        with Train(
-            layer_client=self.client,
-            name=self.model_name,
-            project_full_name=project_full_name,
-            version=self.model_version,
-            train_id=self.train_id,
-            train_index=self.train_index,
-        ) as train:
+        project_full_name = self.train.get_project_full_name()
+        with self.train:
             asset_path = AssetPath(
                 account_name=project_full_name.account_name,
                 project_name=project_full_name.project_name,
                 asset_type=AssetType.MODEL,
-                asset_name=self.model_name,
+                asset_name=model_name,
             )
             with Context(
                 url=self.url,
                 asset_path=asset_path,
-                train=train,
+                train=self.train,
                 tracker=self.tracker,
                 logged_data_destination=self.logged_data_destination,
             ) as ctx:
                 self._update_train_status(
-                    self.train_id,
                     ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
                 )
                 logger.info("Executing the train_model_func")
@@ -188,24 +183,25 @@ class ModelTrainer:
                 with SystemMetrics(logger):
                     model = train_model_func(*self.args, **self.kwargs)
                 self.tracker.mark_model_trained(
-                    self.model_name,
-                    version=train.get_version(),
-                    train_index=train.get_train_index(),
+                    model_name,
+                    version=self.train.get_version(),
+                    train_index=self.train.get_train_index(),
                 )
                 logger.info("Executed train_model_func successfully")
                 if model:
                     self._run_assertions(model)
-                    self.tracker.mark_model_saving(self.model_name)
+                    self.tracker.mark_model_saving(model_name)
                     logger.info(f"Saving model artifact {model} to model registry")
-                    train.save_model(model, tracker=self.tracker)
+                    transfer_state = ResourceTransferState()
+                    self.train.save_model(model, transfer_state=transfer_state)
+                    self.tracker.mark_model_saving_result(model_name, transfer_state)
                     logger.info(
                         f"Saved model artifact {model} to model registry successfully"
                     )
                 self._update_train_status(
-                    self.train_id,
                     ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
                 )
-                self.tracker.mark_model_saved(self.model_name)
+                self.tracker.mark_model_saved(model_name)
                 return model
 
     def _report_failure(self, stage: str, failure_exc: Exception) -> None:
@@ -220,22 +216,21 @@ class ModelTrainer:
             else:
                 report = PythonExecutionStatusReport.from_exception(failure_exc, None)
             self._update_train_status(
-                self.train_id,
                 ModelTrainStatus.TRAIN_STATUS_FAILED,
                 info=ExecutionStatusReportFactory.to_json(report),
             )
 
     def _get_train_status(self) -> "ModelTrainStatus.TrainStatus.V":
         return self.client.model_catalog.get_model_train(
-            ModelTrainId(value=str(self.train_id))
+            ModelTrainId(value=str(self.train.get_id()))
         ).train_status.train_status
 
     def _update_train_status(
         self,
-        train_id: UUID,
         train_status: "ModelTrainStatus.TrainStatus.V",
         info: str = "",
     ) -> None:
+        train_id = self.train.get_id()
         try:
             self.client.model_catalog.update_model_train_status(
                 ModelTrainId(value=str(train_id)),

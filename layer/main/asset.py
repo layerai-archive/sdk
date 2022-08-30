@@ -331,4 +331,6 @@ def save_model(model: Any) -> None:
         raise RuntimeError(
             "Saving model only allowed inside functions decorated with @model"
         )
-    train.save_model(model, tracker=tracker)
+    transfer_state = ResourceTransferState()
+    train.save_model(model, transfer_state=transfer_state)
+    tracker.mark_model_saving_result(active_context.asset_name(), transfer_state)

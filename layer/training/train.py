@@ -8,12 +8,12 @@ from layerapi.api.value.model_flavor_pb2 import ModelFlavor
 
 from layer.clients.layer import LayerClient
 from layer.contracts.models import Model
+from layer.contracts.project_full_name import ProjectFullName
+from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import UnexpectedModelTypeException
 from layer.flavors.utils import get_flavor_for_model
-from layer.tracker.progress_tracker import RunProgressTracker
 from layer.types import ModelObject
 
-from ..contracts.project_full_name import ProjectFullName
 from .base_train import BaseTrain
 
 
@@ -40,21 +40,25 @@ class Train(BaseTrain):
         layer_client: LayerClient,
         name: str,
         project_full_name: ProjectFullName,
-        version: Optional[str],
-        train_id: Optional[UUID] = None,
-        train_index: Optional[str] = None,
+        version: str,
+        train_id: UUID,
+        train_index: str,
     ):
         self.__layer_client: LayerClient = layer_client
         self.__name: str = name
         self.__project_full_name: ProjectFullName = project_full_name
-        self.__version: Optional[str] = str(version)
-        self.__train_index: Optional[str] = str(train_index)
-        self.__train_id: Optional[ModelTrainId] = (
-            ModelTrainId(value=str(train_id)) if train_id is not None else None
-        )
+        self.__version: str = version
+        self.__train_index: str = train_index
+        self.__train_id: ModelTrainId = ModelTrainId(value=str(train_id))
         self.__start_train_ts: int  # For computing relative to start metric timestamps
         # Populated at the save of a model train
         self.__flavor: Optional[ModelFlavor.V] = None
+
+    def get_project_full_name(self) -> ProjectFullName:
+        return self.__project_full_name
+
+    def get_name(self) -> str:
+        return self.__name
 
     def get_id(self) -> UUID:
         assert self.__train_id
@@ -71,7 +75,7 @@ class Train(BaseTrain):
     def save_model(
         self,
         model_object: ModelObject,
-        tracker: RunProgressTracker,
+        transfer_state: ResourceTransferState,
     ) -> Any:
         assert self.__train_id
 
@@ -91,16 +95,10 @@ class Train(BaseTrain):
             storage_config=storage_config,
         )
         self.__layer_client.model_catalog.save_model_object(
-            model, model_object, tracker=tracker
+            model, model_object, transfer_state=transfer_state
         )
 
     def __start_train(self) -> None:
-        if self.__train_id is None:
-            self.__train_id = self.__layer_client.model_catalog.create_model_train(
-                name=self.__name,
-                version=self.__version,
-                project_full_name=self.__project_full_name,
-            )
         self.__layer_client.model_catalog.start_model_train(
             train_id=self.__train_id,
         )
