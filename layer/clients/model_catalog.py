@@ -45,7 +45,6 @@ from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelRuntimeObjects
 from layer.flavors.utils import get_flavor_for_proto
-from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.grpc.channel import get_grpc_channel
 from layer.utils.s3 import S3Util
 
@@ -221,21 +220,19 @@ class ModelCatalogClient:
         self,
         model: Model,
         model_object: ModelObject,
-        tracker: RunProgressTracker,
+        transfer_state: ResourceTransferState,
     ) -> ModelObject:
         self._logger.debug(f"Storing given model {model_object} for {model.path}")
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 local_path = Path(tmp) / "model"
                 model.flavor.save_model_to_directory(model_object, local_path)
-                state = ResourceTransferState()
-                tracker.mark_model_saving_result(model.name, state)
                 S3Util.upload_dir(
                     local_dir=local_path,
                     credentials=model.storage_config.credentials,
                     s3_path=model.storage_config.s3_path,
                     endpoint_url=self._s3_endpoint_url,
-                    state=state,
+                    state=transfer_state,
                 )
         except Exception as ex:
             raise LayerClientException(f"Error while storing model, {ex}")

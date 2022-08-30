@@ -9,10 +9,9 @@ from yarl import URL
 from layer.clients.layer import LayerClient
 from layer.context import Context
 from layer.contracts.assertions import Assertion
-from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
+from layer.contracts.datasets import DatasetBuild
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
-from layer.contracts.tracker import DatasetTransferState
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientServiceUnavailableException,
@@ -57,28 +56,39 @@ def _run(
         fabric.value,
     )
 
+    if run_id:
+        client.flow_manager.update_run_metadata(
+            run_id=RunId(value=run_id),
+            task_id=dataset_definition.asset_path.path(),
+            task_type=Task.Type.TYPE_DATASET_BUILD,
+            key="build-id",
+            value=str(dataset_build_id),
+        )
+
     with Context(
         url=url,
+        client=client,
         asset_path=dataset_definition.asset_path,
-        dataset_build=DatasetBuild(
-            id=dataset_build_id, status=DatasetBuildStatus.STARTED
-        ),
+        dataset_build=DatasetBuild(id=dataset_build_id),
         tracker=tracker,
         logged_data_destination=logged_data_destination,
-    ):
-        if run_id:
-            client.flow_manager.update_run_metadata(
-                run_id=RunId(value=run_id),
-                task_id=dataset_definition.asset_path.path(),
-                task_type=Task.Type.TYPE_DATASET_BUILD,
-                key="build-id",
-                value=str(dataset_build_id),
-            )
+    ) as ctx:
         try:
             with SystemMetrics(logger):
                 result = dataset_definition.func(
                     *dataset_definition.args, **dataset_definition.kwargs
                 )
+
+            # in case client does not return the dataset
+            if result is None:
+                tracker.mark_dataset_built(dataset_definition.asset_name)
+                client.data_catalog.complete_build(
+                    dataset_build_id,
+                    dataset_definition.asset_name,
+                    dataset_definition.uri,
+                )
+                return
+
             result = check_and_convert_to_df(result)
             _run_assertions(
                 dataset_definition.asset_name,
@@ -95,15 +105,8 @@ def _run(
             )
             raise e
 
-    transfer_state = DatasetTransferState(len(result))
-    tracker.mark_dataset_saving_result(dataset_definition.asset_name, transfer_state)
+    ctx.save_dataset(result)
 
-    # this call would store the resulting dataset, extract the schema and complete the build from remote
-    client.data_catalog.store_dataset(
-        data=result,
-        build_id=dataset_build_id,
-        progress_callback=transfer_state.increment_num_transferred_rows,
-    )
     tracker.mark_dataset_built(dataset_definition.asset_name)
 
     return result
