@@ -115,7 +115,7 @@ def _is_version_on_pypi() -> Boolean:
     version = layer.__version__
     pypi_url = f"https://pypi.org/pypi/layer/{version}/json"
     try:
-        urllib.request.urlopen(pypi_url)
+        urllib.request.urlopen(pypi_url)  # nosec urllib_urlopen
     except urllib.error.HTTPError:
         return False
     return True
