@@ -1,6 +1,7 @@
 import uuid
 from pathlib import Path
 from typing import Any, Iterator
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -42,3 +43,10 @@ def _cut_off_prefixing_dirs(module_name: str) -> str:
     # in some environments __module__.__name__ is prefixed with directories tests.e2e. this is useless
     # for debugging and our project names can't have dots, so we cut it off
     return module_name.split(".")[-1]
+
+
+@pytest.fixture(autouse=True)
+def _mock_docker_metrics_collector(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "layer.logged_data.system_metrics.DockerMetricsCollector", MagicMock()
+    )
