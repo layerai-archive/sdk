@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from types import TracebackType
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd
 from yarl import URL
@@ -9,7 +9,7 @@ from yarl import URL
 from layer.clients.layer import LayerClient
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import DatasetBuild
-from layer.contracts.tracker import DatasetTransferState
+from layer.contracts.tracker import DatasetTransferState, ResourceTransferState
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.tracker.ui_progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
@@ -115,6 +115,21 @@ class Context:
         """
         return self._train
 
+    def save_model(self, model: Any) -> None:
+        train = self._train
+        if not train:
+            raise RuntimeError(
+                "Saving model only allowed inside when context is for model training"
+            )
+        model_name = self.asset_name()
+        tracker = self._tracker
+        if tracker:
+            tracker.mark_model_saving(model_name)
+        transfer_state = ResourceTransferState()
+        train.save_model(model, transfer_state=transfer_state)
+        if tracker:
+            tracker.mark_model_saving_result(model_name, transfer_state)
+
     def dataset_build(self) -> Optional[DatasetBuild]:
         """
         Retrieves the active Layer dataset build object.
@@ -124,15 +139,20 @@ class Context:
         return self._dataset_build
 
     def save_dataset(self, ds: pd.DataFrame) -> None:
-        assert self._dataset_build is not None
+        build = self._dataset_build
+        if not build:
+            raise RuntimeError(
+                "Saving dataset only allowed inside when context is for dataset building"
+            )
+        dataset_name = self.asset_name()
         assert self._client is not None
         transfer_state = DatasetTransferState(len(ds))
         if self._tracker:
-            self._tracker.mark_dataset_saving_result(self.asset_name(), transfer_state)
+            self._tracker.mark_dataset_saving_result(dataset_name, transfer_state)
         # this call would store the resulting dataset, extract the schema and complete the build from remote
         self._client.data_catalog.store_dataset(
             data=ds,
-            build_id=self._dataset_build.id,
+            build_id=build.id,
             progress_callback=transfer_state.increment_num_transferred_rows,
         )
 

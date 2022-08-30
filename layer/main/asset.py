@@ -2,8 +2,6 @@ import logging
 import uuid
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-import pandas as pd
-
 from layer.cache.utils import is_cached
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
@@ -327,19 +325,11 @@ def save_model(model: Any) -> None:
         raise RuntimeError(
             "Saving model only allowed inside functions decorated with @model"
         )
-    train = active_context.train()
-    tracker = active_context.tracker()
-    if not train or not tracker:
-        raise RuntimeError(
-            "Saving model only allowed inside functions decorated with @model"
-        )
-    transfer_state = ResourceTransferState()
-    train.save_model(model, transfer_state=transfer_state)
-    tracker.mark_model_saving_result(active_context.asset_name(), transfer_state)
+    active_context.save_model(model)
 
 
 @sdk_function
-def save_dataset(dataset: pd.DataFrame) -> None:
+def save_dataset(dataset: "pandas.DataFrame") -> None:
     """
     :param dataset: The dataset object to save.
     :return: None.
@@ -354,11 +344,6 @@ def save_dataset(dataset: pd.DataFrame) -> None:
     """
     active_context = get_active_context()
     if not active_context:
-        raise RuntimeError(
-            "Saving dataset only allowed inside functions decorated with @dataset"
-        )
-    build = active_context.dataset_build()
-    if not build:
         raise RuntimeError(
             "Saving dataset only allowed inside functions decorated with @dataset"
         )

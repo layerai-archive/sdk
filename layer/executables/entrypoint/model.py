@@ -15,7 +15,6 @@ from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
-from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exception_handler import exception_handler
 from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.exceptions.status_report import (
@@ -190,11 +189,8 @@ class ModelTrainer:
                 logger.info("Executed train_model_func successfully")
                 if model:
                     self._run_assertions(model)
-                    self.tracker.mark_model_saving(model_name)
                     logger.info(f"Saving model artifact {model} to model registry")
-                    transfer_state = ResourceTransferState()
-                    self.train.save_model(model, transfer_state=transfer_state)
-                    self.tracker.mark_model_saving_result(model_name, transfer_state)
+                    ctx.save_model(model)
                     logger.info(
                         f"Saved model artifact {model} to model registry successfully"
                     )
