@@ -1,4 +1,3 @@
-import functools
 import glob
 import inspect
 import json
@@ -7,7 +6,6 @@ import pickle  # nosec
 import shutil  # nosec
 import sys
 import tempfile
-import urllib
 import zipapp
 import zipfile
 from dataclasses import dataclass, field
@@ -43,7 +41,8 @@ def package_function(
 
         # include cloudpickle itself in the executable
         _copy_cloudpickle_package(source)
-        _copy_layer_package(source)
+
+        _prepare_layer_dependency(source)
 
         if conda_env is not None:
             conda_environment_file_path = source / "environment.yml"
@@ -110,15 +109,8 @@ def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
     )
 
 
-@functools.lru_cache(maxsize=None)
-def _is_version_on_pypi() -> Boolean:
-    version = layer.__version__
-    pypi_url = f"https://pypi.org/pypi/layer/{version}/json"
-    try:
-        urllib.request.urlopen(pypi_url)  # nosec urllib_urlopen
-    except urllib.error.HTTPError:
-        return False
-    return True
+def _is_dev_version() -> Boolean:
+    return layer.__version__ == "0.10.0b1"
 
 
 def _copy_cloudpickle_package(target_path: Path) -> None:
@@ -137,9 +129,9 @@ def _copy_cloudpickle_package(target_path: Path) -> None:
         shutil.copyfile(file_path, cloudpickle_dir / file_path.name)
 
 
-def _copy_layer_package(target_path: Path) -> None:
+def _prepare_layer_dependency(target_path: Path) -> None:
     with open(target_path / "layer.txt", "w") as layer_requirements_file:
-        if _is_version_on_pypi():
+        if not _is_dev_version():
             layer_requirements_file.write(f"layer=={layer.__version__}")
         else:
             layer_sdk_target_path = target_path / "layer-sdk"

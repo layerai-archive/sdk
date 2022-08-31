@@ -44,7 +44,6 @@ def test_package_contents(tmpdir: Path, monkeypatch: pytest.MonkeyPatch):
 
     layer_version = "1.2.3"
     with monkeypatch.context() as m:
-        m.setattr(layer.executables.packager, "_is_version_on_pypi", lambda: True)
         m.setattr(layer, "__version__", layer_version)
         executable = package_function(func, resources=resource_paths, output_dir=tmpdir)
 
@@ -80,13 +79,11 @@ def test_package_contents(tmpdir: Path, monkeypatch: pytest.MonkeyPatch):
             assert layer_txt.read().decode("utf-8") == f"layer=={layer_version}"
 
 
-def test_package_contents_local_version(tmpdir: Path, monkeypatch: pytest.MonkeyPatch):
+def test_package_contents_dev_version(tmpdir: Path):
     def func():
         pass
 
-    with monkeypatch.context() as m:
-        m.setattr(layer.executables.packager, "_is_version_on_pypi", lambda: False)
-        executable = package_function(func, output_dir=tmpdir)
+    executable = package_function(func, output_dir=tmpdir)
 
     with zipfile.ZipFile(executable) as exec:
         exec_entries = {entry.filename for entry in exec.infolist()}
