@@ -2,6 +2,7 @@ from uuid import UUID
 
 import numpy as np
 import pandas as pd
+import pytest
 from sklearn.svm import SVC
 
 import layer
@@ -9,6 +10,7 @@ from layer.clients.layer import LayerClient
 from layer.contracts.logged_data import LoggedDataType, Video
 from layer.contracts.projects import Project
 from layer.decorators import dataset, model, pip_requirements
+from layer.exceptions.exceptions import LayerClientResourceNotFoundException
 from test.e2e.assertion_utils import E2ETestAsserter
 
 
@@ -47,6 +49,60 @@ def test_logging_in_remote_execution(
     assert logged_data.value == "bar"
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == str_tag
+
+
+def test_dataset_get_metadata_and_changing_old_version_logged_data(
+    initialized_project: Project, asserter: E2ETestAsserter, client: LayerClient
+):
+    # given
+    dataset_name = "scalar_ds"
+
+    @dataset(dataset_name)
+    def scalarv1():
+        data = [[1, "product1", 15], [2, "product2", 20], [3, "product3", 10]]
+        dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
+        layer.log(
+            {
+                "zoo": 567,
+            }
+        )
+        return dataframe
+
+    # same dataset as above, but with different content
+    @dataset(dataset_name)
+    def scalarv2():
+        data = [[11, "product1", 155], [22, "product2", 200], [3, "product3", 1000]]
+        dataframe = pd.DataFrame(data, columns=["Id", "Product", "Price"])
+        layer.log(
+            {
+                "str_tag": "bar",
+            }
+        )
+        return dataframe
+
+    scalarv1()
+
+    ds_v1 = layer.get_dataset(dataset_name)
+
+    scalarv2()
+    ds_v2 = layer.get_dataset(dataset_name)
+
+    # add a log to the older version of the dataset
+    ds_v1.log({"foo": 123})
+
+    assert ds_v1.get_metadata("zoo").value() == 567
+    assert ds_v1.get_metadata("foo").value() == 123
+
+    assert ds_v2.get_metadata("str_tag").value() == "bar"
+
+    with pytest.raises(LayerClientResourceNotFoundException):
+        assert ds_v2.get_metadata("zoo")
+
+    with pytest.raises(LayerClientResourceNotFoundException):
+        assert ds_v2.get_metadata("foo")
+
+    with pytest.raises(LayerClientResourceNotFoundException):
+        assert ds_v1.get_metadata("str_tag")
 
 
 def test_scalar_values_logged(
