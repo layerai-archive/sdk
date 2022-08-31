@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import PIL.Image
 import pytest
-from layerapi.api.service.logged_data.logged_data_api_pb2 import LogDataResponse
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 from requests import Session  # type: ignore
 
@@ -438,10 +437,7 @@ def test_log_data(
     get_expected_kwargs: Callable[[Any], Mapping[str, Any]],
 ) -> None:
     logged_data_client = MagicMock(spec=LoggedDataClient)
-    logged_data_client.log_data.return_value = MagicMock(
-        spec=LogDataResponse,
-        s3_path="http://path/for/upload",
-    )
+    logged_data_client.log_data.return_value = "http://path/for/upload"
 
     runner = LogDataRunner(
         logged_data_destination=ImmediateLoggedDataDestination(logged_data_client),
@@ -597,10 +593,7 @@ def test_log_data_raises_error(
     expected_error_pattern: str,
 ) -> None:
     logged_data_client = MagicMock()
-    logged_data_client.log_data.return_value = MagicMock(
-        spec=LogDataResponse,
-        s3_path="http://path/for/upload",
-    )
+    logged_data_client.log_data.return_value = ("http://path/for/upload",)
 
     runner = LogDataRunner(
         dataset_build_id=dataset_build_id,
