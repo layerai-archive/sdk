@@ -1,3 +1,4 @@
+import os
 import pathlib
 import subprocess  # nosec: import_subprocess
 import threading
@@ -193,7 +194,7 @@ class SystemMetrics:
         )
 
         # By default, we get metrics from psutil
-        if DockerMetricsCollector.METRICS_ROOT.exists():
+        if "LAYER_FABRIC" in os.environ:
             self._metrics_collector = DockerMetricsCollector(self._logger)
         else:
             self._metrics_collector = PsUtilMetricsCollector(self._logger)
