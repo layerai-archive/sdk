@@ -5,6 +5,7 @@ from layerapi.api.ids_pb2 import DatasetBuildId, ModelTrainId
 from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     GetLoggedDataRequest,
     LogDataRequest,
+    LogDataResponse,
 )
 from layerapi.api.service.logged_data.logged_data_api_pb2_grpc import LoggedDataAPIStub
 from layerapi.api.value.logged_data_x_coordinate_type_pb2 import (
@@ -74,7 +75,7 @@ class LoggedDataClient:
         category: Optional[str] = None,
         x_coordinate: Optional[int] = None,
         x_coordinate_type: Optional[XCoordinateType] = None,
-    ) -> Optional[str]:
+    ) -> LogDataResponse:
         request = LogDataRequest(
             unique_tag=tag,
             category=category if category else "",
@@ -95,5 +96,4 @@ class LoggedDataClient:
             if dataset_build_id is not None
             else None,
         )
-        response = self._service.LogData(request=request)
-        return response.s3_path if response.s3_path else None
+        return self._service.LogData(request=request)

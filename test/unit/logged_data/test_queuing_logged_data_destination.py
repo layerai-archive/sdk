@@ -2,6 +2,8 @@ import threading
 from typing import Any, Optional
 from unittest.mock import MagicMock, patch
 
+from layerapi.api.service.logged_data.logged_data_api_pb2 import LogDataResponse
+
 from layer.clients.logged_data_service import LoggedDataClient
 from layer.logged_data.queuing_logged_data_destination import (
     QueueingLoggedDataDestination,
@@ -17,7 +19,9 @@ def test_given_errors_on_upload_and_grpc_when_get_errors_then_returns_all_errors
         raise Exception(error_message)
 
     def queued_successful_execution(__: LoggedDataClient):
-        return "https://valid_url"
+        response = LogDataResponse()
+        response.s3_path = "https://valid_url"
+        return response
 
     def failed_upload(_: str, __: Optional[Any] = None):
         raise Exception(other_error_message)
