@@ -341,7 +341,7 @@ def _cleanup_project(client: LayerClient, project: Project):
     project = client.project_service_client.get_project(project.full_name)
     if project:
         print(f"project {project.name} exists, will remove")
-        client.project_service_client.remove_project(project.id)
+        # client.project_service_client.remove_project(project.id)
 
 
 @pytest.fixture()
