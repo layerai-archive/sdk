@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PbModelFlavor
-from scipy.sparse import spmatrix  # type: ignore
 
 from layer.types import ModelObject
 
@@ -38,6 +37,8 @@ class LightGBMModelFlavor(ModelFlavor):
 
     @staticmethod
     def __predict(model: ModelObject, input_df: pd.DataFrame) -> pd.DataFrame:
+        from scipy.sparse import spmatrix  # type: ignore
+
         prediction = model.predict(input_df)  # type: ignore
         if isinstance(prediction, np.ndarray):
             return pd.DataFrame(prediction)

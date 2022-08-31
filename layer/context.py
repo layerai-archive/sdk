@@ -1,10 +1,15 @@
+import os
+from pathlib import Path
 from types import TracebackType
-from typing import Optional
+from typing import Any, Optional
 
+import pandas as pd
 from yarl import URL
 
+from layer.clients.layer import LayerClient
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import DatasetBuild
+from layer.contracts.tracker import DatasetTransferState, ResourceTransferState
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.tracker.ui_progress_tracker import RunProgressTracker
 from layer.training.base_train import BaseTrain
@@ -50,6 +55,7 @@ class Context:
         tracker: Optional[RunProgressTracker] = None,
         train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
+        client: Optional[LayerClient] = None,
     ) -> None:
         if train is not None and dataset_build is not None:
             raise Exception(
@@ -59,7 +65,10 @@ class Context:
             raise Exception("Wrong asset type for model train context")
         if dataset_build is not None and asset_path.asset_type is not AssetType.DATASET:
             raise Exception("Wrong asset type for dataset build context")
+        if dataset_build is not None and client is None:
+            raise Exception("Context with dataset build also needs a layer client")
         self._url = url
+        self._client = client
         self._project_full_name = asset_path.project_full_name()
         self._asset_name = asset_path.asset_name
         self._asset_type = asset_path.asset_type
@@ -69,6 +78,7 @@ class Context:
             LoggedDataDestination
         ] = logged_data_destination
         self._tracker: Optional[RunProgressTracker] = tracker
+        self._initial_cwd: Optional[Path] = None
 
     def url(self) -> URL:
         """
@@ -105,6 +115,21 @@ class Context:
         """
         return self._train
 
+    def save_model(self, model: Any) -> None:
+        train = self._train
+        if not train:
+            raise RuntimeError(
+                "Saving model only allowed inside when context is for model training"
+            )
+        model_name = self.asset_name()
+        tracker = self._tracker
+        if tracker:
+            tracker.mark_model_saving(model_name)
+        transfer_state = ResourceTransferState()
+        train.save_model(model, transfer_state=transfer_state)
+        if tracker:
+            tracker.mark_model_saving_result(model_name, transfer_state)
+
     def dataset_build(self) -> Optional[DatasetBuild]:
         """
         Retrieves the active Layer dataset build object.
@@ -112,6 +137,24 @@ class Context:
         :return: Represents the current build of the dataset, passed by Layer when building of the dataset starts.
         """
         return self._dataset_build
+
+    def save_dataset(self, ds: pd.DataFrame) -> None:
+        build = self._dataset_build
+        if not build:
+            raise RuntimeError(
+                "Saving dataset only allowed inside when context is for dataset building"
+            )
+        dataset_name = self.asset_name()
+        assert self._client is not None
+        transfer_state = DatasetTransferState(len(ds))
+        if self._tracker:
+            self._tracker.mark_dataset_saving_result(dataset_name, transfer_state)
+        # this call would store the resulting dataset, extract the schema and complete the build from remote
+        self._client.data_catalog.store_dataset(
+            data=ds,
+            build_id=build.id,
+            progress_callback=transfer_state.increment_num_transferred_rows,
+        )
 
     def tracker(self) -> Optional[RunProgressTracker]:
         return self._tracker
@@ -126,9 +169,18 @@ class Context:
         return self._asset_type
 
     def close(self) -> None:
+        assert self._initial_cwd
+        os.chdir(
+            self._initial_cwd
+        )  # Important for local execution to have no such side effect
         _reset_active_context()
 
+    def get_working_directory(self) -> Path:
+        assert self._initial_cwd
+        return Path(self._initial_cwd)
+
     def __enter__(self) -> "Context":
+        self._initial_cwd = Path(os.getcwd())
         _set_active_context(self)
         return self
 

@@ -379,7 +379,7 @@ class LoggedDataType(Enum):
 class XCoordinateType(Enum):
     INVALID = 0
     STEP = 1
-    TIMESTAMP = 2
+    TIME = 2
 
 
 @dataclass(frozen=True)

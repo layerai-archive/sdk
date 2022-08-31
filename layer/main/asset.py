@@ -325,10 +325,26 @@ def save_model(model: Any) -> None:
         raise RuntimeError(
             "Saving model only allowed inside functions decorated with @model"
         )
-    train = active_context.train()
-    tracker = active_context.tracker()
-    if not train or not tracker:
+    active_context.save_model(model)
+
+
+@sdk_function
+def save_dataset(dataset: "pandas.DataFrame") -> None:
+    """
+    :param dataset: The dataset object to save.
+    :return: None.
+
+    Saves a dataset object to Layer under the currently decorated function.
+
+    .. code-block:: python
+
+        # Saves the model to the current train.
+        my_dataset = build()
+        layer.save_dataset(my_dataset)
+    """
+    active_context = get_active_context()
+    if not active_context:
         raise RuntimeError(
-            "Saving model only allowed inside functions decorated with @model"
+            "Saving dataset only allowed inside functions decorated with @dataset"
         )
-    train.save_model(model, tracker=tracker)
+    active_context.save_dataset(dataset)

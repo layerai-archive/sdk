@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from layer.tracker.progress_tracker import RunProgressTracker
+from layer.contracts.tracker import ResourceTransferState
 
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ class BaseTrain:
     def save_model(
         self,
         trained_model_obj: "ModelObject",
-        tracker: RunProgressTracker,
+        transfer_state: ResourceTransferState,
     ) -> Any:
         pass
 

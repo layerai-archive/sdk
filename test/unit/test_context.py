@@ -1,4 +1,5 @@
 from typing import Union
+from unittest.mock import MagicMock
 
 import pytest
 from yarl import URL
@@ -115,6 +116,7 @@ class TestContext:
         with Context(
             url=EXAMPLE_LAYER_URL,
             asset_path=asset_path,
+            client=MagicMock(),
             dataset_build=build_or_train
             if isinstance(build_or_train, DatasetBuild)
             else None,

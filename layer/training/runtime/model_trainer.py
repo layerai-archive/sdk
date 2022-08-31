@@ -21,6 +21,7 @@ from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
 from ...contracts.asset import AssetPath, AssetType
+from ...contracts.tracker import ResourceTransferState
 from ...logged_data.immediate_logged_data_destination import (
     ImmediateLoggedDataDestination,
 )
@@ -156,7 +157,7 @@ class ModelTrainer:
             project_full_name=project_full_name,
             version=self.train_context.model_version,
             train_id=self.train_context.train_id,
-            train_index=self.train_context.train_index,
+            train_index=str(self.train_context.train_index),
         ) as train, ImmediateLoggedDataDestination(
             self.client.logged_data_service_client
         ) as logged_data_dest:
@@ -206,7 +207,9 @@ class ModelTrainer:
                     )
                     self.tracker.mark_model_saving(self.train_context.model_name)
                     self.logger.info(f"Saving model artifact {model} to model registry")
-                    train.save_model(model, tracker=self.tracker)
+                    transfer_state = ResourceTransferState()
+                    train.save_model(model, transfer_state=transfer_state)
+                    self.tracker.mark_model_saving_result(model.name, transfer_state)
                     self.logger.info(
                         f"Saved model artifact {model} to model registry successfully"
                     )
