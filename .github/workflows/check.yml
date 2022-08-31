@@ -91,7 +91,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.7, 3.8]
-    runs-on: ubuntu-18.04
+        ubuntu-version: [18.04, 20.04, 22.04]
+    runs-on: ubuntu-${{ matrix.ubuntu-version }}
     env:
       DD_GIT_COMMIT_AUTHOR_EMAIL: ci@layer.ai
       DD_GIT_COMMIT_COMMITTER_EMAIL: ci@layer.ai
