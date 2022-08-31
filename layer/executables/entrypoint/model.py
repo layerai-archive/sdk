@@ -197,7 +197,10 @@ class ModelTrainer:
                 self._update_train_status(
                     ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
                 )
-                self.tracker.mark_model_saved(model_name)
+                self.tracker.mark_model_saved(
+                    model_name,
+                    warnings=self.logged_data_destination.close_and_get_errors(),
+                )
                 return model
 
     def _report_failure(self, stage: str, failure_exc: Exception) -> None:

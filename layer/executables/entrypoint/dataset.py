@@ -107,7 +107,10 @@ def _run(
 
     ctx.save_dataset(result)
 
-    tracker.mark_dataset_built(dataset_definition.asset_name)
+    tracker.mark_dataset_built(
+        dataset_definition.asset_name,
+        warnings=logged_data_destination.close_and_get_errors(),
+    )
 
     return result
 
