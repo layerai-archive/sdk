@@ -75,8 +75,8 @@ class CGroupsMetricsCollector:
     def get_mem_available(self) -> int:
         raise NotImplementedError()
 
-    def _read_cgroup_metric(self, metric_path: str) -> int:
-        return _read_int_from_file(self.METRICS_ROOT / metric_path)
+    def _read_cgroup_metric(self, metric_path: str) -> Any:
+        return _read_from_file(self.METRICS_ROOT / metric_path)
 
 
 class PsUtilMetricsCollector(MetricsCollector):
@@ -110,19 +110,19 @@ class CGroupsMetricsCollectorV1(CGroupsMetricsCollector):
 
     def get_cpu_usage(self) -> int:
         # Time in nanoseconds
-        return self._read_cgroup_metric("cpu/cpuacct.usage_user")
+        return int(self._read_cgroup_metric("cpu/cpuacct.usage_user"))
 
     def get_cpu_available(self) -> float:
         # Times in microseconds
-        cpu_quota = self._read_cgroup_metric("cpu/cpu.cfs_quota_us")
-        cpu_period = self._read_cgroup_metric("cpu/cpu.cfs_period_us")
+        cpu_quota = int(self._read_cgroup_metric("cpu/cpu.cfs_quota_us"))
+        cpu_period = int(self._read_cgroup_metric("cpu/cpu.cfs_period_us"))
         return float(cpu_quota / cpu_period)
 
     def get_mem_used(self) -> int:
-        return self._read_cgroup_metric("memory/memory.usage_in_bytes")
+        return int(self._read_cgroup_metric("memory/memory.usage_in_bytes"))
 
     def get_mem_available(self) -> int:
-        return self._read_cgroup_metric("memory/memory.limit_in_bytes")
+        return int(self._read_cgroup_metric("memory/memory.limit_in_bytes"))
 
 
 class CGroupsMetricsCollectorV2(CGroupsMetricsCollector):
@@ -132,28 +132,31 @@ class CGroupsMetricsCollectorV2(CGroupsMetricsCollector):
 
     def get_cpu_usage(self) -> int:
         # Time expected in nanoseconds
-        cpu_usage = self._read_cgroup_metric("user.slice/cpu.stat")
+        cpu_usage = str(self._read_cgroup_metric("user.slice/cpu.stat"))
         regex = r"user_usec (\d*)\n"
-        extracted_cpu_usage = re.search(regex, cpu_usage).group(1)
-        # Time in microseconds, converting to nanoseconds
-        return int(extracted_cpu_usage * 1000)
+        extracted_cpu_usage = re.search(regex, cpu_usage)
+        if extracted_cpu_usage is None:
+            return 0
+        else:
+            # Time in microseconds, converting to nanoseconds
+            return int(extracted_cpu_usage.group(1)) * 1000
 
     def get_cpu_available(self) -> float:
-        max_cpu = self._read_cgroup_metric("user.slice/cpu.max")
+        max_cpu = str(self._read_cgroup_metric("user.slice/cpu.max"))
         cpu_quota = max_cpu.split()[0]
-        cpu_period = int(max_cpu.split()[1])
-        if cpu_quota == "max":
+        cpu_period = max_cpu.split()[1]
+        if str(cpu_quota) == "max":
             return 1
         else:
-            return float(int(cpu_quota) / cpu_period)
+            return float(int(cpu_quota) / int(cpu_period))
 
     def get_mem_used(self) -> int:
-        return self._read_cgroup_metric("user.slice/memory.current")
+        return int(self._read_cgroup_metric("user.slice/memory.current"))
 
     def get_mem_available(self) -> int:
         memory_high = self._read_cgroup_metric("user.slice/memory.high")
         if memory_high == "max":
-            return psutil.virtual_memory().total
+            return int(psutil.virtual_memory().total)
         else:
             return int(memory_high)
 
@@ -167,7 +170,9 @@ class DockerMetricsCollector(MetricsCollector):
     We also wait a second before going into the first loop to ensure the CPU usage data has changed.
     """
 
-    def __init__(self, logger: Logger, cgroup_metrics_collector: CGroupsMetricsCollector) -> None:
+    def __init__(
+        self, logger: Logger, cgroup_metrics_collector: CGroupsMetricsCollector
+    ) -> None:
         super().__init__(logger)
         self._cpu_usage_time = time.time()
         self._cgroup_metrics_collector = cgroup_metrics_collector
@@ -204,8 +209,8 @@ class DockerMetricsCollector(MetricsCollector):
         }
 
 
-def _read_int_from_file(path: pathlib.Path) -> int:
-    return int(path.read_text())
+def _read_from_file(path: pathlib.Path) -> Any:
+    return path.read_text()
 
 
 class SystemMetrics:
@@ -247,13 +252,20 @@ class SystemMetrics:
             logged_data_destination=logged_data_destination,
         )
 
-        cgroup_output, err = subprocess.Popen(['stat', '-fc', '%T', '/sys/fs/cgroup/'], stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE).communicate()
+        cgroup_output, _ = subprocess.Popen( # nosec: B603, B607
+            ["stat", "-fc", "%T", "/sys/fs/cgroup/"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        ).communicate()
 
-        if cgroup_output == "tmpfs":
-            self._metrics_collector = DockerMetricsCollector(self._logger, CGroupsMetricsCollectorV1())
-        elif cgroup_output == "cgroup2fs":
-            self._metrics_collector = DockerMetricsCollector(self._logger, CGroupsMetricsCollectorV2())
+        if cgroup_output.decode("utf-8") == "tmpfs":
+            self._metrics_collector = DockerMetricsCollector(
+                self._logger, CGroupsMetricsCollectorV1()
+            )
+        elif cgroup_output.decode("utf-8") == "cgroup2fs":
+            self._metrics_collector = DockerMetricsCollector(
+                self._logger, CGroupsMetricsCollectorV2()
+            )
         else:
             self._metrics_collector = PsUtilMetricsCollector(self._logger)
 
