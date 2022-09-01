@@ -1,3 +1,4 @@
+import os
 import pathlib
 import re
 import subprocess  # nosec: import_subprocess
@@ -252,17 +253,21 @@ class SystemMetrics:
             logged_data_destination=logged_data_destination,
         )
 
-        cgroup_output, _ = subprocess.Popen(  # nosec: B603, B607
-            ["stat", "-fc", "%T", "/sys/fs/cgroup/"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        ).communicate()
+        path = os.path.abspath("/sys/fs/cgroup/")
+        p = [
+            p
+            for p in psutil.disk_partitions(all=True)
+            if p.mountpoint == path.__str__()
+        ]
+        cgroup_mount_type = ""
+        if len(p) == 1:
+            cgroup_mount_type = p[0].fstype
 
-        if cgroup_output.decode("utf-8") == "tmpfs":
+        if cgroup_mount_type == "tmpfs":
             self._metrics_collector = DockerMetricsCollector(
                 self._logger, CGroupsMetricsCollectorV1()
             )
-        elif cgroup_output.decode("utf-8") == "cgroup2fs":
+        elif cgroup_mount_type == "cgroup2":
             self._metrics_collector = DockerMetricsCollector(
                 self._logger, CGroupsMetricsCollectorV2()
             )
