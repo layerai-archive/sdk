@@ -9,7 +9,7 @@ from ray.client_builder import (  # type:ignore #  pylint: disable=import-error
 from layer.config.config_manager import ConfigManager
 from layer.contracts.fabrics import Fabric
 
-from .entrypoint.common import ENV_LAYER_API_TOKEN, ENV_LAYER_API_URL
+from .entrypoint.common import ENV_LAYER_API_TOKEN, ENV_LAYER_API_URL, ENV_LAYER_FABRIC
 from .packager import FunctionPackageInfo
 from .runtime import BaseFunctionRuntime
 
@@ -20,17 +20,17 @@ def ray_runtime(executable_path: Path) -> None:
 
 
 class RayClientFunctionRuntime(BaseFunctionRuntime):
-    def __init__(
-        self, executable_path: Path, *args: Any, **kwargs: Dict[str, Any]
-    ) -> None:
+    def __init__(self, executable_path: Path, *args: Any, **kwargs: Any) -> None:
         super().__init__(executable_path)
         self._address = kwargs["address"]
+        self._fabric: Optional[Fabric] = kwargs["fabric"]
         self._client: Optional[ClientContext] = None
-        self._fabric: Optional[Fabric] = None
 
     def initialise(self, package_info: FunctionPackageInfo) -> None:
         if not self._address:
             raise ValueError("Ray address is required!")
+        if not self._fabric:
+            raise ValueError("fabric is not specified and could not be resolved")
 
         config = ConfigManager().load()
         runtime_env = {
@@ -38,6 +38,7 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
             "env_vars": {
                 ENV_LAYER_API_URL: str(config.url),
                 ENV_LAYER_API_TOKEN: config.credentials.access_token,
+                ENV_LAYER_FABRIC: self._fabric.value,
             },
         }
         if package_info.conda_env:
@@ -66,9 +67,6 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
         else:
             runtime_env["pip"] = ["layer", *[p for p in package_info.pip_dependencies]]
 
-        self._fabric: Fabric = Fabric(  # type:ignore # pylint: disable=E1120;
-            package_info.metadata["function"]["fabric"]["name"]
-        )
         print(f"Connecting to the Ray instance at {self._address}")
         self._client = ray.init(
             address=self._address,
