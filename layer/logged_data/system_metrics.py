@@ -252,7 +252,7 @@ class SystemMetrics:
             logged_data_destination=logged_data_destination,
         )
 
-        cgroup_output, _ = subprocess.Popen( # nosec: B603, B607
+        cgroup_output, _ = subprocess.Popen(  # nosec: B603, B607
             ["stat", "-fc", "%T", "/sys/fs/cgroup/"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
