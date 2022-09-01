@@ -67,9 +67,6 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
         else:
             runtime_env["pip"] = ["layer", *[p for p in package_info.pip_dependencies]]
 
-        self._fabric: Fabric = Fabric(  # type:ignore # pylint: disable=E1120;
-            package_info.metadata["function"]["fabric"]["name"]
-        )
         print(f"Connecting to the Ray instance at {self._address}")
         self._client = ray.init(
             address=self._address,
