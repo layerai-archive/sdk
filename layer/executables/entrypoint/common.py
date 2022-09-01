@@ -20,6 +20,7 @@ ENV_LAYER_API_URL = "LAYER_API_URL"
 ENV_LAYER_API_KEY = "LAYER_API_KEY"
 ENV_LAYER_API_TOKEN = "LAYER_API_TOKEN"
 ENV_LAYER_RUN_ID = "LAYER_RUN_ID"
+ENV_LAYER_FABRIC = "LAYER_FABRIC"
 
 RunnerFunction = Callable[[FunctionDefinition], Any]
 RunFunction = Any  # TODO(volkan) build a better argument typing to pass in
@@ -75,7 +76,7 @@ def _initialize(definition: FunctionDefinition) -> None:
 
 
 def _get_display_fabric() -> Fabric:
-    return Fabric.find(os.getenv("LAYER_FABRIC", "f-local"))
+    return Fabric.find(os.getenv(ENV_LAYER_FABRIC, "f-local"))
 
 
 def _get_run_id() -> str:

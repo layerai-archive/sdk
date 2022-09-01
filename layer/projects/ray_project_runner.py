@@ -33,7 +33,9 @@ class RayProjectRunner:
         for definition in self.definitions:
             definition.package()
             RayClientFunctionRuntime.execute(
-                definition.executable_path, address=self.ray_address
+                definition.executable_path,
+                address=self.ray_address,
+                fabric=definition.fabric,
             )
 
         run = Run(
