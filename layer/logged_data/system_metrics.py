@@ -4,6 +4,7 @@ import re
 import subprocess  # nosec: import_subprocess
 import threading
 import time
+from enum import Enum
 from logging import Logger
 from typing import Any, Dict, Optional
 
@@ -162,6 +163,12 @@ class CGroupsMetricsCollectorV2(CGroupsMetricsCollector):
             return int(memory_high)
 
 
+class CGroupsVersion(Enum):
+    V1 = "v1"
+    V2 = "v2"
+    UNKNOWN = "unknown"
+
+
 class DockerMetricsCollector(MetricsCollector):
     """
     For Docker metrics collection, we calculate metrics based off cgroup CPU usage data.
@@ -214,6 +221,26 @@ def _read_from_file(path: pathlib.Path) -> Any:
     return path.read_text()
 
 
+def _get_cgroup_version() -> CGroupsVersion:
+    """
+    Find out the cgroup version used on the machine by finding out the filesystem used for the cgroup mount point.
+    """
+    path = os.path.abspath("/sys/fs/cgroup/")
+    partitions = [
+        p for p in psutil.disk_partitions(all=True) if p.mountpoint == path.__str__()
+    ]
+    if len(partitions) == 1:
+        cgroup_mount_type = partitions[0].fstype
+        if cgroup_mount_type == "tmpfs":
+            return CGroupsVersion.V1
+        elif cgroup_mount_type == "cgroup2":
+            return CGroupsVersion.V2
+        else:
+            return CGroupsVersion.UNKNOWN
+    else:
+        return CGroupsVersion.UNKNOWN
+
+
 class SystemMetrics:
     def __init__(
         self,
@@ -253,21 +280,12 @@ class SystemMetrics:
             logged_data_destination=logged_data_destination,
         )
 
-        path = os.path.abspath("/sys/fs/cgroup/")
-        p = [
-            p
-            for p in psutil.disk_partitions(all=True)
-            if p.mountpoint == path.__str__()
-        ]
-        cgroup_mount_type = ""
-        if len(p) == 1:
-            cgroup_mount_type = p[0].fstype
-
-        if cgroup_mount_type == "tmpfs":
+        cgroup_version = _get_cgroup_version()
+        if cgroup_version == CGroupsVersion.V1:
             self._metrics_collector = DockerMetricsCollector(
                 self._logger, CGroupsMetricsCollectorV1()
             )
-        elif cgroup_mount_type == "cgroup2":
+        elif cgroup_version == CGroupsVersion.V2:
             self._metrics_collector = DockerMetricsCollector(
                 self._logger, CGroupsMetricsCollectorV2()
             )
