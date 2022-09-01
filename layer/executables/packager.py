@@ -11,7 +11,6 @@ import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Sequence, Tuple
-from xmlrpc.client import Boolean
 
 import layer
 from layer.contracts.conda import CondaEnv
@@ -109,7 +108,7 @@ def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
     )
 
 
-def _is_dev_version() -> Boolean:
+def _is_dev_version() -> bool:
     return layer.__version__ == "0.10.0b1"
 
 
