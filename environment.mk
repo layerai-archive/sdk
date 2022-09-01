@@ -72,7 +72,8 @@ else
                          $(call get_python_package_version,xgboost) \
                          $(call get_python_package_version,lightgbm) \
                          $(call get_python_package_version,h5py) \
-                         $(call get_python_package_version,pyarrow)
+                         $(call get_python_package_version,pyarrow) \
+                         $(call get_python_package_version,grpcio)
 endif
 else
 	@echo 'Not inside a conda environment or conda not installed, this is a requirement for Apple arm processors'

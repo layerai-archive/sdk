@@ -65,7 +65,7 @@ pyjwt  = "^2.0.0"
 rich = ">=11"
 yarl  = ">=1.6.3"
 wrapt  = ">=1.13.3"
-layer-api = "0.9.380729"
+layer-api = "0.9.381223"
 numpy = { version = "<1.22", python = "~3.7" } # 1.22 doesn't support python 3.7, this is a transitive dependency comming from various other packages
 requests = ">=2.23.0"
 nvsmi = "^0.4.2"
@@ -115,6 +115,7 @@ moviepy = "^1.0.3"
 pytorch-lightning = "^1.7.0"
 transformers = "^4.21.2"
 importtime-output-wrapper = "^1.1.0"
+ray = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
