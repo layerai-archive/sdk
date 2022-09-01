@@ -203,7 +203,7 @@ def initialized_organization_project(
     project = layer.init(f"{account_name}/{project_name}", fabric=Fabric.F_XSMALL.value)
 
     yield project
-    _cleanup_project(client, project)
+    # _cleanup_project(client, project)
 
 
 @pytest.fixture(autouse=True)
@@ -334,7 +334,7 @@ def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
     project = layer.init(project_name, fabric=Fabric.F_XSMALL.value)
 
     yield project
-    _cleanup_project(client, project)
+    # _cleanup_project(client, project)
 
 
 def _cleanup_project(client: LayerClient, project: Project):
