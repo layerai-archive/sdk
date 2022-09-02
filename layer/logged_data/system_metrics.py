@@ -62,7 +62,7 @@ class MetricsCollector:
         return metrics
 
 
-class CGroupsMetricsCollector:
+class CGroupsMetricsCollectorVersioned:
     METRICS_ROOT = pathlib.Path("/sys/fs/cgroup/")
 
     def get_cpu_usage(self) -> int:
@@ -105,7 +105,7 @@ class PsUtilMetricsCollector(MetricsCollector):
         }
 
 
-class CGroupsMetricsCollectorV1(CGroupsMetricsCollector):
+class CGroupsMetricsCollectorVersionedV1(CGroupsMetricsCollectorVersioned):
     """
     Use cgroups-v1 to collect system metrics
     """
@@ -127,7 +127,7 @@ class CGroupsMetricsCollectorV1(CGroupsMetricsCollector):
         return int(self._read_cgroup_metric("memory/memory.limit_in_bytes"))
 
 
-class CGroupsMetricsCollectorV2(CGroupsMetricsCollector):
+class CGroupsMetricsCollectorVersionedV2(CGroupsMetricsCollectorVersioned):
     """
     Use cgroups-v2 to collect system metrics
     """
@@ -169,7 +169,7 @@ class CGroupsVersion(Enum):
     UNKNOWN = "unknown"
 
 
-class DockerMetricsCollector(MetricsCollector):
+class CGroupsMetricsCollector(MetricsCollector):
     """
     For Docker metrics collection, we calculate metrics based off cgroup CPU usage data.
     For each iteration, we compare the current usage data with the previous iteration's data,
@@ -179,7 +179,7 @@ class DockerMetricsCollector(MetricsCollector):
     """
 
     def __init__(
-        self, logger: Logger, cgroup_metrics_collector: CGroupsMetricsCollector
+        self, logger: Logger, cgroup_metrics_collector: CGroupsMetricsCollectorVersioned
     ) -> None:
         super().__init__(logger)
         self._cpu_usage_time = time.time()
@@ -282,12 +282,12 @@ class SystemMetrics:
 
         cgroup_version = _get_cgroup_version()
         if cgroup_version == CGroupsVersion.V1:
-            self._metrics_collector = DockerMetricsCollector(
-                self._logger, CGroupsMetricsCollectorV1()
+            self._metrics_collector = CGroupsMetricsCollector(
+                self._logger, CGroupsMetricsCollectorVersionedV1()
             )
         elif cgroup_version == CGroupsVersion.V2:
-            self._metrics_collector = DockerMetricsCollector(
-                self._logger, CGroupsMetricsCollectorV2()
+            self._metrics_collector = CGroupsMetricsCollector(
+                self._logger, CGroupsMetricsCollectorVersionedV2()
             )
         else:
             self._metrics_collector = PsUtilMetricsCollector(self._logger)
