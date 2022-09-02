@@ -4,6 +4,7 @@ import logging
 import os
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, Optional, Tuple
 
@@ -26,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 TEST_SESSION_CONFIG_TMP_PATH = DEFAULT_LAYER_PATH / "e2e_test_session.ini"
 
+TEST_ORG_ACCOUNT_NAME_PREFIX = "sdk-e2e-org-"
+
 
 def pytest_sessionstart(session):
     """
@@ -46,6 +49,7 @@ def pytest_sessionstart(session):
         _cleanup_organization_account()
 
     loop = asyncio.get_event_loop()
+    loop.run_until_complete(delete_old_org_accounts())
     org_account: Account = loop.run_until_complete(create_organization_account())
 
     _write_organization_account_to_test_session_config(org_account)
@@ -147,6 +151,28 @@ def _read_organization_account_from_test_session_config() -> Optional[Account]:
         )
 
 
+async def delete_old_org_accounts() -> None:
+    config = await ConfigManager().refresh()
+    client = LayerClient(config.client, logger)
+
+    now_utc = datetime.now(tz=timezone.utc)
+    for acc_id in config.client.organization_account_ids():
+        try:
+            acc_name = client.account.get_account_name_by_id(acc_id)
+            if not acc_name.startswith(TEST_ORG_ACCOUNT_NAME_PREFIX):
+                continue
+            acc_creation_date = client.account.get_account_creation_date(acc_id)
+            if now_utc - timedelta(days=1) > acc_creation_date:
+                print(f"will delete org account {acc_id} because it is too old")
+                try:
+                    client.account.delete_account(account_id=acc_id)
+                    print(f"deleted old org account {acc_id}")
+                except LayerClientResourceNotFoundException:
+                    continue
+        except LayerClientResourceNotFoundException:
+            continue
+
+
 async def create_organization_account() -> Account:
     config = await ConfigManager().refresh()
     client = LayerClient(config.client, logger)
@@ -223,7 +249,7 @@ def pseudo_random_project_name(fixture_request: Any) -> str:
 
 def pseudo_random_account_name() -> Tuple[str, str]:
     name_max_length = 50
-    name_prefix = "sdk-e2e-org-"
+    name_prefix = TEST_ORG_ACCOUNT_NAME_PREFIX
     random_suffix = str(uuid.uuid4()).replace("-", "")[
         : name_max_length - len(name_prefix)
     ]

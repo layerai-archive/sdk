@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import uuid
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
@@ -57,6 +58,23 @@ class ClientConfig:
 
     def with_access_token(self, access_token: str) -> "ClientConfig":
         return replace(self, access_token=access_token)
+
+    def user_id(self) -> uuid.UUID:
+        decoded = jwt.decode(self.access_token, options={"verify_signature": False})
+        return uuid.UUID(decoded["https://layer.co/uuid"])
+
+    def personal_account_id(self) -> uuid.UUID:
+        decoded = jwt.decode(self.access_token, options={"verify_signature": False})
+        return uuid.UUID(decoded["https://layer.co/account_id"])
+
+    def organization_account_ids(self) -> List[uuid.UUID]:
+        decoded = jwt.decode(self.access_token, options={"verify_signature": False})
+        all_account_ids = list(
+            map(uuid.UUID, decoded["https://layer.co/account_permissions"])
+        )
+        personal_acc_id = self.personal_account_id()
+        result = list(filter(lambda _id: _id != personal_acc_id, all_account_ids))
+        return result
 
 
 @dataclass(frozen=True)
