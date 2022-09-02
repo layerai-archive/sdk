@@ -1,10 +1,8 @@
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
-import ray  # type: ignore # pylint: disable=import-error
-from ray.client_builder import (  # type:ignore #  pylint: disable=import-error
-    ClientContext,
-)
+import ray
+from ray.client_builder import ClientContext
 
 from layer.config.config_manager import ConfigManager
 from layer.contracts.fabrics import Fabric
@@ -88,7 +86,7 @@ class RayClientFunctionRuntime(BaseFunctionRuntime):
         with self._client:
             if self._fabric is None:
                 raise ValueError("fabric is not specified and could not be resolved")
-            ids = ray_runtime.options(
+            ids = ray_runtime.options(  # type: ignore
                 num_cpus=self._fabric.cpu, num_gpus=self._fabric.gpu
             ).remote(self.executable_path)
             ray.wait([ids], num_returns=1)
