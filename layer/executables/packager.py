@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Sequence, Tuple
 
+import layer
 from layer.contracts.conda import CondaEnv
 
 from .. import cloudpickle
@@ -39,6 +40,8 @@ def package_function(
 
         # include cloudpickle itself in the executable
         _copy_cloudpickle_package(source)
+
+        _prepare_layer_dependency(source)
 
         if conda_env is not None:
             conda_environment_file_path = source / "environment.yml"
@@ -105,6 +108,10 @@ def get_function_package_info(package_path: Path) -> FunctionPackageInfo:
     )
 
 
+def _is_dev_version() -> bool:
+    return layer.__version__ == "0.10.0b1"
+
+
 def _copy_cloudpickle_package(target_path: Path) -> None:
     # source path to copy cloudpickle package from
     source_path = Path(cloudpickle.__file__).resolve().parent
@@ -119,6 +126,25 @@ def _copy_cloudpickle_package(target_path: Path) -> None:
     for file in _package_contents():
         file_path = Path(file)
         shutil.copyfile(file_path, cloudpickle_dir / file_path.name)
+
+
+def _prepare_layer_dependency(target_path: Path) -> None:
+    with open(target_path / "layer.txt", "w") as layer_requirements_file:
+        if not _is_dev_version():
+            layer_requirements_file.write(f"layer=={layer.__version__}")
+        else:
+            layer_sdk_target_path = target_path / "layer-sdk"
+            layer_target_path = layer_sdk_target_path / "layer"
+            layer_requirements_file.write("./layer-sdk")
+            local_sdk_path = Path(layer.__path__[0])
+            shutil.copytree(local_sdk_path, layer_target_path)
+
+            local_sdk_path_parent = local_sdk_path.parent
+            for setup_file in {"pyproject.toml", "README.md"}:
+                shutil.copyfile(
+                    local_sdk_path_parent / setup_file,
+                    layer_sdk_target_path / setup_file,
+                )
 
 
 def _package_resources(source: Path, resources: Sequence[Path]) -> None:

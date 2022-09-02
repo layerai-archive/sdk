@@ -6,6 +6,7 @@ from pathlib import Path, PurePath
 
 import pytest
 
+import layer
 from layer.contracts.conda import CondaEnv
 from layer.executables.packager import (
     FunctionPackageInfo,
@@ -30,7 +31,7 @@ def test_execute_func_simple_as_python_script(tmpdir: Path):
     subprocess.check_call([sys.executable, executable])
 
 
-def test_package_contents(tmpdir: Path):
+def test_package_contents(tmpdir: Path, monkeypatch: pytest.MonkeyPatch):
     resources_parent = Path("test") / "unit" / "executables" / "data"
     resource_paths = [
         resources_parent / "1",
@@ -41,7 +42,10 @@ def test_package_contents(tmpdir: Path):
     def func():
         pass
 
-    executable = package_function(func, resources=resource_paths, output_dir=tmpdir)
+    layer_version = "1.2.3"
+    with monkeypatch.context() as m:
+        m.setattr(layer, "__version__", layer_version)
+        executable = package_function(func, resources=resource_paths, output_dir=tmpdir)
 
     with zipfile.ZipFile(executable) as exec:
         exec_entries = {entry.filename for entry in exec.infolist()}
@@ -68,7 +72,33 @@ def test_package_contents(tmpdir: Path):
             "cloudpickle/cloudpickle.py",
             "cloudpickle/cloudpickle_fast.py",
             "cloudpickle/compat.py",
+            "layer.txt",
         }
+
+        with exec.open("layer.txt") as layer_txt:
+            assert layer_txt.read().decode("utf-8") == f"layer=={layer_version}"
+
+
+def test_package_contents_dev_version(tmpdir: Path):
+    def func():
+        pass
+
+    executable = package_function(func, output_dir=tmpdir)
+
+    with zipfile.ZipFile(executable) as exec:
+        exec_entries = {entry.filename for entry in exec.infolist()}
+        assert exec_entries.issuperset(
+            {
+                "layer-sdk/",
+                "layer-sdk/layer/",
+                "layer-sdk/pyproject.toml",
+                "layer-sdk/README.md",
+                "layer.txt",
+            }
+        )
+
+        with exec.open("layer.txt") as layer_txt:
+            assert layer_txt.read().decode("utf-8") == "./layer-sdk"
 
 
 def test_get_function_package_info_with_pip_dependencies(tmpdir: Path):

@@ -20,7 +20,7 @@ def get_version() -> str:
     ) as pyproject:
         text = pyproject.read()
         # Use a simple regex to avoid a dependency on toml
-        version_match = re.search(r'version = "(\d+\.\d+\.\d+)"', text)
+        version_match = re.search(r'version = "(\d+\.\d+\.\d+.*)"', text)
 
     if version_match is None:
         raise RuntimeError("Failed to parse version")

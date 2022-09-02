@@ -262,8 +262,8 @@ To run this test you will need to generate an API KEY and provide via the termin
 ##### Testing your local SDK build within a Google Colab notebook
 
 1. Run `poetry build`
-2. Upload `dist/layer-0.10.0-py3-none-any.whl` to the Colab notebook after a runtime recreation (hint: you can do by `from google.colab import files` and `files.upload()` inside Colab)
-3. `pip install layer-0.10.0-py3-none-any.whl`
+2. Upload `dist/layer-0.10.0b1-py3-none-any.whl` to the Colab notebook after a runtime recreation (hint: you can do by `from google.colab import files` and `files.upload()` inside Colab)
+3. `pip install layer-0.10.0b1-py3-none-any.whl`
 4. Run the rest of the notebook as normal
 
 #### Linters
