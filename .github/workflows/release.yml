@@ -164,8 +164,8 @@ jobs:
         id: publish
         run: |
           make publish PYPI_USER=${{ secrets.PYPI_USER }} PYPI_PASSWORD=${{ secrets.PYPI_PASSWORD }} PATCH_VERSION=${GITHUB_RUN_ID}
-          BASE_VERSION=$(poetry version --short | sed 's/\.[0-9]$//g')
-          echo "::set-output name=version::${BASE_VERSION}.${GITHUB_RUN_ID}"
+          BASE_VERSION=$(poetry version --short)
+          echo "::set-output name=version::${BASE_VERSION%.*}.${GITHUB_RUN_ID}"
       - name: Create Github Release
         if: steps.publish.outcome == 'success'
         uses: ncipollo/release-action@v1
