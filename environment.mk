@@ -10,7 +10,8 @@ channels:\\n
 dependencies:\\n
   - python=$(shell cat .python-version)\\n
   - pip\\n
-  - poetry=$(REQUIRED_POETRY_VERSION)
+  - pip:\\n
+  \ \ - poetry==$(REQUIRED_POETRY_VERSION)
 endef
 
 .PHONY: create-environment
