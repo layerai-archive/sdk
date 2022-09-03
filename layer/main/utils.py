@@ -1,3 +1,4 @@
+import functools
 import sys
 from typing import Any, Callable
 
@@ -5,6 +6,7 @@ from .version import check_latest_version
 
 
 def sdk_function(func: Callable[..., Any]) -> Callable[..., Any]:
+    @functools.wraps(func)
     def inner(*args: Any, **kwargs: Any) -> Any:
         _check_os()
         check_latest_version()
