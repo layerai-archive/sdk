@@ -29,6 +29,9 @@ TEST_SESSION_CONFIG_TMP_PATH = DEFAULT_LAYER_PATH / "e2e_test_session.ini"
 
 TEST_ORG_ACCOUNT_NAME_PREFIX = "sdk-e2e-org-"
 
+# This organization account will be used instead of creating one if it exists
+PERMANENT_TEST_ORG_ACCOUNT_NAME = "e2e-test-org"
+
 
 def pytest_sessionstart(session):
     """
@@ -43,14 +46,11 @@ def pytest_sessionstart(session):
     if xdist.is_xdist_worker(session):
         return
 
-    org_account = _read_organization_account_from_test_session_config()
-    if org_account:
-        # This is unexpected, so we try to cleanup or fail silently
-        _cleanup_organization_account()
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(delete_old_org_accounts())
-    org_account: Account = loop.run_until_complete(create_organization_account())
+    org_account: Account = loop.run_until_complete(
+        get_or_create_test_organization_account()
+    )
 
     _write_organization_account_to_test_session_config(org_account)
 
@@ -66,7 +66,7 @@ def _track_session_counts_and_cleanup() -> Iterator:
     yield
     open_sessions = _decrement_session_count()
     if open_sessions < 1:
-        _cleanup_organization_account()
+        _cleanup_test_organization_account()
         _cleanup_test_session_config()
         if open_sessions < 0:
             raise Exception(
@@ -173,28 +173,32 @@ async def delete_old_org_accounts() -> None:
             continue
 
 
-async def create_organization_account() -> Account:
+async def get_or_create_test_organization_account() -> Account:
     config = await ConfigManager().refresh()
     client = LayerClient(config.client, logger)
-    org_account_name, display_name = pseudo_random_account_name()
-    account = client.account.create_organization_account(
-        org_account_name, display_name, deletion_allowed=True
-    )
 
-    # We need a new token with permissions for the new org account
-    # TODO LAY-3583 LAY-3652
-    await ConfigManager().refresh(force=True)
+    try:
+        org_account = client.account.get_account_by_name(
+            PERMANENT_TEST_ORG_ACCOUNT_NAME
+        )
+    except LayerClientResourceNotFoundException:
+        org_account_name, display_name = pseudo_random_account_name()
+        org_account = client.account.create_organization_account(
+            org_account_name, display_name, deletion_allowed=True
+        )
+        # We need a new token with permissions for the new org account
+        # TODO LAY-3583 LAY-3652
+        await ConfigManager().refresh(force=True)
 
-    return account
+    return org_account
 
 
-def _cleanup_organization_account() -> None:
+def _cleanup_test_organization_account() -> None:
     async def refresh() -> Config:
         return await ConfigManager().refresh()
 
     account = _read_organization_account_from_test_session_config()
-    if not account:
-        # we assume there is no more account to cleanup
+    if not account or account.name == PERMANENT_TEST_ORG_ACCOUNT_NAME:
         return
 
     loop = asyncio.get_event_loop()

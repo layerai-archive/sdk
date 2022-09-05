@@ -12,6 +12,7 @@ from layerapi.api.service.account.account_api_pb2 import (
     GetAccountByIdRequest,
     GetAccountByIdResponse,
     GetAccountViewByIdRequest,
+    GetAccountViewByNameRequest,
     GetMyAccountViewRequest,
 )
 from layerapi.api.service.account.account_api_pb2_grpc import AccountAPIStub
@@ -40,6 +41,14 @@ class AccountServiceClient:
             )
         ).account_view
         return account_view.name
+
+    def get_account_by_name(self, account_name: str) -> Account:
+        account_view: AccountView = (
+            self._account_api.GetAccountViewByName(
+                GetAccountViewByNameRequest(name=account_name),
+            )
+        ).account_view
+        return self._account_from_view(account_view)
 
     def get_my_account(self) -> Account:
         account_view: AccountView = self._account_api.GetMyAccountView(
