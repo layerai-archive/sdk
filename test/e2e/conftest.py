@@ -250,10 +250,16 @@ def pseudo_random_project_name(fixture_request: Any) -> str:
 def pseudo_random_account_name() -> Tuple[str, str]:
     name_max_length = 50
     name_prefix = TEST_ORG_ACCOUNT_NAME_PREFIX
-    random_suffix = str(uuid.uuid4()).replace("-", "")[
-        : name_max_length - len(name_prefix)
-    ]
-    name = f"{name_prefix}{random_suffix}"
+    gh_run_id, gh_run_number = os.getenv("GITHUB_RUN_ID"), os.getenv(
+        "GITHUB_RUN_NUMBER"
+    )
+    random_suffix = (
+        f"{gh_run_id}-{gh_run_number}"
+        if gh_run_id
+        else str(uuid.uuid4()).replace("-", "")
+    )
+    random_suffix_that_fits = random_suffix[: name_max_length - len(name_prefix)]
+    name = f"{name_prefix}{random_suffix_that_fits}"
     display_name = f"SDK E2E Test Organization Account - {random_suffix}"
 
     return name, display_name
