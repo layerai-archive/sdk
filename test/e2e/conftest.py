@@ -4,6 +4,7 @@ import logging
 import os
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, Optional, Tuple
 
@@ -26,6 +27,11 @@ logger = logging.getLogger(__name__)
 
 TEST_SESSION_CONFIG_TMP_PATH = DEFAULT_LAYER_PATH / "e2e_test_session.ini"
 
+TEST_ORG_ACCOUNT_NAME_PREFIX = "sdk-e2e-org-"
+
+# This organization account will be used instead of creating one if it exists
+PERMANENT_TEST_ORG_ACCOUNT_NAME = "e2e-test-org"
+
 
 def pytest_sessionstart(session):
     """
@@ -40,13 +46,11 @@ def pytest_sessionstart(session):
     if xdist.is_xdist_worker(session):
         return
 
-    org_account = _read_organization_account_from_test_session_config()
-    if org_account:
-        # This is unexpected, so we try to cleanup or fail silently
-        _cleanup_organization_account()
-
     loop = asyncio.get_event_loop()
-    org_account: Account = loop.run_until_complete(create_organization_account())
+    loop.run_until_complete(delete_old_org_accounts())
+    org_account: Account = loop.run_until_complete(
+        get_or_create_test_organization_account()
+    )
 
     _write_organization_account_to_test_session_config(org_account)
 
@@ -62,7 +66,7 @@ def _track_session_counts_and_cleanup() -> Iterator:
     yield
     open_sessions = _decrement_session_count()
     if open_sessions < 1:
-        _cleanup_organization_account()
+        _cleanup_test_organization_account()
         _cleanup_test_session_config()
         if open_sessions < 0:
             raise Exception(
@@ -147,28 +151,54 @@ def _read_organization_account_from_test_session_config() -> Optional[Account]:
         )
 
 
-async def create_organization_account() -> Account:
+async def delete_old_org_accounts() -> None:
     config = await ConfigManager().refresh()
     client = LayerClient(config.client, logger)
-    org_account_name, display_name = pseudo_random_account_name()
-    account = client.account.create_organization_account(
-        org_account_name, display_name, deletion_allowed=True
-    )
 
-    # We need a new token with permissions for the new org account
-    # TODO LAY-3583 LAY-3652
-    await ConfigManager().refresh(force=True)
+    now_utc = datetime.now(tz=timezone.utc)
+    for acc_id in config.client.organization_account_ids():
+        try:
+            acc_name = client.account.get_account_name_by_id(acc_id)
+            if not acc_name.startswith(TEST_ORG_ACCOUNT_NAME_PREFIX):
+                continue
+            acc_creation_date = client.account.get_account_creation_date(acc_id)
+            if now_utc - timedelta(days=1) > acc_creation_date:
+                print(f"will delete org account {acc_id} because it is too old")
+                try:
+                    client.account.delete_account(account_id=acc_id)
+                    print(f"deleted old org account {acc_id}")
+                except LayerClientResourceNotFoundException:
+                    continue
+        except LayerClientResourceNotFoundException:
+            continue
 
-    return account
+
+async def get_or_create_test_organization_account() -> Account:
+    config = await ConfigManager().refresh()
+    client = LayerClient(config.client, logger)
+
+    try:
+        org_account = client.account.get_account_by_name(
+            PERMANENT_TEST_ORG_ACCOUNT_NAME
+        )
+    except LayerClientResourceNotFoundException:
+        org_account_name, display_name = pseudo_random_account_name()
+        org_account = client.account.create_organization_account(
+            org_account_name, display_name, deletion_allowed=True
+        )
+        # We need a new token with permissions for the new org account
+        # TODO LAY-3583 LAY-3652
+        await ConfigManager().refresh(force=True)
+
+    return org_account
 
 
-def _cleanup_organization_account() -> None:
+def _cleanup_test_organization_account() -> None:
     async def refresh() -> Config:
         return await ConfigManager().refresh()
 
     account = _read_organization_account_from_test_session_config()
-    if not account:
-        # we assume there is no more account to cleanup
+    if not account or account.name == PERMANENT_TEST_ORG_ACCOUNT_NAME:
         return
 
     loop = asyncio.get_event_loop()
@@ -223,12 +253,22 @@ def pseudo_random_project_name(fixture_request: Any) -> str:
 
 def pseudo_random_account_name() -> Tuple[str, str]:
     name_max_length = 50
-    name_prefix = "sdk-e2e-org-"
-    random_suffix = str(uuid.uuid4()).replace("-", "")[
-        : name_max_length - len(name_prefix)
-    ]
-    name = f"{name_prefix}{random_suffix}"
-    display_name = f"SDK E2E Test Organization Account - {random_suffix}"
+    name_prefix = TEST_ORG_ACCOUNT_NAME_PREFIX
+    random_suffix = str(uuid.uuid4()).replace("-", "")
+    random_suffix_that_fits = random_suffix[: name_max_length - len(name_prefix)]
+    name = f"{name_prefix}{random_suffix_that_fits}"
+    display_name = "SDK E2E Test Organization Account"
+    gh_run_id = os.getenv("GITHUB_RUN_ID")
+    gh_run_attempt = os.getenv("GITHUB_RUN_ATTEMPT")
+    gh_job = os.getenv("GITHUB_JOB")
+    gh_job_python_version = os.getenv("GITHUB_JOB_PYTHON_VERSION")
+    if gh_run_id:
+        display_name += (
+            f" - {gh_run_id}:{gh_run_attempt}:{gh_job}:{gh_job_python_version}"
+        )
+    else:
+        display_name += " - local"
+    display_name += f" - {random_suffix_that_fits}"
 
     return name, display_name
 

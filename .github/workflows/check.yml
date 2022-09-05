@@ -71,6 +71,7 @@ jobs:
     env:
       DD_GIT_COMMIT_AUTHOR_EMAIL: ci@layer.ai
       DD_GIT_COMMIT_COMMITTER_EMAIL: ci@layer.ai
+      GITHUB_JOB_PYTHON_VERSION: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
       - run: git fetch origin ${{ github.event.pull_request.base.sha }}
