@@ -1,11 +1,16 @@
+import datetime
 import uuid
 from typing import Optional
 
+import layerapi.api.value.date_pb2
+from layerapi.api.entity.account_pb2 import Account as PbAccount
 from layerapi.api.entity.account_view_pb2 import AccountView
 from layerapi.api.ids_pb2 import AccountId
 from layerapi.api.service.account.account_api_pb2 import (
     CreateOrganizationAccountRequest,
     DeleteAccountRequest,
+    GetAccountByIdRequest,
+    GetAccountByIdResponse,
     GetAccountViewByIdRequest,
     GetMyAccountViewRequest,
 )
@@ -68,3 +73,17 @@ class AccountServiceClient:
         self._account_api.DeleteAccount(
             DeleteAccountRequest(account_id=AccountId(value=str(account_id)))
         )
+
+    def get_account_creation_date(self, account_id: uuid.UUID) -> datetime.datetime:
+        resp: GetAccountByIdResponse = self._account_api.GetAccountById(
+            GetAccountByIdRequest(account_id=AccountId(value=str(account_id)))
+        )
+        acc: PbAccount = resp.account
+        created_date: layerapi.api.value.date_pb2.Date = acc.created_date
+        date = datetime.datetime(
+            created_date.year_month.year,
+            created_date.year_month.month,
+            created_date.day,
+            tzinfo=datetime.timezone.utc,
+        )
+        return date
