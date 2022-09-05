@@ -139,7 +139,16 @@ jobs:
           path: /home/runner/.cache/pypoetry/virtualenvs
           key: poetry-venvs-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
           restore-keys: poetry-venvs-${{ runner.os }}-3.8-
+      - name: Get changes that affect the lockfile
+        id: changed-files-lockfile
+        uses: tj-actions/changed-files@v19.1
+        with:
+          base_sha: ${{ github.event.before }}
+          files: |
+           pyproject.toml
+           poetry.lock
       - name: Check lockfile
+        if: steps.changed-files-lockfile.outputs.any_changed == 'true'
         run: |
           pip install yq
           old_hash=$(cat poetry.lock | tomlq '.metadata["content-hash"]' --raw-output)
