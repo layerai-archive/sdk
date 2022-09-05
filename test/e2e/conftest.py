@@ -259,6 +259,8 @@ def pseudo_random_account_name() -> Tuple[str, str]:
     gh_job = os.getenv("GITHUB_JOB")
     if gh_run_id:
         display_name += f" - {gh_run_id}:{gh_run_number}:{gh_job}"
+    else:
+        display_name += " - local"
     display_name += f" - {random_suffix_that_fits}"
 
     return name, display_name
