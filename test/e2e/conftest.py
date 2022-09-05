@@ -250,11 +250,11 @@ def pseudo_random_project_name(fixture_request: Any) -> str:
 def pseudo_random_account_name() -> Tuple[str, str]:
     name_max_length = 50
     name_prefix = TEST_ORG_ACCOUNT_NAME_PREFIX
-    gh_run_id, gh_run_number = os.getenv("GITHUB_RUN_ID"), os.getenv(
-        "GITHUB_RUN_NUMBER"
-    )
+    gh_run_id = os.getenv("GITHUB_RUN_ID")
+    gh_run_number = os.getenv("GITHUB_RUN_NUMBER")
+    gh_job_id = os.getenv("GITHUB_JOB_ID")
     random_suffix = (
-        f"{gh_run_id}-{gh_run_number}"
+        f"{gh_run_id}-{gh_run_number}-{gh_job_id}"
         if gh_run_id
         else str(uuid.uuid4()).replace("-", "")
     )
