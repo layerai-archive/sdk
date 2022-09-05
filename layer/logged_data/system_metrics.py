@@ -157,7 +157,7 @@ class CGroupsMetricsCollectorVersionedV2(CGroupsMetricsCollectorVersioned):
 
     def get_mem_available(self) -> int:
         memory_high = self._read_cgroup_metric("user.slice/memory.high")
-        if memory_high == "max":
+        if memory_high.strip() == "max":
             return int(psutil.virtual_memory().total)
         else:
             return int(memory_high)
