@@ -60,7 +60,7 @@ $(PYTHON_ENV_STAMP):
 	@mkdir -p $(PYTHON_ENV_STAMP_DIR_CURRENT)
 	@touch $(PYTHON_ENV_STAMP)
 
-$(PREREQ_STAMP): $(PYTHON_ENV_STAMP)
+$(PREREQ_STAMP): pyproject.toml poetry.lock $(PYTHON_ENV_STAMP)
 ifeq ($(UNAME_ARCH), arm64)
 ifdef CONDA_ENV_NAME
 ifeq ($(CONDA_ENV_NAME), base)
