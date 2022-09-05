@@ -256,8 +256,12 @@ def pseudo_random_account_name() -> Tuple[str, str]:
     display_name = "SDK E2E Test Organization Account"
     gh_run_id = os.getenv("GITHUB_RUN_ID")
     gh_run_attempt = os.getenv("GITHUB_RUN_ATTEMPT")
+    gh_job = os.getenv("GITHUB_JOB")
+    gh_job_python_version = os.getenv("GITHUB_JOB_PYTHON_VERSION")
     if gh_run_id:
-        display_name += f" - {gh_run_id}:{gh_run_attempt}"
+        display_name += (
+            f" - {gh_run_id}:{gh_run_attempt}:{gh_job}:{gh_job_python_version}"
+        )
     else:
         display_name += " - local"
     display_name += f" - {random_suffix_that_fits}"
