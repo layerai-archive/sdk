@@ -13,7 +13,7 @@ def test_dataset_build(initialized_project: Project):
         return pd.DataFrame({"a": [x, 2, 3]})
 
     function = build_dataset.bind(1).get_definition_with_bound_arguments()
-    executable_path = function.package(executables_feature_active=True)
+    executable_path = function.package()
     BaseFunctionRuntime.execute(executable_path)
 
     actual_dataset = layer.get_dataset("test_dataset").to_pandas()
@@ -41,7 +41,7 @@ def test_model_trains(initialized_project: Project):
         return classifier.fit(X, y)
 
     function = train_model.bind(n_features=4).get_definition_with_bound_arguments()
-    executable_path = function.package(executables_feature_active=True)
+    executable_path = function.package()
     BaseFunctionRuntime.execute(executable_path)
 
     actual_model = layer.get_model("test_model")
