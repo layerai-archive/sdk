@@ -1,8 +1,11 @@
+import re
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
+import regex
 from layerapi.api.entity.project_pb2 import Project as ProjectMessage
 from layerapi.api.entity.project_view_pb2 import ProjectView
 from layerapi.api.ids_pb2 import AccountId, ProjectId
@@ -29,6 +32,12 @@ from layer.exceptions.exceptions import (
 )
 from layer.utils.grpc import generate_client_error_from_grpc_error
 from layer.utils.grpc.channel import get_grpc_channel
+
+
+@dataclass
+class DeleteProjectsQuery:
+    name_matches: regex.Regex
+    created_before: datetime
 
 
 class ProjectServiceClient:
@@ -84,28 +93,37 @@ class ProjectServiceClient:
             raise generate_client_error_from_grpc_error(err, "internal")
         return None
 
-    def delete_account_projects_older_than(
-        self, account_id: uuid.UUID, date: datetime, dry_run=True
+    def delete_account_projects(
+        self,
+        account_id: uuid.UUID,
+        query: DeleteProjectsQuery,
+        dry_run: bool = True,
+        ignore_errors: bool = True,
     ) -> int:
-        try:
-            resp: GetAccountProjectsByIdResponse = self._service.GetAccountProjectsById(
-                GetAccountProjectsByIdRequest(
-                    account_id=AccountId(value=str(account_id))
-                )
+        """
+        Used for e2e test cleanup
+        """
+        resp: GetAccountProjectsByIdResponse = self._service.GetAccountProjectsById(
+            GetAccountProjectsByIdRequest(account_id=AccountId(value=str(account_id)))
+        )
+
+        def should_be_deleted(p: ProjectMessage) -> bool:
+            return (
+                p.created_time.ToDatetime() < query.created_before
+                and re.search(query.name_matches, p.name) is not None
             )
 
-            def is_old_project(p: ProjectMessage) -> bool:
-                return p.created_time.ToDatetime() < date
-
-            deleted = 0
-            for p in list(resp.project):
-                if is_old_project(p):
+        deleted = 0
+        for p in list(resp.project):
+            if should_be_deleted(p):
+                try:
                     if not dry_run:
                         self.remove_project(UUID(p.id.value))
                     deleted += 1
-            return deleted
-        except Exception as err:
-            raise generate_client_error_from_grpc_error(err, "internal")
+                except Exception as err:
+                    if not ignore_errors:
+                        raise generate_client_error_from_grpc_error(err, "internal")
+        return deleted
 
     def get_project(self, full_name: ProjectFullName) -> Optional[Project]:
         try:
