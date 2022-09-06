@@ -106,18 +106,18 @@ class ProjectServiceClient:
             GetAccountProjectsByIdRequest(account_id=AccountId(value=str(account_id)))
         )
 
-        def should_be_deleted(p: ProjectMessage) -> bool:
+        def should_be_deleted(_project: ProjectMessage) -> bool:
             return (
-                p.created_time.ToDatetime() < query.created_before
-                and re.search(query.name_matches, p.name) is not None
+                _project.created_time.ToDatetime() < query.created_before
+                and re.search(query.name_matches, _project.name) is not None
             )
 
         deleted = 0
-        for p in list(resp.project):
-            if should_be_deleted(p):
+        for project in list(resp.project):
+            if should_be_deleted(project):
                 try:
                     if not dry_run:
-                        self.remove_project(UUID(p.id.value))
+                        self.remove_project(UUID(project.id.value))
                     deleted += 1
                 except Exception as err:
                     if not ignore_errors:
