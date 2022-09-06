@@ -2,10 +2,9 @@ import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Pattern
 from uuid import UUID
 
-import regex
 from layerapi.api.entity.project_pb2 import Project as ProjectMessage
 from layerapi.api.entity.project_view_pb2 import ProjectView
 from layerapi.api.ids_pb2 import AccountId, ProjectId
@@ -36,7 +35,7 @@ from layer.utils.grpc.channel import get_grpc_channel
 
 @dataclass
 class DeleteProjectsQuery:
-    name_matches: regex.Regex
+    name_matches: Pattern[str]
     created_before: datetime
 
 
