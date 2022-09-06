@@ -137,7 +137,11 @@ def _prepare_layer_dependency(target_path: Path) -> None:
             layer_target_path = layer_sdk_target_path / "layer"
             layer_requirements_file.write("./layer-sdk")
             local_sdk_path = Path(layer.__path__[0])
-            shutil.copytree(local_sdk_path, layer_target_path)
+            shutil.copytree(
+                local_sdk_path,
+                layer_target_path,
+                ignore=shutil.ignore_patterns("__pycache__"),
+            )
 
             local_sdk_path_parent = local_sdk_path.parent
             for setup_file in {"pyproject.toml", "README.md"}:
