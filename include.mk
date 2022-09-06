@@ -8,7 +8,7 @@ IN_VENV := $(shell echo $(CONDA_DEFAULT_ENV)$(CONDA_PREFIX)$(VIRTUAL_ENV))
 CONDA_ENV_NAME := $(shell echo $(CONDA_DEFAULT_ENV))
 UNAME_SYS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
-REQUIRED_POETRY_VERSION := 1.1.15
+REQUIRED_POETRY_VERSION := 1.2.0
 PROJECT_NAME := sdk
 COLAB_TEST_HOME := $(ROOT_DIR)/build/colab-test
 DOCKER_IMAGE_NAME = layerco/colab-lite
@@ -22,6 +22,6 @@ PREREQ_STAMP := $(PYTHON_ENV_STAMP_DIR_CURRENT)/.prereq.stamp
 INSTALL_STAMP := $(PYTHON_ENV_STAMP_DIR_CURRENT)/.install.stamp
 
 
-ifneq ($(shell $(POETRY) --version | awk '{print $$3}'), $(REQUIRED_POETRY_VERSION))
+ifneq ($(shell $(POETRY) --version | sed -En 's/Poetry \(version (.*)\)/\1/p'), $(REQUIRED_POETRY_VERSION))
 $(error "Please use Poetry version $(REQUIRED_POETRY_VERSION). Simply run: poetry self update $(REQUIRED_POETRY_VERSION)")
 endif

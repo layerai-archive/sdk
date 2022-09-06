@@ -5,7 +5,7 @@ include test/colab/colab-test.mk
 .DEFAULT_GOAL:=help
 
 define get_python_package_version
-  $(1)==$(shell $(POETRY) show $1 --no-ansi --no-dev | grep version | awk '{print $$3}')
+  $(1)==$(shell $(POETRY) show $1 --no-ansi --only main | grep version | awk '{print $$3}')
 endef
 
 define autoreloadpy
@@ -66,6 +66,7 @@ lint: $(INSTALL_STAMP) ## Run all linters
 	$(POETRY) run pylint  --recursive yes .
 	$(POETRY) run mypy .
 	$(POETRY) run bandit -c pyproject.toml -r .
+	$(POETRY) lock --check
 
 .PHONY: check-package-loads
 check-package-loads: ## Check that we can load the package without the dev dependencies

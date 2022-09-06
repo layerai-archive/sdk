@@ -18,7 +18,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.15
+          poetry-version: 1.2.0
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -38,7 +38,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.15
+          poetry-version: 1.2.0
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -60,7 +60,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.15
+          poetry-version: 1.2.0
       - name: Run colab test
         run: make colab-test
 
@@ -83,7 +83,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.15
+          poetry-version: 1.2.0
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -133,29 +133,13 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.1.15
+          poetry-version: 1.2.0
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
           path: /home/runner/.cache/pypoetry/virtualenvs
           key: poetry-venvs-${{ runner.os }}-3.8-${{ hashFiles('poetry.lock') }}
           restore-keys: poetry-venvs-${{ runner.os }}-3.8-
-      - name: Get changes that affect the lockfile
-        id: changed-files-lockfile
-        uses: tj-actions/changed-files@v19.1
-        with:
-          base_sha: ${{ github.event.before }}
-          files: |
-           pyproject.toml
-           poetry.lock
-      - name: Check lockfile
-        if: steps.changed-files-lockfile.outputs.any_changed == 'true'
-        run: |
-          pip install yq
-          old_hash=$(cat poetry.lock | tomlq '.metadata["content-hash"]' --raw-output)
-          poetry lock --no-update
-          new_hash=$(cat poetry.lock | tomlq '.metadata["content-hash"]' --raw-output)
-          [[ "$old_hash" == "$new_hash" ]] || ( git diff && echo "Lock file is not up to date, please run 'poetry cache clear --all pypi' then 'poetry lock --no-update'" && exit 1)
       - name: Compute package dependencies
         id: deps
         run: |

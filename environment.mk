@@ -10,7 +10,8 @@ channels:\\n
 dependencies:\\n
   - python=$(shell cat .python-version)\\n
   - pip\\n
-  - poetry=$(REQUIRED_POETRY_VERSION)
+  - pip:\\n
+  \ \ - poetry==$(REQUIRED_POETRY_VERSION)
 endef
 
 .PHONY: create-environment
@@ -74,6 +75,8 @@ else
                          $(call get_python_package_version,h5py) \
                          $(call get_python_package_version,pyarrow) \
                          $(call get_python_package_version,grpcio)
+## https://github.com/python-poetry/poetry/issues/6408
+	@find $$CONDA_PREFIX/lib -name direct_url.json -delete
 endif
 else
 	@echo 'Not inside a conda environment or conda not installed, this is a requirement for Apple arm processors'
