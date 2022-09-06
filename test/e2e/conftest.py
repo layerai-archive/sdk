@@ -2,6 +2,7 @@ import asyncio
 import configparser
 import logging
 import os
+import re
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -15,6 +16,7 @@ from filelock import FileLock
 
 import layer
 from layer.clients.layer import LayerClient
+from layer.clients.project_service import DeleteProjectsQuery
 from layer.config import DEFAULT_LAYER_PATH, ClientConfig, Config, ConfigManager
 from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
@@ -28,6 +30,7 @@ logger = logging.getLogger(__name__)
 TEST_SESSION_CONFIG_TMP_PATH = DEFAULT_LAYER_PATH / "e2e_test_session.ini"
 
 TEST_ORG_ACCOUNT_NAME_PREFIX = "sdk-e2e-org-"
+TEST_PROJECT_NAME_PREFIX = "sdk-e2e-"
 
 # This organization account will be used instead of creating one if it exists
 PERMANENT_TEST_ORG_ACCOUNT_NAME = "e2e-test-org"
@@ -48,6 +51,7 @@ def pytest_sessionstart(session):
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(delete_old_org_accounts())
+    loop.run_until_complete(delete_old_personal_test_projects())
     org_account: Account = loop.run_until_complete(
         get_or_create_test_organization_account()
     )
@@ -151,6 +155,21 @@ def _read_organization_account_from_test_session_config() -> Optional[Account]:
         )
 
 
+async def delete_old_personal_test_projects() -> None:
+    config = await ConfigManager().refresh()
+    client = LayerClient(config.client, logger)
+    personal_account_id = config.client.personal_account_id()
+    one_day_ago = datetime.now() - timedelta(days=1)
+    delete_query = DeleteProjectsQuery(
+        name_matches=re.compile(f"^{TEST_PROJECT_NAME_PREFIX}.*$"),
+        created_before=one_day_ago,
+    )
+    total_deleted = client.project_service_client.delete_account_projects(
+        personal_account_id, query=delete_query, dry_run=False
+    )
+    print(f"total projects deleted: {total_deleted}")
+
+
 async def delete_old_org_accounts() -> None:
     config = await ConfigManager().refresh()
     client = LayerClient(config.client, logger)
@@ -248,7 +267,7 @@ def pseudo_random_project_name(fixture_request: Any) -> str:
 
     random_suffix = str(uuid.uuid4())[:8]
 
-    return f"sdk-e2e-{test_name_parametrized}-{random_suffix}"
+    return f"{TEST_PROJECT_NAME_PREFIX}{test_name_parametrized}-{random_suffix}"
 
 
 def pseudo_random_account_name() -> Tuple[str, str]:
