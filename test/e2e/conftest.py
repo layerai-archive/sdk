@@ -372,6 +372,17 @@ async def guest_client(guest_context) -> Iterator[LayerClient]:
 def initialized_project(client: LayerClient, request: Any) -> Iterator[Project]:
     project_name = pseudo_random_project_name(request)
     project = layer.init(project_name, fabric=Fabric.F_XSMALL.value)
+    gh_run_id = os.getenv("GITHUB_RUN_ID")
+    gh_run_attempt = os.getenv("GITHUB_RUN_ATTEMPT")
+    gh_job = os.getenv("GITHUB_JOB")
+    gh_job_python_version = os.getenv("GITHUB_JOB_PYTHON_VERSION")
+    if gh_run_id:
+        description = f"{gh_run_id}:{gh_run_attempt}:{gh_job}:{gh_job_python_version}"
+    else:
+        description = "local"
+    client.project_service_client.update_project_description(
+        project.full_name, description
+    )
 
     yield project
     _cleanup_project(client, project)
