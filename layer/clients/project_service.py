@@ -1,12 +1,15 @@
 import uuid
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
 from layerapi.api.entity.project_pb2 import Project as ProjectMessage
 from layerapi.api.entity.project_view_pb2 import ProjectView
-from layerapi.api.ids_pb2 import ProjectId
+from layerapi.api.ids_pb2 import AccountId, ProjectId
 from layerapi.api.service.flowmanager.project_api_pb2 import (
     CreateProjectRequest,
+    GetAccountProjectsByIdRequest,
+    GetAccountProjectsByIdResponse,
     GetProjectByPathRequest,
     GetProjectByPathResponse,
     GetProjectViewByIdRequest,
@@ -80,6 +83,29 @@ class ProjectServiceClient:
         except Exception as err:
             raise generate_client_error_from_grpc_error(err, "internal")
         return None
+
+    def delete_account_projects_older_than(
+        self, account_id: uuid.UUID, date: datetime, dry_run=True
+    ) -> int:
+        try:
+            resp: GetAccountProjectsByIdResponse = self._service.GetAccountProjectsById(
+                GetAccountProjectsByIdRequest(
+                    account_id=AccountId(value=str(account_id))
+                )
+            )
+
+            def is_old_project(p: ProjectMessage) -> bool:
+                return p.created_time.ToDatetime() < date
+
+            deleted = 0
+            for p in list(resp.project):
+                if is_old_project(p):
+                    if not dry_run:
+                        self.remove_project(UUID(p.id.value))
+                    deleted += 1
+            return deleted
+        except Exception as err:
+            raise generate_client_error_from_grpc_error(err, "internal")
 
     def get_project(self, full_name: ProjectFullName) -> Optional[Project]:
         try:

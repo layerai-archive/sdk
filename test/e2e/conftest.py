@@ -48,6 +48,7 @@ def pytest_sessionstart(session):
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(delete_old_org_accounts())
+    loop.run_until_complete(delete_old_personal_projects())
     org_account: Account = loop.run_until_complete(
         get_or_create_test_organization_account()
     )
@@ -149,6 +150,16 @@ def _read_organization_account_from_test_session_config() -> Optional[Account]:
             id=uuid.UUID(config.get("ORGANIZATION_ACCOUNT", "id")),
             name=config.get("ORGANIZATION_ACCOUNT", "name"),
         )
+
+
+async def delete_old_personal_projects() -> None:
+    config = await ConfigManager().refresh()
+    client = LayerClient(config.client, logger)
+    personal_account_id = config.client.personal_account_id()
+    one_day_ago = datetime.now() - timedelta(days=1)
+    client.project_service_client.delete_account_projects_older_than(
+        personal_account_id, one_day_ago, dry_run=True
+    )
 
 
 async def delete_old_org_accounts() -> None:
