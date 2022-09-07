@@ -114,8 +114,11 @@ class LogDataRunner:
             elif LogDataRunner._is_tabular_dict(value):
                 if TYPE_CHECKING:
                     assert isinstance(value, dict)
-                dataframe = LogDataRunner._convert_dict_to_dataframe(value)
-                self._log_dataframe(value=dataframe, **kwargs)
+                # expand the dict into a group of logs
+                for item_key, item_value in value.items():
+                    self.log(
+                        data={item_key: item_value}, category=category, group_tag=tag
+                    )
             elif LogDataRunner._is_video_from_path(value):
                 if x_coordinate is not None:
                     kwargs.update(
@@ -297,18 +300,6 @@ class LogDataRunner:
                 raise ValueError(
                     f"x_coordinate can only be a non-negative integer, given value: {x_coordinate}"
                 )
-
-    @staticmethod
-    def _convert_dict_to_dataframe(dictionary: Dict[str, Any]) -> pd.DataFrame:
-        new_values = []
-        for value in dictionary.values():
-            if isinstance(value, (float, int, str, bool)):
-                new_values.append(value)
-            else:
-                new_values.append(str(value))
-        df = pd.DataFrame({"name": dictionary.keys(), "value": new_values})  # type: ignore
-        df = df.set_index("name")
-        return df
 
     @staticmethod
     def _is_tabular_dict(maybe_dict: Any) -> bool:

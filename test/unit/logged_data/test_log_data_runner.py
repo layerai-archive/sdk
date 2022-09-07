@@ -1,6 +1,6 @@
 import uuid
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 from unittest.mock import ANY, MagicMock, patch
 from uuid import UUID
 
@@ -27,14 +27,14 @@ def generate_test_data() -> List[
     Tuple[
         Callable[[Path], Dict[str, Any]],
         Optional[XCoordinateType],
-        Callable[[Any], Dict[str, Any]],
+        Callable[[Any], List[Dict[str, Any]]],
     ]
 ]:
     test_data: List[
         Tuple[
             Callable[[Path], Dict[str, Any]],
             Optional[XCoordinateType],
-            Callable[[Any], Dict[str, Any]],
+            Callable[[Any], List[Dict[str, Any]]],
         ]
     ] = []
 
@@ -49,10 +49,12 @@ def generate_test_data() -> List[
             # x_coordinate_type
             None,
             # expected kwargs
-            lambda val: {
-                "value": val,
-                "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
-            },
+            lambda val: [
+                {
+                    "value": val,
+                    "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
+                }
+            ],
         )
     )
 
@@ -68,10 +70,12 @@ def generate_test_data() -> List[
                 # x_coordinate_type
                 x_coordinate_type,
                 # expected kwargs
-                lambda val: {
-                    "value": str(val),
-                    "type": LoggedDataType.LOGGED_DATA_TYPE_NUMBER,
-                },
+                lambda val: [
+                    {
+                        "value": str(val),
+                        "type": LoggedDataType.LOGGED_DATA_TYPE_NUMBER,
+                    }
+                ],
             )
         )
 
@@ -86,10 +90,12 @@ def generate_test_data() -> List[
             # x_coordinate_type
             None,
             # expected kwargs
-            lambda val: {
-                "value": str(val),
-                "type": LoggedDataType.LOGGED_DATA_TYPE_BOOLEAN,
-            },
+            lambda val: [
+                {
+                    "value": str(val),
+                    "type": LoggedDataType.LOGGED_DATA_TYPE_BOOLEAN,
+                }
+            ],
         )
     )
 
@@ -104,10 +110,12 @@ def generate_test_data() -> List[
             # x_coordinate_type
             None,
             # expected kwargs
-            lambda val: {
-                "value": str(val),
-                "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
-            },
+            lambda val: [
+                {
+                    "value": str(val),
+                    "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
+                }
+            ],
         )
     )
 
@@ -122,38 +130,45 @@ def generate_test_data() -> List[
             # x_coordinate_type
             None,
             # expected kwargs
-            lambda val: {
-                "value": str(val.tolist()),
-                "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
-            },
+            lambda val: [
+                {
+                    "value": str(val.tolist()),
+                    "type": LoggedDataType.LOGGED_DATA_TYPE_TEXT,
+                }
+            ],
         )
     )
 
-    # dict as table
+    # dict as grouped logs
     def dict_data(tmpdir: Path) -> Dict[str, Any]:
         return {
             "tag1": {
                 "tom": 10,
-                "nick": 15,
-                "juli": 14,
+                "nick": "test",
+                "juli": True,
                 "jack": [1, 2, 3],
             }
         }
 
-    def dict_get_expected(val) -> Any:
-        expected_dataframe = pd.DataFrame(
-            [
-                [k, v if isinstance(v, (float, int, str, bool)) else str(v)]
-                for k, v in val.items()
-            ],
-            columns=["name", "value"],
-        )
-        expected_dataframe = expected_dataframe.set_index("name")
-        expected_dataframe_in_json = expected_dataframe.to_json(orient="table")
-        return {
-            "value": expected_dataframe_in_json,
-            "type": LoggedDataType.LOGGED_DATA_TYPE_TABLE,
-        }
+    def dict_get_expected(val: Dict[str, Any]) -> List[Dict[str, Any]]:
+        expected = []
+        for k, v in val.items():
+            logged_data_type = None
+            if isinstance(v, bool):
+                logged_data_type = LoggedDataType.LOGGED_DATA_TYPE_BOOLEAN
+            elif isinstance(v, (float, int)):
+                logged_data_type = LoggedDataType.LOGGED_DATA_TYPE_NUMBER
+            elif isinstance(v, (str, list)):
+                logged_data_type = LoggedDataType.LOGGED_DATA_TYPE_TEXT
+            expected.append(
+                {
+                    "group_tag": "tag1",
+                    "tag": k,
+                    "value": str(v),
+                    "type": logged_data_type,
+                }
+            )
+        return expected
 
     test_data.append(
         (
@@ -180,18 +195,20 @@ def generate_test_data() -> List[
             # x_coordinate_type
             None,
             # expected kwargs
-            lambda val: {
-                "value": val.to_json(orient="table"),
-                "type": LoggedDataType.LOGGED_DATA_TYPE_TABLE,
-            },
+            lambda val: [
+                {
+                    "value": val.to_json(orient="table"),
+                    "type": LoggedDataType.LOGGED_DATA_TYPE_TABLE,
+                }
+            ],
         )
     )
 
     #####################
     # images
     #####################
-    def expected_image(val: Any) -> Dict[str, Any]:
-        return {"type": LoggedDataType.LOGGED_DATA_TYPE_IMAGE}
+    def expected_image(val: Any) -> List[Dict[str, Any]]:
+        return [{"type": LoggedDataType.LOGGED_DATA_TYPE_IMAGE}]
 
     # PIL image
     def pil_image_data(tmpdir: Path) -> Dict[str, Any]:
@@ -350,8 +367,8 @@ def generate_test_data() -> List[
     #####################
     # videos
     #####################
-    def expected_video(val: Any) -> Dict[str, Any]:
-        return {"type": LoggedDataType.LOGGED_DATA_TYPE_VIDEO}
+    def expected_video(val: Any) -> List[Dict[str, Any]]:
+        return [{"type": LoggedDataType.LOGGED_DATA_TYPE_VIDEO}]
 
     # torch tensor video
     def torch_tensor_video_data(tmpdir: Path) -> Dict[str, Any]:
@@ -406,10 +423,12 @@ def generate_test_data() -> List[
             # x_coordinate_type
             None,
             # expected kwargs
-            lambda val: {
-                "value": val.data,
-                "type": LoggedDataType.LOGGED_DATA_TYPE_MARKDOWN,
-            },
+            lambda val: [
+                {
+                    "value": val.data,
+                    "type": LoggedDataType.LOGGED_DATA_TYPE_MARKDOWN,
+                }
+            ],
         )
     )
 
@@ -435,7 +454,7 @@ def test_log_data(
     category: Optional[str],
     get_data: Callable[[Path], Mapping[str, Any]],
     x_coordinate_type: Optional[XCoordinateType],
-    get_expected_kwargs: Callable[[Any], Mapping[str, Any]],
+    get_expected_kwargs: Callable[[Any], Sequence[Mapping[str, Any]]],
 ) -> None:
     logged_data_client = MagicMock(spec=LoggedDataClient)
     logged_data_client.log_data.return_value = MagicMock(
@@ -469,19 +488,18 @@ def test_log_data(
 
     # then
     for tag, value in data.items():
-        expected_kwargs = {
-            "tag": tag,
-            **get_expected_kwargs(value),
-        }
-        logged_data_client.log_data.assert_any_call(
-            dataset_build_id=dataset_build_id,
-            train_id=train_id,
-            **log_kwargs,
-            **expected_kwargs,
-        )
-        # calls either need to set value directly or upload the value
-        if "value" not in expected_kwargs:
-            mock_put.assert_called_with("http://path/for/upload", data=ANY)
+        for test_expected_kwargs in get_expected_kwargs(value):
+            expected_kwargs = {
+                "dataset_build_id": dataset_build_id,
+                "train_id": train_id,
+                "tag": tag,
+                **log_kwargs,
+                **test_expected_kwargs,
+            }
+            logged_data_client.log_data.assert_any_call(**expected_kwargs)
+            # calls either need to set value directly or upload the value
+            if "value" not in expected_kwargs:
+                mock_put.assert_called_with("http://path/for/upload", data=ANY)
 
 
 def generate_test_error_data() -> List[
