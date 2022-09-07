@@ -11,7 +11,6 @@ from .executor_service import ExecutorClient
 from .flow_manager import FlowManagerClient
 from .logged_data_service import LoggedDataClient
 from .model_catalog import ModelCatalogClient
-from .model_training_service import ModelTrainingClient
 from .project_service import ProjectServiceClient
 from .user_logs_service import UserLogsClient
 
@@ -22,7 +21,6 @@ class LayerClient:
         self._logger = logger
         self._data_catalog: Optional[DataCatalogClient] = None
         self._model_catalog: Optional[ModelCatalogClient] = None
-        self._model_training: Optional[ModelTrainingClient] = None
         self._account: Optional[AccountServiceClient] = None
         self._flow_manager: Optional[FlowManagerClient] = None
         self._user_logs: Optional[UserLogsClient] = None
@@ -47,14 +45,6 @@ class LayerClient:
         if self._model_catalog is None:
             self._model_catalog = ModelCatalogClient.create(self._config, self._logger)
         return self._model_catalog
-
-    @property
-    def model_training(self) -> ModelTrainingClient:
-        if self._model_training is None:
-            self._model_training = ModelTrainingClient.create(
-                self._config, self._logger
-            )
-        return self._model_training
 
     @property
     def account(self) -> AccountServiceClient:
