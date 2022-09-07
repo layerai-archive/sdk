@@ -117,6 +117,13 @@ class LogDataRunner:
                 dataframe = LogDataRunner._convert_dict_to_dataframe(value)
                 self._log_dataframe(value=dataframe, **kwargs)
             elif LogDataRunner._is_video_from_path(value):
+                if x_coordinate is not None:
+                    kwargs.update(
+                        {
+                            "x_coordinate": x_coordinate,
+                            "x_coordinate_type": x_coordinate_type,
+                        }
+                    )
                 if TYPE_CHECKING:
                     assert isinstance(value, Path)
                 self._log_video_from_path(path=value, **kwargs)
