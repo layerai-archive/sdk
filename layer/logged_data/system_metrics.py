@@ -4,6 +4,7 @@ import re
 import subprocess  # nosec: import_subprocess
 import threading
 import time
+import warnings
 from enum import Enum
 from logging import Logger
 from typing import Any, Dict, Optional
@@ -112,19 +113,25 @@ class CGroupsMetricsCollectorVersionedV1(CGroupsMetricsCollectorVersioned):
 
     def get_cpu_usage(self) -> int:
         # Time in nanoseconds
-        return int(self._read_cgroup_metric("cpu/cpuacct.usage_user"))
+        value = self._read_cgroup_metric("cpu/cpuacct.usage_user")
+        return int(0 if value is None else value)
 
     def get_cpu_available(self) -> float:
         # Times in microseconds
-        cpu_quota = int(self._read_cgroup_metric("cpu/cpu.cfs_quota_us"))
-        cpu_period = int(self._read_cgroup_metric("cpu/cpu.cfs_period_us"))
-        return float(cpu_quota / cpu_period)
+        cpu_quota = self._read_cgroup_metric("cpu/cpu.cfs_quota_us")
+        cpu_period = self._read_cgroup_metric("cpu/cpu.cfs_period_us")
+        if None in (cpu_quota, cpu_period):
+            return 0
+        else:
+            return float(int(cpu_quota) / int(cpu_period))
 
     def get_mem_used(self) -> int:
-        return int(self._read_cgroup_metric("memory/memory.usage_in_bytes"))
+        value = self._read_cgroup_metric("memory/memory.usage_in_bytes")
+        return int(0 if value is None else value)
 
     def get_mem_available(self) -> int:
-        return int(self._read_cgroup_metric("memory/memory.limit_in_bytes"))
+        value = self._read_cgroup_metric("memory/memory.limit_in_bytes")
+        return int(0 if value is None else value)
 
 
 class CGroupsMetricsCollectorVersionedV2(CGroupsMetricsCollectorVersioned):
@@ -134,7 +141,9 @@ class CGroupsMetricsCollectorVersionedV2(CGroupsMetricsCollectorVersioned):
 
     def get_cpu_usage(self) -> int:
         # Time expected in nanoseconds
-        cpu_usage = str(self._read_cgroup_metric("user.slice/cpu.stat"))
+        cpu_usage = self._read_cgroup_metric("user.slice/cpu.stat")
+        if cpu_usage is None:
+            return 0
         regex = r"user_usec (\d*)\n"
         extracted_cpu_usage = re.search(regex, cpu_usage)
         if extracted_cpu_usage is None:
@@ -144,19 +153,27 @@ class CGroupsMetricsCollectorVersionedV2(CGroupsMetricsCollectorVersioned):
             return int(extracted_cpu_usage.group(1)) * 1000
 
     def get_cpu_available(self) -> float:
-        max_cpu = str(self._read_cgroup_metric("user.slice/cpu.max"))
-        cpu_quota = max_cpu.split()[0]
-        cpu_period = max_cpu.split()[1]
+        max_cpu = self._read_cgroup_metric("user.slice/cpu.max")
+        if max_cpu is None:
+            return 0
+        try:
+            cpu_quota = max_cpu.split()[0]
+            cpu_period = max_cpu.split()[1]
+        except IndexError:
+            return 0
         if str(cpu_quota) == "max":
             return 1
         else:
             return float(int(cpu_quota) / int(cpu_period))
 
     def get_mem_used(self) -> int:
-        return int(self._read_cgroup_metric("user.slice/memory.current"))
+        value = self._read_cgroup_metric("user.slice/memory.current")
+        return int(0 if value is None else value)
 
     def get_mem_available(self) -> int:
         memory_high = self._read_cgroup_metric("user.slice/memory.high")
+        if memory_high is None:
+            return 0
         if memory_high.strip() == "max":
             return int(psutil.virtual_memory().total)
         else:
@@ -199,26 +216,38 @@ class CGroupsMetricsCollector(MetricsCollector):
 
         cpu_available = self._cgroup_metrics_collector.get_cpu_available()
         cpu_used = diff_cpu / diff_time / 1_000_000_000
-        return {
-            "cpu": {
-                "cpu_used": round(cpu_used, 4),
-                "cpu_allocated": round(cpu_available, 2),
+        if 0 in (cpu_used, cpu_available):
+            warnings.warn("CPU system metrics not logged due to missing data")
+            return {}
+        else:
+            return {
+                "cpu": {
+                    "cpu_used": round(cpu_used, 4),
+                    "cpu_allocated": round(cpu_available, 2),
+                }
             }
-        }
 
     def get_memory_metrics(self) -> Dict[str, Dict[str, float]]:
         mem_used = self._cgroup_metrics_collector.get_mem_used()
         mem_available = self._cgroup_metrics_collector.get_mem_available()
-        return {
-            "memory": {
-                "mem_used_gb": round(float(mem_used / 1024**3), 2),
-                "mem_allocated_gb": round(float(mem_available / 1024**3), 2),
+        if 0 in (mem_used, mem_available):
+            warnings.warn("Memory system metrics not logged due to missing data")
+            return {}
+        else:
+            return {
+                "memory": {
+                    "mem_used_gb": round(float(mem_used / 1024**3), 2),
+                    "mem_allocated_gb": round(float(mem_available / 1024**3), 2),
+                }
             }
-        }
 
 
 def _read_from_file(path: pathlib.Path) -> Any:
-    return path.read_text()
+    try:
+        return path.read_text()
+    except FileNotFoundError:
+        warnings.warn(f"{path} not found while trying to collect system metrics.")
+        return None
 
 
 def _get_cgroup_version() -> CGroupsVersion:
