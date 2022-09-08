@@ -1,12 +1,13 @@
 set -eu
 
 API_KEY=$1
+TEST=$2
 
 echo "$API_KEY" > .test-token
 
 start_time=$(date +%s%3N)
 set +e
-make e2e-test
+make "$TEST"
 exit_code=$?
 set -e
 end_time=$(date +%s%3N)

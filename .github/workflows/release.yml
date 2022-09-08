@@ -69,6 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.7, 3.8]
+        test: [ray-test, e2e-test]
     runs-on: ubuntu-18.04
     env:
       DD_GIT_COMMIT_AUTHOR_EMAIL: ci@layer.ai
@@ -111,7 +112,7 @@ jobs:
           datadog_site: datadoghq.eu
       - name: Run e2e tests
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: bash build_scripts/ci/e2e_tests.sh ${{ secrets.APP_API_KEY }}
+        run: bash build_scripts/ci/e2e_tests.sh ${{ secrets.APP_API_KEY }} ${{ matrix.test }}
       - uses: actions/upload-artifact@v3
         if: always()
         with:
