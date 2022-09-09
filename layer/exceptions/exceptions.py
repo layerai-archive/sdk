@@ -1,9 +1,9 @@
+import uuid
 from pathlib import Path
 from traceback import FrameSummary
 from typing import Any, List, Optional, Type
 
 from grpc import StatusCode
-from layerapi.api.ids_pb2 import RunId
 from yarl import URL
 
 from layer.contracts.assertions import Assertion
@@ -177,16 +177,16 @@ class ProjectBaseException(Exception):
 
 
 class ProjectExecutionException(ProjectBaseException):
-    def __init__(self, run_id: RunId, err_msg: str, suggestion: str):
+    def __init__(self, run_id: uuid.UUID, err_msg: str, suggestion: str):
         super().__init__(err_msg, suggestion)
         self._run_id = run_id
 
-    def run_id(self) -> RunId:
+    def run_id(self) -> uuid.UUID:
         return self._run_id
 
 
 class ProjectModelExecutionException(ProjectExecutionException):
-    def __init__(self, run_id: RunId, train_id: str, report: ExecutionStatusReport):
+    def __init__(self, run_id: uuid.UUID, train_id: str, report: ExecutionStatusReport):
         self._report = report
         self._train_id = train_id
         super().__init__(
@@ -219,7 +219,9 @@ class ProjectModelExecutionException(ProjectExecutionException):
 
 
 class ProjectDatasetBuildExecutionException(ProjectExecutionException):
-    def __init__(self, run_id: RunId, dataset_id: str, report: ExecutionStatusReport):
+    def __init__(
+        self, run_id: uuid.UUID, dataset_id: str, report: ExecutionStatusReport
+    ):
         self._dataset_id = dataset_id
         self._report = report
         super().__init__(
@@ -273,7 +275,7 @@ class LayerServiceUnavailableExceptionDuringInitialization(
 
 
 class LayerServiceUnavailableExceptionDuringExecution(ProjectExecutionException):
-    def __init__(self, run_id: RunId, message: str):
+    def __init__(self, run_id: uuid.UUID, message: str):
         super().__init__(
             run_id,
             f"Layer service unavailable. {message}",
@@ -310,11 +312,11 @@ class UserAccessTokenExpiredError(ProjectInitializationException):
 
 
 class ProjectRunnerError(Exception):
-    def __init__(self, message: str = "", run_id: Optional[RunId] = None):
+    def __init__(self, message: str = "", run_id: Optional[uuid.UUID] = None):
         super().__init__(message)
         self._run_id = run_id
 
-    def run_id(self) -> Optional[RunId]:
+    def run_id(self) -> Optional[uuid.UUID]:
         return self._run_id
 
 

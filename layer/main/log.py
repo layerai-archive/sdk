@@ -159,8 +159,8 @@ def log(
             "Data logging only allowed inside functions either decorated with @layer.model or @layer.dataset or"
             "invoked programmatically via layer.model('model-name')(my_function)(*my_function_arguments)"
         )
-    train = active_context.train()
-    train_id = train.get_id() if train is not None else None
+    model_train = active_context.model_train()
+    model_train_id = model_train.id if model_train is not None else None
     dataset_build = active_context.dataset_build()
     dataset_build_id = dataset_build.id if dataset_build is not None else None
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
@@ -175,7 +175,7 @@ def log(
             )
 
         log_data_runner = LogDataRunner(
-            train_id=train_id,
+            train_id=model_train_id,
             dataset_build_id=dataset_build_id,
             logger=logger,
             logged_data_destination=logged_data_destination,

@@ -44,7 +44,7 @@ def test_logging_in_remote_execution(
     )
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=str_tag, dataset_build_id=first_ds.build.id
+        tag=str_tag, dataset_build_id=first_ds.id
     )
     assert logged_data.value == "bar"
     assert logged_data.logged_data_type == LoggedDataType.TEXT
@@ -139,28 +139,28 @@ def test_scalar_values_logged(
     )
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=str_tag, dataset_build_id=first_ds.build.id
+        tag=str_tag, dataset_build_id=first_ds.id
     )
     assert logged_data.value == "bar"
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == str_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=int_tag, dataset_build_id=first_ds.build.id
+        tag=int_tag, dataset_build_id=first_ds.id
     )
     assert logged_data.value == "123"
     assert logged_data.logged_data_type == LoggedDataType.NUMBER
     assert logged_data.tag == int_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=bool_tag, dataset_build_id=first_ds.build.id
+        tag=bool_tag, dataset_build_id=first_ds.id
     )
     assert logged_data.value == "True"
     assert logged_data.logged_data_type == LoggedDataType.BOOLEAN
     assert logged_data.tag == bool_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=float_tag, dataset_build_id=first_ds.build.id
+        tag=float_tag, dataset_build_id=first_ds.id
     )
     assert logged_data.value == "1.11"
     assert logged_data.logged_data_type == LoggedDataType.NUMBER
@@ -197,14 +197,14 @@ def test_list_values_logged(
     )
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=list_tag, dataset_build_id=first_ds.build.id
+        tag=list_tag, dataset_build_id=first_ds.id
     )
     assert logged_data.value == str(["a", "b", "c"])
     assert logged_data.logged_data_type == LoggedDataType.TEXT
     assert logged_data.tag == list_tag
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=numpy_tag, dataset_build_id=first_ds.build.id
+        tag=numpy_tag, dataset_build_id=first_ds.id
     )
     assert logged_data.value == str([1, 2, 3])
     assert logged_data.logged_data_type == LoggedDataType.TEXT
@@ -229,7 +229,7 @@ def test_pandas_dataframe_logged(initialized_project: Project, client: LayerClie
     ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=ds_tag, dataset_build_id=ds.build.id
+        tag=ds_tag, dataset_build_id=ds.id
     )
 
     assert logged_data.logged_data_type == LoggedDataType.TABLE
@@ -256,7 +256,7 @@ def test_markdown_logged(initialized_project: Project, client: LayerClient):
     ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=ds_tag, dataset_build_id=ds.build.id
+        tag=ds_tag, dataset_build_id=ds.id
     )
 
     assert logged_data.logged_data_type == LoggedDataType.MARKDOWN
@@ -301,28 +301,28 @@ def test_image_and_video_logged(initialized_project: Project, client: LayerClien
     ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=pil_image_tag, dataset_build_id=ds.build.id
+        tag=pil_image_tag, dataset_build_id=ds.id
     )
     assert logged_data.value.startswith("https://logged-data--layer")
     assert logged_data.value.endswith(pil_image_tag)
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=image_path_tag, dataset_build_id=ds.build.id
+        tag=image_path_tag, dataset_build_id=ds.id
     )
     assert logged_data.value.startswith("https://logged-data--layer")
     assert logged_data.value.endswith(image_path_tag)
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=video_path_tag, dataset_build_id=ds.build.id
+        tag=video_path_tag, dataset_build_id=ds.id
     )
     assert logged_data.value.startswith("https://logged-data--layer")
     assert logged_data.value.endswith(video_path_tag)
     assert logged_data.logged_data_type == LoggedDataType.VIDEO
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=pytorch_tensor_video_tag, dataset_build_id=ds.build.id
+        tag=pytorch_tensor_video_tag, dataset_build_id=ds.id
     )
     assert logged_data.value.startswith("https://logged-data--layer")
     assert logged_data.value.endswith(pytorch_tensor_video_tag)
@@ -394,14 +394,14 @@ def test_file_and_directory_logged(initialized_project: Project, client: LayerCl
     ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=file_tag, dataset_build_id=ds.build.id
+        tag=file_tag, dataset_build_id=ds.id
     )
     assert logged_data.value.startswith("https://logged-data--layer")
     assert logged_data.value.endswith(file_tag)
     assert logged_data.logged_data_type == LoggedDataType.FILE
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=directory_tag, dataset_build_id=ds.build.id
+        tag=directory_tag, dataset_build_id=ds.id
     )
     assert logged_data.value.startswith("https://logged-data--layer")
     assert logged_data.value.endswith(directory_tag)
@@ -436,7 +436,7 @@ def test_matplotlib_objects_logged(initialized_project: Project, client: LayerCl
     ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=figure_tag, dataset_build_id=ds.build.id
+        tag=figure_tag, dataset_build_id=ds.id
     )
 
     assert logged_data.value.startswith("https://logged-data--layer")
@@ -444,7 +444,7 @@ def test_matplotlib_objects_logged(initialized_project: Project, client: LayerCl
     assert logged_data.logged_data_type == LoggedDataType.IMAGE
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=plot_tag, dataset_build_id=ds.build.id
+        tag=plot_tag, dataset_build_id=ds.id
     )
 
     assert logged_data.value.startswith("https://logged-data--layer")
@@ -473,7 +473,7 @@ def test_metrics_logged(initialized_project: Project, client: LayerClient):
     ds = client.data_catalog.get_dataset_by_name(initialized_project.id, ds_name)
 
     logged_data = client.logged_data_service_client.get_logged_data(
-        tag=metric_tag_1, dataset_build_id=ds.build.id
+        tag=metric_tag_1, dataset_build_id=ds.id
     )
 
     assert logged_data.logged_data_type == LoggedDataType.TEXT

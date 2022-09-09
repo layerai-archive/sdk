@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING, List, Mapping, Tuple
+import uuid
+from typing import List, Mapping, Tuple
 
 from layerapi.api.entity.history_event_pb2 import HistoryEvent
 from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layerapi.api.entity.run_metadata_entry_pb2 import RunMetadataEntry
 from layerapi.api.entity.run_metadata_pb2 import RunMetadata
 from layerapi.api.entity.run_pb2 import Run
-from layerapi.api.ids_pb2 import RunId
 from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     GetRunByIdRequest,
     GetRunHistoryAndMetadataRequest,
@@ -19,11 +19,10 @@ from layerapi.api.value.sha256_pb2 import Sha256
 
 from layer.config import ClientConfig
 from layer.contracts.project_full_name import ProjectFullName
+from layer.contracts.runs import TaskType
 from layer.utils.grpc.channel import get_grpc_channel
 
-
-if TYPE_CHECKING:
-    from layerapi.api.entity.task_pb2 import Task
+from .protomappers import runs as runs_proto_mapper
 
 
 class FlowManagerClient:
@@ -45,7 +44,7 @@ class FlowManagerClient:
         project_files_hash: str,
         user_command: str,
         env_variables: Mapping[str, str],
-    ) -> RunId:
+    ) -> uuid.UUID:
         response = self._service.StartRunV2(
             request=StartRunV2Request(
                 project_full_name=project_full_name.path,
@@ -55,33 +54,38 @@ class FlowManagerClient:
                 env_variables=env_variables,
             )
         )
-        return response.run_id
+        return runs_proto_mapper.from_run_id(response.run_id)
 
-    def get_run(self, run_id: RunId) -> Run:
+    def get_run(self, run_id: uuid.UUID) -> Run:
         response = self._service.GetRunById(GetRunByIdRequest(run_id=run_id))
         return response.run
 
     def get_run_status_history_and_metadata(
-        self, run_id: RunId
+        self, run_id: uuid.UUID
     ) -> Tuple[List[HistoryEvent], RunMetadata]:
         response = self._service.GetRunHistoryAndMetadata(
-            GetRunHistoryAndMetadataRequest(run_id=run_id)
+            GetRunHistoryAndMetadataRequest(run_id=runs_proto_mapper.to_run_id(run_id))
         )
         return list(response.events), response.run_metadata
 
     def update_run_metadata(
         self,
-        run_id: RunId,
+        run_id: uuid.UUID,
         task_id: str,
-        task_type: "Task.Type.ValueType",
+        task_type: TaskType,
         key: str,
         value: str,
-    ) -> RunId:
+    ) -> uuid.UUID:
         run_metadata_entry = RunMetadataEntry(
-            task_id=task_id, task_type=task_type, key=key, value=value
+            task_id=task_id,
+            task_type=runs_proto_mapper.TASK_TYPE_TO_PROTO_MAP[task_type],
+            key=key,
+            value=value,
         )
-        run_metadata = RunMetadata(run_id=run_id, entries=[run_metadata_entry])
+        run_metadata = RunMetadata(
+            run_id=runs_proto_mapper.to_run_id(run_id), entries=[run_metadata_entry]
+        )
         response = self._service.UpdateRunMetadata(
             UpdateRunMetadataRequest(run_metadata=run_metadata)
         )
-        return response.run_id
+        return runs_proto_mapper.from_run_id(response.run_id)

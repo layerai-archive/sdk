@@ -9,10 +9,10 @@ from yarl import URL
 from layer.clients.layer import LayerClient
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import DatasetBuild
+from layer.contracts.models import ModelTrain
 from layer.contracts.tracker import DatasetTransferState, ResourceTransferState
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.tracker.ui_progress_tracker import RunProgressTracker
-from layer.training.base_train import BaseTrain
 
 
 # We store the active context temporarily so it can be used within
@@ -53,15 +53,15 @@ class Context:
         asset_path: AssetPath,
         logged_data_destination: Optional[LoggedDataDestination] = None,
         tracker: Optional[RunProgressTracker] = None,
-        train: Optional[BaseTrain] = None,
         dataset_build: Optional[DatasetBuild] = None,
+        model_train: Optional[ModelTrain] = None,
         client: Optional[LayerClient] = None,
     ) -> None:
-        if train is not None and dataset_build is not None:
+        if model_train is not None and dataset_build is not None:
             raise Exception(
                 "Context cannot hold model train and dataset build at the same time"
             )
-        if train is not None and asset_path.asset_type is not AssetType.MODEL:
+        if model_train is not None and asset_path.asset_type is not AssetType.MODEL:
             raise Exception("Wrong asset type for model train context")
         if dataset_build is not None and asset_path.asset_type is not AssetType.DATASET:
             raise Exception("Wrong asset type for dataset build context")
@@ -72,13 +72,26 @@ class Context:
         self._project_full_name = asset_path.project_full_name()
         self._asset_name = asset_path.asset_name
         self._asset_type = asset_path.asset_type
-        self._train: Optional[BaseTrain] = train
-        self._dataset_build: Optional[DatasetBuild] = dataset_build
-        self._logged_data_destination: Optional[
-            LoggedDataDestination
-        ] = logged_data_destination
-        self._tracker: Optional[RunProgressTracker] = tracker
+        self._logged_data_destination = logged_data_destination
+        self._tracker = tracker
+        self._model_train = model_train
+        self._dataset_build = dataset_build
         self._initial_cwd: Optional[Path] = None
+
+    def asset_path(self) -> AssetPath:
+        """
+        Returns the full path for the Layer asset.
+        """
+        path = AssetPath(
+            account_name=self._project_full_name.account_name,
+            project_name=self._project_full_name.project_name,
+            asset_type=self.asset_type(),
+            asset_name=self.asset_name(),
+        )
+        model_train = self.model_train()
+        if model_train is not None:
+            path = path.with_tag(model_train.tag)
+        return path
 
     def url(self) -> URL:
         """
@@ -87,48 +100,37 @@ class Context:
         For example, during model training, it returns the current
         model train URL.
         """
-        p = AssetPath(
-            account_name=self._project_full_name.account_name,
-            project_name=self._project_full_name.project_name,
-            asset_type=self.asset_type(),
-            asset_name=self.asset_name(),
-        )
-        if self.train() is not None:
-            train = self.train()
-            assert train is not None
-            p = p.with_version_and_build(
-                train.get_version(), int(train.get_train_index())
-            )
+        return self.asset_path().url(self._url)
 
-        return p.url(self._url)
-
-    def train(self) -> Optional[BaseTrain]:
+    def model_train(self) -> Optional[ModelTrain]:
         """
-        Retrieves the active Layer train object.
+        Retrieves the active Layer model train object.
 
-        :return: Represents the current train of the model, passed by Layer when the training of the model starts.
-
-        .. code-block:: python
-
-            # Get train object from Layer Context.
-            train = context.train()
+        :return: Represents the current train of the model, passed by Layer when training of the model starts.
         """
-        return self._train
+        return self._model_train
 
     def save_model(self, model: Any) -> None:
-        train = self._train
-        if not train:
+        assert self._client is not None
+        model_train = self._model_train
+        if not model_train:
             raise RuntimeError(
                 "Saving model only allowed inside when context is for model training"
             )
         model_name = self.asset_name()
-        tracker = self._tracker
-        if tracker:
-            tracker.mark_asset_uploading(AssetType.MODEL, model_name)
+        if self._tracker:
+            self._tracker.mark_asset_uploading(AssetType.MODEL, model_name)
+
         transfer_state = ResourceTransferState()
-        train.save_model(model, transfer_state=transfer_state)
-        if tracker:
-            tracker.mark_asset_uploading(
+
+        self._client.model_catalog.save_model_object(
+            model,
+            model_train.id,
+            transfer_state=transfer_state,
+        )
+
+        if self._tracker:
+            self._tracker.mark_asset_uploading(
                 AssetType.MODEL, model_name, model_transfer_state=transfer_state
             )
 

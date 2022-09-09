@@ -1,12 +1,11 @@
+import enum
 import uuid
 from dataclasses import dataclass
 from typing import Optional, Sequence, Union
 
 import pandas as pd
-from layerapi.api.ids_pb2 import ModelTrainId
-from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
-from layerapi.api.value.s3_path_pb2 import S3Path
 
+from layer.contracts.aws import AWSCredentials, S3Path
 from layer.contracts.logged_data import LogDataType, LoggedDataObject
 from layer.exceptions.exceptions import LayerClientException
 from layer.flavors.base import ModelFlavor, ModelRuntimeObjects
@@ -18,9 +17,36 @@ from .asset import AssetPath, AssetType, BaseAsset
 
 @dataclass(frozen=True)
 class TrainStorageConfiguration:
-    train_id: ModelTrainId
+    train_id: uuid.UUID
     s3_path: S3Path
-    credentials: AwsCredentials
+    credentials: AWSCredentials
+
+
+@enum.unique
+class ModelTrainStatus(enum.IntEnum):
+    INVALID = 0
+    PENDING = 1
+    INITIALIZING = 2
+    FETCHING_FEATURES = 3
+    IN_PROGRESS = 4
+    SUCCESSFUL = 5
+    FAILED = 6
+    CANCEL_REQUESTED = 7
+    CANCELED = 8
+
+
+@dataclass(frozen=True)
+class ModelVersion:
+    id: uuid.UUID
+    name: str
+
+
+@dataclass(frozen=True)
+class ModelTrain:
+    id: uuid.UUID
+    index: int
+    status: ModelTrainStatus
+    tag: str
 
 
 class Model(BaseAsset):

@@ -298,12 +298,12 @@ class SystemMetrics:
             raise RuntimeError(
                 "System stats logging only allowed with a logged data destination"
             )
-        train = active_context.train()
-        train_id = train.get_id() if train is not None else None
+        model_train = active_context.model_train()
+        model_train_id = model_train.id if model_train is not None else None
         dataset_build = active_context.dataset_build()
         dataset_build_id = dataset_build.id if dataset_build is not None else None
         self._log_data_runner = LogDataRunner(
-            train_id=train_id,
+            train_id=model_train_id,
             dataset_build_id=dataset_build_id,
             logger=self._logger,
             logged_data_destination=logged_data_destination,

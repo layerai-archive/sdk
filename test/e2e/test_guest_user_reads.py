@@ -97,7 +97,7 @@ def test_guest_user_private_dataset_read(
 
         with pytest.raises(LayerClientResourceNotFoundException):
             guest_client.logged_data_service_client.get_logged_data(
-                tag=dataset_log_tag, dataset_build_id=dataset.build.id
+                tag=dataset_log_tag, dataset_build_id=dataset.id
             )
 
         # model
@@ -131,7 +131,7 @@ def test_guest_user_public_dataset_read(
         )
 
         logged_data = guest_client.logged_data_service_client.get_logged_data(
-            tag=dataset_log_tag, dataset_build_id=dataset.build.id
+            tag=dataset_log_tag, dataset_build_id=dataset.id
         )
 
         assert logged_data.value == str(dataset_log_value)

@@ -109,7 +109,7 @@ class ProjectRunner:
                         run_context = RunContext(is_running=True)
                         logs_thread = threading.Thread(
                             target=show_pipeline_run_logs,
-                            args=(client, run.id.value, True),
+                            args=(client, str(run.id), True),
                             kwargs={
                                 "printer": printer,
                                 "evaluate_until_callback": run_context.user_logs_check_predicate,

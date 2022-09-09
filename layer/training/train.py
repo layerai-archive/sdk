@@ -7,11 +7,8 @@ from layerapi.api.ids_pb2 import ModelTrainId
 from layerapi.api.value.model_flavor_pb2 import ModelFlavor
 
 from layer.clients.layer import LayerClient
-from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
-from layer.exceptions.exceptions import UnexpectedModelTypeException
-from layer.flavors.utils import get_flavor_for_model
 from layer.types import ModelObject
 
 from .base_train import BaseTrain
@@ -78,37 +75,17 @@ class Train(BaseTrain):
         transfer_state: ResourceTransferState,
     ) -> Any:
         assert self.__train_id
-
-        flavor = get_flavor_for_model(model_object)
-        if flavor is None:
-            raise UnexpectedModelTypeException(type(model_object))
-        storage_config = (
-            self.__layer_client.model_catalog.get_model_train_storage_configuration(
-                self.__train_id
-            )
-        )
-        self.__flavor = flavor.PROTO_FLAVOR
-        model = Model(
-            self.__name,
-            uuid.UUID(self.__train_id.value),
-            flavor=flavor,
-            storage_config=storage_config,
-        )
         self.__layer_client.model_catalog.save_model_object(
-            model, model_object, transfer_state=transfer_state
+            model_object,
+            uuid.UUID(self.__train_id.value),
+            transfer_state=transfer_state,
         )
 
     def __start_train(self) -> None:
         self.__layer_client.model_catalog.start_model_train(
-            train_id=self.__train_id,
+            train_id=uuid.UUID(self.__train_id.value),
         )
         self.__start_train_ts = int(time.time())
-
-    def __complete_train(self) -> None:
-        assert self.__train_id
-        self.__layer_client.model_catalog.complete_model_train(
-            self.__train_id, self.__flavor
-        )
 
     def __enter__(self) -> Any:
         self.__start_train()
@@ -121,5 +98,4 @@ class Train(BaseTrain):
         # the execution of this method. We'd only proceed if there are no exceptions.
         # In happy path, all three parameters would be None.
         # https://docs.python.org/3/reference/datamodel.html#object.__exit__
-        if exception_type is None:
-            self.__complete_train()
+        pass

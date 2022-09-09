@@ -2,8 +2,6 @@ import logging
 import uuid
 from typing import Any, List
 
-from layerapi.api.ids_pb2 import RunId
-
 from layer.config.config import Config
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.project_full_name import ProjectFullName
@@ -39,7 +37,7 @@ class RayProjectRunner:
             )
 
         run = Run(
-            id=RunId(value=str(uuid.UUID(int=0))),
+            id=uuid.UUID(int=0),
             project_full_name=self.project_full_name,
         )  # TODO: Workflow integration with ray to obtain run id.
         return run

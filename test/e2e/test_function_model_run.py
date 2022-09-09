@@ -113,8 +113,8 @@ def test_local_run_without_decorator_succeeds_and_registers_metadata(
 
         def train_id(self) -> UUID:
             assert self.context is not None
-            assert self.context.train() is not None
-            return self.context.train().get_id()
+            assert self.context.model_train() is not None
+            return self.context.model_train().id
 
     ctx_holder = ContextHolder()
 

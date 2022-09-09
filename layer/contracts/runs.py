@@ -1,14 +1,10 @@
+import enum
 import os
+import uuid
 from dataclasses import dataclass
-from typing import Callable, Iterator, List
-
-from layerapi.api.entity.run_pb2 import Run as PBRun
-from layerapi.api.ids_pb2 import RunId
+from typing import Iterator
 
 from layer.contracts.project_full_name import ProjectFullName
-
-
-GetRunsFunction = Callable[[], List[PBRun]]
 
 
 @dataclass(frozen=True)
@@ -38,6 +34,12 @@ class ResourcePath:
                     yield os.path.relpath(dir_file_path)
 
 
+@enum.unique
+class TaskType(enum.IntEnum):
+    MODEL_TRAIN = 1
+    DATASET_BUILD = 2
+
+
 @dataclass(frozen=True)
 class Run:
     """
@@ -54,7 +56,7 @@ class Run:
 
     """
 
-    id: RunId
+    id: uuid.UUID
     project_full_name: ProjectFullName
 
     @property
