@@ -55,7 +55,7 @@ class RunProgressTracker(ABC):
         pass
 
     @abstractmethod
-    def mark_uploading(
+    def mark_asset_uploading(
         self,
         asset_type: AssetType,
         name: str,

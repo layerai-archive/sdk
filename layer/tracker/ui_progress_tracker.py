@@ -239,7 +239,7 @@ class UIRunProgressTracker(RunProgressTracker):
     def mark_asserted(self, asset_type: AssetType, name: str) -> None:
         self._update_asset(asset_type, name, status=AssetTrackerStatus.ASSERTED)
 
-    def mark_uploading(
+    def mark_asset_uploading(
         self,
         asset_type: AssetType,
         name: str,

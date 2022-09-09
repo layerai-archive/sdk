@@ -124,11 +124,11 @@ class Context:
         model_name = self.asset_name()
         tracker = self._tracker
         if tracker:
-            tracker.mark_uploading(AssetType.MODEL, model_name)
+            tracker.mark_asset_uploading(AssetType.MODEL, model_name)
         transfer_state = ResourceTransferState()
         train.save_model(model, transfer_state=transfer_state)
         if tracker:
-            tracker.mark_uploading(
+            tracker.mark_asset_uploading(
                 AssetType.MODEL, model_name, model_transfer_state=transfer_state
             )
 
@@ -150,7 +150,7 @@ class Context:
         assert self._client is not None
         transfer_state = DatasetTransferState(len(ds))
         if self._tracker:
-            self._tracker.mark_uploading(
+            self._tracker.mark_asset_uploading(
                 AssetType.DATASET, dataset_name, dataset_transfer_state=transfer_state
             )
         # this call would store the resulting dataset, extract the schema and complete the build from remote
