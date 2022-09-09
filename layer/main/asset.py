@@ -1,5 +1,4 @@
 import logging
-import uuid
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from layer.cache.utils import is_cached
@@ -105,13 +104,12 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
             return dataset
 
     with LayerClient(config.client, logger).init() as client:
-        pb_build = client.data_catalog.get_build_by_path(path=asset_path.path())
-        build_id: str = pb_build.id.value
+        build = client.data_catalog.get_build_by_path(path=asset_path.path())
         log_data_runner = LogDataRunner(
             logged_data_destination=ImmediateLoggedDataDestination(
                 client.logged_data_service_client
             ),
-            dataset_build_id=uuid.UUID(build_id),
+            dataset_build_id=build.id,
         )
         dataset = Dataset(
             asset_path=asset_path,

@@ -1,23 +1,16 @@
 import sys
 import tempfile
+import uuid
 import warnings
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import Optional, Tuple
 
-from layerapi.api.entity.model_train_pb2 import ModelTrain as PBModelTrain
-from layerapi.api.entity.model_train_status_pb2 import (
-    ModelTrainStatus as PBModelTrainStatus,
-)
-from layerapi.api.entity.model_version_pb2 import ModelVersion
-from layerapi.api.entity.source_code_environment_pb2 import SourceCodeEnvironment
-from layerapi.api.ids_pb2 import ModelTrainId, ModelVersionId
 from layerapi.api.service.modelcatalog.model_catalog_api_pb2 import (
     CompleteModelTrainRequest,
     CreateModelTrainFromVersionIdRequest,
     CreateModelTrainRequest,
     CreateModelVersionRequest,
-    CreateModelVersionResponse,
     GetModelTrainRequest,
     GetModelTrainResponse,
     GetModelTrainStorageConfigurationRequest,
@@ -25,32 +18,37 @@ from layerapi.api.service.modelcatalog.model_catalog_api_pb2 import (
     GetModelVersionResponse,
     LoadModelTrainDataByPathRequest,
     StartModelTrainRequest,
-    StoreTrainingMetadataRequest,
     UpdateModelTrainStatusRequest,
 )
 from layerapi.api.service.modelcatalog.model_catalog_api_pb2_grpc import (
     ModelCatalogAPIStub,
 )
-from layerapi.api.value.dependency_pb2 import DependencyFile
-from layerapi.api.value.s3_path_pb2 import S3Path
 from layerapi.api.value.sha256_pb2 import Sha256
-from layerapi.api.value.source_code_pb2 import RemoteFileLocation, SourceCode
 
 from layer.cache.cache import Cache
 from layer.config import ClientConfig
 from layer.contracts.asset import AssetPath
-from layer.contracts.models import Model, ModelObject, TrainStorageConfiguration
+from layer.contracts.models import (
+    Model,
+    ModelObject,
+    ModelTrain,
+    ModelTrainStatus,
+    ModelVersion,
+    TrainStorageConfiguration,
+)
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
-from layer.exceptions.exceptions import LayerClientException
+from layer.exceptions.exceptions import (
+    LayerClientException,
+    UnexpectedModelTypeException,
+)
 from layer.flavors.base import ModelRuntimeObjects
-from layer.flavors.utils import get_flavor_for_proto
+from layer.flavors.utils import get_flavor_for_model, get_flavor_for_proto
 from layer.utils.grpc.channel import get_grpc_channel
 from layer.utils.s3 import S3Util
 
-
-if TYPE_CHECKING:
-    from layerapi.api.value.model_flavor_pb2 import ModelFlavor as PBModelFlavor
+from .protomappers import aws as aws_proto_mapper
+from .protomappers import models as model_proto_mapper
 
 
 class ModelCatalogClient:
@@ -81,7 +79,7 @@ class ModelCatalogClient:
         description: str,
         source_code_hash: str,
         fabric: str,
-    ) -> CreateModelVersionResponse:
+    ) -> ModelVersion:
         """
         Given a model metadata it makes a request to the backend
         and creates a corresponding entity.
@@ -97,48 +95,7 @@ class ModelCatalogClient:
                 fabric=fabric,
             ),
         )
-        self._logger.debug(f"CreateModelVersionResponse: {str(response)}")
-        return response
-
-    def store_training_metadata(
-        self,
-        asset_name: str,
-        description: str,
-        entrypoint: str,
-        environment: str,
-        s3_path: S3Path,
-        version: ModelVersion,
-        fabric: str,
-    ) -> None:
-        language_version = _language_version()
-        request: StoreTrainingMetadataRequest = StoreTrainingMetadataRequest(
-            model_version_id=version.id,
-            name=asset_name,
-            description=description,
-            source_code_env=SourceCodeEnvironment(
-                source_code=SourceCode(
-                    remote_file_location=RemoteFileLocation(
-                        name=entrypoint,
-                        location=f"s3://{s3_path.bucket}/{s3_path.key}{asset_name}.tgz",
-                    ),
-                    language=SourceCode.Language.LANGUAGE_PYTHON,
-                    language_version=SourceCode.LanguageVersion(
-                        major=language_version[0],
-                        minor=language_version[1],
-                        micro=language_version[2],
-                    ),
-                ),
-                dependency_file=DependencyFile(
-                    name=environment,
-                    location=environment,
-                ),
-            ),
-            entrypoint=entrypoint,
-            fabric=fabric,
-        )
-        self._logger.debug(f"StoreTrainingMetadataRequest request: {str(request)}")
-        response = self._service.StoreTrainingMetadata(request)
-        self._logger.debug(f"StoreTrainingMetadata response: {str(response)}")
+        return model_proto_mapper.from_model_version(response.model_version)
 
     def load_model_by_path(self, path: str) -> Model:
         load_response = self._service.LoadModelTrainDataByPath(
@@ -163,14 +120,14 @@ class ModelCatalogClient:
 
     def create_model_train_from_version_id(
         self,
-        version_id: ModelVersionId,
-    ) -> ModelTrainId:
+        version_id: uuid.UUID,
+    ) -> uuid.UUID:
         response = self._service.CreateModelTrainFromVersionId(
             CreateModelTrainFromVersionIdRequest(
-                model_version_id=version_id,
+                model_version_id=model_proto_mapper.to_model_version_id(version_id),
             ),
         )
-        return response.id
+        return model_proto_mapper.from_model_train_id(response.id)
 
     def load_model_runtime_objects(
         self,
@@ -218,64 +175,54 @@ class ModelCatalogClient:
 
     def save_model_object(
         self,
-        model: Model,
         model_object: ModelObject,
+        train_id: uuid.UUID,
         transfer_state: ResourceTransferState,
     ) -> ModelObject:
-        self._logger.debug(f"Storing given model {model_object} for {model.path}")
+        flavor = get_flavor_for_model(model_object)
+        if flavor is None:
+            raise UnexpectedModelTypeException(type(model_object))
+
+        response = self._service.GetModelTrainStorageConfiguration(
+            GetModelTrainStorageConfigurationRequest(
+                model_train_id=model_proto_mapper.to_model_train_id(train_id),
+            ),
+        )
+        storage_config = TrainStorageConfiguration(
+            train_id=train_id,
+            s3_path=aws_proto_mapper.from_s3_path(response.s3_path),
+            credentials=aws_proto_mapper.from_aws_credentials(response.credentials),
+        )
+
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 local_path = Path(tmp) / "model"
-                model.flavor.save_model_to_directory(model_object, local_path)
+                flavor.save_model_to_directory(model_object, local_path)
                 S3Util.upload_dir(
                     local_dir=local_path,
-                    credentials=model.storage_config.credentials,
-                    s3_path=model.storage_config.s3_path,
+                    credentials=storage_config.credentials,
+                    s3_path=storage_config.s3_path,
                     endpoint_url=self._s3_endpoint_url,
                     state=transfer_state,
                 )
         except Exception as ex:
             raise LayerClientException(f"Error while storing model, {ex}")
-        self._logger.debug(f"User model {model.path} saved successfully")
+
+        self._service.CompleteModelTrain(
+            CompleteModelTrainRequest(
+                id=model_proto_mapper.to_model_train_id(train_id),
+                flavor=flavor.PROTO_FLAVOR,
+            ),
+        )
 
         return model_object
-
-    def get_model_train_storage_configuration(
-        self,
-        train_id: ModelTrainId,
-    ) -> TrainStorageConfiguration:
-        response = self._service.GetModelTrainStorageConfiguration(
-            GetModelTrainStorageConfigurationRequest(
-                model_train_id=train_id,
-            ),
-        )
-        return TrainStorageConfiguration(
-            train_id=train_id,
-            s3_path=response.s3_path,
-            credentials=response.credentials,
-        )
-
-    def start_model_train(
-        self,
-        train_id: ModelTrainId,
-    ) -> TrainStorageConfiguration:
-        response = self._service.StartModelTrain(
-            StartModelTrainRequest(
-                model_train_id=train_id,
-            ),
-        )
-        return TrainStorageConfiguration(
-            train_id=train_id,
-            s3_path=response.s3_path,
-            credentials=response.credentials,
-        )
 
     def create_model_train(
         self,
         name: str,
         project_full_name: ProjectFullName,
         version: Optional[str],
-    ) -> ModelTrainId:
+    ) -> uuid.UUID:
         response = self._service.CreateModelTrain(
             CreateModelTrainRequest(
                 model_name=name,
@@ -285,37 +232,43 @@ class ModelCatalogClient:
         )
         return response.id
 
-    def complete_model_train(
-        self,
-        train_id: ModelTrainId,
-        flavor: Optional["PBModelFlavor.ValueType"],
-    ) -> None:
-        self._service.CompleteModelTrain(
-            CompleteModelTrainRequest(id=train_id, flavor=flavor),
-        )
-
-    def get_model_train(self, train_id: ModelTrainId) -> PBModelTrain:
+    def get_model_train(self, train_id: uuid.UUID) -> ModelTrain:
         response: GetModelTrainResponse = self._service.GetModelTrain(
             GetModelTrainRequest(
-                model_train_id=train_id,
+                model_train_id=model_proto_mapper.to_model_train_id(train_id),
             ),
         )
-        return response.model_train
-
-    def get_model_version(self, version_id: ModelVersionId) -> ModelVersion:
-        response: GetModelVersionResponse = self._service.GetModelVersion(
+        version_response: GetModelVersionResponse = self._service.GetModelVersion(
             GetModelVersionRequest(
-                model_version_id=version_id,
+                model_version_id=response.model_train.model_version_id,
             ),
         )
-        return response.version
+        return model_proto_mapper.from_model_train(
+            response.model_train, version_response.version
+        )
+
+    def start_model_train(
+        self,
+        train_id: uuid.UUID,
+    ) -> None:
+        self._service.StartModelTrain(
+            StartModelTrainRequest(
+                model_train_id=model_proto_mapper.to_model_train_id(train_id),
+            ),
+        )
 
     def update_model_train_status(
-        self, train_id: ModelTrainId, train_status: PBModelTrainStatus
+        self,
+        train_id: uuid.UUID,
+        train_status: ModelTrainStatus,
+        info: str,
     ) -> None:
         self._service.UpdateModelTrainStatus(
             UpdateModelTrainStatusRequest(
-                model_train_id=train_id, train_status=train_status
+                model_train_id=model_proto_mapper.to_model_train_id(train_id),
+                train_status=model_proto_mapper.to_model_train_status(
+                    train_status, info
+                ),
             )
         )
 

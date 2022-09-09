@@ -33,6 +33,7 @@ class AssetPath:
     asset_type: AssetType
     account_name: Optional[str] = None
     project_name: Optional[str] = None
+    asset_tag: Optional[str] = None
     asset_version: Optional[str] = None
     asset_build: Optional[int] = None
     asset_selector: Optional[str] = None
@@ -99,7 +100,9 @@ class AssetPath:
             self.asset_name,
         ]
         p = "/".join([part for part in parts if part is not None])
-        if self.asset_version is not None:
+        if self.asset_tag is not None:
+            p = f"{p}:{self.asset_tag}"
+        elif self.asset_version is not None:
             p = f"{p}:{self.asset_version}"
             if self.asset_build is not None:
                 p = f"{p}.{self.asset_build}"
@@ -115,6 +118,9 @@ class AssetPath:
             project_name=project_full_name.project_name,
             account_name=project_full_name.account_name,
         )
+
+    def with_tag(self, tag: str) -> "AssetPath":
+        return replace(self, asset_tag=tag)
 
     def with_version(self, version: str) -> "AssetPath":
         return replace(self, asset_version=version)
@@ -142,7 +148,9 @@ class AssetPath:
 
         raw_url = str(host_url / p)
 
-        if self.asset_version is not None:
+        if self.asset_tag is not None:
+            raw_url += f"?v={self.asset_tag}"
+        elif self.asset_version is not None:
             version_build_param = self.asset_version
             if self.asset_build is not None:
                 version_build_param = f"{version_build_param}.{self.asset_build}"

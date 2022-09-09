@@ -1,6 +1,6 @@
 import enum
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, List, Mapping, Optional, Sequence, Union
 
 import pandas
@@ -25,10 +25,10 @@ class DatasetBuildStatus(enum.IntEnum):
 
 @dataclass(frozen=True)
 class DatasetBuild:
-    id: uuid.UUID = field(default_factory=uuid.uuid4)
-    status: DatasetBuildStatus = DatasetBuildStatus.INVALID
+    id: uuid.UUID
+    status: DatasetBuildStatus
+    tag: str
     info: str = ""
-    index: str = ""
 
 
 class Dataset(BaseAsset):
@@ -71,7 +71,6 @@ class Dataset(BaseAsset):
         self._version_id = version_id
         self.schema = schema
         self.metadata = metadata if metadata is not None else {}
-        self.build = build or DatasetBuild()
         self.__pandas_df_factory = _pandas_df_factory or _create_empty_data_frame
         self.uri = uri
         self.version = version if version is not None else ""
@@ -83,14 +82,6 @@ class Dataset(BaseAsset):
     def _pandas_df_factory(self) -> "pandas.DataFrame":
         assert self.__pandas_df_factory
         return self.__pandas_df_factory()
-
-    @property
-    def is_build_completed(self) -> bool:
-        return self.build.status == DatasetBuildStatus.COMPLETED
-
-    @property
-    def build_info(self) -> str:
-        return self.build.info
 
     def to_pandas(self) -> "pandas.DataFrame":
         """

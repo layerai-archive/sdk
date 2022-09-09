@@ -1,12 +1,9 @@
 import logging
 import os
+import uuid
 from dataclasses import dataclass
 from typing import Any, Callable, List, Mapping, Optional, Sequence
-from uuid import UUID
 
-from layerapi.api.entity.model_train_status_pb2 import ModelTrainStatus
-from layerapi.api.entity.task_pb2 import Task
-from layerapi.api.ids_pb2 import ModelTrainId, RunId
 from yarl import URL
 
 from layer import Context
@@ -15,6 +12,8 @@ from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
+from layer.contracts.models import ModelTrain, ModelTrainStatus
+from layer.contracts.runs import TaskType
 from layer.exceptions.exception_handler import exception_handler
 from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.exceptions.status_report import (
@@ -40,7 +39,7 @@ def _run(
     client: LayerClient,
     tracker: RunProgressTracker,
     fabric: Fabric,
-    run_id: str,
+    run_id: uuid.UUID,
     logged_data_destination: LoggedDataDestination,
     **kwargs: Any,
 ) -> None:
@@ -54,29 +53,30 @@ def _run(
         model_definition.description,
         model_definition.source_code_digest,
         fabric.value,
-    ).model_version
+    )
     train_id = client.model_catalog.create_model_train_from_version_id(model_version.id)
     if run_id:
         client.flow_manager.update_run_metadata(
-            run_id=RunId(value=run_id),
+            run_id=run_id,
             task_id=model_definition.asset_path.path(),
-            task_type=Task.Type.TYPE_MODEL_TRAIN,
+            task_type=TaskType.MODEL_TRAIN,
             key="train-id",
-            value=str(train_id.value),
+            value=str(train_id),
         )
-    train_pb = client.model_catalog.get_model_train(train_id)
+    model_train = client.model_catalog.get_model_train(train_id)
     train = Train(
         layer_client=client,
         project_full_name=model_definition.project_full_name,
         name=model_definition.asset_name,
         version=model_version.name,
-        train_id=UUID(train_id.value),
-        train_index=str(train_pb.index),
+        train_id=train_id,
+        train_index=str(model_train.index),
     )
     trainer = ModelTrainer(
         url=url,
         client=client,
         train=train,
+        model_train=model_train,
         function=model_definition.func,
         args=model_definition.args,
         kwargs=model_definition.kwargs,
@@ -89,7 +89,7 @@ def _run(
     tracker.mark_done(
         AssetType.MODEL,
         name=model_definition.asset_name,
-        tag=f"{model_version.name}.{train.get_train_index()}",
+        tag=model_train.tag,
     )
 
     return result
@@ -101,6 +101,7 @@ class ModelTrainer:
     client: LayerClient
     tracker: RunProgressTracker
     train: Train
+    model_train: ModelTrain
     function: Callable[..., Any]
     args: Sequence[Any]
     kwargs: Mapping[str, Any]
@@ -161,13 +162,14 @@ class ModelTrainer:
             )
             with Context(
                 url=self.url,
+                client=self.client,
                 asset_path=asset_path,
-                train=self.train,
+                model_train=self.model_train,
                 tracker=self.tracker,
                 logged_data_destination=self.logged_data_destination,
             ) as ctx:
                 self._update_train_status(
-                    ModelTrainStatus.TRAIN_STATUS_IN_PROGRESS,
+                    ModelTrainStatus.IN_PROGRESS,
                 )
                 logger.info("Executing the train_model_func")
                 work_dir = ctx.get_working_directory()
@@ -188,7 +190,7 @@ class ModelTrainer:
                         f"Saved model artifact {model} to model registry successfully"
                     )
                 self._update_train_status(
-                    ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
+                    ModelTrainStatus.SUCCESSFUL,
                 )
                 return model
 
@@ -197,32 +199,29 @@ class ModelTrainer:
         # catches SystemExit exceptions, thus without this if a chain of status updates
         # could be triggered with the outer most exception message overriding inner ones
         existing_status = self._get_train_status()
-        if existing_status != ModelTrainStatus.TRAIN_STATUS_FAILED:
+        if existing_status != ModelTrainStatus.FAILED:
             report: ExecutionStatusReport
             if isinstance(failure_exc, LayerFailedAssertionsException):
                 report = failure_exc.to_status_report()
             else:
                 report = PythonExecutionStatusReport.from_exception(failure_exc, None)
             self._update_train_status(
-                ModelTrainStatus.TRAIN_STATUS_FAILED,
+                ModelTrainStatus.FAILED,
                 info=ExecutionStatusReportFactory.to_json(report),
             )
 
-    def _get_train_status(self) -> "ModelTrainStatus.TrainStatus.V":
-        return self.client.model_catalog.get_model_train(
-            ModelTrainId(value=str(self.train.get_id()))
-        ).train_status.train_status
+    def _get_train_status(self) -> ModelTrainStatus:
+        return self.client.model_catalog.get_model_train(self.model_train.id).status
 
     def _update_train_status(
         self,
-        train_status: "ModelTrainStatus.TrainStatus.V",
+        train_status: ModelTrainStatus,
         info: str = "",
     ) -> None:
         train_id = self.train.get_id()
         try:
             self.client.model_catalog.update_model_train_status(
-                ModelTrainId(value=str(train_id)),
-                ModelTrainStatus(train_status=train_status, info=info),
+                train_id, train_status, info
             )
         except Exception as e:
             reason = getattr(e, "message", repr(e))

@@ -4,10 +4,9 @@ from mimetypes import guess_type
 from pathlib import Path
 from typing import Optional
 
-from layerapi.api.value.aws_credentials_pb2 import AwsCredentials
-from layerapi.api.value.s3_path_pb2 import S3Path
 from yarl import URL
 
+from layer.contracts.aws import AWSCredentials, S3Path
 from layer.contracts.tracker import ResourceTransferState
 
 
@@ -16,7 +15,7 @@ class S3Util:
     def download_dir(
         local_dir: Path,
         s3_path: S3Path,
-        credentials: Optional[AwsCredentials] = None,
+        credentials: Optional[AWSCredentials] = None,
         *,
         endpoint_url: Optional[URL] = None,
         state: ResourceTransferState,
@@ -65,7 +64,7 @@ class S3Util:
     @staticmethod
     def upload_dir(
         local_dir: Path,
-        credentials: AwsCredentials,
+        credentials: AWSCredentials,
         s3_path: S3Path,
         *,
         endpoint_url: Optional[URL] = None,
@@ -129,7 +128,7 @@ class S3Util:
 
     @staticmethod
     def create_dir(
-        credentials: AwsCredentials,
+        credentials: AWSCredentials,
         bucket: str,
         key: str,
         *,

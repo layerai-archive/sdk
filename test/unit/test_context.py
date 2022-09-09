@@ -1,3 +1,4 @@
+import uuid
 from typing import Union
 from unittest.mock import MagicMock
 
@@ -8,8 +9,8 @@ from layer import Context
 from layer.context import get_active_context
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.datasets import DatasetBuild
+from layer.contracts.models import ModelTrain, ModelTrainStatus
 from layer.contracts.project_full_name import ProjectFullName
-from layer.training.base_train import BaseTrain
 
 
 EXAMPLE_LAYER_URL = URL("https://app.layer.ai")
@@ -64,17 +65,6 @@ class TestContext:
         assert holder.context() is not None
         assert get_active_context() is None
 
-    class FakeTrain(BaseTrain):
-        def __init__(self, version: str, index: int):
-            self._version = version
-            self._train_index = index
-
-        def get_version(self) -> str:
-            return self._version
-
-        def get_train_index(self) -> str:
-            return str(self._train_index)
-
     @pytest.mark.parametrize(
         ("asset_name", "asset_type", "build_or_train", "expected_url"),
         [
@@ -87,9 +77,9 @@ class TestContext:
             (
                 "the-model",
                 AssetType.MODEL,
-                FakeTrain("1", 34),
+                ModelTrain(uuid.uuid4(), 34, ModelTrainStatus.IN_PROGRESS, "1.2"),
                 URL(
-                    f"{EXAMPLE_LAYER_URL}/{EXAMPLE_PROJECT.path}/models/the-model?v=1.34"
+                    f"{EXAMPLE_LAYER_URL}/{EXAMPLE_PROJECT.path}/models/the-model?v=1.2"
                 ),
             ),
             (
@@ -104,7 +94,7 @@ class TestContext:
         self,
         asset_name: str,
         asset_type: AssetType,
-        build_or_train: Union[DatasetBuild, BaseTrain],
+        build_or_train: Union[DatasetBuild, ModelTrain],
         expected_url: URL,
     ) -> None:
         asset_path = AssetPath(
@@ -120,6 +110,8 @@ class TestContext:
             dataset_build=build_or_train
             if isinstance(build_or_train, DatasetBuild)
             else None,
-            train=build_or_train if isinstance(build_or_train, BaseTrain) else None,
+            model_train=build_or_train
+            if isinstance(build_or_train, ModelTrain)
+            else None,
         ) as ctx:
             assert ctx.url() == expected_url

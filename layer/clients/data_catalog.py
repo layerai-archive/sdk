@@ -3,7 +3,7 @@ import tempfile
 import uuid
 from logging import Logger
 from pathlib import Path
-from typing import Any, Callable, Generator, List, Optional, Tuple
+from typing import Any, Callable, Generator, Optional, Tuple
 
 import pandas
 import pyarrow
@@ -13,18 +13,15 @@ from layerapi.api.entity.dataset_version_pb2 import DatasetVersion as PBDatasetV
 from layerapi.api.ids_pb2 import DatasetBuildId, DatasetId, DatasetVersionId, ProjectId
 from layerapi.api.service.datacatalog.data_catalog_api_pb2 import (
     CompleteBuildRequest,
-    CompleteBuildResponse,
     GetBuildByPathRequest,
     GetBuildRequest,
     GetDatasetRequest,
     GetLatestBuildRequest,
     GetPythonDatasetAccessCredentialsRequest,
     GetPythonDatasetAccessCredentialsResponse,
-    GetResourcePathsRequest,
     GetVersionRequest,
     InitiateBuildRequest,
     RegisterDatasetRequest,
-    UpdateResourcePathsIndexRequest,
 )
 from layerapi.api.service.datacatalog.data_catalog_api_pb2_grpc import (
     DataCatalogAPIStub,
@@ -42,9 +39,8 @@ from layerapi.api.value.storage_location_pb2 import StorageLocation
 from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket
 
 from layer.config import ClientConfig
-from layer.contracts.asset import AssetPath, AssetType
-from layer.contracts.datasets import Dataset, DatasetBuild, DatasetBuildStatus
-from layer.contracts.project_full_name import ProjectFullName
+from layer.contracts.asset import AssetPath
+from layer.contracts.datasets import DatasetBuild, DatasetBuildStatus
 from layer.exceptions.exceptions import LayerClientException
 from layer.pandas_extensions import _infer_custom_types
 from layer.utils.file_utils import tar_directory
@@ -53,6 +49,7 @@ from layer.utils.grpc.channel import get_grpc_channel
 from layer.utils.s3 import S3Util
 
 from .dataset_service import DatasetClient, DatasetClientError
+from .protomappers import datasets as dataset_proto_mapper
 
 
 class DataCatalogClient:
@@ -84,13 +81,6 @@ class DataCatalogClient:
             channel
         )
         return client
-
-    def _get_python_dataset_access_credentials(
-        self, dataset_path: AssetPath
-    ) -> GetPythonDatasetAccessCredentialsResponse:
-        return self._service.GetPythonDatasetAccessCredentials(
-            GetPythonDatasetAccessCredentialsRequest(dataset_path=dataset_path.path()),
-        )
 
     def fetch_dataset(
         self, asset_path: AssetPath, no_cache: bool = False
@@ -152,71 +142,13 @@ class DataCatalogClient:
                     writer.write_batch(chunk)
                     total_rows += chunk.num_rows
                     if progress_callback:
-                        progress_callback(batch.num_rows - total_rows)
+                        progress_callback(chunk.num_rows)
             finally:
                 writer.close()
         except Exception as err:
             raise generate_client_error_from_grpc_error(
                 err, "internal dataset store error"
             )
-
-    def initiate_build(
-        self,
-        project_id: uuid.UUID,
-        asset_name: str,
-        fabric: str,
-    ) -> uuid.UUID:
-        self._logger.debug("Initiating build for the dataset %r", asset_name)
-
-        resp = self._service.InitiateBuild(
-            InitiateBuildRequest(
-                dataset_name=asset_name,
-                format="python",
-                build_entity_type=PBDatasetBuild.BUILD_ENTITY_TYPE_DATASET,
-                project_id=ProjectId(value=str(project_id)),
-                fabric=fabric,
-            )
-        )
-
-        return uuid.UUID(resp.id.value)
-
-    def complete_build(
-        self,
-        dataset_build_id: uuid.UUID,
-        asset_name: str,
-        dataset_uri: str,
-        error: Optional[Exception] = None,
-    ) -> CompleteBuildResponse:
-        self._logger.debug("Completing build for the dataset %r", asset_name)
-
-        if error:
-            max_error_length = 99_999
-            placeholder = "..."
-            raw_text = str.format("Dataset build failed with {}", error)
-            status = DatasetBuildStatus.FAILED
-            success = None
-            failure = CompleteBuildRequest.BuildFailed(
-                info=(raw_text[: (max_error_length - len(placeholder))] + placeholder)
-                if len(raw_text) > max_error_length
-                else raw_text
-            )
-        else:
-            status = DatasetBuildStatus.COMPLETED
-            success = CompleteBuildRequest.BuildSuccess(
-                location=StorageLocation(uri=dataset_uri), schema="{}"
-            )
-            failure = None
-
-        resp = self._service.CompleteBuild(
-            CompleteBuildRequest(
-                id=DatasetBuildId(value=str(dataset_build_id)),
-                status=status,
-                success=success,
-                failure=failure,
-            )
-        )
-
-        return resp
 
     def add_dataset(
         self,
@@ -300,72 +232,99 @@ class DataCatalogClient:
             key=f"{response.s3_path.key}{archive_name}",
         )
 
-    def get_resource_paths(
-        self, project_full_name: ProjectFullName, function_name: str, path: str = ""
-    ) -> List[str]:
-        request = GetResourcePathsRequest(
-            project_full_name=project_full_name.path,
-            function_name=function_name,
-            path=path,
+    def _get_python_dataset_access_credentials(
+        self, dataset_path: AssetPath
+    ) -> GetPythonDatasetAccessCredentialsResponse:
+        return self._service.GetPythonDatasetAccessCredentials(
+            GetPythonDatasetAccessCredentialsRequest(dataset_path=dataset_path.path()),
         )
-        response = self._service.GetResourcePaths(request)
-        return response.paths
 
-    def update_resource_paths_index(
-        self, project_full_name: ProjectFullName, function_name: str, paths: List[str]
-    ) -> None:
-        request = UpdateResourcePathsIndexRequest(
-            project_full_name=project_full_name.path,
-            function_name=function_name,
-            paths=paths,
+    def initiate_build(
+        self,
+        project_id: uuid.UUID,
+        asset_name: str,
+        fabric: str,
+    ) -> uuid.UUID:
+        self._logger.debug("Initiating build for the dataset %r", asset_name)
+
+        resp = self._service.InitiateBuild(
+            InitiateBuildRequest(
+                dataset_name=asset_name,
+                format="python",
+                build_entity_type=PBDatasetBuild.BUILD_ENTITY_TYPE_DATASET,
+                project_id=ProjectId(value=str(project_id)),
+                fabric=fabric,
+            )
         )
-        self._service.UpdateResourcePathsIndex(request)
+
+        return uuid.UUID(resp.id.value)
+
+    def complete_build(
+        self,
+        dataset_build_id: uuid.UUID,
+        asset_name: str,
+        dataset_uri: str,
+        error: Optional[Exception] = None,
+    ) -> DatasetBuild:
+        self._logger.debug("Completing build for the dataset %r", asset_name)
+
+        if error:
+            max_error_length = 99_999
+            placeholder = "..."
+            raw_text = str.format("Dataset build failed with {}", error)
+            status = DatasetBuildStatus.FAILED
+            success = None
+            failure = CompleteBuildRequest.BuildFailed(
+                info=(raw_text[: (max_error_length - len(placeholder))] + placeholder)
+                if len(raw_text) > max_error_length
+                else raw_text
+            )
+        else:
+            status = DatasetBuildStatus.COMPLETED
+            success = CompleteBuildRequest.BuildSuccess(
+                location=StorageLocation(uri=dataset_uri), schema="{}"
+            )
+            failure = None
+
+        resp = self._service.CompleteBuild(
+            CompleteBuildRequest(
+                id=DatasetBuildId(value=str(dataset_build_id)),
+                status=status,
+                success=success,
+                failure=failure,
+            )
+        )
+
+        return dataset_proto_mapper.from_dataset_build(resp.build, resp.version)
 
     def get_dataset_by_name(
         self, project_id: uuid.UUID, name: str, version_name: str = ""
-    ) -> Dataset:
+    ) -> DatasetBuild:
         build = self._get_build_by_name(project_id, name, version_name)
-        version = self._get_version_by_id(build.dataset_version_id.value)
-        dataset = self._get_dataset_by_id(version.dataset_id.value)
-        return self._create_dataset(dataset, version, build)
+        version = (
+            self._get_version_by_id(build.dataset_version_id.value)
+            if build.dataset_version_id.value
+            else None
+        )
+        return dataset_proto_mapper.from_dataset_build(build, version)
 
-    def get_build_by_path(self, path: str) -> PBDatasetBuild:
-        return self._service.GetBuildByPath(GetBuildByPathRequest(path=path)).build
+    def get_build_by_path(self, path: str) -> DatasetBuild:
+        build = self._get_build_by_path(path)
+        version = (
+            self._get_version_by_id(build.dataset_version_id.value)
+            if build.dataset_version_id.value
+            else None
+        )
+        return dataset_proto_mapper.from_dataset_build(build, version)
 
-    def get_dataset_by_build_id(self, id_: uuid.UUID) -> Dataset:
+    def get_build_by_id(self, id_: uuid.UUID) -> DatasetBuild:
         build = self._get_build_by_id(str(id_))
-        version = self._get_version_by_id(build.dataset_version_id.value)
-        dataset = self._get_dataset_by_id(version.dataset_id.value)
-        return self._create_dataset(dataset, version, build)
-
-    def _create_dataset(
-        self,
-        dataset: PBDataset,
-        version: PBDatasetVersion,
-        build: PBDatasetBuild,
-    ) -> Dataset:
-
-        asset_path = AssetPath(
-            asset_type=AssetType.DATASET,
-            asset_name=dataset.name,
-            asset_version=version.name,
-            project_name=dataset.project_name,
+        version = (
+            self._get_version_by_id(build.dataset_version_id.value)
+            if build.dataset_version_id.value
+            else None
         )
-        return Dataset(
-            id=uuid.UUID(dataset.id.value),
-            asset_path=asset_path,
-            description=dataset.description,
-            schema=version.schema,
-            version=version.name,
-            uri=build.location.uri,
-            metadata=dict(build.location.metadata.value),
-            build=DatasetBuild(
-                id=build.id.value,
-                status=DatasetBuildStatus(build.build_info.status),
-                info=build.build_info.info,
-                index=str(build.index),
-            ),
-        )
+        return dataset_proto_mapper.from_dataset_build(build, version)
 
     def _get_dataset_by_id(self, id_: str) -> PBDataset:
         return self._service.GetDataset(
@@ -392,6 +351,9 @@ class DataCatalogClient:
                 project_id=ProjectId(value=str(project_id)),
             ),
         ).build
+
+    def _get_build_by_path(self, path: str) -> PBDatasetBuild:
+        return self._service.GetBuildByPath(GetBuildByPathRequest(path=path)).build
 
 
 def _language_version() -> Tuple[int, int, int]:

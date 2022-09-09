@@ -2,17 +2,15 @@ import logging
 import uuid
 from typing import Any, List
 
-from layerapi.api.entity.task_pb2 import Task
-from layerapi.api.ids_pb2 import RunId
 from yarl import URL
 
 from layer.clients.layer import LayerClient
 from layer.context import Context
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetType
-from layer.contracts.datasets import DatasetBuild
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
+from layer.contracts.runs import TaskType
 from layer.exceptions.exceptions import (
     LayerClientException,
     LayerClientServiceUnavailableException,
@@ -39,7 +37,7 @@ def _run(
     client: LayerClient,
     tracker: RunProgressTracker,
     fabric: Fabric,
-    run_id: str,
+    run_id: uuid.UUID,
     logged_data_destination: LoggedDataDestination,
     **kwargs: Any,
 ) -> None:
@@ -56,12 +54,13 @@ def _run(
         dataset_definition.asset_name,
         fabric.value,
     )
+    dataset_build = client.data_catalog.get_build_by_id(dataset_build_id)
 
     if run_id:
         client.flow_manager.update_run_metadata(
-            run_id=RunId(value=run_id),
+            run_id=run_id,
             task_id=dataset_definition.asset_path.path(),
-            task_type=Task.Type.TYPE_DATASET_BUILD,
+            task_type=TaskType.DATASET_BUILD,
             key="build-id",
             value=str(dataset_build_id),
         )
@@ -70,7 +69,7 @@ def _run(
         url=url,
         client=client,
         asset_path=dataset_definition.asset_path,
-        dataset_build=DatasetBuild(id=dataset_build_id),
+        dataset_build=dataset_build,
         tracker=tracker,
         logged_data_destination=logged_data_destination,
     ) as ctx:

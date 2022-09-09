@@ -24,6 +24,8 @@ def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(
     with _dataset_client_mock(dataset_client_mock=dataset_client) as data_catalog_mock:
         get_build_path_response = MagicMock()
         get_build_path_response.build.id.value = str(uuid.uuid4())
+        get_build_path_response.build.dataset_version_id.value = str(uuid.uuid4())
+        get_build_path_response.build.build_info.status = 1
         data_catalog_mock._service = MagicMock()  # pylint: disable=W0212
         data_catalog_mock._service.GetBuildByPath = MagicMock(  # pylint: disable=W0212
             return_value=get_build_path_response
@@ -46,6 +48,8 @@ def test_get_dataset_to_pandas_calls_dataset_api_with_account_name_from_context(
     with _dataset_client_mock(dataset_client_mock=dataset_client) as data_catalog_mock:
         get_build_path_response = MagicMock()
         get_build_path_response.build.id.value = str(uuid.uuid4())
+        get_build_path_response.build.dataset_version_id.value = str(uuid.uuid4())
+        get_build_path_response.build.build_info.status = 1
         data_catalog_mock._service = MagicMock()  # pylint: disable=W0212
         data_catalog_mock._service.GetBuildByPath = MagicMock(  # pylint: disable=W0212
             return_value=get_build_path_response
@@ -66,6 +70,8 @@ def test_get_dataset_to_pandas_returns_empty_data_frame_for_no_data():
     with _dataset_client_mock() as data_catalog_mock:
         get_build_path_response = MagicMock()
         get_build_path_response.build.id.value = str(uuid.uuid4())
+        get_build_path_response.build.dataset_version_id.value = str(uuid.uuid4())
+        get_build_path_response.build.build_info.status = 1
         data_catalog_mock._service = MagicMock()  # pylint: disable=W0212
         data_catalog_mock._service.GetBuildByPath = MagicMock(  # pylint: disable=W0212
             return_value=get_build_path_response
@@ -83,6 +89,8 @@ def test_get_dataset_to_pytorch_returns_pytorch_dataloader():
         with _dataset_client_mock() as data_catalog_mock:
             get_build_path_response = MagicMock()
             get_build_path_response.build.id.value = str(uuid.uuid4())
+            get_build_path_response.build.dataset_version_id.value = str(uuid.uuid4())
+            get_build_path_response.build.build_info.status = 1
             service_mock = MagicMock()
             data_catalog_mock._service = service_mock  # pylint: disable=W0212
             service_mock.GetBuildByPath = MagicMock(
@@ -134,6 +142,8 @@ def test_get_dataset_to_pandas_concatenates_the_result_from_multiple_partitions(
     with _dataset_client_mock(dataset_client_mock=dataset_client) as data_catalog_mock:
         get_build_path_response = MagicMock()
         get_build_path_response.build.id.value = str(uuid.uuid4())
+        get_build_path_response.build.dataset_version_id.value = str(uuid.uuid4())
+        get_build_path_response.build.build_info.status = 1
         data_catalog_mock._service = MagicMock()  # pylint: disable=W0212
         data_catalog_mock._service.GetBuildByPath = MagicMock(  # pylint: disable=W0212
             return_value=get_build_path_response

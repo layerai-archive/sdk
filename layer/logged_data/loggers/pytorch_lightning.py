@@ -6,6 +6,7 @@ from typing import Any, Dict, Generator, List, Mapping, MutableMapping, Optional
 import pandas
 
 import layer
+from layer.context import Context, get_active_context
 
 
 if importlib.util.find_spec("pytorch_lightning") is None:
@@ -205,16 +206,15 @@ class PytorchLightningLogger(Logger):
         Returns:
             The model version in `[major].[minor]` format if training has started otherwise returns None
         """
-        from layer.contracts.asset import AssetType
-
-        if self._context and self._context.asset_type() == AssetType.MODEL:
-            return f"{self._context.train().get_version()}.{self._context.train().get_train_index()}"
-        else:
-            return None
+        if self._context:
+            model_train = self._context.model_train()
+            if model_train is not None:
+                return model_train.tag
+        return None
 
     @property
-    def _context(self) -> Any:
-        return layer.context.get_active_context()
+    def _context(self) -> Optional[Context]:
+        return get_active_context()
 
     def log_text(self, key: str, text: str) -> None:
         """Log text.
