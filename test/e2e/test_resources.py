@@ -1,41 +1,11 @@
-import filecmp
 import os.path
-import tempfile
 
 import pandas as pd
-from yarl import URL
 
 import layer
 from layer.contracts.projects import Project
 from layer.decorators import dataset, model, pip_requirements, resources
-from layer.resource_manager import ResourceManager
-from layer.tracker.ui_progress_tracker import UIRunProgressTracker
 from test.e2e.assertion_utils import E2ETestAsserter
-
-
-def test_resource_manager(initialized_project: Project, asserter: E2ETestAsserter):
-    @model("model")
-    @resources("test/e2e/assets/data/test.csv")
-    def func() -> None:
-        return None
-
-    project_full_name = initialized_project.full_name
-    functions = [func.get_definition_with_bound_arguments()]
-    resource_manager = ResourceManager(asserter.client)
-
-    resource_manager.wait_resource_upload(
-        project_full_name,
-        functions,
-        UIRunProgressTracker(url=URL(""), account_name="", project_name=""),
-    )
-    with tempfile.TemporaryDirectory(prefix="test_resource_manager") as resource_dir:
-        resource_manager.wait_resource_download(
-            project_full_name, functions[0].func_name, target_dir=resource_dir
-        )
-        assert filecmp.cmp(
-            "test/e2e/assets/data/test.csv",
-            os.path.join(resource_dir, "test", "e2e", "assets", "data", "test.csv"),
-        )
 
 
 def test_resources_simple(initialized_project: Project, asserter: E2ETestAsserter):
