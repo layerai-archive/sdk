@@ -50,7 +50,10 @@ class RayWorkflowProjectRunner:
                 )
             )
         if not ray.is_initialized():
-            ray.init(address=self.ray_address)
+            _metadata = [
+                ("authorization", f"Bearer {self._config.credentials.access_token}")
+            ]
+            ray.init(address=self.ray_address, _metadata=_metadata)
         plan = build_plan(self.definitions)
         run_id = str(uuid.uuid4())
         workflow.run(run_stage.bind(plan.stages), workflow_id=run_id)
@@ -107,7 +110,7 @@ def run_stage(stages: List[Stage], *deps: Any) -> None:
                     pip_dict["pip"] = ["layer"]
             runtime_env["conda"] = environment
         else:
-            runtime_env["pip"] = [
+            runtime_env["pip"] = [  # type:ignore
                 "layer",
                 *[p for p in layer_function.pip_dependencies],
             ]
@@ -123,7 +126,7 @@ def run_stage(stages: List[Stage], *deps: Any) -> None:
     function_runs = []
     for function in stage.definitions:
         function_runs.append(
-            run_function.options(**_get_options(function)).bind(
+            run_function.options(**_get_options(function)).bind(  # type:ignore
                 function.package_download_url
             )
         )

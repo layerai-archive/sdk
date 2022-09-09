@@ -54,7 +54,9 @@ def _to_execution_operation(function: FunctionDefinition) -> FunctionExecutionOp
     return FunctionExecutionOperation(
         task_type=task_type,
         asset_name=function.asset_path.path(),
-        executable_package_url=function.package_download_url,
+        executable_package_url=function.package_download_url
+        if function.package_download_url
+        else "",
         fabric=function.fabric.value,
         dependency=dependencies,
         language_version=language_version,
