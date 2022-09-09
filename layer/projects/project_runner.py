@@ -1,10 +1,8 @@
-import asyncio
 import logging
 import threading
 from datetime import datetime
 from typing import Any, Callable, List, Optional
 
-import aiohttp
 import polling  # type: ignore
 
 from layer.clients.layer import LayerClient
@@ -33,6 +31,7 @@ from layer.projects.progress_tracker_updater import (
 from layer.projects.utils import (
     calculate_hash_by_definitions,
     get_or_create_remote_project,
+    upload_executable_packages,
 )
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
@@ -132,7 +131,9 @@ class ProjectRunner:
         return run
 
     def _start_run(self, client: LayerClient) -> Run:
-        asyncio_run_in_thread(self._upload_executable_packages(client))
+        asyncio_run_in_thread(
+            upload_executable_packages(client, self.definitions, self.project_full_name)
+        )
         try:
             run_id = client.flow_manager.start_run(
                 self.project_full_name,
@@ -148,40 +149,6 @@ class ProjectRunner:
             raise ProjectRunnerError(f"{e}")
         else:
             return Run(id=run_id, project_full_name=self.project_full_name)
-
-    async def _upload_executable_packages(self, client: LayerClient) -> None:
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            upload_tasks = [
-                self._upload_executable_package(client, definition, session)
-                for definition in self.definitions
-            ]
-            await asyncio.gather(*upload_tasks)
-
-    async def _upload_executable_package(
-        self,
-        client: LayerClient,
-        function: FunctionDefinition,
-        session: aiohttp.ClientSession,
-    ) -> None:
-        function.package()
-        function_name = (
-            f"{function.asset_path.asset_type.value}/{function.asset_path.asset_name}"
-        )
-        with open(function.executable_path, "rb") as package_file:
-            presigned_url = client.executor_service_client.get_function_upload_path(
-                project_full_name=self.project_full_name,
-                function_name=function_name,
-            )
-            await session.put(
-                presigned_url,
-                data=package_file,
-                timeout=aiohttp.ClientTimeout(total=None),
-            )
-            download_url = client.executor_service_client.get_function_download_path(
-                project_full_name=self.project_full_name,
-                function_name=function_name,
-            )
-            function.set_package_download_url(download_url)
 
     def _get_user_command(self) -> str:
         functions_string = ", ".join(

@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 import wrapt  # type: ignore
 
 from layer.contracts.asset import AssetPath, AssetType, BaseAsset
+from layer.contracts.conda import CondaEnv
 from layer.contracts.datasets import Dataset
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.models import Model
@@ -100,6 +101,7 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
                 self.layer, current_project_full_name
             ),
             pip_dependencies=_get_pip_dependencies(self.layer),
+            conda_env=_get_conda_env(self.layer),
             resource_paths=self.layer.get_resource_paths(),
             assertions=self.layer.get_assertions(),
             description=self.layer.description,
@@ -134,3 +136,7 @@ def _get_pip_dependencies(settings: LayerSettings) -> List[str]:
         with open(settings.get_pip_requirements_file(), "r") as file:
             return file.read().strip().split("\n")
     return settings.get_pip_packages()
+
+
+def _get_conda_env(settings: LayerSettings) -> Optional[CondaEnv]:
+    return settings.conda_environment
