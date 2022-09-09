@@ -42,6 +42,7 @@ language_version: "LanguageVersion" = LanguageVersion(
     micro=sys.version_info.micro,
 )
 
+
 def _to_execution_operation(function: FunctionDefinition) -> FunctionExecutionOperation:
     task_type = Task.Type.TYPE_INVALID
     if function.asset_type == AssetType.DATASET:
