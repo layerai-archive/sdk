@@ -257,14 +257,13 @@ class AssetColumn(ProgressColumn):
             asset.status == AssetTrackerStatus.UPLOADING and asset.model_transfer_state
         ):
             delta = timedelta(seconds=asset.model_transfer_state.get_eta_seconds())
-        elif asset.status == AssetTrackerStatus.ASSET_DOWNLOADING:
-            assert asset.asset_download_transfer_state
-            if isinstance(asset.asset_download_transfer_state, ResourceTransferState):
-                delta = timedelta(
-                    seconds=asset.asset_download_transfer_state.get_eta_seconds()
-                )
-            else:
-                delta = "-:--:--"
+        elif (
+            asset.status == AssetTrackerStatus.ASSET_DOWNLOADING
+            and asset.asset_download_transfer_state
+        ):
+            delta = timedelta(
+                seconds=asset.asset_download_transfer_state.get_eta_seconds()
+            )
         elif (
             asset.status == AssetTrackerStatus.PENDING
             or asset.status == AssetTrackerStatus.ASSET_FROM_CACHE
@@ -287,7 +286,11 @@ class AssetColumn(ProgressColumn):
         elif asset.model_transfer_state:
             rendered_state = self._render_state(asset.model_transfer_state, False)
         elif asset.asset_download_transfer_state:
-            if isinstance(asset.asset_download_transfer_state, ResourceTransferState):
+            if isinstance(asset.asset_download_transfer_state, DatasetTransferState):
+                rendered_state = self._render_dataset_state(
+                    asset.asset_download_transfer_state
+                )
+            elif isinstance(asset.asset_download_transfer_state, ResourceTransferState):
                 rendered_state = self._render_state(
                     asset.asset_download_transfer_state, False
                 )

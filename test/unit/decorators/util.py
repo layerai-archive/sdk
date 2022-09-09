@@ -6,6 +6,7 @@ from uuid import UUID
 from layer.clients.account_service import AccountServiceClient
 from layer.clients.data_catalog import DataCatalogClient
 from layer.clients.layer import LayerClient
+from layer.clients.model_catalog import ModelCatalogClient
 from layer.clients.project_service import ProjectServiceClient
 from layer.config import ClientConfig, Config
 from layer.contracts.accounts import Account
@@ -16,12 +17,18 @@ from layer.contracts.projects import Project
 def project_client_mock(
     project_api_stub: Optional[ProjectServiceClient] = None,
     data_catalog_client: Optional[DataCatalogClient] = None,
+    model_catalog_client: Optional[ModelCatalogClient] = None,
 ):
     project_client = _get_mock_project_service_client(project_api_stub=project_api_stub)
     data_catalog_client = (
         MagicMock(spec=DataCatalogClient)
         if data_catalog_client is None
         else data_catalog_client
+    )
+    model_catalog_client = (
+        MagicMock(spec=ModelCatalogClient)
+        if model_catalog_client is None
+        else model_catalog_client
     )
     account = MagicMock()
     account.name = "account-name"
@@ -33,6 +40,7 @@ def project_client_mock(
     client.__enter__.return_value = MagicMock(
         set_spec=LayerClient,
         data_catalog=data_catalog_client,
+        model_catalog=model_catalog_client,
         project_service_client=project_client,
         account=account_service_client,
     )
