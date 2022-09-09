@@ -149,31 +149,33 @@ class DatasetTransferState:
 
 @unique
 class AssetTrackerStatus(str, Enum):
+    """
+    PENDING -> BUILDING / TRAINING -> ASSERTING -> ASSERTED -> UPLOADING -> DONE
+    DOWNLADING -> FROM CACHE / LOADED
+    """
+
     PENDING = "pending"
-    SAVING = "saving"
     BUILDING = "building"
     TRAINING = "training"
-    DONE = "done"
-    ERROR = "error"
     ASSERTING = "asserting"
     ASSERTED = "asserted"
-    RESOURCE_UPLOADING = "uploading resources"
-    RESULT_UPLOADING = "uploading result"
+    UPLOADING = "uploading"
+    DONE = "done"
+
     ASSET_DOWNLOADING = "downloading asset"
     ASSET_FROM_CACHE = "asset from cache"
     ASSET_LOADED = "asset loaded"
 
+    ERROR = "error"
+
     @property
     def is_running(self) -> bool:
         return self in (
-            AssetTrackerStatus.SAVING,
             AssetTrackerStatus.BUILDING,
             AssetTrackerStatus.TRAINING,
             AssetTrackerStatus.ASSERTING,
-            AssetTrackerStatus.RESOURCE_UPLOADING,
-            AssetTrackerStatus.RESULT_UPLOADING,
+            AssetTrackerStatus.UPLOADING,
             AssetTrackerStatus.ASSET_DOWNLOADING,
-            AssetTrackerStatus.ASSET_FROM_CACHE,
         )
 
     @property
@@ -181,6 +183,7 @@ class AssetTrackerStatus(str, Enum):
         return self in (
             AssetTrackerStatus.DONE,
             AssetTrackerStatus.ERROR,
+            AssetTrackerStatus.ASSET_FROM_CACHE,
             AssetTrackerStatus.ASSET_LOADED,
         )
 
@@ -193,15 +196,13 @@ class AssetTracker:
     base_url: Optional[URL] = None
     error_reason: str = ""
     warnings: str = ""
-    resource_transfer_state: Optional[ResourceTransferState] = None
     dataset_transfer_state: Optional[DatasetTransferState] = None
     model_transfer_state: Optional[ResourceTransferState] = None
     asset_download_transfer_state: Optional[
         Union[ResourceTransferState, DatasetTransferState]
     ] = None
     loading_cache_asset: Optional[str] = None
-    version: Optional[str] = None
-    build_idx: Optional[str] = None
+    tag: Optional[str] = None
 
     @property
     def is_running(self) -> bool:

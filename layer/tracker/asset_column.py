@@ -38,14 +38,12 @@ class ProgressStyle(str, Enum):
 class AssetColumn(ProgressColumn):
     _status_style_map = {
         AssetTrackerStatus.PENDING: ProgressStyle.NONE,
-        AssetTrackerStatus.SAVING: ProgressStyle.NONE,
         AssetTrackerStatus.BUILDING: ProgressStyle.NONE,
         AssetTrackerStatus.TRAINING: ProgressStyle.NONE,
         AssetTrackerStatus.DONE: ProgressStyle.DONE,
         AssetTrackerStatus.ERROR: ProgressStyle.ERROR,
         AssetTrackerStatus.ASSERTING: ProgressStyle.NONE,
-        AssetTrackerStatus.RESOURCE_UPLOADING: ProgressStyle.NONE,
-        AssetTrackerStatus.RESULT_UPLOADING: ProgressStyle.NONE,
+        AssetTrackerStatus.UPLOADING: ProgressStyle.NONE,
         AssetTrackerStatus.ASSET_DOWNLOADING: ProgressStyle.BLUE,
         AssetTrackerStatus.ASSET_FROM_CACHE: ProgressStyle.BLUE,
         AssetTrackerStatus.ASSET_LOADED: ProgressStyle.DONE,
@@ -124,11 +122,6 @@ class AssetColumn(ProgressColumn):
                 ProgressStyle.DEFAULT,
                 ProgressStyle.DONE,
             ),
-            AssetTrackerStatus.SAVING: (
-                True,
-                ProgressStyle.DEFAULT,
-                ProgressStyle.DONE,
-            ),
             AssetTrackerStatus.BUILDING: (
                 False,
                 ProgressStyle.DEFAULT,
@@ -150,12 +143,7 @@ class AssetColumn(ProgressColumn):
                 ProgressStyle.DEFAULT,
                 ProgressStyle.DONE,
             ),
-            AssetTrackerStatus.RESOURCE_UPLOADING: (
-                False,
-                ProgressStyle.DEFAULT,
-                ProgressStyle.BLUE,
-            ),
-            AssetTrackerStatus.RESULT_UPLOADING: (
+            AssetTrackerStatus.UPLOADING: (
                 False,
                 ProgressStyle.DEFAULT,
                 ProgressStyle.BLUE,
@@ -193,22 +181,8 @@ class AssetColumn(ProgressColumn):
             task.completed = min(
                 (task.completed + fraction) % task.total, task.total - 1
             )
-        elif asset.status == AssetTrackerStatus.RESOURCE_UPLOADING:
-            assert asset.resource_transfer_state
-            state = asset.resource_transfer_state
-            completed = (
-                (
-                    state.transferred_resource_size_bytes
-                    / state.total_resource_size_bytes
-                )
-                if state.total_resource_size_bytes > 0
-                else 0
-            )
-            task.completed = min(int(task.total * completed), int(task.total - 1))
-        elif asset.status == AssetTrackerStatus.ASSET_LOADED:
-            task.completed = task.total
         elif (
-            asset.status == AssetTrackerStatus.RESULT_UPLOADING
+            asset.status == AssetTrackerStatus.UPLOADING
             and asset.dataset_transfer_state
         ):
             dataset_state = asset.dataset_transfer_state
@@ -217,10 +191,11 @@ class AssetColumn(ProgressColumn):
                 if dataset_state.total_num_rows > 0
                 else 0
             )
+            task.total = max(dataset_state.total_num_rows, 1)
             task.completed = min(int(task.total * completed), int(task.total - 1))
         elif (
-            asset.status == AssetTrackerStatus.RESULT_UPLOADING
-        ) and asset.model_transfer_state:
+            asset.status == AssetTrackerStatus.UPLOADING and asset.model_transfer_state
+        ):
             model_state = asset.model_transfer_state
             completed = (
                 (
@@ -230,6 +205,7 @@ class AssetColumn(ProgressColumn):
                 if model_state.total_resource_size_bytes > 0
                 else 0
             )
+            task.total = max(model_state.total_resource_size_bytes, 1)
             task.completed = min(int(task.total * completed), int(task.total - 1))
         elif (
             (asset.status == AssetTrackerStatus.ASSET_DOWNLOADING)
@@ -246,6 +222,8 @@ class AssetColumn(ProgressColumn):
                 else 0
             )
             task.completed = min(int(task.total * completed), int(task.total - 1))
+        elif asset.status == AssetTrackerStatus.ASSET_LOADED:
+            task.completed = task.total
 
         return ProgressBar(
             total=max(0.0, task.total),
@@ -270,17 +248,13 @@ class AssetColumn(ProgressColumn):
     def _compute_time_string(self, task: Task) -> str:
         asset = self._get_asset(task)
         delta: Any = timedelta(seconds=self._get_elapsed_time_s(task))
-        if asset.status == AssetTrackerStatus.RESOURCE_UPLOADING:
-            assert asset.resource_transfer_state
-            delta = timedelta(seconds=asset.resource_transfer_state.get_eta_seconds())
-        elif (
-            asset.status == AssetTrackerStatus.RESULT_UPLOADING
+        if (
+            asset.status == AssetTrackerStatus.UPLOADING
             and asset.dataset_transfer_state
         ):
             delta = timedelta(seconds=asset.dataset_transfer_state.get_eta_seconds())
         elif (
-            asset.status == AssetTrackerStatus.RESULT_UPLOADING
-            and asset.model_transfer_state
+            asset.status == AssetTrackerStatus.UPLOADING and asset.model_transfer_state
         ):
             delta = timedelta(seconds=asset.model_transfer_state.get_eta_seconds())
         elif asset.status == AssetTrackerStatus.ASSET_DOWNLOADING:
@@ -308,23 +282,11 @@ class AssetColumn(ProgressColumn):
         rendered_time: str = self._compute_time_string(task)
         rendered_state = None
 
-        if (
-            asset.resource_transfer_state
-            and asset.status == AssetTrackerStatus.RESOURCE_UPLOADING
-        ):
-            rendered_state = self._render_state(asset.resource_transfer_state)
-        elif (
-            asset.dataset_transfer_state
-            and asset.status == AssetTrackerStatus.RESULT_UPLOADING
-        ):
+        if asset.dataset_transfer_state:
             rendered_state = self._render_dataset_state(asset.dataset_transfer_state)
-        elif (
-            asset.model_transfer_state
-            and asset.status == AssetTrackerStatus.RESULT_UPLOADING
-        ):
+        elif asset.model_transfer_state:
             rendered_state = self._render_state(asset.model_transfer_state, False)
-        elif asset.status == AssetTrackerStatus.ASSET_DOWNLOADING:
-            assert asset.asset_download_transfer_state
+        elif asset.asset_download_transfer_state:
             if isinstance(asset.asset_download_transfer_state, ResourceTransferState):
                 rendered_state = self._render_state(
                     asset.asset_download_transfer_state, False
@@ -343,10 +305,7 @@ class AssetColumn(ProgressColumn):
 
     def _render_description(self, task: Task) -> Text:
         asset = self._get_asset(task)
-        if (
-            asset.status == AssetTrackerStatus.RESOURCE_UPLOADING
-            or asset.status == AssetTrackerStatus.RESULT_UPLOADING
-        ):
+        if asset.status == AssetTrackerStatus.UPLOADING:
             text = "uploading"
         elif asset.status == AssetTrackerStatus.ASSET_DOWNLOADING:
             text = "downloading"
@@ -375,11 +334,7 @@ class AssetColumn(ProgressColumn):
 
     @staticmethod
     def _render_url(asset: AssetTracker) -> RenderableType:
-        link = (
-            f"{asset.base_url}?v={asset.version}.{asset.build_idx}"
-            if (asset.version and asset.build_idx)
-            else asset.base_url
-        )
+        link = f"{asset.base_url}?v={asset.tag}" if (asset.tag) else asset.base_url
         return Group(
             *[
                 Text.from_markup(

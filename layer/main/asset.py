@@ -91,7 +91,6 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                             False,  # Datasets are fetched per partition, no good way to show caching per partition
                             within_run,
                             context,
-                            AssetType.DATASET,
                         )
             else:
                 assert context
@@ -101,7 +100,6 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                     False,  # Datasets are fetched per partition, no good way to show caching per partition
                     within_run,
                     context,
-                    AssetType.DATASET,
                 )
 
             return dataset
@@ -201,7 +199,6 @@ def get_model(name: str, no_cache: bool = False) -> Model:
                         from_cache,
                         within_run,
                         context,
-                        AssetType.MODEL,
                         state,
                     )
         else:
@@ -212,7 +209,6 @@ def get_model(name: str, no_cache: bool = False) -> Model:
                 from_cache,
                 within_run,
                 context,
-                AssetType.MODEL,
                 state,
             )
 
@@ -240,7 +236,6 @@ def _ui_progress_with_tracker(
     from_cache: bool,
     within_run: bool,
     context: Context,
-    getting_asset_type: AssetType,
     state: Optional[ResourceTransferState] = None,
 ) -> Any:
     asset_name = context.asset_name()
@@ -249,34 +244,14 @@ def _ui_progress_with_tracker(
     assert tracker
     asset_type = context.asset_type()
     assert asset_type
-    if asset_type == AssetType.MODEL:
-        if getting_asset_type == AssetType.DATASET:
-            tracker.mark_model_getting_dataset(
-                asset_name, getting_asset_name, from_cache
-            )
-        elif getting_asset_type == AssetType.MODEL:
-            tracker.mark_model_getting_model(
-                asset_name, getting_asset_name, state, from_cache
-            )
-    elif asset_type == AssetType.DATASET:
-        if getting_asset_type == AssetType.DATASET:
-            tracker.mark_dataset_getting_dataset(
-                asset_name, getting_asset_name, from_cache
-            )
-        elif getting_asset_type == AssetType.MODEL:
-            tracker.mark_dataset_getting_model(
-                asset_name, getting_asset_name, state, from_cache
-            )
+    tracker.mark_asset_downloading(
+        asset_type, asset_name, getting_asset_name, state, from_cache
+    )
     result = callback()
     if within_run:
-        if asset_type == AssetType.MODEL:
-            tracker.mark_model_training(asset_name)
-        elif asset_type == AssetType.DATASET:
-            tracker.mark_dataset_building(asset_name)
-    elif asset_type == AssetType.MODEL:
-        tracker.mark_model_loaded(asset_name)
-    elif asset_type == AssetType.DATASET:
-        tracker.mark_dataset_loaded(asset_name)
+        tracker.mark_running(asset_type, asset_name)
+    else:
+        tracker.mark_asset_downloaded(asset_type, asset_name)
     return result
 
 
