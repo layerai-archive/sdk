@@ -25,7 +25,6 @@ from layer.exceptions.status_report import (
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.logged_data.system_metrics import SystemMetrics
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
-from layer.resource_manager import ResourceManager
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.training.train import Train
 
@@ -173,12 +172,6 @@ class ModelTrainer:
                 logger.info("Executing the train_model_func")
                 work_dir = ctx.get_working_directory()
                 os.chdir(work_dir)
-                logger.info("Downloading resources")
-                ResourceManager(self.client).wait_resource_download(
-                    project_full_name,
-                    train_model_func.__name__,
-                    target_dir=str(work_dir),
-                )
                 with SystemMetrics(logger):
                     model = train_model_func(*self.args, **self.kwargs)
                 self.tracker.mark_model_trained(
