@@ -143,12 +143,24 @@ class ProgressTrackerUpdater:
         assert self.run.id
         task_name = self._get_name_from_task_id(task.id)
         task_type = task.type
+        task_id = task.id
         task_info = task.info
         if task_type == PBTask.TYPE_DATASET_BUILD:
+            dataset_build_id = uuid.UUID(
+                self.run_metadata[(task_type, task_id, "build-id")]
+            )
+            build_info = self.client.data_catalog.get_build_info_by_build_id(
+                dataset_build_id
+            )
+            status_report = (
+                ExecutionStatusReportFactory.from_json(build_info)
+                if build_info
+                else ExecutionStatusReportFactory.from_plain_text(task_info)
+            )
             exc_ds = ProjectDatasetBuildExecutionException(
                 self.run.id,
                 task_name,
-                ExecutionStatusReportFactory.from_json(task_info),
+                status_report,
             )
             self.tracker.mark_failed(
                 asset_type=AssetType.DATASET, name=task_name, reason=exc_ds.message
