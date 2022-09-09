@@ -137,10 +137,8 @@ class DataCatalogClient:
         try:
             writer, _ = self._get_dataset_writer(build_id, batch.schema)
             try:
-                total_rows = 0  # total rows written
                 for chunk in _get_batch_chunks(batch):
                     writer.write_batch(chunk)
-                    total_rows += chunk.num_rows
                     if progress_callback:
                         progress_callback(chunk.num_rows)
             finally:
