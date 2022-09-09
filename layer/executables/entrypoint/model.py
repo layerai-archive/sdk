@@ -86,10 +86,10 @@ def _run(
     )
     result = trainer.run_train()
 
-    tracker.mark_model_trained(
+    tracker.mark_done(
+        AssetType.MODEL,
         name=model_definition.asset_name,
-        train_index=str(train.get_train_index()),
-        version=model_version.name,
+        tag=f"{model_version.name}.{train.get_train_index()}",
     )
 
     return result
@@ -108,10 +108,10 @@ class ModelTrainer:
     logged_data_destination: LoggedDataDestination
 
     def run_train(self) -> Any:
-        self.tracker.mark_model_training(
+        self.tracker.mark_running(
+            AssetType.MODEL,
             self.train.get_name(),
-            version=self.train.get_version(),
-            train_idx=self.train.get_train_index(),
+            tag=f"{self.train.get_version()}.{self.train.get_train_index()}",
         )
         try:
             return self._train(callback=self._report_failure)
@@ -128,22 +128,22 @@ class ModelTrainer:
 
     def _run_assertions(self, model: Any) -> None:
         failed_assertions = []
-        self.tracker.mark_model_running_assertions(self.train.get_name())
+        self.tracker.mark_asserting(AssetType.MODEL, self.train.get_name())
         for assertion in reversed(self.assertions):
             try:
-                self.tracker.mark_model_running_assertion(
-                    self.train.get_name(), assertion
+                self.tracker.mark_asserting(
+                    AssetType.MODEL, self.train.get_name(), assertion=assertion
                 )
                 assertion.function(model)
             except Exception:
                 failed_assertions.append(assertion)
         if len(failed_assertions) > 0:
-            self.tracker.mark_model_failed_assertions(
-                self.train.get_name(), failed_assertions
+            self.tracker.mark_failed_assertions(
+                AssetType.MODEL, self.train.get_name(), failed_assertions
             )
             raise LayerFailedAssertionsException(failed_assertions)
         else:
-            self.tracker.mark_model_completed_assertions(self.train.get_name())
+            self.tracker.mark_asserted(AssetType.MODEL, self.train.get_name())
 
     @exception_handler(stage="Training run")
     def _train(
@@ -174,10 +174,10 @@ class ModelTrainer:
                 os.chdir(work_dir)
                 with SystemMetrics(logger):
                     model = train_model_func(*self.args, **self.kwargs)
-                self.tracker.mark_model_trained(
+                self.tracker.mark_done(
+                    AssetType.MODEL,
                     model_name,
-                    version=self.train.get_version(),
-                    train_index=self.train.get_train_index(),
+                    tag=f"{self.train.get_version()}.{self.train.get_train_index()}",
                 )
                 logger.info("Executed train_model_func successfully")
                 if model:
@@ -189,10 +189,6 @@ class ModelTrainer:
                     )
                 self._update_train_status(
                     ModelTrainStatus.TRAIN_STATUS_SUCCESSFUL,
-                )
-                self.tracker.mark_model_saved(
-                    model_name,
-                    warnings=self.logged_data_destination.close_and_get_errors(),
                 )
                 return model
 

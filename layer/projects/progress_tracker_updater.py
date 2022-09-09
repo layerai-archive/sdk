@@ -1,12 +1,10 @@
 import typing
-import uuid
 from typing import Dict, List, Tuple
 
 from layerapi.api.entity.history_event_pb2 import HistoryEvent
 from layerapi.api.entity.run_metadata_pb2 import RunMetadata
 from layerapi.api.entity.run_pb2 import Run as PBRun
 from layerapi.api.entity.task_pb2 import Task as PBTask
-from layerapi.api.ids_pb2 import ModelTrainId
 
 from layer.clients.layer import LayerClient
 from layer.contracts.definitions import FunctionDefinition
@@ -22,7 +20,7 @@ from layer.exceptions.status_report import ExecutionStatusReportFactory
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.utils.session import is_layer_debug_on
 
-from ..contracts.asset import AssetPath
+from ..contracts.asset import AssetPath, AssetType
 
 
 class PollingStepFunction:
@@ -115,33 +113,17 @@ class ProgressTrackerUpdater:
 
     def _handle_task_succeeded(self, task: PBTask) -> None:
         task_id = task.id
-        task_name = self._get_name_from_task_id(task.id)
+        task_name = self._get_name_from_task_id(task_id)
         task_type = task.type
         if task_type == PBTask.TYPE_DATASET_BUILD:
-            dataset_build_id = uuid.UUID(
-                self.run_metadata[(task_type, task_id, "build-id")]
-            )
-
-            dataset = self.client.data_catalog.get_dataset_by_build_id(dataset_build_id)
-            self.tracker.mark_dataset_built(
+            self.tracker.mark_done(
+                asset_type=AssetType.DATASET,
                 name=task_name,
-                version=dataset.version,
-                build_index=dataset.build.index,
             )
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
-            train_id = uuid.UUID(self.run_metadata[(task_type, task_id, "train-id")])
-            model_train = self.client.model_catalog.get_model_train(
-                ModelTrainId(value=str(train_id))
-            )
-            train_index = model_train.index
-            model_version_id = model_train.model_version_id
-            version_name = self.client.model_catalog.get_model_version(
-                model_version_id
-            ).name
-            self.tracker.mark_model_saved(
+            self.tracker.mark_done(
+                asset_type=AssetType.MODEL,
                 name=task_name,
-                train_index=str(train_index),
-                version=version_name,
             )
         else:
             # TODO: alert for this
@@ -158,7 +140,9 @@ class ProgressTrackerUpdater:
                 task_name,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
-            self.tracker.mark_dataset_failed(name=task_name, reason=exc_ds.message)
+            self.tracker.mark_failed(
+                asset_type=AssetType.DATASET, name=task_name, reason=exc_ds.message
+            )
             raise exc_ds
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
             exc_model = ProjectModelExecutionException(
@@ -166,7 +150,8 @@ class ProgressTrackerUpdater:
                 task_name,
                 ExecutionStatusReportFactory.from_json(task_info),
             )
-            self.tracker.mark_model_train_failed(
+            self.tracker.mark_failed(
+                asset_type=AssetType.MODEL,
                 name=task_name,
                 reason=f"{exc_model.message}",
             )
@@ -179,9 +164,9 @@ class ProgressTrackerUpdater:
         task_name = self._get_name_from_task_id(task.id)
         task_type = task.type
         if task_type == PBTask.TYPE_DATASET_BUILD:
-            self.tracker.mark_dataset_building(name=task_name)
+            self.tracker.mark_running(asset_type=AssetType.DATASET, name=task_name)
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
-            self.tracker.mark_model_training(name=task_name)
+            self.tracker.mark_running(asset_type=AssetType.MODEL, name=task_name)
         else:
             # TODO: alert for this
             _print_debug(f"Task type not handled {task_type}")

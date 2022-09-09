@@ -9,6 +9,7 @@ from yarl import URL
 from layer.clients.layer import LayerClient
 from layer.context import Context
 from layer.contracts.assertions import Assertion
+from layer.contracts.asset import AssetType
 from layer.contracts.datasets import DatasetBuild
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.fabrics import Fabric
@@ -45,7 +46,7 @@ def _run(
     _register_function(
         client, dataset=dataset_definition, tracker=tracker, fabric=fabric
     )
-    tracker.mark_dataset_building(dataset_definition.asset_name)
+    tracker.mark_running(AssetType.DATASET, dataset_definition.asset_name)
     # TODO pass path to API instead
     current_project_uuid = verify_project_exists_and_retrieve_project_id(
         client, dataset_definition.project_full_name
@@ -81,7 +82,7 @@ def _run(
 
             # in case client does not return the dataset
             if result is None:
-                tracker.mark_dataset_built(dataset_definition.asset_name)
+                tracker.mark_done(AssetType.DATASET, dataset_definition.asset_name)
                 client.data_catalog.complete_build(
                     dataset_build_id,
                     dataset_definition.asset_name,
@@ -107,7 +108,8 @@ def _run(
 
     ctx.save_dataset(result)
 
-    tracker.mark_dataset_built(
+    tracker.mark_done(
+        AssetType.DATASET,
         dataset_definition.asset_name,
         warnings=logged_data_destination.close_and_get_errors(),
     )
@@ -136,12 +138,11 @@ def _register_function(
         )
         dataset.set_repository_id(uuid.UUID(dataset_id))
         assert dataset.repository_id
-        tracker.mark_dataset_saved(dataset.asset_name, id_=dataset.repository_id)
     except LayerClientServiceUnavailableException as e:
-        tracker.mark_dataset_failed(dataset.asset_name, "")
+        tracker.mark_failed(AssetType.DATASET, dataset.asset_name, reason="")
         raise LayerServiceUnavailableExceptionDuringInitialization(str(e))
     except LayerClientException as e:
-        tracker.mark_dataset_failed(dataset.asset_name, "")
+        tracker.mark_failed(AssetType.DATASET, dataset.asset_name, reason="")
         raise ProjectInitializationException(
             f"Failed to save derived dataset {dataset.asset_name!r}: {e}",
             "Please retry",
@@ -155,18 +156,18 @@ def _run_assertions(
     tracker: RunProgressTracker,
 ) -> None:
     failed_assertions = []
-    tracker.mark_dataset_running_assertions(asset_name)
+    tracker.mark_asserting(AssetType.DATASET, asset_name)
     for assertion in reversed(assertions):
         try:
-            tracker.mark_dataset_running_assertion(asset_name, assertion)
+            tracker.mark_asserting(AssetType.DATASET, asset_name, assertion=assertion)
             assertion.function(result)
         except Exception:
             failed_assertions.append(assertion)
     if len(failed_assertions) > 0:
-        tracker.mark_dataset_failed_assertions(asset_name, failed_assertions)
+        tracker.mark_failed_assertions(AssetType.DATASET, asset_name, failed_assertions)
         raise Exception(f"Failed assertions {failed_assertions}\n")
     else:
-        tracker.mark_dataset_completed_assertions(asset_name)
+        tracker.mark_asserted(AssetType.DATASET, asset_name)
 
 
 RUNNER = make_runner(_run)

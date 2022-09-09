@@ -1,8 +1,6 @@
-import uuid
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
-from layerapi.api.ids_pb2 import RunId
 from rich.progress import Task
 from rich.text import Text
 from yarl import URL
@@ -107,17 +105,13 @@ class UIRunProgressTracker(RunProgressTracker):
         asset_name: str,
         *,
         status: Optional[AssetTrackerStatus] = None,
-        cur_step: int = 0,
-        total_steps: int = 0,
         url: Optional[URL] = None,
-        version: Optional[str] = None,
-        build_idx: Optional[str] = None,
+        tag: Optional[str] = None,
         error_reason: str = "",
         warnings: Optional[str] = None,
         description: Optional[str] = None,
         model_transfer_state: Optional[ResourceTransferState] = None,
         dataset_transfer_state: Optional[DatasetTransferState] = None,
-        resource_transfer_state: Optional[ResourceTransferState] = None,
         loading_cache_asset: Optional[str] = None,
         asset_download_transfer_state: Optional[
             Union[ResourceTransferState, DatasetTransferState]
@@ -129,10 +123,8 @@ class UIRunProgressTracker(RunProgressTracker):
             asset.status = status
         if url:
             asset.base_url = url
-        if version:
-            asset.version = version
-        if build_idx:
-            asset.build_idx = build_idx
+        if tag:
+            asset.tag = tag
         if error_reason:
             asset.error_reason = error_reason
         if warnings:
@@ -141,8 +133,6 @@ class UIRunProgressTracker(RunProgressTracker):
             asset.dataset_transfer_state = dataset_transfer_state
         if model_transfer_state:
             asset.model_transfer_state = model_transfer_state
-        if resource_transfer_state:
-            asset.resource_transfer_state = resource_transfer_state
         if loading_cache_asset:
             asset.loading_cache_asset = loading_cache_asset
         if asset_download_transfer_state:
@@ -152,13 +142,7 @@ class UIRunProgressTracker(RunProgressTracker):
             "description": description if description is not None else status,
         }
 
-        if status == AssetTrackerStatus.SAVING:
-            if asset_type == AssetType.DATASET:
-                # Even if we go through all steps, we still want to keep track of time elapsed until the status is DONE, so we add +1 to total_steps.
-                progress_args["completed"] = cur_step
-                progress_args["total"] = total_steps + 1
-                progress_args["description"] = f"saved {cur_step}/{total_steps} rows"
-        elif status in (
+        if status in (
             AssetTrackerStatus.ASSET_DOWNLOADING,
             AssetTrackerStatus.ASSET_FROM_CACHE,
         ):
@@ -209,272 +193,111 @@ class UIRunProgressTracker(RunProgressTracker):
                 )
             )
 
-    def mark_start_running(self, run_id: RunId) -> None:
-        pass
-
-    def mark_dataset_saved(self, name: str, *, id_: uuid.UUID) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            url=self._get_url(AssetType.DATASET, name),
-            status=AssetTrackerStatus.PENDING,
-        )
-
-    def mark_dataset_building(
-        self, name: str, version: Optional[str] = None, build_idx: Optional[str] = None
-    ) -> None:
-        # For some reason, this function is called even after the dataset is successfully built and
-        # it causes a flicker in the progress bar. This is a workaround.
-        asset = self._get_asset(AssetType.DATASET, name)
-        if asset.status == AssetTrackerStatus.DONE:
-            return
-
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            status=AssetTrackerStatus.BUILDING,
-            url=self._get_url(AssetType.DATASET, name),
-            version=version,
-            build_idx=build_idx,
-        )
-
-    def mark_dataset_failed(self, name: str, reason: str) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            status=AssetTrackerStatus.ERROR,
-            error_reason=f"{reason}",
-        )
-
-    def mark_dataset_built(
+    def mark_running(
         self,
+        asset_type: AssetType,
         name: str,
         *,
-        warnings: Optional[str] = None,
-        version: Optional[str] = None,
-        build_index: Optional[str] = None,
+        tag: Optional[str] = None,
     ) -> None:
         self._update_asset(
-            AssetType.DATASET,
+            asset_type,
             name,
-            status=AssetTrackerStatus.DONE,
-            url=self._get_url(AssetType.DATASET, name),
-            version=version,
-            build_idx=build_index,
-            warnings=warnings,
+            url=self._get_url(asset_type, name),
+            tag=tag,
+            status=AssetTrackerStatus.BUILDING
+            if asset_type == AssetType.DATASET
+            else AssetTrackerStatus.TRAINING,
         )
 
-    def mark_model_saving(self, name: str) -> None:
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            status=AssetTrackerStatus.SAVING,
-        )
-
-    def mark_model_saved(
+    def mark_asserting(
         self,
-        name: str,
-        warnings: Optional[str] = None,
-        version: Optional[str] = None,
-        train_index: Optional[str] = None,
-    ) -> None:
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            status=AssetTrackerStatus.DONE,
-            url=self._get_url(AssetType.MODEL, name),
-            version=version,
-            build_idx=train_index,
-            warnings=warnings,
-        )
-
-    def mark_model_training(
-        self, name: str, version: Optional[str] = None, train_idx: Optional[str] = None
-    ) -> None:
-        # For some reason, this function is called even after the model is successfully trained and
-        # it causes a flicker in the progress bar. This is a workaround.
-        asset = self._get_asset(AssetType.MODEL, name)
-        if asset.status == AssetTrackerStatus.DONE:
-            return
-
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            status=AssetTrackerStatus.TRAINING,
-            url=self._get_url(AssetType.MODEL, name),
-            version=version,
-            build_idx=train_idx,
-        )
-
-    def mark_model_trained(
-        self,
+        asset_type: AssetType,
         name: str,
         *,
-        version: Optional[str] = None,
-        train_index: Optional[str] = None,
+        assertion: Optional[Assertion] = None,
     ) -> None:
         self._update_asset(
-            AssetType.MODEL,
-            name,
-            status=AssetTrackerStatus.DONE,
-            url=self._get_url(AssetType.MODEL, name),
-            version=version,
-            build_idx=train_index,
-        )
-
-    def mark_model_train_failed(
-        self, name: str, reason: str
-    ) -> None:  # TODO(volkan) check that reason is always given
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            status=AssetTrackerStatus.ERROR,
-            error_reason=f"{reason}",
-        )
-
-    def update_dataset_saving_progress(
-        self, name: str, cur_step: int, total_steps: int
-    ) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            status=AssetTrackerStatus.SAVING,
-            cur_step=cur_step,
-            total_steps=total_steps,
-        )
-
-    def mark_dataset_resources_uploading(
-        self, name: str, state: ResourceTransferState
-    ) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            description="uploading",
-            resource_transfer_state=state,
-            status=AssetTrackerStatus.RESOURCE_UPLOADING,
-        )
-
-    def mark_dataset_resources_uploaded(self, name: str) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            description="uploaded",
-            status=AssetTrackerStatus.PENDING,  # Pending here meaning that training has not started yet
-        )
-
-    def mark_model_resources_uploading(
-        self, name: str, state: ResourceTransferState
-    ) -> None:
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            description="uploading",
-            resource_transfer_state=state,
-            status=AssetTrackerStatus.RESOURCE_UPLOADING,
-        )
-
-    def mark_model_resources_uploaded(self, name: str) -> None:
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            description="uploaded",
-            status=AssetTrackerStatus.PENDING,
-        )
-
-    def mark_model_running_assertions(self, name: str) -> None:
-        self._update_asset(
-            AssetType.MODEL,
+            asset_type,
             name,
             status=AssetTrackerStatus.ASSERTING,
+            description=str(assertion) if assertion else None,
         )
 
-    def mark_model_running_assertion(self, name: str, assertion: Assertion) -> None:
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            status=AssetTrackerStatus.ASSERTING,
-            description=str(assertion),
-        )
-
-    def mark_model_completed_assertions(self, name: str) -> None:
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            status=AssetTrackerStatus.ASSERTED,
-        )
-
-    def mark_model_failed_assertions(
-        self, name: str, assertions: List[Assertion]
+    def mark_failed_assertions(
+        self, asset_type: AssetType, name: str, assertions: List[Assertion]
     ) -> None:
         stringified = [str(assertion) for assertion in assertions]
         error_msg = f"failed: {', '.join(stringified)}"
         self._update_asset(
-            AssetType.MODEL,
+            asset_type,
             name,
             status=AssetTrackerStatus.ERROR,
             error_reason=error_msg,
         )
 
-    def mark_dataset_running_assertions(self, name: str) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            status=AssetTrackerStatus.ASSERTING,
-        )
+    def mark_asserted(self, asset_type: AssetType, name: str) -> None:
+        self._update_asset(asset_type, name, status=AssetTrackerStatus.ASSERTED)
 
-    def mark_dataset_running_assertion(self, name: str, assertion: Assertion) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            description=str(assertion),
-        )
-
-    def mark_dataset_completed_assertions(self, name: str) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            status=AssetTrackerStatus.ASSERTED,
-        )
-
-    def mark_dataset_failed_assertions(
-        self, name: str, assertions: List[Assertion]
+    def mark_asset_uploading(
+        self,
+        asset_type: AssetType,
+        name: str,
+        *,
+        dataset_transfer_state: Optional[DatasetTransferState] = None,
+        model_transfer_state: Optional[ResourceTransferState] = None,
     ) -> None:
-        stringified = [str(assertion) for assertion in assertions]
-        error_msg = f"failed: {', '.join(stringified)}"
         self._update_asset(
-            AssetType.DATASET,
+            asset_type,
+            name,
+            status=AssetTrackerStatus.UPLOADING,
+            dataset_transfer_state=dataset_transfer_state,
+            model_transfer_state=model_transfer_state,
+        )
+
+    def mark_done(
+        self,
+        asset_type: AssetType,
+        name: str,
+        *,
+        warnings: Optional[str] = None,
+        tag: Optional[str] = None,
+    ) -> None:
+        self._update_asset(
+            asset_type,
+            name,
+            status=AssetTrackerStatus.DONE,
+            url=self._get_url(asset_type, name),
+            tag=tag,
+            warnings=warnings,
+        )
+
+    def mark_failed(
+        self,
+        asset_type: AssetType,
+        name: str,
+        *,
+        reason: str,
+        tag: Optional[str] = None,
+    ) -> None:
+        self._update_asset(
+            asset_type,
             name,
             status=AssetTrackerStatus.ERROR,
-            error_reason=error_msg,
+            tag=tag,
+            error_reason=f"{reason}",
         )
 
-    def mark_dataset_saving_result(
-        self, name: str, state: DatasetTransferState
-    ) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            dataset_transfer_state=state,
-            status=AssetTrackerStatus.RESULT_UPLOADING,
-        )
-
-    def mark_model_saving_result(self, name: str, state: ResourceTransferState) -> None:
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            model_transfer_state=state,
-            status=AssetTrackerStatus.RESULT_UPLOADING,
-        )
-
-    def mark_model_getting_model(
+    def mark_asset_downloading(
         self,
+        asset_type: AssetType,
         name: str,
         getting_asset_name: str,
         state: Optional[ResourceTransferState],
         from_cache: bool,
     ) -> None:
         self._update_asset(
-            AssetType.MODEL,
+            asset_type,
             name,
             asset_download_transfer_state=state,
             status=AssetTrackerStatus.ASSET_DOWNLOADING
@@ -483,65 +306,13 @@ class UIRunProgressTracker(RunProgressTracker):
             loading_cache_asset=None if not from_cache else getting_asset_name,
         )
 
-    def mark_model_getting_dataset(
-        self, name: str, getting_asset_name: str, from_cache: bool
-    ) -> None:
-        self._update_asset(
-            AssetType.MODEL,
-            name,
-            asset_download_transfer_state=DatasetTransferState(0, getting_asset_name),
-            status=AssetTrackerStatus.ASSET_DOWNLOADING
-            if not from_cache
-            else AssetTrackerStatus.ASSET_FROM_CACHE,
-            loading_cache_asset=None if not from_cache else getting_asset_name,
-        )
-
-    def mark_dataset_getting_model(
+    def mark_asset_downloaded(
         self,
-        name: str,
-        getting_asset_name: str,
-        state: Optional[ResourceTransferState],
-        from_cache: bool,
-    ) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            asset_download_transfer_state=state,
-            status=AssetTrackerStatus.ASSET_DOWNLOADING
-            if not from_cache
-            else AssetTrackerStatus.ASSET_FROM_CACHE,
-            loading_cache_asset=None if not from_cache else getting_asset_name,
-        )
-
-    def mark_dataset_getting_dataset(
-        self, name: str, getting_asset_name: str, from_cache: bool
-    ) -> None:
-        self._update_asset(
-            AssetType.DATASET,
-            name,
-            asset_download_transfer_state=DatasetTransferState(0, getting_asset_name),
-            status=AssetTrackerStatus.ASSET_DOWNLOADING
-            if not from_cache
-            else AssetTrackerStatus.ASSET_FROM_CACHE,
-            loading_cache_asset=None if not from_cache else getting_asset_name,
-        )
-
-    def mark_model_loaded(
-        self,
+        asset_type: AssetType,
         name: str,
     ) -> None:
         self._update_asset(
-            AssetType.MODEL,
-            name,
-            status=AssetTrackerStatus.ASSET_LOADED,
-        )
-
-    def mark_dataset_loaded(
-        self,
-        name: str,
-    ) -> None:
-        self._update_asset(
-            AssetType.DATASET,
+            asset_type,
             name,
             status=AssetTrackerStatus.ASSET_LOADED,
         )

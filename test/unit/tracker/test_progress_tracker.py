@@ -1,5 +1,6 @@
 from yarl import URL
 
+from layer.contracts.asset import AssetType
 from layer.contracts.project_full_name import ProjectFullName
 from layer.tracker.ui_progress_tracker import UIRunProgressTracker
 
@@ -20,8 +21,8 @@ def test_tracker_mark_model_training():
         url=TEST_URL,
     )
 
-    tracker.mark_model_training(
+    tracker.mark_running(
+        asset_type=AssetType.MODEL,
         name="model-a",
-        version="v1",
-        train_idx="i3",
+        tag="1.2",
     )

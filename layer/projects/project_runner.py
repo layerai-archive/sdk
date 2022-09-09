@@ -116,7 +116,6 @@ class ProjectRunner:
                             },
                         )
                         logs_thread.start()
-                    tracker.mark_start_running(run.id)
                     try:
                         self._poll_until_completed(client, tracker, run)
                     except (ProjectBaseException, ProjectRunnerError) as e:
