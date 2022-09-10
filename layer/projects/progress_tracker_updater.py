@@ -1,4 +1,5 @@
 import typing
+import uuid
 from typing import Dict, List, Tuple
 
 from layerapi.api.entity.history_event_pb2 import HistoryEvent
@@ -116,14 +117,23 @@ class ProgressTrackerUpdater:
         task_name = self._get_name_from_task_id(task_id)
         task_type = task.type
         if task_type == PBTask.TYPE_DATASET_BUILD:
+            dataset_build_id = uuid.UUID(
+                self.run_metadata[(task_type, task_id, "build-id")]
+            )
+
+            build = self.client.data_catalog.get_build_by_id(dataset_build_id)
             self.tracker.mark_done(
                 asset_type=AssetType.DATASET,
                 name=task_name,
+                tag=build.tag,
             )
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
+            train_id = uuid.UUID(self.run_metadata[(task_type, task_id, "train-id")])
+            model_train = self.client.model_catalog.get_model_train(train_id)
             self.tracker.mark_done(
                 asset_type=AssetType.MODEL,
                 name=task_name,
+                tag=model_train.tag,
             )
         else:
             # TODO: alert for this

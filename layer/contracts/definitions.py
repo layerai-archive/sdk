@@ -122,13 +122,13 @@ class FunctionDefinition:
 
     def runner_function(self) -> Any:
         if self.asset_type == AssetType.DATASET:
-            from layer.executables.entrypoint.dataset import RUNNER as dataset_runner
+            from layer.executables.entrypoint.dataset import DatasetRunner
 
-            return dataset_runner(self)
+            return DatasetRunner(self)
         elif self.asset_type == AssetType.MODEL:
-            from layer.executables.entrypoint.model import RUNNER as model_runner
+            from layer.executables.entrypoint.model import ModelRunner
 
-            return model_runner(self)
+            return ModelRunner(self)
         raise Exception(f"Invalid asset type {self.asset_type}")
 
     def _clean_function_home_dir(self) -> None:

@@ -213,10 +213,10 @@ class CallableMethod:
 
 @pytest.mark.parametrize(
     "callable",
-    [(lambda: 42), (CallableClass(),), (CallableMethod().x,), ("e",), (42,)],
+    [("e",), (42,)],
 )
-def test_only_functions_could_be_packaged(callable):
-    with pytest.raises(ValueError, match=r"function must be a function"):
+def test_only_callables_could_be_packaged(callable):
+    with pytest.raises(ValueError, match=r"function must be callable"):
         package_function(callable)
 
 

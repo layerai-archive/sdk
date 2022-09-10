@@ -1,14 +1,21 @@
+import re
 from typing import Any, Callable
+from unittest.mock import MagicMock
 
 import pytest
 
 from layer import Dataset, Model
+from layer.clients.model_catalog import ModelCatalogClient
 from layer.contracts.asset import AssetType
 from layer.decorators.model_decorator import model
 from layer.decorators.pip_requirements_decorator import pip_requirements
-from layer.exceptions.exceptions import ProjectInitializationException
+from layer.exceptions.exceptions import (
+    ProjectInitializationException,
+    RuntimeMemoryException,
+)
 from layer.global_context import reset_to
 from layer.settings import LayerSettings
+from test.unit.decorators.util import project_client_mock
 
 
 def _make_test_model_function(name: str) -> Callable[..., Any]:
@@ -72,3 +79,53 @@ class TestModelDecorator:
         assert settings.get_asset_name() == name
         assert settings.get_asset_type() == AssetType.MODEL
         assert settings.get_pip_packages() == ["scikit-learn==0.23.2"]
+
+    def test_should_complete_remote_train_when_failed_with_runtime_error(self) -> None:
+        model_catalog_client = MagicMock(spec=ModelCatalogClient)
+        with project_client_mock(model_catalog_client=model_catalog_client):
+
+            @model("foo")
+            def create_my_model() -> None:
+                raise RuntimeError()
+
+            with pytest.raises(RuntimeError):
+                create_my_model()
+
+            model_catalog_client.create_model_train_from_version_id.assert_called_once()
+            model_catalog_client.update_model_train_status.assert_called()
+
+    def test_should_complete_remote_train_when_failed_with_memory_error(self) -> None:
+        exc_message = "Out of available memory"
+
+        model_catalog_client = MagicMock(spec=ModelCatalogClient)
+        with project_client_mock(model_catalog_client=model_catalog_client):
+
+            @model("foo")
+            def create_my_model() -> None:
+                raise MemoryError(exc_message)
+
+            with pytest.raises(RuntimeMemoryException):
+                create_my_model()
+
+            model_catalog_client.create_model_train_from_version_id.assert_called_once()
+            model_catalog_client.update_model_train_status.assert_called()
+
+    def test_should_complete_remote_train_when_failed_with_import_error(self) -> None:
+        exc_message_pattern = re.compile(".*No module named 'missing_dep'.*")
+
+        model_catalog_client = MagicMock(spec=ModelCatalogClient)
+        with project_client_mock(model_catalog_client=model_catalog_client):
+
+            @model("foo")
+            def create_my_model() -> None:
+                import importlib
+
+                importlib.import_module("missing_dep")
+
+            with pytest.raises(Exception) as exc:
+                create_my_model()
+
+            assert exc_message_pattern.match(str(exc))
+
+            model_catalog_client.create_model_train_from_version_id.assert_called_once()
+            model_catalog_client.update_model_train_status.assert_called()

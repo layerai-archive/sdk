@@ -32,8 +32,8 @@ def package_function(
 ) -> Path:
     """Packages layer function as a Python executable."""
 
-    if not inspect.isfunction(function) or function.__name__ == "<lambda>":
-        raise ValueError("function must be a function")
+    if not callable(function):
+        raise ValueError("function must be callable")
 
     with tempfile.TemporaryDirectory() as source_dir:
         source = Path(source_dir)
