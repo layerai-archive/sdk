@@ -1,3 +1,5 @@
+import pathlib
+
 import pytest
 
 from layer.contracts.runs import ResourcePath
@@ -10,14 +12,16 @@ def test_resources_decorator_combines_all_paths():
         pass
 
     assert func.layer.get_resource_paths() == [
-        ResourcePath(path="/"),
-        ResourcePath(path="./abc"),
-        ResourcePath(path="../xyz"),
+        ResourcePath(path=pathlib.Path("/")),
+        ResourcePath(path=pathlib.Path("./abc")),
+        ResourcePath(path=pathlib.Path("../xyz")),
     ]
 
 
 def test_resources_decorator_requires_at_least_one_path():
-    with pytest.raises(ValueError, match="resource paths cannot be empty"):
+    with pytest.raises(
+        ValueError, match="resource paths must be a string or a pathlib.Path"
+    ):
 
         @resources
         def func():

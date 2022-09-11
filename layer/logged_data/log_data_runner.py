@@ -190,8 +190,9 @@ class LogDataRunner:
     ) -> None:
         file_size_in_bytes = path.stat().st_size
         self._check_size_less_than_mb(file_size_in_bytes, max_file_size_mb)
-        with open(path, "rb") as binary_file:
-            self._log_binary(value=binary_file, type=type, **kwargs)
+        self._logged_data_destination.receive(
+            func=lambda client: client.log_data(type=type, **kwargs), data_path=path
+        )
 
     def _log_dataframe(self, value: pd.DataFrame, **kwargs: Any) -> None:
         rows = len(value.index)

@@ -1,5 +1,6 @@
+import pathlib
 from abc import ABC
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Sequence, Union
 
 import wrapt  # type: ignore
 
@@ -7,7 +8,9 @@ from layer.contracts.runs import ResourcePath
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 
 
-def resources(path: str, *paths: str) -> Callable[..., Any]:
+def resources(
+    path: Union[str, pathlib.Path], *paths: Union[str, pathlib.Path]
+) -> Callable[..., Any]:
     """
     Syncs arbitrary files between local and fabric environments.
     ``@resources`` decorator can be applied to the functions that are wrapped by the ``@dataset`` or ``@model`` decorators.
@@ -52,11 +55,17 @@ def resources(path: str, *paths: str) -> Callable[..., Any]:
 
     """
 
-    # first arg is callable in case arg list is empty
-    if not isinstance(path, str):
-        raise ValueError("resource paths cannot be empty")
+    clean_paths = []
 
-    @wrapt.decorator(proxy=_resources_wrapper(path, *paths))
+    for raw_path in [path, *paths]:
+        if isinstance(raw_path, pathlib.Path):
+            clean_paths.append(raw_path)
+        elif isinstance(raw_path, str):
+            clean_paths.append(pathlib.Path(raw_path))
+        else:
+            raise ValueError("resource paths must be a string or a pathlib.Path")
+
+    @wrapt.decorator(proxy=_resources_wrapper(clean_paths))
     def wrapper(
         wrapped: Any, instance: Any, args: List[Any], kwargs: Dict[str, Any]
     ) -> None:
@@ -65,14 +74,11 @@ def resources(path: str, *paths: str) -> Callable[..., Any]:
     return wrapper
 
 
-def _resources_wrapper(path: str, *paths: str) -> Any:
+def _resources_wrapper(paths: Sequence[pathlib.Path]) -> Any:
     class ResourcesFunctionWrapper(LayerFunctionWrapper, ABC):
         def __init__(self, wrapped: Any, wrapper: Any, enabled: Any) -> None:
             super().__init__(wrapped, wrapper, enabled)
 
-            _paths: List[ResourcePath] = []
-            for _path in [path, *paths]:
-                _paths.append(ResourcePath(path=_path))
-            self.layer.set_resource_paths(_paths)
+            self.layer.set_resource_paths([ResourcePath(path=p) for p in paths])
 
     return ResourcesFunctionWrapper
