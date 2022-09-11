@@ -43,6 +43,10 @@ class QueueingLoggedDataDestination(LoggedDataDestination):
         data: Optional[Any] = None,
         data_path: Optional[pathlib.Path] = None,
     ) -> None:
+        if data is not None and data_path is not None:
+            raise ValueError(
+                "Invalid arguments: 'data' and 'data_path' cannot both be given"
+            )
         self._local_queue.put_nowait(
             DataLoggingRequest(
                 files_storage=self._files_storage,

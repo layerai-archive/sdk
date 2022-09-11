@@ -30,6 +30,10 @@ class ImmediateLoggedDataDestination(LoggedDataDestination):
         data: Optional[Any] = None,
         data_path: Optional[pathlib.Path] = None,
     ) -> None:
+        if data is not None and data_path is not None:
+            raise ValueError(
+                "Invalid arguments: 'data' and 'data_path' cannot both be given"
+            )
         DataLoggingRequest(
             files_storage=self._files_storage,
             queued_operation_func=lambda: func(self.logged_data_client),
