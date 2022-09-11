@@ -1,3 +1,4 @@
+import pathlib
 from types import TracebackType
 from typing import Any, Callable, Optional
 
@@ -27,9 +28,13 @@ class ImmediateLoggedDataDestination(LoggedDataDestination):
         self,
         func: Callable[[LoggedDataClient], Optional[Any]],
         data: Optional[Any] = None,
+        data_path: Optional[pathlib.Path] = None,
     ) -> None:
         DataLoggingRequest(
-            self._files_storage, lambda: func(self.logged_data_client), data
+            files_storage=self._files_storage,
+            queued_operation_func=lambda: func(self.logged_data_client),
+            data=data,
+            data_path=data_path,
         ).execute()
 
     def close_and_get_errors(self) -> Optional[str]:

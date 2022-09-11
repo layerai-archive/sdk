@@ -1,3 +1,4 @@
+import pathlib
 import queue
 import threading
 from queue import Queue
@@ -40,12 +41,14 @@ class QueueingLoggedDataDestination(LoggedDataDestination):
         self,
         func: Callable[[LoggedDataClient], Optional[Any]],
         data: Optional[Any] = None,
+        data_path: Optional[pathlib.Path] = None,
     ) -> None:
         self._local_queue.put_nowait(
             DataLoggingRequest(
                 files_storage=self._files_storage,
                 queued_operation_func=lambda: func(self.logged_data_client),
                 data=data,
+                data_path=data_path,
             )
         )
 

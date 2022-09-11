@@ -1,3 +1,4 @@
+import pathlib
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional
 from uuid import UUID
@@ -25,6 +26,7 @@ class LoggedDataDestination(ABC):
         self,
         func: Callable[[LoggedDataClient], Optional[Any]],
         data: Optional[Any] = None,
+        data_path: Optional[pathlib.Path] = None,
     ) -> None:
         pass
 

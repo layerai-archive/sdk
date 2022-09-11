@@ -1,5 +1,6 @@
 import enum
 import os
+import pathlib
 import uuid
 from dataclasses import dataclass
 from typing import Iterator
@@ -11,7 +12,7 @@ from layer.contracts.project_full_name import ProjectFullName
 class ResourcePath:
     # Local file system path of the resource (file or dir), relative to the project dir.
     # Examples: data/test.csv, users.parquet
-    path: str
+    path: pathlib.Path
 
     def local_relative_paths(self) -> Iterator[str]:
         """
