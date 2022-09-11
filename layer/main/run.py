@@ -32,6 +32,7 @@ def init(
     fabric: Optional[str] = None,
     pip_packages: Optional[List[str]] = None,
     pip_requirements_file: Optional[str] = None,
+    labels: Optional[List[str]] = None,
 ) -> Project:
     """
     :param project_name: Name of the project to be initialized.
@@ -67,7 +68,7 @@ def init(
 
     project_full_name = _get_project_full_name(layer_config, project_name)
 
-    reset_to(project_full_name)
+    reset_to(project_full_name, label_names=set(labels) if labels else None)
 
     init_project_runner = InitProjectRunner(project_full_name, logger=logger)
     fabric_to_set = (

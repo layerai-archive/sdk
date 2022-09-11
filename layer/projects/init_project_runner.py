@@ -77,7 +77,8 @@ class InitProjectRunner:
 
             self._update_readme(self._project_full_name, layer_client)
 
-        global_context.reset_to(self._project_full_name)
+        # TODO This is too deep, why do we need to alter global context from inside?
+        global_context.set_current_project_full_name(self._project_full_name)
         if fabric:
             set_default_fabric(fabric)
         if pip_packages:

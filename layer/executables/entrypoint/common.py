@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Tuple
 import grpc
 
 import layer
-from layer import Context
+from layer import Context, global_context
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
@@ -17,7 +17,7 @@ from layer.exceptions.exceptions import (
     LayerFailedAssertionsException,
     RuntimeMemoryException,
 )
-from layer.global_context import reset_to, set_has_shown_update_message
+from layer.global_context import set_has_shown_update_message
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.logged_data.queuing_logged_data_destination import (
     QueueingLoggedDataDestination,
@@ -74,6 +74,7 @@ class FunctionRunner(ABC):
         self.tracker.add_asset(self.definition.asset_type, self.definition.asset_name)
 
         tag, context_kwargs = self._create_asset()
+
         self.tracker.mark_running(
             asset_type=self.definition.asset_type,
             name=self.definition.asset_name,
@@ -88,6 +89,9 @@ class FunctionRunner(ABC):
             logged_data_destination=self.logged_data_destination,
             **context_kwargs,
         ) as ctx:
+            ctx._label_asset_with(  # pylint: disable=W0212
+                global_context.current_label_names()
+            )
             self._mark_start()
 
             try:
@@ -131,8 +135,8 @@ class FunctionRunner(ABC):
         # do not show update warnings
         set_has_shown_update_message(True)
 
-        # reset context
-        reset_to(self.definition.project_full_name.path)
+        # TODO This is too deep, why do we need to alter global context from inside?
+        global_context.set_current_project_full_name(self.definition.project_full_name)
 
         # login
         api_url = os.environ.get(ENV_LAYER_API_URL)

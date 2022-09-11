@@ -9,6 +9,7 @@ from .account_service import AccountServiceClient
 from .data_catalog import DataCatalogClient
 from .executor_service import ExecutorClient
 from .flow_manager import FlowManagerClient
+from .label import LabelClient
 from .logged_data_service import LoggedDataClient
 from .model_catalog import ModelCatalogClient
 from .project_service import ProjectServiceClient
@@ -26,6 +27,7 @@ class LayerClient:
         self._user_logs: Optional[UserLogsClient] = None
         self._project_service_client: Optional[ProjectServiceClient] = None
         self._logged_data_client: Optional[LoggedDataClient] = None
+        self._label_client: Optional[LabelClient] = None
         self._executor_client: Optional[ExecutorClient] = None
 
     @contextmanager
@@ -75,6 +77,12 @@ class LayerClient:
         if self._logged_data_client is None:
             self._logged_data_client = LoggedDataClient.create(self._config)
         return self._logged_data_client
+
+    @property
+    def label_service_client(self) -> LabelClient:
+        if self._label_client is None:
+            self._label_client = LabelClient.create(self._config)
+        return self._label_client
 
     @property
     def executor_service_client(self) -> ExecutorClient:

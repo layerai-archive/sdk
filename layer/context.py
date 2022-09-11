@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Optional
+from typing import Any, Optional, Set
 
 import pandas as pd
 from yarl import URL
@@ -77,6 +77,21 @@ class Context:
         self._model_train = model_train
         self._dataset_build = dataset_build
         self._initial_cwd: Optional[Path] = None
+
+    def _label_asset_with(self, label_names: Set[str]) -> None:
+        """
+        Temporary until we introduce global runs
+        """
+        assert self._client is not None
+        self._client.label_service_client.add_labels_to(
+            label_names,
+            model_train_id=self._model_train.id
+            if self._model_train is not None
+            else None,
+            dataset_build_id=self._dataset_build.id
+            if self._dataset_build is not None
+            else None,
+        )
 
     def asset_path(self) -> AssetPath:
         """

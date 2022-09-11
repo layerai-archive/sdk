@@ -1,6 +1,7 @@
 from layer.contracts.fabrics import Fabric
 from layer.global_context import (
     current_account_name,
+    current_label_names,
     current_project_full_name,
     default_fabric,
     get_pip_packages,
@@ -31,16 +32,22 @@ class TestGlobalContext:
         assert get_pip_packages() is None
         assert get_pip_requirements_file() is None
 
-    def test_reset_with_the_same_project_and_account_names(self) -> None:
+    def test_reset_with_the_same_project_and_account_names_does_reset(self) -> None:
+        # given
         set_current_project_full_name("test-acc/test")
         set_default_fabric(Fabric.F_SMALL)
         set_pip_requirements_file("/path/to/requirements2.txt")
         set_pip_packages(["numpy=1.22.2"])
-        reset_to("test-acc/test")
+
+        # when
+        reset_to("test-acc/test", label_names={"label-1", "label-2"})
+
+        # then
         assert current_project_full_name().project_name == "test"
-        assert default_fabric() == Fabric.F_SMALL
-        assert get_pip_packages() == ["numpy=1.22.2"]
-        assert get_pip_requirements_file() == "/path/to/requirements2.txt"
+        assert current_label_names() == {"label-1", "label-2"}
+        assert default_fabric() is None
+        assert get_pip_packages() is None
+        assert get_pip_requirements_file() is None
 
     def test_last_fabric_returned(self) -> None:
         assert default_fabric() is None

@@ -2,11 +2,10 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
-from layerapi.api.ids_pb2 import LoggedDataId, ModelMetricId, ModelTrainId
+from layerapi.api.ids_pb2 import LoggedDataId, ModelTrainId
 from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     LogDataRequest,
     LogDataResponse,
-    LogModelMetricResponse,
 )
 from layerapi.api.value.logged_data_type_pb2 import LoggedDataType
 from layerapi.api.value.logged_data_x_coordinate_type_pb2 import (
@@ -108,8 +107,8 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_typ
 def test_given_tag_not_exists_when_log_number_then_calls_log_numeric_data() -> None:
     # given
     mock_logged_data_api = MagicMock()
-    mock_logged_data_api.LogModelMetric.return_value = LogModelMetricResponse(
-        model_metric_id=ModelMetricId(value="00000000-0000-0000-0000-000000000000"),
+    mock_logged_data_api.LogData.return_value = LogDataResponse(
+        logged_data_id=LoggedDataId(value="00000000-0000-0000-0000-000000000000"),
     )
     logged_data_client = get_logged_data_service_client_with_mocks(
         logged_data_api_stub=mock_logged_data_api

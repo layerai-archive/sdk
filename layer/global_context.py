@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Optional, Set, Union
 
 from .contracts.fabrics import Fabric
 from .contracts.project_full_name import ProjectFullName
@@ -16,6 +16,7 @@ class GlobalContext:
     has_shown_update_message: bool
     # Similar to above, but for supported Python version.
     has_shown_python_version_message: bool
+    label_names: Optional[Set[str]]
 
 
 # We store full project name, fabric and requirements
@@ -27,21 +28,25 @@ _GLOBAL_CONTEXT = GlobalContext(
     pip_packages=None,
     has_shown_update_message=False,
     has_shown_python_version_message=False,
+    label_names=None,
 )
 
 
-def reset_to(project_full_name: Optional[Union[str, ProjectFullName]]) -> None:
+def reset_to(
+    project_full_name: Optional[Union[str, ProjectFullName]],
+    label_names: Optional[Set[str]] = None,
+) -> None:
     project_full_name = _project_full_name_from(project_full_name)
-    if current_project_full_name() != project_full_name:
-        global _GLOBAL_CONTEXT
-        _GLOBAL_CONTEXT = GlobalContext(
-            project_full_name=project_full_name,
-            fabric=None,
-            pip_requirements_file=None,
-            pip_packages=None,
-            has_shown_update_message=False,
-            has_shown_python_version_message=False,
-        )
+    global _GLOBAL_CONTEXT
+    _GLOBAL_CONTEXT = GlobalContext(
+        project_full_name=project_full_name,
+        fabric=None,
+        pip_requirements_file=None,
+        pip_packages=None,
+        has_shown_update_message=False,
+        has_shown_python_version_message=False,
+        label_names=label_names,
+    )
 
 
 def set_current_project_full_name(name: Optional[Union[str, ProjectFullName]]) -> None:
@@ -79,6 +84,10 @@ def current_account_name() -> Optional[str]:
         if _GLOBAL_CONTEXT.project_full_name
         else None
     )
+
+
+def current_label_names() -> Set[str]:
+    return _GLOBAL_CONTEXT.label_names if _GLOBAL_CONTEXT.label_names else set()
 
 
 def set_default_fabric(fabric: Fabric) -> None:
