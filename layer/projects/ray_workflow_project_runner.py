@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import ray
-from layerapi.api.ids_pb2 import RunId
 from ray import workflow
 
 from layer.clients.layer import LayerClient
@@ -55,10 +54,10 @@ class RayWorkflowProjectRunner:
             ]
             ray.init(address=self.ray_address, _metadata=_metadata)
         plan = build_plan(self.definitions)
-        run_id = str(uuid.uuid4())
+        run_id = uuid.uuid4()
         workflow.run(run_stage.bind(plan.stages), workflow_id=run_id)
         run = Run(
-            id=RunId(value=run_id),
+            id=run_id,
             project_full_name=self.project_full_name,
         )
         ray.shutdown()
