@@ -10,6 +10,7 @@ from typing import Any, Callable, List, Mapping, Optional, Sequence
 from layer.config import DEFAULT_FUNC_PATH
 from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
+from layer.contracts.conda import CondaEnv
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import ResourcePath
@@ -31,6 +32,7 @@ class FunctionDefinition:
         fabric: Fabric,
         asset_dependencies: List[AssetPath],
         pip_dependencies: List[str],
+        conda_env: Optional[CondaEnv],
         resource_paths: List[ResourcePath],
         assertions: List[Assertion],
         version_id: Optional[uuid.UUID] = None,
@@ -51,6 +53,7 @@ class FunctionDefinition:
         self.fabric = fabric
         self.asset_dependencies = asset_dependencies
         self.pip_dependencies = pip_dependencies
+        self.conda_env = conda_env
         self.resource_paths = resource_paths
         self.assertions = assertions
 
@@ -117,6 +120,7 @@ class FunctionDefinition:
             self.runner_function(),
             resources=resource_paths,
             pip_dependencies=self.pip_dependencies,
+            conda_env=self.conda_env,
             output_dir=self.function_home_dir,
         )
 

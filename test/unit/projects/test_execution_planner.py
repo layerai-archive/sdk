@@ -189,6 +189,7 @@ class TestProjectExecutionPlanner:
             fabric=Fabric.F_LOCAL,
             asset_dependencies=dependency_paths,
             pip_dependencies=[],
+            conda_env=None,
             resource_paths=[],
             assertions=[],
             version_id=uuid.uuid4(),

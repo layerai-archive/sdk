@@ -69,6 +69,7 @@ def _make_test_function_definition(
         fabric=Fabric.F_LOCAL,
         asset_dependencies=[],
         pip_dependencies=[],
+        conda_env=None,
         resource_paths=[],
         assertions=[],
     )

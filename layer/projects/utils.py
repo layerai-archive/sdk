@@ -1,7 +1,10 @@
+import asyncio
 import hashlib
 import re
 from typing import List
 from uuid import UUID
+
+import aiohttp
 
 from layer.clients.layer import LayerClient
 from layer.contracts.definitions import FunctionDefinition
@@ -64,3 +67,43 @@ def calculate_hash_by_definitions(definitions: List[FunctionDefinition]) -> str:
         files_hash.update(definition.get_pickled_function())
 
     return files_hash.hexdigest()
+
+
+async def upload_executable_packages(
+    client: LayerClient,
+    definitions: List[FunctionDefinition],
+    project_full_name: ProjectFullName,
+) -> None:
+    async with aiohttp.ClientSession(raise_for_status=True) as session:
+        upload_tasks = [
+            _upload_executable_package(client, project_full_name, definition, session)
+            for definition in definitions
+        ]
+        await asyncio.gather(*upload_tasks)
+
+
+async def _upload_executable_package(
+    client: LayerClient,
+    project_full_name: ProjectFullName,
+    function: FunctionDefinition,
+    session: aiohttp.ClientSession,
+) -> None:
+    function.package()
+    function_name = (
+        f"{function.asset_path.asset_type.value}/{function.asset_path.asset_name}"
+    )
+    with open(function.executable_path, "rb") as package_file:
+        presigned_url = client.executor_service_client.get_function_upload_path(
+            project_full_name=project_full_name,
+            function_name=function_name,
+        )
+        await session.put(
+            presigned_url,
+            data=package_file,
+            timeout=aiohttp.ClientTimeout(total=None),
+        )
+        download_url = client.executor_service_client.get_function_download_path(
+            project_full_name=project_full_name,
+            function_name=function_name,
+        )
+        function.set_package_download_url(download_url)
