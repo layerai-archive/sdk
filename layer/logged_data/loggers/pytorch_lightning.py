@@ -20,7 +20,7 @@ else:
 
 class PytorchLightningLogger(Logger):
     r"""
-        Log using `Layer <https://docs.app.layer.ai>`_.
+        Log using `Layer <https://docs.layer.ai>`_.
 
     **Installation and set-up**
 
@@ -137,7 +137,7 @@ class PytorchLightningLogger(Logger):
 
     See Also:
         - `Layer Pytorch Lightning Demo on Google Colab <https://bit.ly/pl_layer>`__
-        - `Layer Documentation <https://docs.app.layer.ai>`__
+        - `Layer Documentation <https://docs.layer.ai>`__
 
     Args:
         project_name: Name of the Layer project

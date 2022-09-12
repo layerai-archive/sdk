@@ -26,7 +26,7 @@ alt="Layer"/>
     <a href="https://github.com/layerai/sdk/blob/main/LICENSE">
         <img alt="License" src="https://img.shields.io/github/license/layerai/sdk.svg?color=blue">
     </a>
-    <a href="https://docs.app.layer.ai">
+    <a href="https://docs.layer.ai">
         <img alt="Documentation" src="https://img.shields.io/badge/docs-online-success">
     </a>
     <a href="https://github.com/layerai/sdk/actions/workflows/release.yml">
@@ -102,5 +102,5 @@ Do you want to help us build the best metadata store? Check out the [Contributin
 - Join our [Slack Community ](https://bit.ly/layercommunityslack) to connect with other Layer users
 - Visit the [examples repo](https://github.com/layerai/examples) for more inspiration
 - Browse [Community Projects](https://layer.ai/community) to see more use cases
-- Check out the [Documentation](https://docs.app.layer.ai)
+- Check out the [Documentation](https://docs.layer.ai)
 - [Contact us](https://layer.ai/contact-us) for your questions

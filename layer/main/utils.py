@@ -23,6 +23,6 @@ def _check_os() -> None:
 
     if is_windows_os():
         print(
-            "Windows is not supported. Please, have a look at https://docs.app.layer.ai/docs/installation"
+            "Windows is not supported. Please, have a look at https://docs.layer.ai/docs/installation"
         )
         sys.exit()
