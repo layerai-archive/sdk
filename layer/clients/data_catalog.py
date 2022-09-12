@@ -324,6 +324,12 @@ class DataCatalogClient:
         )
         return dataset_proto_mapper.from_dataset_build(build, version)
 
+    def get_build_info_by_build_id(self, id_: uuid.UUID) -> Optional[str]:
+        build = self._get_build_by_id(str(id_))
+        if build.build_info:
+            return build.build_info.info
+        return None
+
     def _get_dataset_by_id(self, id_: str) -> PBDataset:
         return self._service.GetDataset(
             GetDatasetRequest(dataset_id=DatasetId(value=id_)),

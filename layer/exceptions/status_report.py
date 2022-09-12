@@ -126,6 +126,10 @@ class AssertionFailureStatusReport(ExecutionStatusReport):
 
 class ExecutionStatusReportFactory:
     @staticmethod
+    def from_plain_text(message: str) -> ExecutionStatusReport:
+        return GenericExecutionStatusReport(message)
+
+    @staticmethod
     def from_json(json_str: str) -> ExecutionStatusReport:
         try:
             payload = json.loads(json_str)
