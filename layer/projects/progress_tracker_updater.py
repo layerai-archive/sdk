@@ -167,10 +167,21 @@ class ProgressTrackerUpdater:
             )
             raise exc_ds
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
+            model_train_id = uuid.UUID(
+                self.run_metadata[(task_type, task_id, "train-id")]
+            )
+            train_status_info = self.client.model_catalog.get_model_train_status_info(
+                model_train_id
+            )
+            status_report = (
+                ExecutionStatusReportFactory.from_json(train_status_info)
+                if train_status_info
+                else ExecutionStatusReportFactory.from_plain_text(task_info)
+            )
             exc_model = ProjectModelExecutionException(
                 self.run.id,
                 task_name,
-                ExecutionStatusReportFactory.from_json(task_info),
+                status_report,
             )
             self.tracker.mark_failed(
                 asset_type=AssetType.MODEL,
