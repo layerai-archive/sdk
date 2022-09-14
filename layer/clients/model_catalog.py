@@ -13,6 +13,7 @@ from layerapi.api.service.modelcatalog.model_catalog_api_pb2 import (
     CreateModelVersionRequest,
     GetModelTrainRequest,
     GetModelTrainResponse,
+    GetModelTrainStatusRequest,
     GetModelTrainStorageConfigurationRequest,
     GetModelVersionRequest,
     GetModelVersionResponse,
@@ -271,6 +272,14 @@ class ModelCatalogClient:
                 ),
             )
         )
+
+    def get_model_train_status_info(self, train_id: uuid.UUID) -> Optional[str]:
+        response = self._service.GetModelTrainStatus(
+            GetModelTrainStatusRequest(
+                model_train_id=model_proto_mapper.to_model_train_id(train_id),
+            ),
+        )
+        return response.model_train_status.info
 
 
 def _language_version() -> Tuple[int, int, int]:
