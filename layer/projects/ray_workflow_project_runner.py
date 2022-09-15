@@ -63,7 +63,7 @@ class RayWorkflowProjectRunner:
                 ("authorization", f"Bearer {self._config.credentials.access_token}"),
                 ("ray-cluster", target_cluster_svc_name),
             ]
-            ray.init(address=self._get_ray_cluster_url(), _metadata=_metadata)
+            ray.init(address=self._get_ray_proxy_url(), _metadata=_metadata)
         plan = build_plan(self.definitions)
         run_id = uuid.uuid4()
         workflow.run(run_stage.bind(plan.stages), workflow_id=run_id)
@@ -74,7 +74,7 @@ class RayWorkflowProjectRunner:
         ray.shutdown()
         return run
 
-    def _get_ray_cluster_url(self) -> str:
+    def _get_ray_proxy_url(self) -> str:
         from urllib.parse import urlsplit, urlunsplit
 
         url = list(urlsplit(str(self._config.url)))
