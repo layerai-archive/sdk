@@ -1,7 +1,6 @@
 import hashlib
 import inspect
 import os
-import pickle  # nosec import_pickle
 import shutil
 import uuid
 from pathlib import Path
@@ -15,8 +14,6 @@ from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import ResourcePath
 from layer.executables.packager import package_function
-
-from .. import cloudpickle
 
 
 class FunctionDefinition:
@@ -147,29 +144,3 @@ class FunctionDefinition:
         if self._executable_path is None:
             self._executable_path = self._package_executable()
         return self._executable_path
-
-    # DEPRECATED below, will remove once we build the simplified backend
-    def get_pickled_function(self) -> bytes:
-        return cloudpickle.dumps(self.func, protocol=pickle.DEFAULT_PROTOCOL)  # type: ignore
-
-    @property
-    def entrypoint(self) -> str:
-        return f"{self.asset_name}.pkl"
-
-    @property
-    def pickle_path(self) -> Path:
-        return self.function_home_dir / self.entrypoint
-
-    @property
-    def environment(self) -> str:
-        return "requirements.txt"
-
-    @property
-    def environment_path(self) -> Path:
-        return self.function_home_dir / self.environment
-
-    def get_fabric(self, is_local: bool) -> str:
-        if is_local:
-            return Fabric.F_LOCAL.value
-        else:
-            return self.fabric.value

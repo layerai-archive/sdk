@@ -20,10 +20,6 @@ class DatasetRunner(FunctionRunner):
             asset_path=self.definition.asset_path,
             project_id=self.project_id,
             description=self.definition.description,
-            fabric=self.fabric.value,
-            func_source=self.definition.func_source,
-            entrypoint=self.definition.entrypoint,
-            environment=self.definition.environment,
         )
         dataset_build_id = self.client.data_catalog.initiate_build(
             self.project_id,

@@ -153,11 +153,6 @@ class DataCatalogClient:
         asset_path: AssetPath,
         project_id: uuid.UUID,
         description: str,
-        fabric: str,
-        func_source: str,
-        entrypoint: str,
-        environment: str,
-        function_home_dir: Optional[Path] = None,
     ) -> str:
         self._logger.debug(
             "Adding or updating a dataset with name %r",
@@ -167,75 +162,10 @@ class DataCatalogClient:
             RegisterDatasetRequest(
                 name=asset_path.asset_name,
                 description=description,
-                python_dataset=self._get_pb_python_dataset(
-                    asset_path,
-                    fabric,
-                    func_source,
-                    entrypoint,
-                    environment,
-                    function_home_dir,
-                ),
                 project_id=ProjectId(value=str(project_id)),
             ),
         )
         return resp.dataset_id.value
-
-    def _get_pb_python_dataset(
-        self,
-        asset_path: AssetPath,
-        fabric: str,
-        func_source: str,
-        entrypoint: str,
-        environment: str,
-        function_home_dir: Optional[Path] = None,
-    ) -> PBPythonDataset:
-        s3_path = (
-            self._upload_dataset_source(asset_path, function_home_dir)
-            if function_home_dir
-            else None
-        )
-        language_version = _language_version()
-        return PBPythonDataset(
-            s3_path=s3_path,
-            python_source=PythonSource(
-                content=func_source,
-                entrypoint=entrypoint,
-                environment=environment,
-                language_version=LanguageVersion(
-                    major=language_version[0],
-                    minor=language_version[1],
-                    micro=language_version[2],
-                ),
-            ),
-            fabric=fabric,
-        )
-
-    def _upload_dataset_source(
-        self, asset_path: AssetPath, function_home_dir: Path
-    ) -> S3Path:
-        response = self._get_python_dataset_access_credentials(asset_path)
-        archive_name = f"{asset_path.asset_name}.tgz"
-
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            archive_path = f"{tmp_dir}/{archive_name}"
-            tar_directory(archive_path, function_home_dir)
-            S3Util.upload_dir(
-                Path(tmp_dir),
-                response.credentials,
-                response.s3_path,
-                endpoint_url=self._s3_endpoint_url,
-            )
-        return S3Path(
-            bucket=response.s3_path.bucket,
-            key=f"{response.s3_path.key}{archive_name}",
-        )
-
-    def _get_python_dataset_access_credentials(
-        self, dataset_path: AssetPath
-    ) -> GetPythonDatasetAccessCredentialsResponse:
-        return self._service.GetPythonDatasetAccessCredentials(
-            GetPythonDatasetAccessCredentialsRequest(dataset_path=dataset_path.path()),
-        )
 
     def initiate_build(
         self,
