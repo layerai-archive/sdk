@@ -139,9 +139,15 @@ class CGroupsMetricsCollectorVersionedV2(CGroupsMetricsCollectorVersioned):
     Use cgroups-v2 to collect system metrics
     """
 
+    def _is_user_slice_enabled(self) -> bool:
+        return os.path.exists(self.METRICS_ROOT / "user.slice")
+
     def get_cpu_usage(self) -> int:
         # Time expected in nanoseconds
-        cpu_usage = self._read_cgroup_metric("user.slice/cpu.stat")
+        metric_path = (
+            "user.slice/cpu.stat" if self._is_user_slice_enabled() else "cpu.stat"
+        )
+        cpu_usage = self._read_cgroup_metric(metric_path)
         if cpu_usage is None:
             return 0
         regex = r"user_usec (\d*)\n"
@@ -153,7 +159,10 @@ class CGroupsMetricsCollectorVersionedV2(CGroupsMetricsCollectorVersioned):
             return int(extracted_cpu_usage.group(1)) * 1000
 
     def get_cpu_available(self) -> float:
-        max_cpu = self._read_cgroup_metric("user.slice/cpu.max")
+        metric_path = (
+            "user.slice/cpu.max" if self._is_user_slice_enabled() else "cpu.max"
+        )
+        max_cpu = self._read_cgroup_metric(metric_path)
         if max_cpu is None:
             return 0
         try:
@@ -167,11 +176,19 @@ class CGroupsMetricsCollectorVersionedV2(CGroupsMetricsCollectorVersioned):
             return float(int(cpu_quota) / int(cpu_period))
 
     def get_mem_used(self) -> int:
-        value = self._read_cgroup_metric("user.slice/memory.current")
+        metric_path = (
+            "user.slice/memory.current"
+            if self._is_user_slice_enabled()
+            else "memory.current"
+        )
+        value = self._read_cgroup_metric(metric_path)
         return int(0 if value is None else value)
 
     def get_mem_available(self) -> int:
-        memory_high = self._read_cgroup_metric("user.slice/memory.high")
+        metric_path = (
+            "user.slice/memory.high" if self._is_user_slice_enabled() else "memory.high"
+        )
+        memory_high = self._read_cgroup_metric(metric_path)
         if memory_high is None:
             return 0
         if memory_high.strip() == "max":
@@ -216,7 +233,7 @@ class CGroupsMetricsCollector(MetricsCollector):
 
         cpu_available = self._cgroup_metrics_collector.get_cpu_available()
         cpu_used = diff_cpu / diff_time / 1_000_000_000
-        if 0 in (cpu_used, cpu_available):
+        if 0 in (now_cpu_usage, cpu_available):
             warnings.warn("CPU system metrics not logged due to missing data")
             return {}
         else:
