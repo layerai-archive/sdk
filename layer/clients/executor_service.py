@@ -1,6 +1,12 @@
+import uuid
+from datetime import timedelta
+from typing import Tuple
+
+from google.protobuf.duration_pb2 import Duration
 from layerapi.api.service.executor.executor_api_pb2 import (
     GetFunctionDownloadPathRequest,
     GetFunctionUploadPathRequest,
+    GetOrCreateClusterRequest,
 )
 from layerapi.api.service.executor.executor_api_pb2_grpc import ExecutorAPIStub
 
@@ -42,3 +48,21 @@ class ExecutorClient:
         return self._service.GetFunctionDownloadPath(
             request=request
         ).function_download_path
+
+    def get_or_create_cluster(
+        self, account_id: uuid.UUID, language_version: Tuple[int, int, int]
+    ) -> str:
+        idle_scale_down_duration_td = timedelta(minutes=10)
+        idle_shut_down_duration_td = timedelta(hours=1)
+        idle_scale_down_duration = Duration()
+        idle_scale_down_duration.FromTimedelta(td=idle_scale_down_duration_td)
+        idle_shut_down_duration = Duration()
+        idle_shut_down_duration.FromTimedelta(td=idle_shut_down_duration_td)
+        # TODO(emin): add account_id and language_version as parameter to below
+        request = GetOrCreateClusterRequest(
+            idle_scale_down_duration=idle_scale_down_duration,
+            idle_shut_down_duration=idle_shut_down_duration,
+            max_number_of_workers=10,  # TODO(emin): remove this parameter
+            worker_fabric="",  # TODO(emin): remove this parameter as it should be defined by the function executable for each
+        )
+        return self._service.GetOrCreateCluster(request=request).cluster_url

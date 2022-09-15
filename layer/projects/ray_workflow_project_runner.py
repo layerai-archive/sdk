@@ -18,7 +18,7 @@ from layer.executables.entrypoint.common import (
     ENV_LAYER_FABRIC,
 )
 from layer.executables.runtime import BaseFunctionRuntime
-from layer.projects.execution_planner import Stage, build_plan
+from layer.projects.execution_planner import Stage, build_plan, language_version
 from layer.projects.utils import upload_executable_packages
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -32,27 +32,38 @@ class RayWorkflowProjectRunner:
         config: Config,
         project_full_name: ProjectFullName,
         functions: List[Any],
-        ray_address: str,
     ) -> None:
         self._config = config
         self.project_full_name = project_full_name
         self.definitions: List[FunctionDefinition] = [
             f.get_definition_with_bound_arguments() for f in functions
         ]
-        self.ray_address = ray_address
 
     def run(self) -> Run:
-        with LayerClient(self._config.client, logger).init() as client:
+        layer_client = LayerClient(self._config.client, logger)
+        with layer_client.init() as initialized_client:
             asyncio_run_in_thread(
                 upload_executable_packages(
-                    client, self.definitions, self.project_full_name
+                    initialized_client, self.definitions, self.project_full_name
+                )
+            )
+            account_id = initialized_client.account.get_my_account().id
+            target_cluster_svc_name = (
+                initialized_client.executor_service_client.get_or_create_cluster(
+                    account_id=account_id,
+                    language_version=(
+                        language_version.major,
+                        language_version.minor,
+                        language_version.micro,
+                    ),
                 )
             )
         if not ray.is_initialized():
             _metadata = [
-                ("authorization", f"Bearer {self._config.credentials.access_token}")
+                ("authorization", f"Bearer {self._config.credentials.access_token}"),
+                ("ray-cluster", target_cluster_svc_name),
             ]
-            ray.init(address=self.ray_address, _metadata=_metadata)
+            ray.init(address=self._get_ray_cluster_url(), _metadata=_metadata)
         plan = build_plan(self.definitions)
         run_id = uuid.uuid4()
         workflow.run(run_stage.bind(plan.stages), workflow_id=run_id)
@@ -62,6 +73,13 @@ class RayWorkflowProjectRunner:
         )
         ray.shutdown()
         return run
+
+    def _get_ray_cluster_url(self) -> str:
+        from urllib.parse import urlsplit, urlunsplit
+
+        url = list(urlsplit(str(self._config.url)))
+        url[1] = f"ray.{url[1]}"
+        return urlunsplit(url)
 
 
 @ray.remote
