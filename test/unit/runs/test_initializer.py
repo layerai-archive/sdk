@@ -16,7 +16,7 @@ from layer.global_context import (
     get_pip_packages,
     get_pip_requirements_file,
 )
-from layer.projects.init_project_runner import InitProjectRunner
+from layer.runs.initializer import InitProjectRunner
 
 
 def _get_random_project(
