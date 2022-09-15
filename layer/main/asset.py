@@ -12,9 +12,9 @@ from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
 from layer.exceptions.exceptions import ProjectInitializationException
-from layer.global_context import current_account_name
 from layer.logged_data.log_data_runner import LogDataRunner
 from layer.projects.utils import get_current_project_full_name
+from layer.runs import context
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -264,7 +264,9 @@ def _ensure_asset_path_is_absolute(
         else get_current_project_full_name().project_name
     )
     account_name = (
-        path.account_name if path.account_name is not None else current_account_name()
+        path.account_name
+        if path.account_name is not None
+        else context.current_account_name()
     )
 
     if not project_name or not account_name:

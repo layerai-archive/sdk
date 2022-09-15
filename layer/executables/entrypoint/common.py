@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Tuple
 import grpc
 
 import layer
-from layer import Context, global_context
+from layer import Context
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
@@ -17,13 +17,13 @@ from layer.exceptions.exceptions import (
     LayerFailedAssertionsException,
     RuntimeMemoryException,
 )
-from layer.global_context import set_has_shown_update_message
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.logged_data.queuing_logged_data_destination import (
     QueueingLoggedDataDestination,
 )
 from layer.logged_data.system_metrics import SystemMetrics
 from layer.projects.utils import verify_project_exists_and_retrieve_project_id
+from layer.runs import context
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -90,7 +90,7 @@ class FunctionRunner(ABC):
             **context_kwargs,
         ) as ctx:
             ctx._label_asset_with(  # pylint: disable=W0212
-                global_context.current_label_names()
+                context.current_label_names()
             )
             self._mark_start()
 
@@ -133,10 +133,10 @@ class FunctionRunner(ABC):
 
     def _run_prep(self) -> None:
         # do not show update warnings
-        set_has_shown_update_message(True)
+        context.set_has_shown_update_message(True)
 
         # TODO This is too deep, why do we need to alter global context from inside?
-        global_context.set_current_project_full_name(self.definition.project_full_name)
+        context.set_current_project_full_name(self.definition.project_full_name)
 
         # login
         api_url = os.environ.get(ENV_LAYER_API_URL)

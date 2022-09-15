@@ -1,5 +1,5 @@
 from layer.contracts.fabrics import Fabric
-from layer.global_context import (
+from layer.runs.context import (
     current_account_name,
     current_label_names,
     current_project_full_name,

@@ -3,23 +3,19 @@ from logging import Logger
 from pathlib import Path
 from typing import Any, List, Optional, Union
 
-from layer import global_context
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project, ProjectLoader
-from layer.global_context import (
-    set_default_fabric,
-    set_pip_packages,
-    set_pip_requirements_file,
-)
 from layer.projects.utils import get_or_create_remote_project
+from layer.runs import context
 from layer.utils.async_utils import asyncio_run_in_thread
 
 
-class InitProjectRunner:
-    """Class responsible for setting up a user's project locally
+class RunInitializer:
+    """
+    Class responsible for setting up a run
     and creating a project in the Layer Backend if it doesn't exist already
     """
 
@@ -78,12 +74,12 @@ class InitProjectRunner:
             self._update_readme(self._project_full_name, layer_client)
 
         # TODO This is too deep, why do we need to alter global context from inside?
-        global_context.set_current_project_full_name(self._project_full_name)
+        context.set_current_project_full_name(self._project_full_name)
         if fabric:
-            set_default_fabric(fabric)
+            context.set_default_fabric(fabric)
         if pip_packages:
-            set_pip_packages(pip_packages)
+            context.set_pip_packages(pip_packages)
         if pip_requirements_file:
-            set_pip_requirements_file(pip_requirements_file)
+            context.set_pip_requirements_file(pip_requirements_file)
 
         return project

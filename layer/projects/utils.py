@@ -11,7 +11,7 @@ from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.exceptions.exceptions import ProjectInitializationException
-from layer.global_context import current_project_full_name
+from layer.runs.context import current_project_full_name
 
 
 _PROJECT_NAME_PATTERN = re.compile(r"^(([a-zA-Z0-9_-]+)\/)?([a-zA-Z0-9_-]+)$")

@@ -12,16 +12,16 @@ def tmp_dir(tmpdir: Any) -> Path:
 
 @pytest.fixture(autouse=True)
 def test_project_name(request: pytest.FixtureRequest) -> Iterator[str]:
-    from layer import global_context
     from layer.contracts.project_full_name import ProjectFullName
+    from layer.runs import context
 
     project_full_name = ProjectFullName(
         account_name="test-acc-from-conftest",
         project_name=_pseudo_random_project_name(request),
     )
-    global_context.reset_to(project_full_name)
+    context.reset_to(project_full_name)
     yield project_full_name.project_name
-    global_context.reset_to(None)
+    context.reset_to(None)
 
 
 def _pseudo_random_project_name(fixture_request: pytest.FixtureRequest) -> str:

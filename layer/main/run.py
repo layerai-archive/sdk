@@ -9,13 +9,9 @@ from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.contracts.runs import Run
 from layer.exceptions.exceptions import ConfigError
-from layer.global_context import (
-    has_shown_python_version_message,
-    reset_to,
-    set_has_shown_python_version_message,
-)
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.utils import get_current_project_full_name, validate_project_name
+from layer.runs import context
 from layer.runs.initializer import RunInitializer
 from layer.settings import LayerSettings
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -68,7 +64,7 @@ def init(
 
     project_full_name = _get_project_full_name(layer_config, project_name)
 
-    reset_to(project_full_name, label_names=set(labels) if labels else None)
+    context.reset_to(project_full_name, label_names=set(labels) if labels else None)
 
     init_project_runner = RunInitializer(project_full_name, logger=logger)
     fabric_to_set = (
@@ -146,7 +142,7 @@ def run(
 
 
 def _check_python_version() -> None:
-    if has_shown_python_version_message():
+    if context.has_shown_python_version_message():
         return
 
     import platform
@@ -157,7 +153,7 @@ def _check_python_version() -> None:
         print(
             f"You are using the Python version {platform.python_version()} but layer requires Python 3.7.x or 3.8.x"
         )
-    set_has_shown_python_version_message(True)
+    context.set_has_shown_python_version_message(True)
 
 
 def _ensure_all_functions_are_decorated(functions: List[Callable[..., Any]]) -> None:

@@ -6,11 +6,7 @@ from layer.contracts.conda import CondaEnv
 from layer.contracts.fabrics import Fabric
 from layer.contracts.runs import ResourcePath
 from layer.exceptions.exceptions import ConfigError, LayerClientException
-from layer.global_context import (
-    default_fabric,
-    get_pip_packages,
-    get_pip_requirements_file,
-)
+from layer.runs import context
 
 
 def _resolve_settings(
@@ -79,15 +75,17 @@ class LayerSettings:
         return self._name
 
     def get_fabric(self) -> Fabric:
-        return _resolve_settings(self._fabric, default_fabric(), Fabric.default())
+        return _resolve_settings(
+            self._fabric, context.default_fabric(), Fabric.default()
+        )
 
     def get_pip_requirements_file(self) -> str:
         return _resolve_settings(
-            self._pip_requirements_file, get_pip_requirements_file(), ""
+            self._pip_requirements_file, context.get_pip_requirements_file(), ""
         )
 
     def get_pip_packages(self) -> List[str]:
-        return _resolve_settings(self._pip_packages, get_pip_packages(), [])
+        return _resolve_settings(self._pip_packages, context.get_pip_packages(), [])
 
     def get_resource_paths(self) -> List[ResourcePath]:
         return self._resource_paths or []

@@ -3,7 +3,7 @@ import pathlib
 import re
 import urllib.request
 
-from layer.global_context import has_shown_update_message, set_has_shown_update_message
+from layer.runs.context import has_shown_update_message, set_has_shown_update_message
 
 
 def get_latest_version() -> str:

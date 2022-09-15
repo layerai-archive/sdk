@@ -14,7 +14,7 @@ from layer.clients.data_catalog import DataCatalogClient
 from layer.clients.dataset_service import DatasetClient, Partition, PartitionMetadata
 from layer.clients.layer import LayerClient
 from layer.config import ClientConfig, Config
-from layer.global_context import current_account_name
+from layer.runs.context import current_account_name
 
 
 def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(

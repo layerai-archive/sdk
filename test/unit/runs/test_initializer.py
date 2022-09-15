@@ -10,12 +10,7 @@ from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
-from layer.global_context import (
-    current_project_full_name,
-    default_fabric,
-    get_pip_packages,
-    get_pip_requirements_file,
-)
+from layer.runs import context
 from layer.runs.initializer import RunInitializer
 
 
@@ -78,10 +73,11 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
 
     # then
     assert project.id == expected_project.id
-    assert current_project_full_name() is not None
-    assert current_project_full_name().project_name == expected_project_name
-    assert default_fabric() == my_fabric
-    assert get_pip_requirements_file() == pip_requirements_file_name
+    current_project_name = context.current_project_full_name()
+    assert current_project_name is not None
+    assert current_project_name.project_name == expected_project_name
+    assert context.default_fabric() == my_fabric
+    assert context.get_pip_requirements_file() == pip_requirements_file_name
     project_client_mock.get_project.assert_called_once()
     project_client_mock.create_project.assert_not_called()
 
@@ -124,10 +120,11 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
 
     # then
     assert project.id == expected_project.id
-    assert current_project_full_name() is not None
-    assert current_project_full_name().project_name == expected_project_name
-    assert default_fabric() == my_fabric
-    assert get_pip_packages() == pip_packages
+    current_project_name = context.current_project_full_name()
+    assert current_project_name is not None
+    assert current_project_name.project_name == expected_project_name
+    assert context.default_fabric() == my_fabric
+    assert context.get_pip_packages() == pip_packages
     project_client_mock.get_project.assert_called_once()
     project_client_mock.create_project.assert_called_once()
 

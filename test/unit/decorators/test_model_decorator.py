@@ -13,7 +13,7 @@ from layer.exceptions.exceptions import (
     ProjectInitializationException,
     RuntimeMemoryException,
 )
-from layer.global_context import reset_to
+from layer.runs.context import reset_to
 from layer.settings import LayerSettings
 from test.unit.decorators.util import project_client_mock
 

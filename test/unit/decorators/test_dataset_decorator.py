@@ -19,7 +19,7 @@ from layer.exceptions.exceptions import (
     LayerClientResourceNotFoundException,
     ProjectInitializationException,
 )
-from layer.global_context import reset_to, set_default_fabric
+from layer.runs.context import reset_to, set_default_fabric
 from test.unit.decorators.util import project_client_mock
 
 

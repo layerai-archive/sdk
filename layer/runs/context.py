@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Optional, Set, Union
 
-from .contracts.fabrics import Fabric
-from .contracts.project_full_name import ProjectFullName
+from layer.contracts.fabrics import Fabric
+from layer.contracts.project_full_name import ProjectFullName
 
 
 @dataclass
