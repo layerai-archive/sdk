@@ -16,7 +16,7 @@ from layer.global_context import (
     get_pip_packages,
     get_pip_requirements_file,
 )
-from layer.runs.initializer import InitProjectRunner
+from layer.runs.initializer import RunInitializer
 
 
 def _get_random_project(
@@ -65,7 +65,7 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
     my_fabric = Fabric.F_MEDIUM
     pip_requirements_file_name = "req.txt"
     # when
-    project_runner = InitProjectRunner(
+    project_runner = RunInitializer(
         project_full_name=project_full_name,
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
@@ -78,6 +78,7 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
 
     # then
     assert project.id == expected_project.id
+    assert current_project_full_name() is not None
     assert current_project_full_name().project_name == expected_project_name
     assert default_fabric() == my_fabric
     assert get_pip_requirements_file() == pip_requirements_file_name
@@ -85,7 +86,7 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
     project_client_mock.create_project.assert_not_called()
 
 
-def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_project():
+def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_project() -> None:
     # given
     expected_account_name = "acc_name"
     expected_project_name = "project_name"
@@ -110,7 +111,7 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
     pip_packages = ["sklearn==0.0"]
 
     # when
-    project_runner = InitProjectRunner(
+    project_runner = RunInitializer(
         project_full_name=project_full_name,
         logger=MagicMock(spec_set=logging.getLogger()),
         config_manager=MagicMock(spec_set=ConfigManager),
@@ -123,6 +124,7 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
 
     # then
     assert project.id == expected_project.id
+    assert current_project_full_name() is not None
     assert current_project_full_name().project_name == expected_project_name
     assert default_fabric() == my_fabric
     assert get_pip_packages() == pip_packages
@@ -130,7 +132,9 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
     project_client_mock.create_project.assert_called_once()
 
 
-def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tmp_path):
+def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(
+    tmp_path,
+) -> None:
     # given
     readme_path = tmp_path / "README.md"
 
@@ -155,7 +159,7 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tm
     layer_client_mock = _get_mock_layer_client(project_client_mock)
 
     # when
-    project_runner = InitProjectRunner(
+    project_runner = RunInitializer(
         project_root_path=tmp_path,
         project_full_name=project_full_name,
         logger=MagicMock(spec_set=logging.getLogger()),
@@ -171,7 +175,9 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(tm
     )
 
 
-def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(tmp_path):
+def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(
+    tmp_path,
+) -> None:
     # given
     expected_account_name = "acc_name"
     expected_project_name = "project_name"
@@ -190,7 +196,7 @@ def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(tmp_
     layer_client_mock = _get_mock_layer_client(project_client_mock)
 
     # when
-    project_runner = InitProjectRunner(
+    project_runner = RunInitializer(
         project_root_path=tmp_path,
         project_full_name=project_full_name,
         logger=MagicMock(spec_set=logging.getLogger()),
@@ -206,7 +212,7 @@ def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(tmp_
 
 def test_given_long_readme_exists_when_set_up_project_gets_and_sets_project_readme(
     tmp_path,
-):
+) -> None:
     # given
     readme_path = tmp_path / "ReAdmE.Md"
 
@@ -231,7 +237,7 @@ def test_given_long_readme_exists_when_set_up_project_gets_and_sets_project_read
     )
     layer_client_mock = _get_mock_layer_client(project_client_mock)
     # when
-    project_runner = InitProjectRunner(
+    project_runner = RunInitializer(
         project_root_path=tmp_path,
         project_full_name=project_full_name,
         logger=MagicMock(spec_set=logging.getLogger()),

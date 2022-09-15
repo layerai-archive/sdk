@@ -16,7 +16,7 @@ from layer.global_context import (
 )
 from layer.projects.project_runner import ProjectRunner
 from layer.projects.utils import get_current_project_full_name, validate_project_name
-from layer.runs.initializer import InitProjectRunner
+from layer.runs.initializer import RunInitializer
 from layer.settings import LayerSettings
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -70,7 +70,7 @@ def init(
 
     reset_to(project_full_name, label_names=set(labels) if labels else None)
 
-    init_project_runner = InitProjectRunner(project_full_name, logger=logger)
+    init_project_runner = RunInitializer(project_full_name, logger=logger)
     fabric_to_set = (
         Fabric(fabric) if fabric else None  # type:ignore # pylint: disable=E1120
     )
