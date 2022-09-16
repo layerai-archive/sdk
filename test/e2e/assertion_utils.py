@@ -26,7 +26,9 @@ class E2ETestAsserter:
         assert run
         assert run.run_status == Run.STATUS_FAILED
 
-    def _assert_run_status_equals(self, run_id: RunId, run_status: Run.Status) -> None:
+    def _assert_run_status_equals(
+        self, run_id: RunId, run_status: Run.StatusOld
+    ) -> None:
         run = self._get_run(run_id)
         assert run
         assert run.run_status == run_status
