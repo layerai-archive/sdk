@@ -18,17 +18,18 @@ class DatasetRunner(FunctionRunner):
     def _create_asset(self) -> Tuple[str, Dict[str, Any]]:
         self.client.data_catalog.add_dataset(
             asset_path=self.definition.asset_path,
-            project_id=self.project_id,
+            project_id=self.run_context.project_id,
             description=self.definition.description,
             fabric=self.fabric.value,
             func_source=self.definition.func_source,
-            entrypoint=self.definition.entrypoint,
-            environment=self.definition.environment,
+            entrypoint="",
+            environment="",
         )
         dataset_build_id = self.client.data_catalog.initiate_build(
-            self.project_id,
-            self.definition.asset_name,
-            self.fabric.value,
+            project_id=self.run_context.project_id,
+            run_id=self.run_context.run_id,
+            asset_name=self.definition.asset_name,
+            fabric=self.fabric.value,
         )
 
         self.build = self.client.data_catalog.get_build_by_id(dataset_build_id)

@@ -14,7 +14,7 @@ from layer.clients.data_catalog import DataCatalogClient
 from layer.clients.dataset_service import DatasetClient, Partition, PartitionMetadata
 from layer.clients.layer import LayerClient
 from layer.config import ClientConfig, Config
-from layer.runs.context import current_account_name
+from layer.runs.context import get_account_name
 
 
 def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(
@@ -35,7 +35,7 @@ def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(
 
     expected_ticket = DataTicket(
         dataset_path_ticket=DatasetPathTicket(
-            path=f"{current_account_name()}/{test_project_name}/datasets/dataset_42"
+            path=f"{get_account_name()}/{test_project_name}/datasets/dataset_42"
         )
     )
     expected_command = Command(dataset_query=DatasetQuery(ticket=expected_ticket))
@@ -59,7 +59,7 @@ def test_get_dataset_to_pandas_calls_dataset_api_with_account_name_from_context(
 
     expected_ticket = DataTicket(
         dataset_path_ticket=DatasetPathTicket(
-            path=f"{current_account_name()}/{dataset_relative_path}"
+            path=f"{get_account_name()}/{dataset_relative_path}"
         )
     )
     expected_command = Command(dataset_query=DatasetQuery(ticket=expected_ticket))

@@ -7,7 +7,9 @@ from .ui_progress_tracker import UIRunProgressTracker
 
 
 def get_progress_tracker(*args: Any, **kwargs: Any) -> RunProgressTracker:
-    disable_tracker = "LAYER_DISABLE_TRACKING_UI" in os.environ
+    disable_tracker = (
+        "LAYER_DISABLE_UI" in os.environ or "LAYER_DISABLE_TRACKING_UI" in os.environ
+    )
     if disable_tracker:
         return NonUIRunProgressTracker()
     else:

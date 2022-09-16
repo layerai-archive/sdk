@@ -7,7 +7,6 @@ import polling  # type: ignore
 
 from layer.clients.layer import LayerClient
 from layer.config import Config
-from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import Run
 from layer.exceptions.exceptions import (
@@ -30,13 +29,14 @@ from layer.projects.progress_tracker_updater import (
 )
 from layer.projects.utils import (
     calculate_hash_by_definitions,
-    get_or_create_remote_project,
     upload_executable_packages,
 )
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.user_logs import LOGS_BUFFER_INTERVAL, show_pipeline_run_logs
 from layer.utils.async_utils import asyncio_run_in_thread
+
+from .base_project_runner import BaseProjectRunner
 
 
 logger = logging.getLogger()
@@ -74,29 +74,23 @@ class RunContext:
         ).total_seconds() < LOGS_BUFFER_INTERVAL
 
 
-class ProjectRunner:
+class ProjectRunner(BaseProjectRunner):
     def __init__(
         self,
         config: Config,
         project_full_name: ProjectFullName,
         functions: List[Any],
     ) -> None:
+        super().__init__(functions)
         self._config = config
         self.project_full_name = project_full_name
-        self.definitions: List[FunctionDefinition] = [
-            f.get_definition_with_bound_arguments() for f in functions
-        ]
         self.files_hash = calculate_hash_by_definitions(self.definitions)
 
-    def run(self, debug: bool = False, printer: Callable[[str], Any] = print) -> Run:
+    def _run(self, debug: bool = False, printer: Callable[[str], Any] = print) -> Run:
         check_asset_dependencies(self.definitions)
         with LayerClient(self._config.client, logger).init() as client:
-            get_or_create_remote_project(client, self.project_full_name)
-
             with get_progress_tracker(
                 url=self._config.url,
-                account_name=self.project_full_name.account_name,
-                project_name=self.project_full_name.project_name,
                 assets=[(d.asset_type, d.asset_name) for d in self.definitions],
             ).track() as tracker:
                 try:
@@ -142,12 +136,13 @@ class ProjectRunner:
                 env_variables={
                     ENV_LAYER_API_URL: str(self._config.url),
                     ENV_LAYER_API_TOKEN: self._config.credentials.access_token,
+                    "LAYER_DISABLE_UI": "1",
                 },
             )
         except LayerResourceExhaustedException as e:
             raise ProjectRunnerError(f"{e}")
         else:
-            return Run(id=run_id, project_full_name=self.project_full_name)
+            return Run(id=run_id)
 
     def _get_user_command(self) -> str:
         functions_string = ", ".join(

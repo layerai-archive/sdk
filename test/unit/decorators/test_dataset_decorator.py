@@ -14,12 +14,8 @@ from layer.contracts.fabrics import Fabric
 from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
 from layer.decorators import dataset, fabric, pip_requirements
-from layer.exceptions.exceptions import (
-    ConfigError,
-    LayerClientResourceNotFoundException,
-    ProjectInitializationException,
-)
-from layer.runs.context import reset_to, set_default_fabric
+from layer.exceptions.exceptions import ConfigError, InitializationException
+from layer.runs import context
 from test.unit.decorators.util import project_client_mock
 
 
@@ -63,43 +59,20 @@ class TestDatasetDecorator:
     def test_dataset_decorator_given_no_current_project_set_raise_exception(
         self,
     ) -> None:
-        reset_to(None)
+        context.reset()
 
         @dataset("foo1")
         def create_my_dataset() -> pd.DataFrame:
             return pd.DataFrame()
 
         with pytest.raises(
-            ProjectInitializationException,
-            match="Please specify the current project name globally with",
+            InitializationException,
+            match="Please specify the project name with",
         ):
             create_my_dataset()
 
-    def test_dataset_decorator_given_set_project_does_not_exist_raise_exception(
-        self,
-    ) -> None:
-        mock_project_api = MagicMock()
-        mock_project_api.GetProjectByPath.side_effect = (
-            LayerClientResourceNotFoundException("error")
-        )
-
-        with project_client_mock(project_api_stub=mock_project_api):
-
-            @dataset("foo2")
-            def create_my_dataset() -> pd.DataFrame:
-                return pd.DataFrame()
-
-            with pytest.raises(
-                ProjectInitializationException,
-                match="Project 'acc-name/foo-test' does not exist.",
-            ):
-                reset_to("acc-name/foo-test")
-                create_my_dataset()
-
     @pytest.mark.parametrize(("name",), [("foo1",), ("foo2",)])
-    def test_dataset_definition_created_correctly(
-        self, name: str, test_project_name: str
-    ) -> None:
+    def test_dataset_definition_created_correctly(self, name: str) -> None:
 
         func = _make_test_dataset_function(name)
 
@@ -108,7 +81,6 @@ class TestDatasetDecorator:
         assert dataset
         assert dataset.asset_name == name
         assert dataset.description == "my description"
-        assert dataset.project_name == test_project_name
         assert [
             (
                 dep.asset_name,
@@ -148,7 +120,7 @@ class TestDatasetDecorator:
             data_catalog_client.complete_build.assert_called_once()
 
     def test_given_fabric_override_uses_it_over_default(self) -> None:
-        set_default_fabric(Fabric.F_SMALL)
+        context.set_default_fabric(Fabric.F_SMALL)
 
         @dataset("test")
         @fabric(Fabric.F_MEDIUM.value)

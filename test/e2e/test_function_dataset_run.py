@@ -95,7 +95,7 @@ def test_multiple_inits_switch_context(
     prepare_data()
 
     # then
-    assert run_context.current_project_full_name().project_name == second_project_name
+    assert run_context.get_project_full_name().project_name == second_project_name
     assert run_context.default_fabric() == Fabric.F_XSMALL
     assert run_context.get_pip_packages() == ["tensorflow==2.3.2"]
     assert context.get_active_context() is None
@@ -116,9 +116,7 @@ def test_multiple_inits_switch_context(
         )
         == 3
     )
-    assert (
-        run_context.current_project_full_name().project_name == initialized_project.name
-    )
+    assert run_context.get_project_full_name().project_name == initialized_project.name
     assert run_context.default_fabric() is None
     assert run_context.get_pip_packages() is None
     assert context.get_active_context() is None

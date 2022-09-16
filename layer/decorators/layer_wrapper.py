@@ -8,7 +8,7 @@ from layer.contracts.datasets import Dataset
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
-from layer.projects.utils import get_current_project_full_name
+from layer.runs import context
 from layer.settings import LayerSettings
 
 
@@ -80,26 +80,24 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         definition = self.get_definition(args, kwargs)
         runner = definition.runner_function()
-        return runner()
+        try:
+            return runner()
+        except Exception as e:
+            context.set_error(e)
 
     def get_definition(
         self, args: Sequence[Any], kwargs: Mapping[str, Any]
     ) -> FunctionDefinition:
         self.layer.validate()
-        current_project_full_name = get_current_project_full_name()
 
         return FunctionDefinition(
             func=self.__wrapped__,
             args=args,
             kwargs=kwargs,
-            project_name=current_project_full_name.project_name,
-            account_name=current_project_full_name.account_name,
             asset_type=self.layer.get_asset_type(),
             asset_name=self.layer.get_asset_name(),
             fabric=self.layer.get_fabric(),
-            asset_dependencies=_get_asset_dependencies(
-                self.layer, current_project_full_name
-            ),
+            asset_dependencies=_get_asset_dependencies(self.layer),
             pip_dependencies=_get_pip_dependencies(self.layer),
             conda_env=_get_conda_env(self.layer),
             resource_paths=self.layer.get_resource_paths(),
@@ -111,9 +109,8 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
         return self.get_definition(self.args, self.kwargs)
 
 
-def _get_asset_dependencies(
-    settings: LayerSettings, current_project_full_name: ProjectFullName
-) -> List[AssetPath]:
+def _get_asset_dependencies(settings: LayerSettings) -> List[AssetPath]:
+    current_project_full_name = context.get_project_full_name()
     asset_dependencies: List[AssetPath] = []
     for d in settings.get_dependencies():
         full_path_dep = d

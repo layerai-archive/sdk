@@ -86,7 +86,9 @@ class ProgressTrackerUpdater:
                     raise ProjectRunTerminatedError(run_id=self.run.id)
 
                 elif run_status == PBRun.STATUS_FAILED:
-                    raise ProjectRunnerError("Run failed", self.run.id)
+                    raise ProjectRunnerError(
+                        f"Run failed: {event.run.info}", self.run.id
+                    )
 
                 elif run_status in [PBRun.STATUS_SUCCEEDED]:
                     return True
@@ -117,23 +119,28 @@ class ProgressTrackerUpdater:
         task_name = self._get_name_from_task_id(task_id)
         task_type = task.type
         if task_type == PBTask.TYPE_DATASET_BUILD:
-            dataset_build_id = uuid.UUID(
-                self.run_metadata[(task_type, task_id, "build-id")]
-            )
-
-            build = self.client.data_catalog.get_build_by_id(dataset_build_id)
+            build_id = self.run_metadata.get((task_type, task_id, "build-id"))
+            tag = None
+            if build_id:
+                build = self.client.data_catalog.get_build_by_id(uuid.UUID(build_id))
+                tag = build.tag
             self.tracker.mark_done(
                 asset_type=AssetType.DATASET,
                 name=task_name,
-                tag=build.tag,
+                tag=tag,
             )
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
-            train_id = uuid.UUID(self.run_metadata[(task_type, task_id, "train-id")])
-            model_train = self.client.model_catalog.get_model_train(train_id)
+            train_id = self.run_metadata.get((task_type, task_id, "train-id"))
+            tag = None
+            if train_id:
+                model_train = self.client.model_catalog.get_model_train(
+                    uuid.UUID(train_id)
+                )
+                tag = model_train.tag
             self.tracker.mark_done(
                 asset_type=AssetType.MODEL,
                 name=task_name,
-                tag=model_train.tag,
+                tag=tag,
             )
         else:
             # TODO: alert for this
@@ -146,12 +153,12 @@ class ProgressTrackerUpdater:
         task_id = task.id
         task_info = task.info
         if task_type == PBTask.TYPE_DATASET_BUILD:
-            dataset_build_id = uuid.UUID(
-                self.run_metadata[(task_type, task_id, "build-id")]
-            )
-            build_info = self.client.data_catalog.get_build_info_by_build_id(
-                dataset_build_id
-            )
+            build_info = None
+            build_id = self.run_metadata.get((task_type, task_id, "build-id"))
+            if build_id:
+                build_info = self.client.data_catalog.get_build_info_by_build_id(
+                    uuid.UUID(build_id)
+                )
             status_report = (
                 ExecutionStatusReportFactory.from_json(build_info)
                 if build_info
@@ -167,12 +174,14 @@ class ProgressTrackerUpdater:
             )
             raise exc_ds
         elif task_type == PBTask.TYPE_MODEL_TRAIN:
-            model_train_id = uuid.UUID(
-                self.run_metadata[(task_type, task_id, "train-id")]
-            )
-            train_status_info = self.client.model_catalog.get_model_train_status_info(
-                model_train_id
-            )
+            train_status_info = None
+            train_id = self.run_metadata.get((task_type, task_id, "train-id"))
+            if train_id:
+                train_status_info = (
+                    self.client.model_catalog.get_model_train_status_info(
+                        uuid.UUID(train_id)
+                    )
+                )
             status_report = (
                 ExecutionStatusReportFactory.from_json(train_status_info)
                 if train_status_info
@@ -186,7 +195,7 @@ class ProgressTrackerUpdater:
             self.tracker.mark_failed(
                 asset_type=AssetType.MODEL,
                 name=task_name,
-                reason=f"{exc_model.message}",
+                reason=exc_model.message,
             )
             raise exc_model
         else:

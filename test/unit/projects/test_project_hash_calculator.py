@@ -55,15 +55,11 @@ def test_given_different_function_when_hash_calculated_then_hash_different():
 
 def _make_test_function_definition(
     func: Callable[..., Any],
-    project_name: str = "project-name",
-    account_name: str = "acc-name",
 ) -> FunctionDefinition:
     return FunctionDefinition(
         func=func,
         args=tuple(),
         kwargs={},
-        project_name=project_name,
-        account_name=account_name,
         asset_type=AssetType.MODEL,
         asset_name=func.layer.get_asset_name(),
         fabric=Fabric.F_LOCAL,

@@ -47,6 +47,10 @@ class AuthException(Exception):
     pass
 
 
+class InitializationException(Exception):
+    pass
+
+
 class LayerClientException(Exception):
     def __init__(
         self,

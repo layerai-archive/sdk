@@ -1,11 +1,9 @@
-import logging
 import uuid
 from typing import Optional
 from unittest.mock import MagicMock, Mock
 
 from layer.clients.layer import LayerClient
 from layer.clients.project_service import ProjectServiceClient
-from layer.config import ConfigManager
 from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
@@ -60,20 +58,18 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
     my_fabric = Fabric.F_MEDIUM
     pip_requirements_file_name = "req.txt"
     # when
-    project_runner = RunInitializer(
-        project_full_name=project_full_name,
-        logger=MagicMock(spec_set=logging.getLogger()),
-        config_manager=MagicMock(spec_set=ConfigManager),
-    )
-    project = project_runner.setup_project(
+    run_initializer = RunInitializer(
         layer_client_mock,
+    )
+    project = run_initializer.setup_project(
+        project_full_name=project_full_name,
         fabric=my_fabric,
         pip_requirements_file=pip_requirements_file_name,
     )
 
     # then
     assert project.id == expected_project.id
-    current_project_name = context.current_project_full_name()
+    current_project_name = context.get_project_full_name()
     assert current_project_name is not None
     assert current_project_name.project_name == expected_project_name
     assert context.default_fabric() == my_fabric
@@ -107,20 +103,18 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
     pip_packages = ["sklearn==0.0"]
 
     # when
-    project_runner = RunInitializer(
-        project_full_name=project_full_name,
-        logger=MagicMock(spec_set=logging.getLogger()),
-        config_manager=MagicMock(spec_set=ConfigManager),
-    )
-    project = project_runner.setup_project(
+    run_initializer = RunInitializer(
         layer_client_mock,
+    )
+    project = run_initializer.setup_project(
+        project_full_name=project_full_name,
         fabric=my_fabric,
         pip_packages=pip_packages,
     )
 
     # then
     assert project.id == expected_project.id
-    current_project_name = context.current_project_full_name()
+    current_project_name = context.get_project_full_name()
     assert current_project_name is not None
     assert current_project_name.project_name == expected_project_name
     assert context.default_fabric() == my_fabric
@@ -156,14 +150,12 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(
     layer_client_mock = _get_mock_layer_client(project_client_mock)
 
     # when
-    project_runner = RunInitializer(
-        project_root_path=tmp_path,
-        project_full_name=project_full_name,
-        logger=MagicMock(spec_set=logging.getLogger()),
-        config_manager=MagicMock(spec_set=ConfigManager),
-    )
-    project_runner.setup_project(
+    run_initializer = RunInitializer(
         layer_client_mock,
+    )
+    run_initializer.setup_project(
+        project_full_name=project_full_name,
+        project_root_path=tmp_path,
     )
 
     # then
@@ -193,14 +185,12 @@ def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(
     layer_client_mock = _get_mock_layer_client(project_client_mock)
 
     # when
-    project_runner = RunInitializer(
-        project_root_path=tmp_path,
-        project_full_name=project_full_name,
-        logger=MagicMock(spec_set=logging.getLogger()),
-        config_manager=MagicMock(spec_set=ConfigManager),
-    )
-    project = project_runner.setup_project(
+    run_initializer = RunInitializer(
         layer_client_mock,
+    )
+    project = run_initializer.setup_project(
+        project_full_name=project_full_name,
+        project_root_path=tmp_path,
     )
 
     # then
@@ -234,14 +224,12 @@ def test_given_long_readme_exists_when_set_up_project_gets_and_sets_project_read
     )
     layer_client_mock = _get_mock_layer_client(project_client_mock)
     # when
-    project_runner = RunInitializer(
-        project_root_path=tmp_path,
-        project_full_name=project_full_name,
-        logger=MagicMock(spec_set=logging.getLogger()),
-        config_manager=MagicMock(spec_set=ConfigManager),
-    )
-    project_runner.setup_project(
+    run_initializer = RunInitializer(
         layer_client_mock,
+    )
+    run_initializer.setup_project(
+        project_full_name=project_full_name,
+        project_root_path=tmp_path,
     )
 
     # then

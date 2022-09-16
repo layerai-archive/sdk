@@ -36,9 +36,8 @@ from .main.auth import (  # noqa
 from .main.cache import clear_cache  # noqa
 from .main.log import log  # noqa
 from .main.run import init, run  # noqa
-from .main.version import get_version  # noqa
+from .main.utils import get_version  # noqa
 from .pandas_extensions import Arrays, Images, _register_type_extensions  # noqa
-from .runs.context import current_project_full_name  # noqa
 
 
 # keep the existing type definitions only for autocompletions in the editors and type checks
