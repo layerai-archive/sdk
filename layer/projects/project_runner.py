@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import threading
 from datetime import datetime
@@ -128,16 +129,19 @@ class ProjectRunner(BaseProjectRunner):
             upload_executable_packages(client, self.definitions, self.project_full_name)
         )
         try:
-            run_id = client.flow_manager.start_run(
-                self.project_full_name,
-                build_execution_plan(self.definitions),
-                self.files_hash,
-                self._get_user_command(),
-                env_variables={
-                    ENV_LAYER_API_URL: str(self._config.url),
-                    ENV_LAYER_API_TOKEN: self._config.credentials.access_token,
-                    "LAYER_DISABLE_UI": "1",
-                },
+            loop = asyncio.get_event_loop()
+            run_id = loop.run_until_complete(
+                client.flow_manager.start_run(
+                    self.project_full_name,
+                    build_execution_plan(self.definitions),
+                    self.files_hash,
+                    self._get_user_command(),
+                    env_variables={
+                        ENV_LAYER_API_URL: str(self._config.url),
+                        ENV_LAYER_API_TOKEN: self._config.credentials.access_token,
+                        "LAYER_DISABLE_UI": "1",
+                    },
+                )
             )
         except LayerResourceExhaustedException as e:
             raise ProjectRunnerError(f"{e}")
@@ -171,10 +175,16 @@ class ProjectRunner(BaseProjectRunner):
         initial_step_sec = 2
         step_function = PollingStepFunction(max_backoff_sec=3.0, backoff_multiplier=1.2)
 
+        def poll_target() -> None:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(
+                client.flow_manager.get_run_status_history_and_metadata(
+                    run_id=run.id,
+                )
+            )
+
         polling.poll(
-            lambda: client.flow_manager.get_run_status_history_and_metadata(
-                run_id=run.id,
-            ),
+            poll_target,
             check_success=updater.check_completion_and_update_tracker,
             step=initial_step_sec,
             step_function=step_function.step,

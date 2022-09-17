@@ -1,14 +1,9 @@
 from typing import Optional
-from uuid import UUID
 
-from layerapi.api.service.logged_data.run_api_pb2 import (
-    CreateRunRequest,
-    FinishRunRequest,
-    GetRunByRunIdRequest,
-)
-from layerapi.api.service.logged_data.run_api_pb2_grpc import RunAPIStub
+from layerapi import api
 
 from layer.config import ClientConfig
+from layer.contracts import ids
 from layer.contracts.runs import Run, RunStatus
 from layer.utils.grpc.channel import get_grpc_channel
 
@@ -17,38 +12,36 @@ from .protomappers import runs as run_proto_mapper
 
 
 class RunServiceClient:
-    _service: RunAPIStub
+    _service: api.RunAPIStub
 
     @staticmethod
     def create(config: ClientConfig) -> "RunServiceClient":
         client = RunServiceClient()
         channel = get_grpc_channel(config)
-        client._service = RunAPIStub(channel)  # pylint: disable=protected-access
+        client._service = api.RunAPIStub(channel)  # pylint: disable=protected-access
         return client
 
-    def get_run_by_id(self, run_id: UUID) -> Run:
-        request = GetRunByRunIdRequest(
+    async def get_run_by_id(self, run_id: ids.RunId) -> Run:
+        response = await self._service.get_run_by_run_id(
             run_id=run_proto_mapper.to_run_id(run_id),
         )
-        run_pb = self._service.GetRunByRunId(request=request).run
-        return run_proto_mapper.from_run(run_pb)
+        return run_proto_mapper.from_run(response.run)
 
-    def get_run_by_index(self, project_id: UUID, run_index: int) -> Run:
+    async def get_run_by_index(self, project_id: ids.ProjectId, run_index: int) -> Run:
         raise NotImplementedError()
 
-    def create_run(self, project_id: UUID, run_name: Optional[str] = None) -> Run:
-        request = CreateRunRequest(
+    async def create_run(
+        self, project_id: ids.ProjectId, run_name: Optional[str] = None
+    ) -> Run:
+        response = await self._service.create_run(
             project_id=project_proto_mapper.to_project_id(project_id),
+            name=run_name,  # TODO(volkan) make this optional
         )
-        if run_name:
-            request.name = run_name
-        run_pb = self._service.CreateRun(request=request).run
-        return run_proto_mapper.from_run(run_pb)
+        return run_proto_mapper.from_run(response.run)
 
-    def finish_run(self, run_id: UUID, status: RunStatus) -> Run:
-        request = FinishRunRequest(
+    async def finish_run(self, run_id: ids.RunId, status: RunStatus) -> Run:
+        response = await self._service.finish_run(
             run_id=run_proto_mapper.to_run_id(run_id),
             status=run_proto_mapper.to_run_status(status),
         )
-        run_pb = self._service.FinishRun(request=request).run
-        return run_proto_mapper.from_run(run_pb)
+        return run_proto_mapper.from_run(response.run)

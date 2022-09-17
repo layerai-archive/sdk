@@ -18,6 +18,7 @@ import layer
 from layer.clients.layer import LayerClient
 from layer.clients.project_service import DeleteProjectsQuery
 from layer.config import DEFAULT_LAYER_PATH, ClientConfig, Config, ConfigManager
+from layer.contracts import ids
 from layer.contracts.accounts import Account
 from layer.contracts.fabrics import Fabric
 from layer.contracts.projects import Project
@@ -177,8 +178,10 @@ async def delete_old_org_accounts() -> None:
     now_utc = datetime.now(tz=timezone.utc)
     for acc_id in config.client.organization_account_ids():
         try:
-            acc_name = client.account.get_account_name_by_id(acc_id)
-            if not acc_name.startswith(TEST_ORG_ACCOUNT_NAME_PREFIX):
+            account = await client.account.get_account_by_id(
+                ids.AccountId(bytes=acc_id.bytes)
+            )
+            if not account.name.startswith(TEST_ORG_ACCOUNT_NAME_PREFIX):
                 continue
             acc_creation_date = client.account.get_account_creation_date(acc_id)
             if now_utc - timedelta(days=1) > acc_creation_date:

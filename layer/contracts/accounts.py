@@ -1,21 +1,19 @@
-import abc
-import uuid
-from dataclasses import dataclass, field
-from typing import Optional
-from uuid import UUID
+from dataclasses import dataclass
+
+from . import ids
 
 
 @dataclass(frozen=True)
 class Account:
-    id: UUID
+    id: ids.AccountId
     name: str
 
 
 @dataclass(frozen=True)
-class User(abc.ABC):
+class User:
+    id: ids.UserId
+    account_id: ids.AccountId
     name: str
     email: str
     first_name: str
     last_name: str
-    id: uuid.UUID = field(default_factory=uuid.uuid4)
-    account_id: Optional[uuid.UUID] = field(default_factory=uuid.uuid4)

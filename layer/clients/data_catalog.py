@@ -7,12 +7,21 @@ from typing import Any, Callable, Generator, Optional, Tuple
 
 import pandas
 import pyarrow
-from layerapi.api.entity.dataset_build_pb2 import DatasetBuild as PBDatasetBuild
-from layerapi.api.entity.dataset_pb2 import Dataset as PBDataset
-from layerapi.api.entity.dataset_version_pb2 import DatasetVersion as PBDatasetVersion
-from layerapi.api.ids_pb2 import DatasetBuildId, DatasetId, DatasetVersionId, ProjectId
-from layerapi.api.service.datacatalog.data_catalog_api_pb2 import (
-    CompleteBuildRequest,
+from layerapi import api
+from layerapi.api import Command, CompleteBuildRequest, DataCatalogAPIStub
+from layerapi.api import Dataset as PBDataset
+from layerapi.api import DatasetBuild as PBDatasetBuild
+from layerapi.api import (
+    DatasetBuildId,
+    DatasetId,
+    DatasetPathTicket,
+    DatasetQuery,
+    DatasetSnapshot,
+)
+from layerapi.api import DatasetVersion as PBDatasetVersion
+from layerapi.api import (
+    DatasetVersionId,
+    DataTicket,
     GetBuildByPathRequest,
     GetBuildRequest,
     GetDatasetRequest,
@@ -21,22 +30,11 @@ from layerapi.api.service.datacatalog.data_catalog_api_pb2 import (
     GetPythonDatasetAccessCredentialsResponse,
     GetVersionRequest,
     InitiateBuildRequest,
-    RegisterDatasetRequest,
+    LanguageVersion,
+    ProjectId,
 )
-from layerapi.api.service.datacatalog.data_catalog_api_pb2_grpc import (
-    DataCatalogAPIStub,
-)
-from layerapi.api.service.dataset.dataset_api_pb2 import (
-    Command,
-    DatasetQuery,
-    DatasetSnapshot,
-)
-from layerapi.api.value.language_version_pb2 import LanguageVersion
-from layerapi.api.value.python_dataset_pb2 import PythonDataset as PBPythonDataset
-from layerapi.api.value.python_source_pb2 import PythonSource
-from layerapi.api.value.s3_path_pb2 import S3Path
-from layerapi.api.value.storage_location_pb2 import StorageLocation
-from layerapi.api.value.ticket_pb2 import DatasetPathTicket, DataTicket
+from layerapi.api import PythonDataset as PBPythonDataset
+from layerapi.api import PythonSource, RegisterDatasetRequest, S3Path, StorageLocation
 
 from layer.config import ClientConfig
 from layer.contracts.asset import AssetPath
@@ -275,7 +273,7 @@ class DataCatalogClient:
             raw_text = str.format("Dataset build failed with {}", error)
             status = DatasetBuildStatus.FAILED
             success = None
-            failure = CompleteBuildRequest.BuildFailed(
+            failure = api.CompleteBuildRequestBuildFailed(
                 info=(raw_text[: (max_error_length - len(placeholder))] + placeholder)
                 if len(raw_text) > max_error_length
                 else raw_text

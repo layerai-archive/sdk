@@ -1,9 +1,10 @@
 import enum
 import os
 import pathlib
-import uuid
 from dataclasses import dataclass
 from typing import Iterator, Optional
+
+from . import ids
 
 
 @dataclass(frozen=True)
@@ -62,5 +63,5 @@ class Run:
 
     """
 
-    id: uuid.UUID
+    id: ids.RunId
     name: Optional[str] = None

@@ -2,10 +2,7 @@ import typing
 import uuid
 from typing import Dict, List, Tuple
 
-from layerapi.api.entity.history_event_pb2 import HistoryEvent
-from layerapi.api.entity.run_metadata_pb2 import RunMetadata
-from layerapi.api.entity.run_pb2 import Run as PBRun
-from layerapi.api.entity.task_pb2 import Task as PBTask
+from layerapi import api
 
 from layer.clients.layer import LayerClient
 from layer.contracts.definitions import FunctionDefinition
@@ -33,7 +30,7 @@ class PollingStepFunction:
         return min(self._max_backoff, step * self._backoff_multiplier)
 
 
-_FormattedRunMetadata = Dict[Tuple["PBTask.Type.ValueType", str, str], str]
+_FormattedRunMetadata = Dict[Tuple[api.TaskType, str, str], str]
 
 
 class ProgressTrackerUpdater:
@@ -57,7 +54,7 @@ class ProgressTrackerUpdater:
 
     @staticmethod
     def _format_run_metadata(
-        run_metadata: RunMetadata,
+        run_metadata: api.RunMetadata,
     ) -> _FormattedRunMetadata:
         return {
             (entry.task_type, entry.task_id, entry.key): entry.value
@@ -67,7 +64,7 @@ class ProgressTrackerUpdater:
     def check_completion_and_update_tracker(
         self,
         response: typing.Union[
-            Tuple[List[HistoryEvent], RunMetadata],
+            Tuple[List[api.HistoryEvent], api.RunMetadata],
             LayerClientTimeoutException,
         ],
     ) -> bool:
@@ -82,18 +79,18 @@ class ProgressTrackerUpdater:
 
             if event_type == "run":
                 run_status = event.run.run_status
-                if run_status == PBRun.STATUS_TERMINATED:
+                if run_status == api.RunStatusOld.STATUS_TERMINATED:
                     raise ProjectRunTerminatedError(run_id=self.run.id)
 
-                elif run_status == PBRun.STATUS_FAILED:
+                elif run_status == api.RunStatusOld.STATUS_FAILED:
                     raise ProjectRunnerError(
                         f"Run failed: {event.run.info}", self.run.id
                     )
 
-                elif run_status in [PBRun.STATUS_SUCCEEDED]:
+                elif run_status in [api.RunStatusOld.STATUS_SUCCEEDED]:
                     return True
 
-                elif run_status == PBRun.STATUS_INVALID:
+                elif run_status == api.RunStatusOld.STATUS_INVALID:
                     # TODO: alert for this
                     _print_debug("Run status INVALID")
 
@@ -102,23 +99,23 @@ class ProgressTrackerUpdater:
 
         return False
 
-    def _update_tracker(self, task: PBTask) -> None:
+    def _update_tracker(self, task: api.Task) -> None:
         task_status = task.status
-        if task_status == PBTask.STATUS_SCHEDULED:
+        if task_status == api.TaskStatus.STATUS_SCHEDULED:
             self._handle_task_scheduled(task)
-        elif task_status == PBTask.STATUS_SUCCEEDED:
+        elif task_status == api.TaskStatus.STATUS_SUCCEEDED:
             self._handle_task_succeeded(task)
-        elif task_status == PBTask.STATUS_FAILED:
+        elif task_status == api.TaskStatus.STATUS_FAILED:
             self._handle_task_failed(task)
-        elif task_status == PBTask.STATUS_INVALID:
+        elif task_status == api.TaskStatus.STATUS_INVALID:
             # TODO: alert for this
             _print_debug("Task status INVALID")
 
-    def _handle_task_succeeded(self, task: PBTask) -> None:
+    def _handle_task_succeeded(self, task: api.Task) -> None:
         task_id = task.id
         task_name = self._get_name_from_task_id(task_id)
         task_type = task.type
-        if task_type == PBTask.TYPE_DATASET_BUILD:
+        if task_type == api.TaskType.TYPE_DATASET_BUILD:
             build_id = self.run_metadata.get((task_type, task_id, "build-id"))
             tag = None
             if build_id:
@@ -129,7 +126,7 @@ class ProgressTrackerUpdater:
                 name=task_name,
                 tag=tag,
             )
-        elif task_type == PBTask.TYPE_MODEL_TRAIN:
+        elif task_type == api.TaskType.TYPE_MODEL_TRAIN:
             train_id = self.run_metadata.get((task_type, task_id, "train-id"))
             tag = None
             if train_id:
@@ -146,13 +143,13 @@ class ProgressTrackerUpdater:
             # TODO: alert for this
             _print_debug(f"Task type not handled {task_type}")
 
-    def _handle_task_failed(self, task: PBTask) -> None:
+    def _handle_task_failed(self, task: api.Task) -> None:
         assert self.run.id
         task_name = self._get_name_from_task_id(task.id)
         task_type = task.type
         task_id = task.id
         task_info = task.info
-        if task_type == PBTask.TYPE_DATASET_BUILD:
+        if task_type == api.TaskType.TYPE_DATASET_BUILD:
             build_info = None
             build_id = self.run_metadata.get((task_type, task_id, "build-id"))
             if build_id:
@@ -173,7 +170,7 @@ class ProgressTrackerUpdater:
                 asset_type=AssetType.DATASET, name=task_name, reason=exc_ds.message
             )
             raise exc_ds
-        elif task_type == PBTask.TYPE_MODEL_TRAIN:
+        elif task_type == api.TaskType.TYPE_MODEL_TRAIN:
             train_status_info = None
             train_id = self.run_metadata.get((task_type, task_id, "train-id"))
             if train_id:
@@ -202,12 +199,12 @@ class ProgressTrackerUpdater:
             # TODO: alert for this
             _print_debug(f"Task type not handled {task_type}")
 
-    def _handle_task_scheduled(self, task: PBTask) -> None:
+    def _handle_task_scheduled(self, task: api.Task) -> None:
         task_name = self._get_name_from_task_id(task.id)
         task_type = task.type
-        if task_type == PBTask.TYPE_DATASET_BUILD:
+        if task_type == api.TaskType.TYPE_DATASET_BUILD:
             self.tracker.mark_running(asset_type=AssetType.DATASET, name=task_name)
-        elif task_type == PBTask.TYPE_MODEL_TRAIN:
+        elif task_type == api.TaskType.TYPE_MODEL_TRAIN:
             self.tracker.mark_running(asset_type=AssetType.MODEL, name=task_name)
         else:
             # TODO: alert for this
