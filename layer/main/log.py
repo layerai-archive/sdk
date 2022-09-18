@@ -6,6 +6,7 @@ from layer.config import ConfigManager
 from layer.context import get_active_context
 from layer.contracts.logged_data import LogDataType
 from layer.logged_data.log_data_runner import LogDataRunner
+from layer.runs import context
 from layer.utils.async_utils import asyncio_run_in_thread
 
 from ..logged_data.immediate_logged_data_destination import (
@@ -175,6 +176,7 @@ def log(
             )
 
         log_data_runner = LogDataRunner(
+            run_id=context.get_run_id(),
             train_id=model_train_id,
             dataset_build_id=dataset_build_id,
             logger=logger,

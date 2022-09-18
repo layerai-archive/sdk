@@ -125,8 +125,6 @@ def run(
         from layer.projects.ray_project_runner import RayProjectRunner
 
         ray_project_runner = RayProjectRunner(
-            config=layer_config,
-            project_full_name=project_full_name,
             functions=functions,
             ray_address=ray_address,
         )

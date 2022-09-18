@@ -33,11 +33,13 @@ class LogDataRunner:
     def __init__(
         self,
         logged_data_destination: LoggedDataDestination,
+        run_id: Optional[UUID] = None,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
         logger: Optional[Logger] = None,
     ):
         assert bool(train_id) ^ bool(dataset_build_id)
+        self._run_id = run_id
         self._train_id = train_id
         self._dataset_build_id = dataset_build_id
         self._logger = logger
@@ -59,6 +61,7 @@ class LogDataRunner:
         LogDataRunner._check_x_coordinate(x_coordinate)
         for tag, value in data.items():
             kwargs: Dict[str, Any] = {
+                "run_id": self._run_id,
                 "train_id": self._train_id,
                 "dataset_build_id": self._dataset_build_id,
                 "tag": tag,
