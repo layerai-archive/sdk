@@ -16,6 +16,7 @@ import psutil  # type: ignore
 from layer.context import get_active_context
 from layer.contracts.logged_data import XCoordinateType
 from layer.logged_data.log_data_runner import LogDataRunner
+from layer.runs import context
 
 
 class MetricsCollector:
@@ -320,6 +321,7 @@ class SystemMetrics:
         dataset_build = active_context.dataset_build()
         dataset_build_id = dataset_build.id if dataset_build is not None else None
         self._log_data_runner = LogDataRunner(
+            run_id=context.get_run_id(),
             train_id=model_train_id,
             dataset_build_id=dataset_build_id,
             logger=self._logger,

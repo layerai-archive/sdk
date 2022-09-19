@@ -50,6 +50,7 @@ from layer.utils.s3 import S3Util
 
 from .protomappers import aws as aws_proto_mapper
 from .protomappers import models as model_proto_mapper
+from .protomappers import runs as run_proto_mapper
 
 
 class ModelCatalogClient:
@@ -122,10 +123,12 @@ class ModelCatalogClient:
     def create_model_train_from_version_id(
         self,
         version_id: uuid.UUID,
+        run_id: uuid.UUID,
     ) -> uuid.UUID:
         response = self._service.CreateModelTrainFromVersionId(
             CreateModelTrainFromVersionIdRequest(
                 model_version_id=model_proto_mapper.to_model_version_id(version_id),
+                experiment_run_id=run_proto_mapper.to_run_id(run_id),
             ),
         )
         return model_proto_mapper.from_model_train_id(response.id)

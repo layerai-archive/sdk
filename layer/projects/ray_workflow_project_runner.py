@@ -72,7 +72,6 @@ class RayWorkflowProjectRunner:
         workflow.run(run_stage.bind(plan.stages), workflow_id=run_id)
         run = Run(
             id=run_id,
-            project_full_name=self.project_full_name,
         )
         ray.shutdown()
         return run

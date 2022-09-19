@@ -24,7 +24,6 @@ from .decorators.assertions import (  # noqa
     assert_valid_values,
 )
 from .flavors.custom import CustomModel  # noqa
-from .global_context import current_project_full_name  # noqa
 from .main.asset import get_dataset, get_model, save_model  # noqa
 from .main.auth import (  # noqa
     login,
@@ -37,7 +36,7 @@ from .main.auth import (  # noqa
 from .main.cache import clear_cache  # noqa
 from .main.log import log  # noqa
 from .main.run import init, run  # noqa
-from .main.version import get_version  # noqa
+from .main.utils import get_version  # noqa
 from .pandas_extensions import Arrays, Images, _register_type_extensions  # noqa
 
 

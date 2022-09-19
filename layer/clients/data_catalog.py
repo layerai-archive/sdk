@@ -50,6 +50,7 @@ from layer.utils.s3 import S3Util
 
 from .dataset_service import DatasetClient, DatasetClientError
 from .protomappers import datasets as dataset_proto_mapper
+from .protomappers import runs as run_proto_mapper
 
 
 class DataCatalogClient:
@@ -240,6 +241,7 @@ class DataCatalogClient:
     def initiate_build(
         self,
         project_id: uuid.UUID,
+        run_id: uuid.UUID,
         asset_name: str,
         fabric: str,
     ) -> uuid.UUID:
@@ -252,6 +254,7 @@ class DataCatalogClient:
                 build_entity_type=PBDatasetBuild.BUILD_ENTITY_TYPE_DATASET,
                 project_id=ProjectId(value=str(project_id)),
                 fabric=fabric,
+                experiment_run_id=run_proto_mapper.to_run_id(run_id),
             )
         )
 

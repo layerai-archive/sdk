@@ -15,6 +15,7 @@ from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
 )
 
 from layer.contracts.definitions import FunctionDefinition
+from layer.contracts.project_full_name import ProjectFullName
 from layer.exceptions.exceptions import ProjectRunnerError
 from layer.projects.project_runner import ProjectRunner
 from layer.utils.grpc.interceptors import (
@@ -28,7 +29,6 @@ from layer.utils.session import (
     is_layer_debug_on,
 )
 from test.unit.grpc_test_utils import new_client_call_details, rpc_error
-from test.unit.projects.test_execution_planner import TEST_PROJECT_FULL_NAME
 
 
 class TestLayerDebug:
@@ -185,10 +185,14 @@ class TestRequestIdInterceptor:
 
 
 class TestProjectRun:
-    def test_project_run_fails_when_max_active_run_exceeds(self) -> None:
+    def test_project_run_fails_when_max_active_run_exceeds(
+        self, test_project_name: str
+    ) -> None:
         runner = ProjectRunner(
             config=MagicMock(),
-            project_full_name=TEST_PROJECT_FULL_NAME,
+            project_full_name=ProjectFullName(
+                "test-acc-from-conftest", test_project_name
+            ),
             functions=[],
         )
         error = rpc_error(
@@ -204,11 +208,15 @@ class TestProjectRun:
         with pytest.raises(ProjectRunnerError, match=".*RESOURCE_EXHAUSTED.*"):
             runner._start_run(client=client)  # pylint: disable=protected-access
 
-    def test_get_user_command_returns_the_command_correctly(self) -> None:
+    def test_get_user_command_returns_the_command_correctly(
+        self, test_project_name: str
+    ) -> None:
 
         runner = ProjectRunner(
             config=MagicMock(),
-            project_full_name=TEST_PROJECT_FULL_NAME,
+            project_full_name=ProjectFullName(
+                "test-acc-from-conftest", test_project_name
+            ),
             functions=[],
         )
         def1: FunctionDefinition = MagicMock()

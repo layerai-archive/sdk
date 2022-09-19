@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, Sequence, Set
 
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
@@ -9,18 +9,13 @@ from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
 from layer.contracts.runs import Run
 from layer.exceptions.exceptions import ConfigError
-from layer.global_context import (
-    has_shown_python_version_message,
-    reset_to,
-    set_has_shown_python_version_message,
-)
-from layer.projects.init_project_runner import InitProjectRunner
-from layer.projects.project_runner import ProjectRunner
-from layer.projects.utils import get_current_project_full_name, validate_project_name
+from layer.projects.utils import validate_project_name
+from layer.runs import context
+from layer.runs.initializer import RunInitializer
 from layer.settings import LayerSettings
 from layer.utils.async_utils import asyncio_run_in_thread
 
-from .utils import sdk_function
+from .utils import check_python_version, sdk_function
 
 
 logger = logging.getLogger(__name__)
@@ -29,13 +24,16 @@ logger = logging.getLogger(__name__)
 @sdk_function
 def init(
     project_name: str,
+    run_index: Optional[int] = None,
+    labels: Optional[Set[str]] = None,
     fabric: Optional[str] = None,
-    pip_packages: Optional[List[str]] = None,
+    pip_packages: Optional[Sequence[str]] = None,
     pip_requirements_file: Optional[str] = None,
-    labels: Optional[List[str]] = None,
 ) -> Project:
     """
     :param project_name: Name of the project to be initialized.
+    :param run_index: The index of the run to resume. If this is not given, a new run is created.
+    :param labels: Labels to attach to this run
     :param fabric: Default fabric to use for current project when running code in Layer's backend.
     :param pip_packages: List of packages to install in Layer backend when running code for this project.
     :param pip_requirements_file: File name with list of packages to install in Layer backend when running code for this project.
@@ -64,21 +62,20 @@ def init(
         raise ValueError(
             "either pip_requirements_file or pip_packages should be provided, not both"
         )
-    layer_config = asyncio_run_in_thread(ConfigManager().refresh())
 
+    layer_config: Config = asyncio_run_in_thread(ConfigManager().refresh())
     project_full_name = _get_project_full_name(layer_config, project_name)
 
-    reset_to(project_full_name, label_names=set(labels) if labels else None)
-
-    init_project_runner = InitProjectRunner(project_full_name, logger=logger)
-    fabric_to_set = (
-        Fabric(fabric) if fabric else None  # type:ignore # pylint: disable=E1120
-    )
-    return init_project_runner.setup_project(
-        fabric=fabric_to_set,
-        pip_packages=pip_packages,
-        pip_requirements_file=pip_requirements_file,
-    )
+    with LayerClient(layer_config.client, logger).init() as layer_client:
+        initializer = RunInitializer(layer_client)
+        return initializer.setup_project(
+            project_full_name=project_full_name,
+            run_index=run_index,
+            labels=labels,
+            fabric=Fabric.find(fabric) if fabric else None,
+            pip_packages=pip_packages,
+            pip_requirements_file=pip_requirements_file,
+        )
 
 
 @sdk_function
@@ -119,22 +116,22 @@ def run(
         run = layer.run([create_my_dataset])
         # run = layer.run([create_my_dataset], debug=True)  # Stream logs to console
     """
-    _check_python_version()
+    check_python_version()
     _ensure_all_functions_are_decorated(functions)
 
     layer_config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-    project_full_name = get_current_project_full_name()
+    project_full_name = context.get_project_full_name()
     if ray_address is not None:
         from layer.projects.ray_project_runner import RayProjectRunner
 
         ray_project_runner = RayProjectRunner(
-            config=layer_config,
-            project_full_name=project_full_name,
             functions=functions,
             ray_address=ray_address,
         )
         run = ray_project_runner.run()
     else:
+        from layer.projects.project_runner import ProjectRunner
+
         project_runner = ProjectRunner(
             config=layer_config,
             project_full_name=project_full_name,
@@ -143,21 +140,6 @@ def run(
         run = project_runner.run(debug=debug)
     _make_notebook_links_open_in_new_tab()
     return run
-
-
-def _check_python_version() -> None:
-    if has_shown_python_version_message():
-        return
-
-    import platform
-
-    major, minor, _ = platform.python_version_tuple()
-
-    if major != "3" or minor not in ["7", "8"]:
-        print(
-            f"You are using the Python version {platform.python_version()} but layer requires Python 3.7.x or 3.8.x"
-        )
-    set_has_shown_python_version_message(True)
 
 
 def _ensure_all_functions_are_decorated(functions: List[Callable[..., Any]]) -> None:

@@ -1,8 +1,13 @@
 from unittest.mock import ANY, call, patch
 
+import pytest
+
 import layer
 
+from ... import IS_DARWIN
 
+
+@pytest.mark.skipif(IS_DARWIN, reason="Segfaults on Mac")
 @patch.object(layer, "log")
 def test_xgboost(mock_log):
     def train():

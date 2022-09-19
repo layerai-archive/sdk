@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Tuple
 import grpc
 
 import layer
-from layer import Context, global_context
+from layer import Context
 from layer.clients.layer import LayerClient
 from layer.config import ConfigManager
 from layer.config.config import Config
@@ -17,13 +17,13 @@ from layer.exceptions.exceptions import (
     LayerFailedAssertionsException,
     RuntimeMemoryException,
 )
-from layer.global_context import set_has_shown_update_message
 from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.logged_data.queuing_logged_data_destination import (
     QueueingLoggedDataDestination,
 )
 from layer.logged_data.system_metrics import SystemMetrics
-from layer.projects.utils import verify_project_exists_and_retrieve_project_id
+from layer.runs import context
+from layer.runs.context import RunContext
 from layer.tracker.progress_tracker import RunProgressTracker
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
@@ -43,27 +43,21 @@ class FunctionRunner(ABC):
     client: LayerClient
     logged_data_destination: LoggedDataDestination
     tracker: RunProgressTracker
-    project_id: uuid.UUID
 
-    def __init__(self, definition: FunctionDefinition) -> None:
+    def __init__(self, definition: FunctionDefinition, run_context: RunContext) -> None:
         self.definition = definition
+        self.run_context = run_context
 
     def __call__(self) -> Any:
+        context.reset(self.run_context)
         self._run_prep()
         self.config: Config = asyncio_run_in_thread(ConfigManager().refresh())
-        progress_tracker = get_progress_tracker(
-            url=self.config.url,
-            project_name=self.definition.project_name,
-            account_name=self.definition.account_name,
-        )
+        progress_tracker = get_progress_tracker(url=self.config.url)
         with LayerClient(
             self.config.client, logger
         ).init() as client, progress_tracker.track() as tracker:
             self.client = client
             self.tracker = tracker
-            self.project_id = verify_project_exists_and_retrieve_project_id(
-                self.client, self.definition.project_full_name
-            )
             with QueueingLoggedDataDestination(
                 client=client.logged_data_service_client
             ) as logged_data_destination:
@@ -89,8 +83,8 @@ class FunctionRunner(ABC):
             logged_data_destination=self.logged_data_destination,
             **context_kwargs,
         ) as ctx:
-            ctx._label_asset_with(  # pylint: disable=W0212
-                global_context.current_label_names()
+            ctx._label_asset_with(  # pylint: disable=protected-access
+                context.get_labels()
             )
             self._mark_start()
 
@@ -132,13 +126,6 @@ class FunctionRunner(ABC):
         return output
 
     def _run_prep(self) -> None:
-        # do not show update warnings
-        set_has_shown_update_message(True)
-
-        # TODO This is too deep, why do we need to alter global context from inside?
-        global_context.set_current_project_full_name(self.definition.project_full_name)
-
-        # login
         api_url = os.environ.get(ENV_LAYER_API_URL)
         api_key = os.environ.get(ENV_LAYER_API_KEY)
         api_token = os.environ.get(ENV_LAYER_API_TOKEN)

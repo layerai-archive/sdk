@@ -28,7 +28,8 @@ class ModelRunner(FunctionRunner):
             self.fabric.value,
         )
         train_id = self.client.model_catalog.create_model_train_from_version_id(
-            model_version.id
+            version_id=model_version.id,
+            run_id=self.run_context.run_id,
         )
         self.train = self.client.model_catalog.get_model_train(train_id)
         if self.run_id:

@@ -3,9 +3,7 @@ import os
 import pathlib
 import uuid
 from dataclasses import dataclass
-from typing import Iterator
-
-from layer.contracts.project_full_name import ProjectFullName
+from typing import Iterator, Optional
 
 
 @dataclass(frozen=True)
@@ -41,6 +39,13 @@ class TaskType(enum.IntEnum):
     DATASET_BUILD = 2
 
 
+@enum.unique
+class RunStatus(enum.IntEnum):
+    RUNNING = 1
+    SUCCEEDED = 2
+    FAILED = 3
+
+
 @dataclass(frozen=True)
 class Run:
     """
@@ -58,12 +63,4 @@ class Run:
     """
 
     id: uuid.UUID
-    project_full_name: ProjectFullName
-
-    @property
-    def project_name(self) -> str:
-        return self.project_full_name.project_name
-
-    @property
-    def account_name(self) -> str:
-        return self.project_full_name.account_name
+    name: Optional[str] = None

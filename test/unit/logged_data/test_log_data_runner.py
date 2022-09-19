@@ -435,6 +435,7 @@ def generate_test_data() -> List[
     return test_data
 
 
+@pytest.mark.parametrize(("run_id",), [(uuid.uuid4(),)])
 @pytest.mark.parametrize(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
@@ -448,6 +449,7 @@ def generate_test_data() -> List[
 def test_log_data(
     mock_put: MagicMock,
     tmp_path: Path,
+    run_id: UUID,
     train_id: Optional[UUID],
     dataset_build_id: Optional[UUID],
     group_tag: Optional[str],
@@ -464,6 +466,7 @@ def test_log_data(
 
     runner = LogDataRunner(
         logged_data_destination=ImmediateLoggedDataDestination(logged_data_client),
+        run_id=run_id,
         dataset_build_id=dataset_build_id,
         train_id=train_id,
         logger=None,
@@ -490,6 +493,7 @@ def test_log_data(
     for tag, value in data.items():
         for test_expected_kwargs in get_expected_kwargs(value):
             expected_kwargs = {
+                "run_id": run_id,
                 "dataset_build_id": dataset_build_id,
                 "train_id": train_id,
                 "tag": tag,
@@ -597,6 +601,7 @@ def generate_test_error_data() -> List[
     return test_data
 
 
+@pytest.mark.parametrize(("run_id",), [(uuid.uuid4(),)])
 @pytest.mark.parametrize(
     ("train_id", "dataset_build_id"), [(uuid.uuid4(), None), (None, uuid.uuid4())]
 )
@@ -608,6 +613,7 @@ def generate_test_error_data() -> List[
 def test_log_data_raises_error(
     mock_put: MagicMock,
     tmp_path: Path,
+    run_id: UUID,
     train_id: Optional[UUID],
     dataset_build_id: Optional[UUID],
     get_kwargs: Callable[[Path], Mapping[str, Any]],
@@ -621,6 +627,7 @@ def test_log_data_raises_error(
     )
 
     runner = LogDataRunner(
+        run_id=run_id,
         dataset_build_id=dataset_build_id,
         train_id=train_id,
         logger=None,

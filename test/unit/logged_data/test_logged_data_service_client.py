@@ -2,7 +2,7 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
-from layerapi.api.ids_pb2 import LoggedDataId, ModelTrainId
+from layerapi.api.ids_pb2 import LoggedDataId, ModelTrainId, RunId
 from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     LogDataRequest,
     LogDataResponse,
@@ -49,16 +49,20 @@ def test_given_tag_not_exists_when_log_x_then_calls_log_data_with_x_type(
     logged_data_client = get_logged_data_service_client_with_mocks(
         logged_data_api_stub=mock_logged_data_api
     )
+    run_id = uuid.uuid4()
     train_id = uuid.uuid4()
     # tag = "table-test-tag"
     # data = "{}"
 
     # when
-    logged_data_client.log_data(train_id=train_id, type=log_type, tag=tag, value=value)
+    logged_data_client.log_data(
+        run_id=run_id, train_id=train_id, type=log_type, tag=tag, value=value
+    )
 
     # then
     mock_logged_data_api.LogData.assert_called_with(
         request=LogDataRequest(
+            run_id=RunId(value=str(run_id)),
             model_train_id=ModelTrainId(value=str(train_id)),
             unique_tag=tag,
             type=log_type,
@@ -78,12 +82,14 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_typ
     logged_data_client = get_logged_data_service_client_with_mocks(
         logged_data_api_stub=mock_logged_data_api
     )
+    run_id = uuid.uuid4()
     train_id = uuid.uuid4()
     tag = "image-test-tag"
     x_coord = 123
 
     # when
     s3_path = logged_data_client.log_data(
+        run_id=run_id,
         train_id=train_id,
         tag=tag,
         type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
@@ -94,6 +100,7 @@ def test_given_tag_not_exists_when_log_binary_then_calls_log_data_with_image_typ
     # then
     mock_logged_data_api.LogData.assert_called_with(
         request=LogDataRequest(
+            run_id=RunId(value=str(run_id)),
             model_train_id=ModelTrainId(value=str(train_id)),
             unique_tag=tag,
             type=LoggedDataType.LOGGED_DATA_TYPE_IMAGE,
@@ -113,11 +120,13 @@ def test_given_tag_not_exists_when_log_number_then_calls_log_numeric_data() -> N
     logged_data_client = get_logged_data_service_client_with_mocks(
         logged_data_api_stub=mock_logged_data_api
     )
+    run_id = uuid.uuid4()
     train_id = uuid.uuid4()
     tag = "foo-test-tag"
 
     # when
     logged_data_client.log_data(
+        run_id=run_id,
         train_id=train_id,
         tag=tag,
         type=LoggedDataType.LOGGED_DATA_TYPE_NUMBER,
@@ -129,6 +138,7 @@ def test_given_tag_not_exists_when_log_number_then_calls_log_numeric_data() -> N
     # then
     mock_logged_data_api.LogData.assert_called_with(
         request=LogDataRequest(
+            run_id=RunId(value=str(run_id)),
             model_train_id=ModelTrainId(value=str(train_id)),
             unique_tag=tag,
             type=LoggedDataType.LOGGED_DATA_TYPE_NUMBER,

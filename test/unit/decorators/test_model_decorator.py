@@ -9,11 +9,8 @@ from layer.clients.model_catalog import ModelCatalogClient
 from layer.contracts.asset import AssetType
 from layer.decorators.model_decorator import model
 from layer.decorators.pip_requirements_decorator import pip_requirements
-from layer.exceptions.exceptions import (
-    ProjectInitializationException,
-    RuntimeMemoryException,
-)
-from layer.global_context import reset_to
+from layer.exceptions.exceptions import InitializationException, RuntimeMemoryException
+from layer.runs import context
 from layer.settings import LayerSettings
 from test.unit.decorators.util import project_client_mock
 
@@ -43,25 +40,23 @@ class TestModelDecorator:
         assert func.layer.get_asset_type() == AssetType.MODEL
 
     def test_model_decorator_given_no_current_project_set_raise_exception(self) -> None:
-        reset_to(None)
+        context.reset()
 
         func = _make_test_model_function("forest2")
 
         with pytest.raises(
-            ProjectInitializationException,
-            match="Please specify the current project name globally with",
+            InitializationException,
+            match="Please specify the project name with ",
         ):
             func()
 
     @pytest.mark.parametrize(("name",), [("model1",)])
     def test_model_definition_created_correctly(self, name: str) -> None:
         func = _make_test_model_function(name)
-        reset_to("acc-name/foo-test")
 
         model_definition = func.get_definition_with_bound_arguments()
 
         assert model_definition.asset_name == name
-        assert model_definition.project_name == "foo-test"
         assert model_definition.description == "my description"
 
         assert len(model_definition.asset_dependencies) == 4

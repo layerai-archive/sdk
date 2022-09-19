@@ -11,10 +11,9 @@ from layer.contracts.datasets import Dataset
 from layer.contracts.models import Model
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.tracker import ResourceTransferState
-from layer.exceptions.exceptions import ProjectInitializationException
-from layer.global_context import current_account_name
+from layer.exceptions.exceptions import InitializationException
 from layer.logged_data.log_data_runner import LogDataRunner
-from layer.projects.utils import get_current_project_full_name
+from layer.runs import context
 from layer.tracker.utils import get_progress_tracker
 from layer.utils.async_utils import asyncio_run_in_thread
 
@@ -70,11 +69,7 @@ def get_dataset(name: str, no_cache: bool = False) -> Dataset:
                 asset_path, no_cache=no_cache
             )
             if not within_run:
-                tracker = get_progress_tracker(
-                    url=config.url,
-                    account_name=asset_path.must_account_name(),
-                    project_name=asset_path.must_project_name(),
-                )
+                tracker = get_progress_tracker(url=config.url)
                 with Context(
                     url=config.url,
                     asset_path=asset_path,
@@ -146,7 +141,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
         # Load a model from a project you aren't logged in to.
         layer.get_model("the-project/models/churn_model")
     """
-    config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
+    config: Config = asyncio_run_in_thread(ConfigManager().refresh(allow_guest=True))
     asset_path = AssetPath.parse(name, expected_asset_type=AssetType.MODEL)
     asset_path = _ensure_asset_path_is_absolute(asset_path)
     context = get_active_context()
@@ -179,11 +174,7 @@ def get_model(name: str, no_cache: bool = False) -> Model:
             return _load_model_runtime_objects(client, model, state, no_cache)
 
         if not within_run:
-            tracker = get_progress_tracker(
-                url=config.url,
-                account_name=asset_path.must_account_name(),
-                project_name=asset_path.must_project_name(),
-            )
+            tracker = get_progress_tracker(url=config.url)
             with Context(
                 url=config.url,
                 asset_path=asset_path,
@@ -261,14 +252,16 @@ def _ensure_asset_path_is_absolute(
     project_name = (
         path.project_name
         if path.has_project()
-        else get_current_project_full_name().project_name
+        else context.get_project_full_name().project_name
     )
     account_name = (
-        path.account_name if path.account_name is not None else current_account_name()
+        path.account_name
+        if path.account_name is not None
+        else context.get_account_name()
     )
 
     if not project_name or not account_name:
-        raise ProjectInitializationException(
+        raise InitializationException(
             "Please specify the project full name globally with layer.init('account-name/project-name')"
             "or have it in the asset full name like 'the-account/the-project/models/the-model-name'"
         )

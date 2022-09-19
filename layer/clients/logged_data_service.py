@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from layerapi.api.ids_pb2 import DatasetBuildId, ModelTrainId
+from layerapi.api.ids_pb2 import DatasetBuildId, ModelTrainId, RunId
 from layerapi.api.service.logged_data.logged_data_api_pb2 import (
     GetLoggedDataRequest,
     LogDataRequest,
@@ -69,6 +69,7 @@ class LoggedDataClient:
         tag: str,
         type: "LoggedDataType.V",
         value: str = "",
+        run_id: Optional[UUID] = None,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
         group_tag: Optional[str] = None,
@@ -77,6 +78,7 @@ class LoggedDataClient:
         x_coordinate_type: Optional[XCoordinateType] = None,
     ) -> LogDataResponse:
         request = LogDataRequest(
+            run_id=RunId(value=str(run_id)) if run_id is not None else None,
             unique_tag=tag,
             category=category if category else "",
             group_tag=group_tag if group_tag else "",

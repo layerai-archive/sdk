@@ -14,6 +14,7 @@ from layer.contracts.tracker import (
     ResourceTransferState,
 )
 from layer.exceptions.exceptions import ProjectBaseException, ProjectRunnerError
+from layer.runs import context
 
 from .output import get_progress_ui
 from .progress_tracker import RunProgressTracker
@@ -23,13 +24,9 @@ class UIRunProgressTracker(RunProgressTracker):
     def __init__(
         self,
         url: URL,
-        account_name: str,
-        project_name: str,
         assets: Optional[List[Tuple[AssetType, str]]] = None,
     ):
         self._url = url
-        self._account_name = account_name
-        self._project_name = project_name
         self._assets = assets
         self._progress = get_progress_ui()
         self._tasks: Dict[Tuple[AssetType, str], Task] = {}
@@ -62,11 +59,12 @@ class UIRunProgressTracker(RunProgressTracker):
             self._progress.refresh()
 
     def _get_url(self, asset_type: AssetType, name: str) -> URL:
+        project_full_name = context.get_project_full_name()
         return AssetPath(
             asset_name=name,
             asset_type=asset_type,
-            account_name=self._account_name,
-            project_name=self._project_name,
+            project_name=project_full_name.project_name,
+            account_name=project_full_name.account_name,
         ).url(self._url)
 
     def _init_tasks(self) -> None:

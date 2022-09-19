@@ -16,7 +16,7 @@ from layer.flavors import (
 )
 from layer.flavors.utils import get_flavor_for_model
 
-from .. import IS_DARWIN_ARM64
+from .. import IS_DARWIN, IS_DARWIN_ARM64
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.mark.skipif(IS_DARWIN_ARM64, reason="Segfaults on Mac M1")
 class TestModelFlavors:
+    @pytest.mark.skipif(IS_DARWIN, reason="Segfaults on Mac")
     def test_lightgbm_flavor(self):
         import lightgbm as lgb
         import numpy as np
@@ -36,6 +37,7 @@ class TestModelFlavors:
         flavor = get_flavor_for_model(model)
         assert type(flavor).__name__ == LightGBMModelFlavor.__name__
 
+    @pytest.mark.skipif(IS_DARWIN, reason="Segfaults on Mac")
     def test_xgboost_flavor(self):
         import numpy as np
         import xgboost as xgb
@@ -48,6 +50,7 @@ class TestModelFlavors:
         flavor = get_flavor_for_model(model)
         assert type(flavor).__name__ == XGBoostModelFlavor.__name__
 
+    @pytest.mark.skipif(IS_DARWIN, reason="Segfaults on Mac")
     def test_xgboost_regressor_flavor(self):
         import xgboost as xgb
 
