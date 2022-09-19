@@ -74,7 +74,8 @@ class ConfigClient:
         if "rayGatewayDomain" in auth_payload:
             ray_gateway_address = auth_payload["rayGatewayDomain"]
         else:
-            ray_gateway_address = self._url.with_host(f"ray.{self._url.host}")
+            ray_url = self._url.with_host(f"ray.{self._url.host}")
+            ray_gateway_address = f"{ray_url.host}:{ray_url.port}"
         return ClientConfig(
             grpc_gateway_address=grpc_gateway_address,
             ray_gateway_address=ray_gateway_address,

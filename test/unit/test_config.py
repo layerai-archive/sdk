@@ -71,6 +71,7 @@ class TestConfigStore:
             ),
             client=ClientConfig(
                 grpc_gateway_address="grpcgatewayaddress",
+                ray_gateway_address="raygatewayaddress",
                 access_token="testaccesstoken",
             ),
         )
@@ -169,10 +170,11 @@ class TestConfigRecord:
     def test_to_client(self) -> None:
         address = "localhost:54321"
         assert ConfigRecord.to_client(
-            {"grpc_gateway_address": address},
+            {"grpc_gateway_address": address, "ray_gateway_address": address},
             "testaccesstoken",
         ) == ClientConfig(
             grpc_gateway_address=address,
+            ray_gateway_address=address,
             access_token="testaccesstoken",
             s3=S3Config(),
         )
@@ -182,11 +184,13 @@ class TestConfigRecord:
         assert ConfigRecord.to_client(
             {
                 "grpc_gateway_address": address,
+                "ray_gateway_address": address,
                 "s3_endpoint_url": "http://localhost:12345",
             },
             "testaccesstoken",
         ) == ClientConfig(
             grpc_gateway_address=address,
+            ray_gateway_address=address,
             access_token="testaccesstoken",
             s3=S3Config(endpoint_url=URL("http://localhost:12345")),
         )
@@ -196,11 +200,13 @@ class TestConfigRecord:
         assert ConfigRecord.to_client(
             {
                 "grpc_gateway_address": address,
+                "ray_gateway_address": address,
                 "grpc_do_verify_ssl": False,
             },
             "testaccesstoken",
         ) == ClientConfig(
             grpc_gateway_address=address,
+            ray_gateway_address=address,
             grpc_do_verify_ssl=False,
             access_token="testaccesstoken",
             s3=S3Config(),
@@ -211,21 +217,24 @@ class TestConfigRecord:
         assert ConfigRecord.from_client(
             ClientConfig(
                 grpc_gateway_address=address,
+                ray_gateway_address=address,
                 access_token="testaccesstoken",
                 s3=S3Config(),
             )
-        ) == {"grpc_gateway_address": address}
+        ) == {"grpc_gateway_address": address, "ray_gateway_address": address}
 
     def test_from_client_s3(self) -> None:
         address = "localhost:54321"
         assert ConfigRecord.from_client(
             ClientConfig(
                 grpc_gateway_address=address,
+                ray_gateway_address=address,
                 access_token="testaccesstoken",
                 s3=S3Config(endpoint_url=URL("http://localhost:12345")),
             )
         ) == {
             "grpc_gateway_address": address,
+            "ray_gateway_address": address,
             "s3_endpoint_url": "http://localhost:12345",
         }
 
@@ -234,11 +243,16 @@ class TestConfigRecord:
         assert ConfigRecord.from_client(
             ClientConfig(
                 grpc_gateway_address=address,
+                ray_gateway_address=address,
                 grpc_do_verify_ssl=False,
                 access_token="testaccesstoken",
                 s3=S3Config(),
             )
-        ) == {"grpc_gateway_address": address, "grpc_do_verify_ssl": False}
+        ) == {
+            "grpc_gateway_address": address,
+            "ray_gateway_address": address,
+            "grpc_do_verify_ssl": False,
+        }
 
     def test_from_credentials_empty(self) -> None:
         record = ConfigRecord.from_credentials(Credentials.create_empty())
