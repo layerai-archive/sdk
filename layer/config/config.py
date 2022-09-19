@@ -51,6 +51,7 @@ class LogsConfig:
 @dataclass(frozen=True)
 class ClientConfig:
     grpc_gateway_address: str = ""
+    ray_gateway_address: str = ""
     access_token: str = ""
     grpc_do_verify_ssl: bool = True
     logs_file_path: Path = LogsConfig().logs_file_path
@@ -252,6 +253,7 @@ class ConfigRecord:
     def from_client(cls, config: ClientConfig) -> Dict[str, Any]:
         record: Dict[str, Any] = {
             "grpc_gateway_address": config.grpc_gateway_address,
+            "ray_gateway_address": config.ray_gateway_address,
         }
         if not config.grpc_do_verify_ssl:
             record["grpc_do_verify_ssl"] = config.grpc_do_verify_ssl
@@ -262,6 +264,7 @@ class ConfigRecord:
     @classmethod
     def to_client(cls, record: Dict[str, Any], access_token: str) -> ClientConfig:
         grpc_gateway_address = get_config("grpc_gateway_address", record)
+        ray_gateway_address = get_config("ray_gateway_address", record)
         grpc_do_verify_ssl = record.get("grpc_do_verify_ssl", True)
         if "s3_endpoint_url" in record:
             s3_config = S3Config(endpoint_url=URL(record["s3_endpoint_url"]))
@@ -269,6 +272,7 @@ class ConfigRecord:
             s3_config = S3Config.create_default()
         return ClientConfig(
             grpc_gateway_address=grpc_gateway_address,
+            ray_gateway_address=ray_gateway_address,
             access_token=access_token,
             grpc_do_verify_ssl=grpc_do_verify_ssl,
             s3=s3_config,

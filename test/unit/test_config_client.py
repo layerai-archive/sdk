@@ -32,6 +32,7 @@ class _TestHandler:
                     },
                 },
                 "domain": "layer-development-rl1abku2vv.eu.auth0.com",
+                "rayGatewayDomain": "ray.development.layer.co",
             }
         }
 
@@ -84,6 +85,7 @@ class TestConfigClient:
             ),
             client=ClientConfig(
                 grpc_gateway_address=f"grpc.{server.host}:{server.port}",
+                ray_gateway_address="ray.development.layer.co",
             ),
         )
 
@@ -117,6 +119,7 @@ class TestConfigClient:
             ),
             client=ClientConfig(
                 grpc_gateway_address=f"grpc.{server.host}:{server.port}",
+                ray_gateway_address="ray.development.layer.co",
                 s3=S3Config(endpoint_url=URL("http://localhost:12345")),
             ),
         )
@@ -152,6 +155,7 @@ class TestConfigClient:
             ),
             client=ClientConfig(
                 grpc_gateway_address="localhost:65443",
+                ray_gateway_address="ray.development.layer.co",
                 grpc_do_verify_ssl=False,
                 s3=S3Config(),
             ),
@@ -171,6 +175,7 @@ class TestConfigClient:
             auth=AuthConfig.create_disabled(),
             client=ClientConfig(
                 grpc_gateway_address="localhost:65443",
+                ray_gateway_address=f"ray.{server.host}:{server.port}",
                 grpc_do_verify_ssl=False,
                 s3=S3Config(),
             ),

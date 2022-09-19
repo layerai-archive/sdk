@@ -27,7 +27,7 @@ class ConfigClient:
             return Config(
                 url=self._url,
                 auth=self._create_auth_config(payload.get("auth", {})),
-                client=self._create_client_config(payload.get("client", {})),
+                client=self._create_client_config(payload),
             )
 
     def _create_auth_config(
@@ -62,17 +62,25 @@ class ConfigClient:
         return URL(str(url).rstrip("/"))
 
     def _create_client_config(self, payload: Dict[str, Any]) -> ClientConfig:
-        if "grpc_gateway_url" in payload:
-            url = URL(payload["grpc_gateway_url"])
-            do_verify_ssl = payload.get("grpc_do_verify_ssl", True)
+        client_payload = payload.get("client", {})
+        if "grpc_gateway_url" in client_payload:
+            url = URL(client_payload["grpc_gateway_url"])
+            do_verify_ssl = client_payload.get("grpc_do_verify_ssl", True)
         else:
             url = self._url.with_host(f"grpc.{self._url.host}")
             do_verify_ssl = self._do_verify_ssl
         grpc_gateway_address = f"{url.host}:{url.port}"
+        auth_payload = payload.get("auth", {})
+        if "rayGatewayDomain" in auth_payload:
+            ray_gateway_address = auth_payload["rayGatewayDomain"]
+        else:
+            ray_url = self._url.with_host(f"ray.{self._url.host}")
+            ray_gateway_address = f"{ray_url.host}:{ray_url.port}"
         return ClientConfig(
             grpc_gateway_address=grpc_gateway_address,
+            ray_gateway_address=ray_gateway_address,
             grpc_do_verify_ssl=do_verify_ssl,
-            s3=self._create_s3_config(payload),
+            s3=self._create_s3_config(client_payload),
         )
 
     def _create_s3_config(self, payload: Dict[str, Any]) -> S3Config:
