@@ -84,6 +84,7 @@ class LayerAssetFunctionWrapper(LayerFunctionWrapper):
             return runner()
         except Exception as e:
             context.set_error(e)
+            raise e
 
     def get_definition(
         self, args: Sequence[Any], kwargs: Mapping[str, Any]

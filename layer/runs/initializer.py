@@ -52,7 +52,9 @@ class RunInitializer:
             run_id=run.id,
             labels=labels or set(),
         )
-        atexit.register(finalize_run, self._layer_client, run)
+        atexit.register(
+            finalize_run, self._layer_client, context.get_run_context(), run
+        )
         if fabric:
             context.set_default_fabric(fabric)
         if pip_packages:
@@ -81,12 +83,14 @@ class RunInitializer:
             )
 
 
-def finalize_run(layer_client: LayerClient, run: Run) -> None:
+def finalize_run(
+    layer_client: LayerClient, run_context: context.RunContext, run: Run
+) -> None:
     """
     This is the atexit handler that sets the status of the run as completed
     """
     logger.info("finalizing run: %s", run.id)
-    if context.get_error() is None:
+    if run_context.error is None:
         layer_client.run_service_client.finish_run(run.id, status=RunStatus.SUCCEEDED)
     else:
         # TODO(volkan) save status info here

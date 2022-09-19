@@ -126,7 +126,6 @@ class FunctionRunner(ABC):
         return output
 
     def _run_prep(self) -> None:
-        # login
         api_url = os.environ.get(ENV_LAYER_API_URL)
         api_key = os.environ.get(ENV_LAYER_API_KEY)
         api_token = os.environ.get(ENV_LAYER_API_TOKEN)

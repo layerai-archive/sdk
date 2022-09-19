@@ -66,10 +66,10 @@ class LoggedDataClient:
 
     def log_data(
         self,
-        run_id: UUID,
         tag: str,
         type: "LoggedDataType.V",
         value: str = "",
+        run_id: Optional[UUID] = None,
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
         group_tag: Optional[str] = None,
@@ -78,7 +78,7 @@ class LoggedDataClient:
         x_coordinate_type: Optional[XCoordinateType] = None,
     ) -> LogDataResponse:
         request = LogDataRequest(
-            run_id=RunId(value=str(run_id)),
+            run_id=RunId(value=str(run_id)) if run_id is not None else None,
             unique_tag=tag,
             category=category if category else "",
             group_tag=group_tag if group_tag else "",
