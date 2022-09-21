@@ -65,7 +65,6 @@ class ConfigManager:
 
         async with ClientSession() as client:
             config_client = ConfigClient(client=client, url=config.url)
-            config = await config_client.get_config()
             creds_client = CredentialsClient(
                 client=client,
                 url=config.auth.token_url,
@@ -73,6 +72,7 @@ class ConfigManager:
                 audience=config.auth.audience,
             )
             creds = await creds_client.refresh(config.credentials)
+            config = await config_client.get_config()
 
         config = config.with_credentials(creds)
         self._store.save(config)
