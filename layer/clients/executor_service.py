@@ -3,12 +3,14 @@ from datetime import timedelta
 from typing import Tuple
 
 from google.protobuf.duration_pb2 import Duration
+from layerapi.api.ids_pb2 import AccountId
 from layerapi.api.service.executor.executor_api_pb2 import (
     GetFunctionDownloadPathRequest,
     GetFunctionUploadPathRequest,
     GetOrCreateClusterRequest,
 )
 from layerapi.api.service.executor.executor_api_pb2_grpc import ExecutorAPIStub
+from layerapi.api.value.language_version_pb2 import LanguageVersion
 
 from layer.config import ClientConfig
 from layer.contracts.project_full_name import ProjectFullName
@@ -63,6 +65,12 @@ class ExecutorClient:
             idle_scale_down_duration=idle_scale_down_duration,
             idle_shut_down_duration=idle_shut_down_duration,
             max_number_of_workers=10,  # TODO(emin): remove this parameter
-            worker_fabric="",  # TODO(emin): remove this parameter as it should be defined by the function executable for each
+            worker_fabric="f-small",  # TODO(emin): remove this parameter as it should be defined by the function executable for each
+            account_id=AccountId(value=str(account_id)),
+            language_version=LanguageVersion(
+                major=language_version[0],
+                minor=language_version[1],
+                micro=language_version[2],
+            ),
         )
         return self._service.GetOrCreateCluster(request=request).cluster_url

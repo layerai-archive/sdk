@@ -64,6 +64,8 @@ class ConfigManager:
             return config
 
         async with ClientSession() as client:
+            config_client = ConfigClient(client=client, url=config.url)
+            config = await config_client.get_config()
             creds_client = CredentialsClient(
                 client=client,
                 url=config.auth.token_url,
