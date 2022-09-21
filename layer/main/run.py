@@ -123,7 +123,10 @@ def run(
     project_full_name = context.get_project_full_name()
     if ray_address is not None:
         if "USE_RAY_WORKFLOWS" in kwargs:
-            from layer.projects.ray_workflow_project_runner import RayWorkflowProjectRunner
+            from layer.projects.ray_workflow_project_runner import (
+                RayWorkflowProjectRunner,
+            )
+
             ray_workflow_project_runner = RayWorkflowProjectRunner(
                 config=layer_config,
                 project_full_name=project_full_name,
