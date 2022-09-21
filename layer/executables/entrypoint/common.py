@@ -21,7 +21,6 @@ from layer.logged_data.logged_data_destination import LoggedDataDestination
 from layer.logged_data.queuing_logged_data_destination import (
     QueueingLoggedDataDestination,
 )
-from layer.logged_data.system_metrics import SystemMetrics
 from layer.runs import context
 from layer.runs.context import RunContext
 from layer.tracker.progress_tracker import RunProgressTracker
@@ -142,10 +141,7 @@ class FunctionRunner(ABC):
         work_dir = ctx.get_working_directory()
         os.chdir(work_dir)
 
-        with SystemMetrics(logger):
-            output = self.definition.func(
-                *self.definition.args, **self.definition.kwargs
-            )
+        output = self.definition.func(*self.definition.args, **self.definition.kwargs)
 
         logger.info("Executed function successfully")
 
