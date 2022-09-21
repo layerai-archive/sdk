@@ -1,7 +1,7 @@
 from typing import Optional, Set
 from uuid import UUID
 
-from layerapi.api.ids_pb2 import DatasetBuildId, ModelTrainId, RunId
+from layerapi.api.ids_pb2 import DatasetBuildId, ModelTrainId
 from layerapi.api.service.logged_data.label_api_pb2 import (
     AddLabelsToEntityRequest,
     AddLabelsToRunRequest,
@@ -14,6 +14,8 @@ from layerapi.api.service.logged_data.label_api_pb2_grpc import LabelAPIStub
 
 from layer.config import ClientConfig
 from layer.utils.grpc.channel import get_grpc_channel
+
+from .protomappers import runs as run_proto_mapper
 
 
 class LabelClient:
@@ -55,7 +57,7 @@ class LabelClient:
         label_names: Set[str],
     ) -> None:
         request = AddLabelsToRunRequest(
-            run_id=RunId(value=str(run_id)),
+            run_id=run_proto_mapper.to_run_id(run_id),
             label_name=label_names,
         )
         self._service.AddLabelsToRun(request=request)
@@ -86,7 +88,9 @@ class LabelClient:
         self,
         run_id: UUID,
     ) -> Set[str]:
-        request = GetLabelsAttachedToRunRequest(run_id=RunId(value=str(run_id)))
+        request = GetLabelsAttachedToRunRequest(
+            run_id=run_proto_mapper.to_run_id(run_id)
+        )
         resp: GetLabelsAttachedToRunResponse = self._service.GetLabelsAttachedToRun(
             request=request
         )
