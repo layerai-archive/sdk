@@ -114,6 +114,7 @@ def get_or_create_run(
     project_id: uuid.UUID,
     run_name: Optional[str],
     run_index: Optional[int],
+    labels: Optional[Set[str]] = None,
 ) -> Run:
     run_id_env = os.getenv(LAYER_RUN_ID_ENV_VARIABLE)
     if run_id_env is not None:
@@ -122,4 +123,8 @@ def get_or_create_run(
         run = client.run_service_client.get_run_by_index(project_id, run_index)
     else:
         run = client.run_service_client.create_run(project_id, run_name=run_name)
+
+    if labels is not None and len(labels) > 0:
+        client.label_service_client.add_labels_to_run(run.id, label_names=labels)
+
     return run

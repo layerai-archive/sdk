@@ -83,6 +83,7 @@ class FunctionRunner(ABC):
             logged_data_destination=self.logged_data_destination,
             **context_kwargs,
         ) as ctx:
+            # TODO remove after migration is complete
             ctx._label_asset_with(  # pylint: disable=protected-access
                 context.get_labels()
             )

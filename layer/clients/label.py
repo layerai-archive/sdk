@@ -1,11 +1,14 @@
 from typing import Optional, Set
 from uuid import UUID
 
-from layerapi.api.ids_pb2 import DatasetBuildId, ModelTrainId
+from layerapi.api.ids_pb2 import DatasetBuildId, ModelTrainId, RunId
 from layerapi.api.service.logged_data.label_api_pb2 import (
     AddLabelsToEntityRequest,
+    AddLabelsToRunRequest,
     GetLabelsAttachedToEntityRequest,
     GetLabelsAttachedToEntityResponse,
+    GetLabelsAttachedToRunRequest,
+    GetLabelsAttachedToRunResponse,
 )
 from layerapi.api.service.logged_data.label_api_pb2_grpc import LabelAPIStub
 
@@ -23,6 +26,7 @@ class LabelClient:
         client._service = LabelAPIStub(channel)  # pylint: disable=protected-access
         return client
 
+    # TODO remove after migration is complete
     def add_labels_to(
         self,
         label_names: Set[str],
@@ -45,6 +49,18 @@ class LabelClient:
         )
         self._service.AddLabelsToEntity(request=request)
 
+    def add_labels_to_run(
+        self,
+        run_id: UUID,
+        label_names: Set[str],
+    ) -> None:
+        request = AddLabelsToRunRequest(
+            run_id=RunId(value=str(run_id)),
+            label_name=label_names,
+        )
+        self._service.AddLabelsToRun(request=request)
+
+    # TODO remove after migration is complete
     def get_labels_attached_to(
         self,
         model_train_id: Optional[UUID] = None,
@@ -63,5 +79,15 @@ class LabelClient:
         )
         resp: GetLabelsAttachedToEntityResponse = (
             self._service.GetLabelsAttachedToEntity(request=request)
+        )
+        return set(map(lambda l: l.name, resp.label))
+
+    def get_labels_attached_to_run(
+        self,
+        run_id: UUID,
+    ) -> Set[str]:
+        request = GetLabelsAttachedToRunRequest(run_id=RunId(value=str(run_id)))
+        resp: GetLabelsAttachedToRunResponse = self._service.GetLabelsAttachedToRun(
+            request=request
         )
         return set(map(lambda l: l.name, resp.label))
