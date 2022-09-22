@@ -1,8 +1,9 @@
 import logging
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
+import grpc
 import ray
 from ray import workflow
 
@@ -22,24 +23,26 @@ from layer.projects.execution_planner import Stage, build_plan, language_version
 from layer.projects.utils import upload_executable_packages
 from layer.utils.async_utils import asyncio_run_in_thread
 
+from .base_project_runner import BaseProjectRunner
+
 
 logger = logging.getLogger()
 
 
-class RayWorkflowProjectRunner:
+class RayWorkflowProjectRunner(BaseProjectRunner):
     def __init__(
         self,
         config: Config,
         project_full_name: ProjectFullName,
         functions: List[Any],
     ) -> None:
+        super().__init__(functions)
+        if not config.client.ray_gateway_address:
+            config = asyncio_run_in_thread(ConfigManager().refresh(force=True))
         self._config = config
         self.project_full_name = project_full_name
-        self.definitions: List[FunctionDefinition] = [
-            f.get_definition_with_bound_arguments() for f in functions
-        ]
 
-    def run(self) -> Run:
+    def _run(self, debug: bool = False, printer: Callable[[str], Any] = print) -> Run:
         layer_client = LayerClient(self._config.client, logger)
         with layer_client.init() as initialized_client:
             asyncio_run_in_thread(
@@ -63,9 +66,11 @@ class RayWorkflowProjectRunner:
                 ("authorization", f"Bearer {self._config.credentials.access_token}"),
                 ("ray-cluster", target_cluster_svc_name),
             ]
+            _credentials = grpc.ssl_channel_credentials()
             ray.init(
                 address=f"ray://{self._config.client.ray_gateway_address}",
                 _metadata=_metadata,
+                _credentials=_credentials,
             )
         plan = build_plan(self.definitions)
         run_id = uuid.uuid4()

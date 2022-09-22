@@ -264,7 +264,7 @@ class ConfigRecord:
     @classmethod
     def to_client(cls, record: Dict[str, Any], access_token: str) -> ClientConfig:
         grpc_gateway_address = get_config("grpc_gateway_address", record)
-        ray_gateway_address = get_config("ray_gateway_address", record)
+        ray_gateway_address = get_config_or_default("ray_gateway_address", "", record)
         grpc_do_verify_ssl = record.get("grpc_do_verify_ssl", True)
         if "s3_endpoint_url" in record:
             s3_config = S3Config(endpoint_url=URL(record["s3_endpoint_url"]))
