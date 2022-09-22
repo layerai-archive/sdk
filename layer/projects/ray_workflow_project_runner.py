@@ -74,7 +74,7 @@ class RayWorkflowProjectRunner(BaseProjectRunner):
             )
         plan = build_plan(self.definitions)
         run_id = uuid.uuid4()
-        workflow.run(run_stage.bind(plan.stages), workflow_id=run_id)
+        workflow.run(run_stage.bind(plan.stages), workflow_id=str(run_id))
         run = Run(
             id=run_id,
         )

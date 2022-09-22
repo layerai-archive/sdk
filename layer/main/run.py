@@ -122,26 +122,22 @@ def run(
     layer_config: Config = asyncio_run_in_thread(ConfigManager().refresh())
     project_full_name = context.get_project_full_name()
     if ray_address is not None:
-        if "USE_RAY_WORKFLOWS" in kwargs:
-            from layer.projects.ray_workflow_project_runner import (
-                RayWorkflowProjectRunner,
-            )
+        from layer.projects.ray_project_runner import RayProjectRunner
 
-            ray_workflow_project_runner = RayWorkflowProjectRunner(
-                config=layer_config,
-                project_full_name=project_full_name,
-                functions=functions,
-            )
-            run = ray_workflow_project_runner.run()
+        ray_project_runner = RayProjectRunner(
+            functions=functions,
+            ray_address=ray_address,
+        )
+        run = ray_project_runner.run()
+    elif "USE_RAY_WORKFLOWS" in kwargs:
+        from layer.projects.ray_workflow_project_runner import RayWorkflowProjectRunner
 
-        else:
-            from layer.projects.ray_project_runner import RayProjectRunner
-
-            ray_project_runner = RayProjectRunner(
-                functions=functions,
-                ray_address=ray_address,
-            )
-            run = ray_project_runner.run()
+        ray_workflow_project_runner = RayWorkflowProjectRunner(
+            config=layer_config,
+            project_full_name=project_full_name,
+            functions=functions,
+        )
+        run = ray_workflow_project_runner.run()
     else:
         from layer.projects.project_runner import ProjectRunner
 
