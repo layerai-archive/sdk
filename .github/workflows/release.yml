@@ -18,7 +18,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.2.0
+          poetry-version: 1.2.1
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -38,7 +38,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.2.0
+          poetry-version: 1.2.1
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -60,7 +60,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.2.0
+          poetry-version: 1.2.1
       - name: Run colab test
         run: make colab-test
 
@@ -84,7 +84,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.2.0
+          poetry-version: 1.2.1
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:
@@ -134,7 +134,7 @@ jobs:
       - name: Setup poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: 1.2.0
+          poetry-version: 1.2.1
       - name: Cache poetry virtualenvs
         uses: actions/cache@v3
         with:

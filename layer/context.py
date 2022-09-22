@@ -78,6 +78,7 @@ class Context:
         self._dataset_build = dataset_build
         self._initial_cwd: Optional[Path] = None
 
+    # TODO remove after migration is complete
     def _label_asset_with(self, label_names: Set[str]) -> None:
         """
         Temporary until we introduce global runs
