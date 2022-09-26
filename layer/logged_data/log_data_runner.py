@@ -37,8 +37,10 @@ class LogDataRunner:
         train_id: Optional[UUID] = None,
         dataset_build_id: Optional[UUID] = None,
         logger: Optional[Logger] = None,
+        feature_enabled_runs: bool = False,
     ):
-        assert bool(train_id) ^ bool(dataset_build_id)
+        if not feature_enabled_runs:
+            assert bool(train_id) ^ bool(dataset_build_id)
         self._run_id = run_id
         self._train_id = train_id
         self._dataset_build_id = dataset_build_id
