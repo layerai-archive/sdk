@@ -1,4 +1,6 @@
 import logging
+import os
+import uuid
 from typing import Optional
 
 from layer.clients.layer import LayerClient
@@ -12,6 +14,7 @@ from layer.utils.async_utils import asyncio_run_in_thread
 from ..logged_data.immediate_logged_data_destination import (
     ImmediateLoggedDataDestination,
 )
+from ..logged_data.logged_data_destination import LoggedDataDestination
 from .utils import sdk_function
 
 
@@ -155,19 +158,26 @@ def log(
         create_my_model()
     """
     active_context = get_active_context()
-    if not active_context:
+    feature_enabled_runs = bool(os.getenv("LAYER_FEATURE_RUNS", default=False))
+    if not active_context and not feature_enabled_runs:
         raise RuntimeError(
-            "Data logging only allowed inside functions either decorated with @layer.model or @layer.dataset or"
+            "Data logging only allowed inside functions either decorated with @layer.model or @layer.dataset or "
             "invoked programmatically via layer.model('model-name')(my_function)(*my_function_arguments)"
         )
-    model_train = active_context.model_train()
-    model_train_id = model_train.id if model_train is not None else None
-    dataset_build = active_context.dataset_build()
-    dataset_build_id = dataset_build.id if dataset_build is not None else None
+    dataset_build_id: Optional[uuid.UUID] = None
+    model_train_id: Optional[uuid.UUID] = None
+    logged_data_destination: Optional[LoggedDataDestination] = None
+
+    if active_context:
+        model_train = active_context.model_train()
+        model_train_id = model_train.id if model_train is not None else None
+        dataset_build = active_context.dataset_build()
+        dataset_build_id = dataset_build.id if dataset_build is not None else None
+        logged_data_destination = active_context.logged_data_destination()
+
     layer_config = asyncio_run_in_thread(ConfigManager().refresh())
 
     with LayerClient(layer_config.client, logger).init() as client:
-        logged_data_destination = active_context.logged_data_destination()
         if not logged_data_destination:
             # temporary fallback: in the future, this will be new queuing destination,
             # but if it's not yet passed to the context, use old logic
@@ -181,6 +191,7 @@ def log(
             dataset_build_id=dataset_build_id,
             logger=logger,
             logged_data_destination=logged_data_destination,
+            feature_enabled_runs=feature_enabled_runs,
         )
         log_data_runner.log(
             data=data, x_coordinate=step, category=category, group_tag=group_tag
