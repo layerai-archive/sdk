@@ -18,7 +18,7 @@ from layer.runs.context import get_account_name
 
 
 def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(
-    test_project_name,
+    project_name,
 ):
     dataset_client = MagicMock(spec_set=DatasetClient)
     with _dataset_client_mock(dataset_client_mock=dataset_client) as data_catalog_mock:
@@ -35,7 +35,7 @@ def test_get_dataset_to_pandas_calls_dataset_api_with_project_path_from_context(
 
     expected_ticket = DataTicket(
         dataset_path_ticket=DatasetPathTicket(
-            path=f"{get_account_name()}/{test_project_name}/datasets/dataset_42"
+            path=f"{get_account_name()}/{project_name}/datasets/dataset_42"
         )
     )
     expected_command = Command(dataset_query=DatasetQuery(ticket=expected_ticket))
