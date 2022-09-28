@@ -2,6 +2,8 @@ import uuid
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Set
 
+from yarl import URL
+
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.runs import Run
@@ -10,6 +12,7 @@ from layer.exceptions.exceptions import InitializationException
 
 @dataclass
 class RunContext:
+    layer_base_url: URL
     project_full_name: ProjectFullName
     project_id: uuid.UUID
     run: Run
@@ -23,6 +26,17 @@ class RunContext:
     # status
     error: Optional[Exception] = None
 
+    def url(self) -> URL:
+        parts = [
+            self.project_full_name.account_name,
+            self.project_full_name.project_name,
+            "runs",
+            str(self.run.index),
+        ]
+        p = "/".join([part for part in parts if part is not None])
+
+        return self.layer_base_url / p
+
 
 # We store full project name, fabric and requirements
 # at the process level for use in subsequent calls in the same Python process.
@@ -35,6 +49,7 @@ def reset(run_context: Optional[RunContext] = None) -> None:
 
 
 def reset_to(
+    layer_base_url: URL,
     project_full_name: ProjectFullName,
     project_id: uuid.UUID,
     run: Run,
@@ -42,6 +57,7 @@ def reset_to(
 ) -> None:
     reset(
         RunContext(
+            layer_base_url=layer_base_url,
             project_full_name=project_full_name,
             project_id=project_id,
             run=run,
@@ -72,6 +88,10 @@ def get_account_name() -> str:
 
 def get_run_id() -> uuid.UUID:
     return get_run_context().run.id
+
+
+def get_run_url() -> URL:
+    return get_run_context().url()
 
 
 def get_labels() -> Set[str]:

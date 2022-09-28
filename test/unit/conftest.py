@@ -2,6 +2,7 @@ import uuid
 from typing import Iterator
 
 import pytest
+from yarl import URL
 
 from layer.contracts.runs import Run
 from test.conftest import _pseudo_random_project_name
@@ -17,6 +18,7 @@ def project_name(request: pytest.FixtureRequest) -> Iterator[str]:
         project_name=_pseudo_random_project_name(request),
     )
     context.reset_to(
+        layer_base_url=URL("https://app.layer.ai"),
         project_full_name=project_full_name,
         project_id=uuid.uuid4(),
         run=Run(id=uuid.uuid4(), index=1),

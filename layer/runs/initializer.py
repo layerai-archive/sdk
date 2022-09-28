@@ -5,11 +5,13 @@ import uuid
 from pathlib import Path
 from typing import Optional, Sequence, Set
 
+from yarl import URL
+
 from layer.clients.layer import LayerClient
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project, ProjectLoader
-from layer.contracts.remote_runs import RemoteRun, RunStatus
+from layer.contracts.remote_runs import RunStatus
 from layer.contracts.runs import Run
 from layer.runs import context
 
@@ -25,8 +27,9 @@ class RunInitializer:
     and creating a project in the Layer Backend if it doesn't exist already
     """
 
-    def __init__(self, layer_client: LayerClient):
+    def __init__(self, layer_client: LayerClient, layer_base_url: URL):
         self._layer_client = layer_client
+        self._layer_base_url = layer_base_url
 
     def setup_project(
         self,
@@ -48,6 +51,7 @@ class RunInitializer:
         )
 
         context.reset_to(
+            self._layer_base_url,
             project_full_name,
             project_id=project.id,
             run=run,
@@ -85,7 +89,7 @@ class RunInitializer:
 
 
 def finalize_run(
-    layer_client: LayerClient, run_context: context.RunContext, run: RemoteRun
+    layer_client: LayerClient, run_context: context.RunContext, run: Run
 ) -> None:
     """
     This is the atexit handler that sets the status of the run as completed

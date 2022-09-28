@@ -67,7 +67,7 @@ def init(
     project_full_name = _get_project_full_name(layer_config, project_name)
 
     with LayerClient(layer_config.client, logger).init() as layer_client:
-        initializer = RunInitializer(layer_client)
+        initializer = RunInitializer(layer_client, layer_base_url=layer_config.url)
         return initializer.setup_project(
             project_full_name=project_full_name,
             run_index=run_index,
