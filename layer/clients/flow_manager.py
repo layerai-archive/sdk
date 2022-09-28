@@ -5,7 +5,7 @@ from layerapi.api.entity.history_event_pb2 import HistoryEvent
 from layerapi.api.entity.operations_pb2 import ExecutionPlan
 from layerapi.api.entity.run_metadata_entry_pb2 import RunMetadataEntry
 from layerapi.api.entity.run_metadata_pb2 import RunMetadata
-from layerapi.api.entity.run_pb2 import Run
+from layerapi.api.entity.run_pb2 import Run as RunPB
 from layerapi.api.service.flowmanager.flow_manager_api_pb2 import (
     GetRunByIdRequest,
     GetRunHistoryAndMetadataRequest,
@@ -19,7 +19,7 @@ from layerapi.api.value.sha256_pb2 import Sha256
 
 from layer.config import ClientConfig
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import TaskType
+from layer.contracts.remote_runs import TaskType
 from layer.utils.grpc.channel import get_grpc_channel
 
 from .protomappers import runs as runs_proto_mapper
@@ -56,7 +56,7 @@ class FlowManagerClient:
         )
         return runs_proto_mapper.from_run_id(response.run_id)
 
-    def get_run(self, run_id: uuid.UUID) -> Run:
+    def get_run(self, run_id: uuid.UUID) -> RunPB:
         response = self._service.GetRunById(GetRunByIdRequest(run_id=run_id))
         return response.run
 

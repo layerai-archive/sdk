@@ -5,7 +5,7 @@ from layerapi.api.entity.task_pb2 import Task as PBTask
 from layerapi.api.ids_pb2 import RunId
 from layerapi.api.value.run_status_pb2 import RunStatus as PBRunStatus
 
-from layer.contracts.runs import Run, RunStatus, TaskType
+from layer.contracts.remote_runs import RemoteRun, RunStatus, TaskType
 
 
 def to_run_id(id: uuid.UUID) -> RunId:
@@ -16,10 +16,9 @@ def from_run_id(id: RunId) -> uuid.UUID:
     return uuid.UUID(id.value)
 
 
-def from_run(run: PBRun) -> Run:
-    return Run(
+def from_run(run: PBRun) -> RemoteRun:
+    return RemoteRun(
         id=from_run_id(run.id),
-        name=run.name,
     )
 
 

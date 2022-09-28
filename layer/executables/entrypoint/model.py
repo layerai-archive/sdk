@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 
 from layer import Context
 from layer.contracts.models import ModelTrain, ModelTrainStatus
-from layer.contracts.runs import TaskType
+from layer.contracts.remote_runs import TaskType
 from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.exceptions.status_report import (
     ExecutionStatusReport,

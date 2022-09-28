@@ -9,7 +9,7 @@ from layerapi.api.entity.task_pb2 import Task as PBTask
 
 from layer.clients.layer import LayerClient
 from layer.contracts.definitions import FunctionDefinition
-from layer.contracts.runs import Run
+from layer.contracts.remote_runs import RemoteRun
 from layer.exceptions.exceptions import (
     LayerClientTimeoutException,
     ProjectDatasetBuildExecutionException,
@@ -39,14 +39,14 @@ _FormattedRunMetadata = Dict[Tuple["PBTask.Type.ValueType", str, str], str]
 class ProgressTrackerUpdater:
     tracker: RunProgressTracker
     client: LayerClient
-    run: Run
+    run: RemoteRun
     definitions: List[FunctionDefinition]
     run_metadata: _FormattedRunMetadata
 
     def __init__(
         self,
         tracker: RunProgressTracker,
-        run: Run,
+        run: RemoteRun,
         definitions: List[FunctionDefinition],
         client: LayerClient,
     ):

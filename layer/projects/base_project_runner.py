@@ -2,7 +2,7 @@ import abc
 from typing import Any, Callable, List
 
 from layer.contracts.definitions import FunctionDefinition
-from layer.contracts.runs import Run
+from layer.contracts.remote_runs import RemoteRun
 from layer.runs import context
 
 
@@ -12,7 +12,9 @@ class BaseProjectRunner(abc.ABC):
             f.get_definition_with_bound_arguments() for f in functions
         ]
 
-    def run(self, debug: bool = False, printer: Callable[[str], Any] = print) -> Run:
+    def run(
+        self, debug: bool = False, printer: Callable[[str], Any] = print
+    ) -> RemoteRun:
         try:
             return self._run()
         except Exception as e:
@@ -20,5 +22,7 @@ class BaseProjectRunner(abc.ABC):
             raise e
 
     @abc.abstractmethod
-    def _run(self, debug: bool = False, printer: Callable[[str], Any] = print) -> Run:
+    def _run(
+        self, debug: bool = False, printer: Callable[[str], Any] = print
+    ) -> RemoteRun:
         ...

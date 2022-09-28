@@ -4,7 +4,7 @@ from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.conda import CondaEnv
 from layer.contracts.fabrics import Fabric
-from layer.contracts.runs import ResourcePath
+from layer.contracts.remote_runs import ResourcePath
 from layer.exceptions.exceptions import ConfigError, LayerClientException
 from layer.runs import context
 

@@ -9,7 +9,7 @@ from layerapi.api.service.logged_data.run_api_pb2 import (
 from layerapi.api.service.logged_data.run_api_pb2_grpc import RunAPIStub
 
 from layer.config import ClientConfig
-from layer.contracts.runs import Run, RunStatus
+from layer.contracts.remote_runs import RemoteRun, RunStatus
 from layer.utils.grpc.channel import get_grpc_channel
 
 from .protomappers import projects as project_proto_mapper
@@ -26,17 +26,17 @@ class RunServiceClient:
         client._service = RunAPIStub(channel)  # pylint: disable=protected-access
         return client
 
-    def get_run_by_id(self, run_id: UUID) -> Run:
+    def get_run_by_id(self, run_id: UUID) -> RemoteRun:
         request = GetRunByRunIdRequest(
             run_id=run_proto_mapper.to_run_id(run_id),
         )
         run_pb = self._service.GetRunByRunId(request=request).run
         return run_proto_mapper.from_run(run_pb)
 
-    def get_run_by_index(self, project_id: UUID, run_index: int) -> Run:
+    def get_run_by_index(self, project_id: UUID, run_index: int) -> RemoteRun:
         raise NotImplementedError()
 
-    def create_run(self, project_id: UUID, run_name: Optional[str] = None) -> Run:
+    def create_run(self, project_id: UUID, run_name: Optional[str] = None) -> RemoteRun:
         request = CreateRunRequest(
             project_id=project_proto_mapper.to_project_id(project_id),
         )
@@ -45,7 +45,7 @@ class RunServiceClient:
         run_pb = self._service.CreateRun(request=request).run
         return run_proto_mapper.from_run(run_pb)
 
-    def finish_run(self, run_id: UUID, status: RunStatus) -> Run:
+    def finish_run(self, run_id: UUID, status: RunStatus) -> RemoteRun:
         request = FinishRunRequest(
             run_id=run_proto_mapper.to_run_id(run_id),
             status=run_proto_mapper.to_run_status(status),

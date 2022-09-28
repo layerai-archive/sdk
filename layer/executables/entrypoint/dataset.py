@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 
 from layer.context import Context
 from layer.contracts.datasets import DatasetBuild
-from layer.contracts.runs import TaskType
+from layer.contracts.remote_runs import TaskType
 from layer.utils.runtime_utils import check_and_convert_to_df
 
 from .common import FunctionRunner

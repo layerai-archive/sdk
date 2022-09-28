@@ -12,7 +12,7 @@ from layer.config.config import Config
 from layer.config.config_manager import ConfigManager
 from layer.contracts.definitions import FunctionDefinition
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import Run
+from layer.contracts.remote_runs import RemoteRun
 from layer.executables.entrypoint.common import (
     ENV_LAYER_API_TOKEN,
     ENV_LAYER_API_URL,
@@ -42,7 +42,9 @@ class RayWorkflowProjectRunner(BaseProjectRunner):
         self._config = config
         self.project_full_name = project_full_name
 
-    def _run(self, debug: bool = False, printer: Callable[[str], Any] = print) -> Run:
+    def _run(
+        self, debug: bool = False, printer: Callable[[str], Any] = print
+    ) -> RemoteRun:
         layer_client = LayerClient(self._config.client, logger)
         with layer_client.init() as initialized_client:
             asyncio_run_in_thread(
@@ -75,7 +77,7 @@ class RayWorkflowProjectRunner(BaseProjectRunner):
         plan = build_plan(self.definitions)
         run_id = uuid.uuid4()
         workflow.run(run_stage.bind(plan.stages), workflow_id=str(run_id))
-        run = Run(
+        run = RemoteRun(
             id=run_id,
         )
         ray.shutdown()

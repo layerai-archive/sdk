@@ -3,7 +3,7 @@ import os
 import pathlib
 import uuid
 from dataclasses import dataclass
-from typing import Iterator, Optional
+from typing import Iterator
 
 
 @dataclass(frozen=True)
@@ -47,9 +47,9 @@ class RunStatus(enum.IntEnum):
 
 
 @dataclass(frozen=True)
-class Run:
+class RemoteRun:
     """
-    Provides access to project runs stored in Layer.
+    Provides access to project remote runs stored in Layer.
 
     You can retrieve an instance of this object with :code:`layer.run()`.
 
@@ -63,4 +63,3 @@ class Run:
     """
 
     id: uuid.UUID
-    name: Optional[str] = None
