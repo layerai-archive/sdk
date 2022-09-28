@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List
 
 import grpc
 import ray
+import layer
 from ray import workflow
 
 from layer.clients.layer import LayerClient
@@ -61,26 +62,54 @@ class RayWorkflowProjectRunner(BaseProjectRunner):
                     ),
                 )
             )
-        if not ray.is_initialized():
-            _metadata = [
-                ("authorization", f"Bearer {self._config.credentials.access_token}"),
-                ("ray-cluster", target_cluster_svc_name),
-            ]
-            _credentials = grpc.ssl_channel_credentials()
-            ray.init(
-                address=f"ray://{self._config.client.ray_gateway_address}",
-                _metadata=_metadata,
-                _credentials=_credentials,
-            )
+        from ray.util.client import ray as ray_stub
+        if not ray_stub.is_connected():
+            logger.error("Ray client is disconnected. Trying to reconnect")
+            try:
+                try:
+                    ray.shutdown()
+                    logger.info("Shutdown complete.")
+                except BaseException as e:
+                    logger.error(f"Failed to shutdown: {e}")
+                _metadata = [
+                    ("authorization", f"Bearer {self._config.credentials.access_token}"),
+                    ("ray-cluster", target_cluster_svc_name),
+                ]
+                _credentials = grpc.ssl_channel_credentials()
+                ray.init(
+                    address=f"ray://{self._config.client.ray_gateway_address}",
+                    _metadata=_metadata,
+                    _credentials=_credentials,
+                    runtime_env={
+                        "pip": [f"layer==0.10.3126802739"],
+                        # "pip": [f"layer=={layer.__version__}"],
+                    }
+                )
+            except BaseException as ee:
+                logger.error(f"Failed to to connect to ray head! {ee}")
         plan = build_plan(self.definitions)
         run_id = uuid.uuid4()
-        workflow.run(run_stage.bind(plan.stages), workflow_id=str(run_id))
+        try:
+            env = get_stage_environment(str(self._config.url),self._config.credentials.access_token)
+            workflow.run(run_stage.options(runtime_env=env).bind(plan.stages), workflow_id=str(run_id))
+        except BaseException as e:
+            logger.error(f"Failed to to run workflow! {e}")
+        ray.shutdown()
         run = Run(
             id=run_id,
         )
-        ray.shutdown()
         return run
 
+
+def get_stage_environment(api_url:str, api_token:str)-> Dict[str, Any]:
+    return {
+            "pip": [f"layer==0.10.3126802739"],
+            # "pip": [f"layer=={layer.__version__}"],
+            "env_vars": {
+                ENV_LAYER_API_URL: api_url,
+                ENV_LAYER_API_TOKEN: api_token,
+            },
+        }
 
 @ray.remote
 def run_function(executable_path: Path) -> None:
@@ -94,15 +123,12 @@ def wait_all(*args: Any) -> None:
 
 @ray.remote
 def run_stage(stages: List[Stage], *deps: Any) -> None:
+    import os
+    api_url = os.environ.get(ENV_LAYER_API_URL)
+    api_token = os.environ.get(ENV_LAYER_API_TOKEN)
     def _get_options(layer_function: FunctionDefinition) -> Dict[str, Any]:
-        config = ConfigManager().load()
-        runtime_env = {
-            "env_vars": {
-                ENV_LAYER_API_URL: str(config.url),
-                ENV_LAYER_API_TOKEN: config.credentials.access_token,
-                ENV_LAYER_FABRIC: layer_function.fabric.value,
-            },
-        }
+        runtime_env = get_stage_environment(api_url, api_token)
+        runtime_env["env_vars"][ENV_LAYER_FABRIC] = layer_function.fabric.value
         if layer_function.conda_env:
             environment = layer_function.conda_env.environment
             if "name" not in environment:
@@ -136,7 +162,6 @@ def run_stage(stages: List[Stage], *deps: Any) -> None:
             "num_gpus": layer_function.fabric.gpu,
             "runtime_env": runtime_env,
         }
-
     if len(stages) == 0:
         return
     stage = stages.pop(0)
@@ -147,4 +172,7 @@ def run_stage(stages: List[Stage], *deps: Any) -> None:
                 function.package_download_url
             )
         )
-    return workflow.continuation(run_stage.bind(stages, wait_all.bind(*function_runs)))
+    runtime_env = get_stage_environment(api_url, api_token)
+    return workflow.continuation(run_stage.options(
+        runtime_env=runtime_env
+    ).bind(stages, wait_all.bind(*function_runs)))
