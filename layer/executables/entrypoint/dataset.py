@@ -27,7 +27,7 @@ class DatasetRunner(FunctionRunner):
         )
         dataset_build_id = self.client.data_catalog.initiate_build(
             project_id=self.run_context.project_id,
-            run_id=self.run_context.run_id,
+            run_id=self.run_context.run.id,
             asset_name=self.definition.asset_name,
             fabric=self.fabric.value,
         )

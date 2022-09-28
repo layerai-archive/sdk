@@ -4,6 +4,7 @@ from typing import List, Optional, Sequence, Set
 
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
+from layer.contracts.runs import Run
 from layer.exceptions.exceptions import InitializationException
 
 
@@ -11,7 +12,7 @@ from layer.exceptions.exceptions import InitializationException
 class RunContext:
     project_full_name: ProjectFullName
     project_id: uuid.UUID
-    run_id: uuid.UUID
+    run: Run
     labels: Set[str]
 
     # execution defaults
@@ -36,14 +37,14 @@ def reset(run_context: Optional[RunContext] = None) -> None:
 def reset_to(
     project_full_name: ProjectFullName,
     project_id: uuid.UUID,
-    run_id: uuid.UUID,
+    run: Run,
     labels: Set[str],
 ) -> None:
     reset(
         RunContext(
             project_full_name=project_full_name,
             project_id=project_id,
-            run_id=run_id,
+            run=run,
             labels=labels,
         )
     )
@@ -70,7 +71,7 @@ def get_account_name() -> str:
 
 
 def get_run_id() -> uuid.UUID:
-    return get_run_context().run_id
+    return get_run_context().run.id
 
 
 def get_labels() -> Set[str]:

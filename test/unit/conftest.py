@@ -3,6 +3,7 @@ from typing import Iterator
 
 import pytest
 
+from layer.contracts.runs import Run
 from test.conftest import _pseudo_random_project_name
 
 
@@ -18,7 +19,7 @@ def project_name(request: pytest.FixtureRequest) -> Iterator[str]:
     context.reset_to(
         project_full_name=project_full_name,
         project_id=uuid.uuid4(),
-        run_id=uuid.uuid4(),
+        run=Run(id=uuid.uuid4(), index=1),
         labels=set(),
     )
     yield project_full_name.project_name

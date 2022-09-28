@@ -10,6 +10,7 @@ from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project, ProjectLoader
 from layer.contracts.remote_runs import RemoteRun, RunStatus
+from layer.contracts.runs import Run
 from layer.runs import context
 
 
@@ -49,7 +50,7 @@ class RunInitializer:
         context.reset_to(
             project_full_name,
             project_id=project.id,
-            run_id=run.id,
+            run=run,
             labels=labels or set(),
         )
         atexit.register(
@@ -115,7 +116,7 @@ def get_or_create_run(
     run_name: Optional[str],
     run_index: Optional[int],
     labels: Optional[Set[str]] = None,
-) -> RemoteRun:
+) -> Run:
     run_id_env = os.getenv(LAYER_RUN_ID_ENV_VARIABLE)
     if run_id_env is not None:
         run = client.run_service_client.get_run_by_id(uuid.UUID(run_id_env))

@@ -2,7 +2,12 @@ import uuid
 
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
+from layer.contracts.runs import Run
 from layer.runs import context
+
+
+def _a_test_run() -> Run:
+    return Run(id=uuid.uuid4(), index=1)
 
 
 class TestRunContext:
@@ -10,13 +15,13 @@ class TestRunContext:
         context.reset_to(
             project_full_name=ProjectFullName("acc", "test"),
             project_id=uuid.uuid4(),
-            run_id=uuid.uuid4(),
+            run=_a_test_run(),
             labels=set(),
         )
         context.reset_to(
             project_full_name=ProjectFullName("acc", "anotherTest"),
             project_id=uuid.uuid4(),
-            run_id=uuid.uuid4(),
+            run=_a_test_run(),
             labels=set(),
         )
         assert context.get_project_full_name().project_name == "anotherTest"
@@ -28,7 +33,7 @@ class TestRunContext:
         context.reset_to(
             project_full_name=ProjectFullName("acc", "second-test"),
             project_id=uuid.uuid4(),
-            run_id=uuid.uuid4(),
+            run=_a_test_run(),
             labels=set(),
         )
         assert context.get_account_name() == "acc"
@@ -47,7 +52,7 @@ class TestRunContext:
         context.reset_to(
             project_full_name=ProjectFullName("test-acc", "test"),
             project_id=uuid.uuid4(),
-            run_id=uuid.uuid4(),
+            run=_a_test_run(),
             labels={"label-1", "label-2"},
         )
 
