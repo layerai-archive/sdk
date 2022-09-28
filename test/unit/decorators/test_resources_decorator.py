@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from layer.contracts.remote_runs import ResourcePath
+from layer.contracts.resources import ResourcePath
 from layer.decorators import resources
 
 
