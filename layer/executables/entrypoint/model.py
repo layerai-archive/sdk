@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 
 from layer import Context
 from layer.contracts.models import ModelTrain, ModelTrainStatus
-from layer.contracts.runs import TaskType
+from layer.contracts.remote_runs import TaskType
 from layer.exceptions.exceptions import LayerFailedAssertionsException
 from layer.exceptions.status_report import (
     ExecutionStatusReport,
@@ -29,7 +29,7 @@ class ModelRunner(FunctionRunner):
         )
         train_id = self.client.model_catalog.create_model_train_from_version_id(
             version_id=model_version.id,
-            run_id=self.run_context.run_id,
+            run_id=self.run_context.run.id,
         )
         self.train = self.client.model_catalog.get_model_train(train_id)
         if self.run_id:

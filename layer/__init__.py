@@ -7,7 +7,7 @@ from .contracts.datasets import Dataset  # noqa
 from .contracts.logged_data import Image, Markdown, Video  # noqa
 from .contracts.models import Model  # noqa
 from .contracts.projects import Project  # noqa
-from .contracts.runs import Run  # noqa
+from .contracts.remote_runs import RemoteRun  # noqa
 from .decorators import (  # noqa
     conda,
     dataset,

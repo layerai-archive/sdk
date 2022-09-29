@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Any, Callable, List
 
-from layer.contracts.runs import Run
+from layer.contracts.remote_runs import RemoteRun
 from layer.executables.ray_runtime import RayClientFunctionRuntime
 
 from .base_project_runner import BaseProjectRunner
@@ -16,7 +16,9 @@ class RayProjectRunner(BaseProjectRunner):
         super().__init__(functions)
         self.ray_address = ray_address
 
-    def _run(self, debug: bool = False, printer: Callable[[str], Any] = print) -> Run:
+    def _run(
+        self, debug: bool = False, printer: Callable[[str], Any] = print
+    ) -> RemoteRun:
         for definition in self.definitions:
             definition.package()
             RayClientFunctionRuntime.execute(
@@ -25,7 +27,7 @@ class RayProjectRunner(BaseProjectRunner):
                 fabric=definition.fabric,
             )
 
-        run = Run(
+        run = RemoteRun(
             id=uuid.UUID(int=0),
         )  # TODO: Workflow integration with ray to obtain run id.
         return run

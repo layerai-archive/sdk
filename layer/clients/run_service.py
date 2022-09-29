@@ -9,9 +9,10 @@ from layerapi.api.service.logged_data.run_api_pb2 import (
 from layerapi.api.service.logged_data.run_api_pb2_grpc import RunAPIStub
 
 from layer.config import ClientConfig
-from layer.contracts.runs import Run, RunStatus
+from layer.contracts.remote_runs import RunStatus
 from layer.utils.grpc.channel import get_grpc_channel
 
+from ..contracts.runs import Run
 from .protomappers import projects as project_proto_mapper
 from .protomappers import runs as run_proto_mapper
 
@@ -31,7 +32,7 @@ class RunServiceClient:
             run_id=run_proto_mapper.to_run_id(run_id),
         )
         run_pb = self._service.GetRunByRunId(request=request).run
-        return run_proto_mapper.from_run(run_pb)
+        return run_proto_mapper.from_pb_to_run(run_pb)
 
     def get_run_by_index(self, project_id: UUID, run_index: int) -> Run:
         raise NotImplementedError()
@@ -43,7 +44,7 @@ class RunServiceClient:
         if run_name:
             request.name = run_name
         run_pb = self._service.CreateRun(request=request).run
-        return run_proto_mapper.from_run(run_pb)
+        return run_proto_mapper.from_pb_to_run(run_pb)
 
     def finish_run(self, run_id: UUID, status: RunStatus) -> Run:
         request = FinishRunRequest(
@@ -51,4 +52,4 @@ class RunServiceClient:
             status=run_proto_mapper.to_run_status(status),
         )
         run_pb = self._service.FinishRun(request=request).run
-        return run_proto_mapper.from_run(run_pb)
+        return run_proto_mapper.from_pb_to_run(run_pb)

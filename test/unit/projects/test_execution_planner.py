@@ -16,22 +16,22 @@ from layer.projects.execution_planner import (
 
 
 class TestProjectExecutionPlanner:
-    def test_check_asset_external_dependency(self, test_project_name: str) -> None:
+    def test_check_asset_external_dependency(self, project_name: str) -> None:
         ds1 = self._create_mock_dataset("ds1", project_name="another-project-x")
         m1 = self._create_mock_model(
             "m1",
-            project_name=test_project_name,
+            project_name=project_name,
             dependencies=["another-project-x/datasets/ds1"],
         )
 
         check_asset_dependencies([m1, ds1])
 
     def test_external_asset_dependencies_is_not_checked(
-        self, test_project_name: str
+        self, project_name: str
     ) -> None:
         m1 = self._create_mock_model(
             "m1",
-            project_name=test_project_name,
+            project_name=project_name,
             dependencies=["external_project/datasets/ds1"],
         )
 
@@ -41,13 +41,13 @@ class TestProjectExecutionPlanner:
             pytest.fail(f"External asset dependency raised an exception: {e}")
 
     def test_build_graph_fails_if_project_contains_cycle(
-        self, test_project_name: str
+        self, project_name: str
     ) -> None:
         m1 = self._create_mock_model(
-            "m1", project_name=test_project_name, dependencies=["datasets/ds1"]
+            "m1", project_name=project_name, dependencies=["datasets/ds1"]
         )
         ds1 = self._create_mock_dataset(
-            "ds1", project_name=test_project_name, dependencies=["models/m1"]
+            "ds1", project_name=project_name, dependencies=["models/m1"]
         )
 
         with pytest.raises(
@@ -56,29 +56,29 @@ class TestProjectExecutionPlanner:
             check_asset_dependencies([ds1, m1])
 
     def test_project_find_cycles_returns_correct_cycles(
-        self, test_project_name: str
+        self, project_name: str
     ) -> None:
         m = self._create_mock_model(
             "m",
-            project_name=test_project_name,
+            project_name=project_name,
             dependencies=["datasets/a", "datasets/e"],
         )
         a = self._create_mock_dataset(
-            "a", project_name=test_project_name, dependencies=["models/m", "datasets/e"]
+            "a", project_name=project_name, dependencies=["models/m", "datasets/e"]
         )
         e = self._create_mock_dataset(
-            "e", project_name=test_project_name, dependencies=["datasets/s"]
+            "e", project_name=project_name, dependencies=["datasets/s"]
         )
         s = self._create_mock_dataset(
-            "s", project_name=test_project_name, dependencies=["datasets/a", "models/m"]
+            "s", project_name=project_name, dependencies=["datasets/a", "models/m"]
         )
 
         graph = _build_graph([m, a, e, s])
         cycle_paths = _find_cycles(graph)
         assert len(cycle_paths) == 5
 
-    def test_build_execution_plan_linear(self, test_project_name: str) -> None:
-        definitions = self._create_mock_run_linear(test_project_name)
+    def test_build_execution_plan_linear(self, project_name: str) -> None:
+        definitions = self._create_mock_run_linear(project_name)
 
         execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
@@ -87,28 +87,28 @@ class TestProjectExecutionPlanner:
         assert len(ops) == 5
         assert (
             ops[0].sequential.function_execution.asset_name
-            == f"test-acc-from-conftest/{test_project_name}/datasets/ds1"
+            == f"test-acc-from-conftest/{project_name}/datasets/ds1"
         )
         assert (
             ops[1].sequential.function_execution.asset_name
-            == f"test-acc-from-conftest/{test_project_name}/datasets/ds2"
+            == f"test-acc-from-conftest/{project_name}/datasets/ds2"
         )
         assert (
             ops[2].sequential.function_execution.asset_name
-            == f"test-acc-from-conftest/{test_project_name}/datasets/ds3"
+            == f"test-acc-from-conftest/{project_name}/datasets/ds3"
         )
         assert ops[1].sequential.function_execution.dependency == [
-            f"test-acc-from-conftest/{test_project_name}/datasets/ds1"
+            f"test-acc-from-conftest/{project_name}/datasets/ds1"
         ]
         assert ops[3].sequential.function_execution.dependency == [
-            f"test-acc-from-conftest/{test_project_name}/datasets/ds3"
+            f"test-acc-from-conftest/{project_name}/datasets/ds3"
         ]
         assert ops[4].sequential.function_execution.dependency == [
-            f"test-acc-from-conftest/{test_project_name}/models/m1"
+            f"test-acc-from-conftest/{project_name}/models/m1"
         ]
 
-    def test_build_execution_plan_parallel(self, test_project_name: str) -> None:
-        definitions = self._create_mock_run_parallel(test_project_name)
+    def test_build_execution_plan_parallel(self, project_name: str) -> None:
+        definitions = self._create_mock_run_parallel(project_name)
 
         execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
@@ -117,8 +117,8 @@ class TestProjectExecutionPlanner:
         assert len(ops) == 1
         assert len(ops[0].parallel.function_execution) == 5
 
-    def test_build_execution_plan_mixed(self, test_project_name: str) -> None:
-        definitions = self._create_mock_run_mixed(test_project_name)
+    def test_build_execution_plan_mixed(self, project_name: str) -> None:
+        definitions = self._create_mock_run_mixed(project_name)
         execution_plan = build_execution_plan(definitions)
         assert execution_plan is not None
         ops = execution_plan.operations

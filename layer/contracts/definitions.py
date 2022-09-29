@@ -10,7 +10,7 @@ from layer.contracts.assertions import Assertion
 from layer.contracts.asset import AssetPath, AssetType
 from layer.contracts.conda import CondaEnv
 from layer.contracts.fabrics import Fabric
-from layer.contracts.runs import ResourcePath
+from layer.contracts.resources import ResourcePath
 from layer.executables.packager import package_function
 from layer.runs import context
 

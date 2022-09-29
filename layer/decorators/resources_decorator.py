@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Sequence, Union
 
 import wrapt  # type: ignore
 
-from layer.contracts.runs import ResourcePath
+from layer.contracts.resources import ResourcePath
 from layer.decorators.layer_wrapper import LayerFunctionWrapper
 
 

@@ -8,7 +8,7 @@ import polling  # type: ignore
 from layer.clients.layer import LayerClient
 from layer.config import Config
 from layer.contracts.project_full_name import ProjectFullName
-from layer.contracts.runs import Run
+from layer.contracts.remote_runs import RemoteRun
 from layer.exceptions.exceptions import (
     LayerClientServiceUnavailableException,
     LayerClientTimeoutException,
@@ -86,7 +86,9 @@ class ProjectRunner(BaseProjectRunner):
         self.project_full_name = project_full_name
         self.files_hash = calculate_hash_by_definitions(self.definitions)
 
-    def _run(self, debug: bool = False, printer: Callable[[str], Any] = print) -> Run:
+    def _run(
+        self, debug: bool = False, printer: Callable[[str], Any] = print
+    ) -> RemoteRun:
         check_asset_dependencies(self.definitions)
         with LayerClient(self._config.client, logger).init() as client:
             with get_progress_tracker(
@@ -123,7 +125,7 @@ class ProjectRunner(BaseProjectRunner):
                     )
         return run
 
-    def _start_run(self, client: LayerClient) -> Run:
+    def _start_run(self, client: LayerClient) -> RemoteRun:
         asyncio_run_in_thread(
             upload_executable_packages(client, self.definitions, self.project_full_name)
         )
@@ -142,7 +144,7 @@ class ProjectRunner(BaseProjectRunner):
         except LayerResourceExhaustedException as e:
             raise ProjectRunnerError(f"{e}")
         else:
-            return Run(id=run_id)
+            return RemoteRun(id=run_id)
 
     def _get_user_command(self) -> str:
         functions_string = ", ".join(
@@ -159,7 +161,7 @@ class ProjectRunner(BaseProjectRunner):
         logs_thread.join()
 
     def _poll_until_completed(
-        self, client: LayerClient, tracker: RunProgressTracker, run: Run
+        self, client: LayerClient, tracker: RunProgressTracker, run: RemoteRun
     ) -> None:
         updater = ProgressTrackerUpdater(
             tracker=tracker,

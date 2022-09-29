@@ -7,7 +7,7 @@ from layer.config.config import Config
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
 from layer.contracts.projects import Project
-from layer.contracts.runs import Run
+from layer.contracts.remote_runs import RemoteRun
 from layer.exceptions.exceptions import ConfigError
 from layer.projects.utils import validate_project_name
 from layer.runs import context
@@ -67,7 +67,7 @@ def init(
     project_full_name = _get_project_full_name(layer_config, project_name)
 
     with LayerClient(layer_config.client, logger).init() as layer_client:
-        initializer = RunInitializer(layer_client)
+        initializer = RunInitializer(layer_client, layer_base_url=layer_config.url)
         return initializer.setup_project(
             project_full_name=project_full_name,
             run_index=run_index,
@@ -84,7 +84,7 @@ def run(
     debug: bool = False,
     ray_address: Optional[str] = None,
     **kwargs: Any,
-) -> Run:
+) -> RemoteRun:
     """
     :param functions: List of decorated functions to run in the Layer backend.
     :param debug: Stream logs to console from infra executing the project remotely.

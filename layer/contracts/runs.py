@@ -1,66 +1,14 @@
-import enum
-import os
-import pathlib
-import uuid
 from dataclasses import dataclass
-from typing import Iterator, Optional
-
-
-@dataclass(frozen=True)
-class ResourcePath:
-    # Local file system path of the resource (file or dir), relative to the project dir.
-    # Examples: data/test.csv, users.parquet
-    path: pathlib.Path
-
-    def local_relative_paths(self) -> Iterator[str]:
-        """
-        Map path to the absolute file system paths, checking if paths exist.
-        Includes single files and files in each resource directory.
-
-        :return: iterator of absolute file paths.
-        """
-        file_path = os.path.relpath(self.path)
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(
-                f"resource file or directory: {self.path} in {os.getcwd()}"
-            )
-        if os.path.isfile(file_path):
-            yield file_path
-        if os.path.isdir(file_path):
-            for root, _, files in os.walk(file_path):
-                for f in files:
-                    dir_file_path = os.path.join(root, f)
-                    yield os.path.relpath(dir_file_path)
-
-
-@enum.unique
-class TaskType(enum.IntEnum):
-    MODEL_TRAIN = 1
-    DATASET_BUILD = 2
-
-
-@enum.unique
-class RunStatus(enum.IntEnum):
-    RUNNING = 1
-    SUCCEEDED = 2
-    FAILED = 3
+from uuid import UUID
 
 
 @dataclass(frozen=True)
 class Run:
     """
-    Provides access to project runs stored in Layer.
+    Run is created via `layer.init`.
 
-    You can retrieve an instance of this object with :code:`layer.run()`.
-
-    This class should not be initialized by end-users.
-
-    .. code-block:: python
-
-        # Runs the current project with the given functions
-        layer.run([build_dataset, train_model])
-
+    Data can be logged and labels can attached to a given run.
     """
 
-    id: uuid.UUID
-    name: Optional[str] = None
+    id: UUID
+    index: int

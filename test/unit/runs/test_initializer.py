@@ -2,6 +2,8 @@ import uuid
 from typing import Optional
 from unittest.mock import MagicMock, Mock
 
+from yarl import URL
+
 from layer.clients.layer import LayerClient
 from layer.clients.project_service import ProjectServiceClient
 from layer.contracts.accounts import Account
@@ -59,7 +61,7 @@ def test_given_project_exists_when_set_up_project_gets_and_sets_global_project()
     pip_requirements_file_name = "req.txt"
     # when
     run_initializer = RunInitializer(
-        layer_client_mock,
+        layer_client_mock, layer_base_url=URL("https://layer.ai")
     )
     project = run_initializer.setup_project(
         project_full_name=project_full_name,
@@ -105,6 +107,7 @@ def test_given_project_not_exists_when_set_up_project_creates_and_sets_global_pr
     # when
     run_initializer = RunInitializer(
         layer_client_mock,
+        layer_base_url=URL("https://layer.ai"),
     )
     project = run_initializer.setup_project(
         project_full_name=project_full_name,
@@ -152,6 +155,7 @@ def test_given_readme_exists_when_set_up_project_gets_and_sets_project_readme(
     # when
     run_initializer = RunInitializer(
         layer_client_mock,
+        layer_base_url=URL("https://layer.ai"),
     )
     run_initializer.setup_project(
         project_full_name=project_full_name,
@@ -187,6 +191,7 @@ def test_given_readme_not_exists_when_set_up_project_gets_and_setup_project(
     # when
     run_initializer = RunInitializer(
         layer_client_mock,
+        layer_base_url=URL("https://layer.ai"),
     )
     project = run_initializer.setup_project(
         project_full_name=project_full_name,
@@ -226,6 +231,7 @@ def test_given_long_readme_exists_when_set_up_project_gets_and_sets_project_read
     # when
     run_initializer = RunInitializer(
         layer_client_mock,
+        layer_base_url=URL("https://layer.ai"),
     )
     run_initializer.setup_project(
         project_full_name=project_full_name,

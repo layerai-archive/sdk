@@ -1,22 +1,42 @@
 import uuid
 
+from yarl import URL
+
 from layer.contracts.fabrics import Fabric
 from layer.contracts.project_full_name import ProjectFullName
+from layer.contracts.runs import Run
 from layer.runs import context
 
 
+def _a_test_run(index: int = 1) -> Run:
+    return Run(id=uuid.uuid4(), index=index)
+
+
 class TestRunContext:
-    def test_last_project_name_returned(self) -> None:
+    def test_run_url_is_correct(self) -> None:
         context.reset_to(
+            layer_base_url=URL("https://app.layer.ai"),
             project_full_name=ProjectFullName("acc", "test"),
             project_id=uuid.uuid4(),
-            run_id=uuid.uuid4(),
+            run=_a_test_run(23),
+            labels=set(),
+        )
+
+        assert context.get_run_url() == URL("https://app.layer.ai/acc/test/runs/23")
+
+    def test_last_project_name_returned(self) -> None:
+        context.reset_to(
+            layer_base_url=URL("https://app.layer.ai"),
+            project_full_name=ProjectFullName("acc", "test"),
+            project_id=uuid.uuid4(),
+            run=_a_test_run(),
             labels=set(),
         )
         context.reset_to(
+            layer_base_url=URL("https://app.layer.ai"),
             project_full_name=ProjectFullName("acc", "anotherTest"),
             project_id=uuid.uuid4(),
-            run_id=uuid.uuid4(),
+            run=_a_test_run(),
             labels=set(),
         )
         assert context.get_project_full_name().project_name == "anotherTest"
@@ -26,9 +46,10 @@ class TestRunContext:
         context.set_pip_requirements_file("/path/to/requirements2.txt")
         context.set_pip_packages(["numpy=1.22.2"])
         context.reset_to(
+            layer_base_url=URL("https://app.layer.ai"),
             project_full_name=ProjectFullName("acc", "second-test"),
             project_id=uuid.uuid4(),
-            run_id=uuid.uuid4(),
+            run=_a_test_run(),
             labels=set(),
         )
         assert context.get_account_name() == "acc"
@@ -45,9 +66,10 @@ class TestRunContext:
 
         # when
         context.reset_to(
+            layer_base_url=URL("https://app.layer.ai"),
             project_full_name=ProjectFullName("test-acc", "test"),
             project_id=uuid.uuid4(),
-            run_id=uuid.uuid4(),
+            run=_a_test_run(),
             labels={"label-1", "label-2"},
         )
 

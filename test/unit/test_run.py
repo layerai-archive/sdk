@@ -186,13 +186,11 @@ class TestRequestIdInterceptor:
 
 class TestProjectRun:
     def test_project_run_fails_when_max_active_run_exceeds(
-        self, test_project_name: str
+        self, project_name: str
     ) -> None:
         runner = ProjectRunner(
             config=MagicMock(),
-            project_full_name=ProjectFullName(
-                "test-acc-from-conftest", test_project_name
-            ),
+            project_full_name=ProjectFullName("test-acc-from-conftest", project_name),
             functions=[],
         )
         error = rpc_error(
@@ -209,14 +207,12 @@ class TestProjectRun:
             runner._start_run(client=client)  # pylint: disable=protected-access
 
     def test_get_user_command_returns_the_command_correctly(
-        self, test_project_name: str
+        self, project_name: str
     ) -> None:
 
         runner = ProjectRunner(
             config=MagicMock(),
-            project_full_name=ProjectFullName(
-                "test-acc-from-conftest", test_project_name
-            ),
+            project_full_name=ProjectFullName("test-acc-from-conftest", project_name),
             functions=[],
         )
         def1: FunctionDefinition = MagicMock()
